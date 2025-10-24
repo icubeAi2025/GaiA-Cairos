@@ -1,0 +1,143 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<div class="div_app boxMngContainer pb-3" id="div_app_main">
+	<div class="boxMngContent">
+		<form name="form_search1" class="uu-box-search">
+			<label>
+				<input type="text" name="keyword1" class="uu-field d-block" placeholder="검색" />
+			</label>
+			<button class="uu-btn" data-action="getCorpList"><i class="fa fa-search"></i> 조회</button>
+		</form>
+
+		<div class="uu-box-title">
+			<div class="uu-start">
+				<span class="uu-text-title">기관</span>
+			</div>
+			<div class="uu-end">
+				<button class="uu-btn" data-action="grid_1_appendItem"><i class="fa fa-plus"></i> 추가</button>
+				<button class="uu-btn" data-action="grid_1_appendFolder"><i class="fa fa-plus"></i> 폴더 생성</button>
+				<button class="uu-btn" data-action="grid_1_removeCheckedItems"><i class="fa fa-minus"></i> 삭제</button>
+				<button class="uu-btn" data-action="saveCorpList"><i class="fa fa-save"></i> 저장</button>
+			</div>
+		</div>
+		<div class="slickgrid-resizer" style="height: 200px;"><div data-ename="div_grid_1" class="slickgrid" ></div></div>
+
+		<hr/>
+
+		<div data-ename="el_sub1"></div>
+		<div data-ename="el_sub2"></div>
+	</div>
+	<!-- boxMngContent -->
+</div>
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+var initDivApp = function(div_app){
+var BASEPATH = '/api/sample-domain/';
+var $div_app = $(div_app), div_app = $div_app[0];
+var refs = DivApp.getRefs(div_app);
+var model = DivApp.getModel(function(){
+	var model = {};
+	return model;
+});
+console.log(refs);
+console.log(model);
+var grid_1;
+var set_grid_1 = function(){
+	var columns = [
+		$.extend({}, SlickColumn.checkImpl),
+		$.extend({}, SlickColumn.itemnoImpl),
+		{id: 'corpNo', name: '번호', required: true, iedit: true, maxlength: 10},
+		{id: 'insttNm', name: '기관명', required: true, iedit: true, uedit: true, width: Slick.width.name},
+		{id: 'bizNo', name: '사업자번호', required: true, iedit: true, uedit: true, format: 'bizNo'},
+		{id: 'telNo', name: '전화번호', iedit: true, uedit: true},
+		{id: 'adrs', name: '주소', iedit: true, uedit: true, width: Slick.width.adrs},
+		{id: 'orderOrgId', name: '비드기관코드<br/>(비드에서사용)', iedit: true, uedit: true, maxlength: 3}
+	];
+	var grid = Slick.makeGrid(null, refs.div_grid_1, columns, null);
+	grid_1 = grid;
+};
+set_grid_1();
+//
+var methods = {
+	init(){
+		methods.getCorpList();
+	},
+	getCorpList(){
+		/* 기존 코드 */
+		uu.ajax({
+			form: refs.form_search1,
+			action: apiurl(BASEPATH, 'getCorpList'),
+			onSuccess: function(data){
+				console.log(data);
+
+				//var list1 = data.list1;
+				var list1 = data.details.saveListJson;
+				grid_1.setItems(list1);
+
+				methods.subUserMngForm();
+				methods.subCorpVarMngForm();
+			}
+		});
+		/* 제이쿼리 방식으로 변경(20240625) */
+		// $.ajax({
+		// 	url: BASEPATH+'getCorpList',
+		// 	method: 'POST',
+		// 	dataType: 'json',
+		// 	contentType: 'application/json; charset-utf-8',
+		// 	async: false,
+		// 	success: function(data, status, xhr){
+		// 		console.log("실행!!");
+
+		// 		var list1 = data.details.saveListJson;
+		// 		grid_1.setItems(list1);
+		// 	}
+		// });
+	},
+	saveCorpList(){
+		uu.ajaxGridSave({
+			grid: grid_1,
+			action: apiurl(BASEPATH, 'corpList'),
+			onSuccess: function(data){
+				methods.getCorpList();
+			}
+		});
+	},
+	grid_1_appendItem(){
+		grid_1.appendItem();
+	},
+	//폴더 생성 기능
+	grid_1_appendFolder(){
+		// uu.openWindow({
+		// 	url: apiurl(BASEPATH, 'popup')
+		// });
+		var pop = window.open('popup-folder',"resPopup","width=1100,height=900, scrollbars=yes, resizable=yes"); 
+        pop.focus();
+	},
+	grid_1_removeCheckedItems(){
+		grid_1.removeCheckedItems();
+	},
+	subUserMngForm(){// 계약 사용자 서브 화면
+		uu.loadPage({
+			target: refs.el_sub1,
+			action: '/html/admin/admin0010_part_subUserMngForm.html'
+		});
+	},
+	subCorpVarMngForm(){// 심사 설정 화면(업체변수)
+		uu.loadPage({
+			target: refs.el_sub2,
+			action: '/html/admin/admin0010_part_subCorpVarMngForm.html'
+		});
+	}
+};
+DivApp.setDivAppMethodObj(div_app, methods);// 필수
+methods.init();
+};
+
+$(function(){
+	initDivApp($('#div_app_main')[0]);
+});
+</script>
+{% endblock footer_script %}

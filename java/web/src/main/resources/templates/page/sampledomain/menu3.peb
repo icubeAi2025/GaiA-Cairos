@@ -1,0 +1,12 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<div>
+    콘텐츠입니다.
+</div>
+{% endblock content %}
+
+{% block foorter_script %}
+<script>
+    console.log('footer script')
+</script>
+{% endblock foorter_script %}

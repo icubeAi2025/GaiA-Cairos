@@ -1,0 +1,2041 @@
+{% extends 'layout/base_content' %} {% block head %}
+
+<style>
+    .appModal {
+        align-items: center;
+        background: rgba(0,0,0, .75);
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        justify-content: center;
+        display: none;
+    }
+
+    .selected_list {
+        background: var(--select-list-bg);
+        border: 1px solid var(--select-list-bd);
+        flex-wrap: wrap;
+        display: none;
+        gap: var(--gap-item);
+        margin: 0;
+        padding: .35em;
+    }
+
+    .sortable_item.focused {
+        z-index: 1;
+    }
+
+    .edtr_td {
+        background: #F2F2F2;
+    }
+
+    .table, tr, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+
+    td {
+        padding: 10px 8px;
+        color: black;
+        font-size: 13pt;
+    }
+
+    .edtr_center {
+        text-align: center;
+    }
+
+    .edtr_right {
+        text-align: right;
+    }
+</style>
+
+{% endblock %} {% block content %}
+
+<section class="contents_wrap">
+    <article class="conts g-row">
+        <div class="group" id="createPage">
+            <div class="g-group g-col2 ty3">
+                <div class="group">
+                    <div class="conts_form">
+                        <div class="btn_area s_default">
+                            <button type="button" class="btn _outline" onclick="openAlert('back');">{{ message('btn.005') }}</button>
+                            <button type="button" class="btn _outline" onclick="methods.draftSaveValid('T')">{{ message('btn.018') }}</button>
+                            <button type="button" class="btn _point" onclick="methods.draftSaveValid('W')">{{ message('btn.019') }}</button>
+                        </div>
+                        <div class="form_box">
+                            <!-- <div> -->
+                            <span class="caption">
+                                <span class="caption_item" data-role="open-savelist" id="tempDoc" hidden>
+                                    <i class="ic ic-note"></i> {{ message('btn.018') }} <b class="count" id="tempCnt"></b>
+                                </span>
+                                <span class="caption_item">
+                                    <b class="c_red">*</b> {{ message('item.app.006') }}
+                                </span>
+
+                                <div class="lay_pop" data-name="savelist" id="tempPop">
+                                    <div class="hgroup">
+                                        <h5 class="pop_tit">{{ message('btn.018') }} {{ message('item.com.066') }}</h5>
+                                        <p>{{ message('msg.app.032') }}</p>
+                                    </div>
+
+                                    <ul class="list_sty savelist" id="tempDocList">
+                                    </ul>
+
+                                    <button type="button" class="lay_pop_close icon_btn" onclick="methods.closeTempDocList()" style="position: absolute !important;">
+                                        <i class="ic ic-close"></i>
+                                        <span class="blind">창 닫기</span>
+                                    </button>
+                                </div>
+                            </span>
+
+                            <!-- 제목 -->
+                            <div class="row">
+                                <div class="col merge3">
+                                    <div class="form_label required">{{ message('item.app.001') }}</div>
+                                    <div class="form_data">
+                                        <input class="maxlength" type="text" id="draft_title" maxlength="255">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 발신처 -->
+                            <div class="row" id="senderRow" style="display: none;">
+                                <div class="col merge3">
+                                    <div class="form_label">발신처</div>
+                                    <div class="form_data">
+                                        <input class="maxlength" type="text" id="senderNm" maxlength="255">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 수신처 -->
+                            <div class="row" id="recipientRow" style="display: none;">
+                                <div class="col merge3">
+                                    <div class="form_label">수신처</div>
+                                    <div class="form_data">
+                                        <input class="maxlength" type="text" id="recipientNm" maxlength="255">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 기안내용 -->
+                            <div class="row">
+                                <div class="col merge3">
+                                    <div class="form_label">{{ message('item.app.002') }}</div>
+                                    <div class="form_data" id="draft_content">
+                                        <textarea id="editorTxt" name="editorTxt" rows="30" cols="10" style="width: 100%; height:525px;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 결재선 -->
+                <div class="group">
+                    <div class="box no_bd">
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                {{ message('item.app.003') }}
+                                <div class="btn_group iconbtns">
+                                    <!-- 결재자가 없을 경우 -->
+                                    <button type="button" class="icon_btn" id="openAppLine" onclick="methods.approvalAddOpen();">
+                                        <i class="ic ic-setting"></i>
+                                        <span class="tooltip">{{ message('item.com.090') }}</span>
+                                    </button>
+
+                                </div>
+
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="tooltip">{{ message('item.dfccy.038') }}</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body scroll">
+                                <!-- 결재자가 없을 경우 -->
+                                <p class="data_info" id="doc_info_msg">{{ message('msg.app.005') }}
+                                    <span class="ic_wrap"><i class="ic ic-setting"></i></span>
+                                    {{ message('msg.app.006') }}
+                                </p>
+
+                                <!-- 결재자가 있을 경우 -->
+                                <div class="doc_list" id="doc_apLine"></div>
+                            </div>
+                        </div>
+                        <!-- 공유자 -->
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                {{ message('item.app.004') }}
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="tooltip">{{ message('item.dfccy.038') }}</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body">
+                                <div class="conts_tab">
+                                    <!-- TAB NAV -->
+                                    <nav class="tab_nav">
+                                        <ul class="tab_list tab_btngroup" id="tab_list">
+                                            <li class="tab_item" data-id="full_share">{{ message('item.app.005') }}</li>
+                                            <li class="tab_item" data-id="partial_share">{{ message('item.app.004') }}</li>
+                                        </ul>
+                                    </nav>
+                                    <!-- TAB Conts -->
+                                    <div class="tab_conts_wrap">
+                                        <div id="full_share" class="tab_conts"></div>
+                                        <div id="partial_share" class="tab_conts">
+                                            <!-- S: search wrap ---------------------------------------------- -->
+                                            <div class="search_wrap w-full">
+                                                <span class="selectbox" data-btn-toggle="dropdown" id="shareSelectbox">
+                                                    <span class="sty_ip" id="apCnrsRngBtn">{{ message('item.app.011') }}</span>
+                                                    <div class="dropdown" id="radioMenu">
+                                                        <ul class="list_sty dropdown_list">
+                                                            <li class="list_item">
+                                                                <label class="form_check">
+                                                                    <input class="check_mark" type="radio" name="apCnrsRng" value="cnrsUser" checked>
+                                                                    <span class="check_label">{{ message('item.app.011') }}</span>
+                                                                </label>
+                                                            </li>
+                                                            <li class="list_item">
+                                                                <label class="form_check">
+                                                                    <input class="check_mark" type="radio" name="apCnrsRng" value="cnrsDept">
+                                                                    <span class="check_label">{{ message('item.app.012') }}</span>
+                                                                </label>
+                                                                <div class="in_list">
+                                                                    <label class="form_check">
+                                                                        <input class="check_mark" type="checkbox" name="subDeptCheck" value="하위">
+                                                                        <span class="check_label">{{ message('item.app.013') }}</span>
+                                                                    </label>
+                                                                </div>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </span>
+
+                                                <div class="searchbox_wrap" id="sharedBox">
+                                                    <input type="text" id="nameSearhInput" placeholder="" oninput="eapproval.shared.search(event)" onkeyup="if(window.event.keyCode == 13) eapproval.shared.search(event)">
+                                                    <button type="button" class="btn icon_btn" id="searchBtn" style="z-index: 10;">
+                                                        <i class="ic ic-search"></i>
+                                                        <span class="tooltip">{{ message('btn.014') }}</span>
+                                                    </button>
+                                                    <div class="lay_pop filter_list" id="shareInputBox">
+                                                        <div class="filter_desc">
+                                                            <span id="inputTwo">{{ message('msg.app.033') }}</span>
+                                                        </div>
+
+                                                        <!-- 공유자 검색 목록 -->
+                                                        <div id="searchedList"></div>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- 공유자가 없을 경우 -->
+                                            <p class="data_info" id="noShared">{{ message('msg.app.007') }}</p>
+                                            <!-- 공유자가 있을 경우 -->
+                                            <p class="selected_list scroll" id="selectShareList"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 첨부파일 -->
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                {{ message('btn.021') }}
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="tooltip">영역접기</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body scroll">
+                                <div class="attach_wrap">
+                                    <div class="attach_toolbar">
+                                        <div class="btn_area s_small">
+                                            <button type="button" class="btn _outline" onclick="methods.deleteFileAll()">{{ message('btn.020') }}</button>
+                                            <div class="attach_btn">
+                                                <input type="file">
+                                                <button type="button" class="btn _fill" onclick="methods.inputFile();">{{ message('btn.021') }}</button>
+                                                <input class="file" id="chooseFile" type="file" style="display:none;" multiple="multiple" onchange="dropFile.handleFiles(this.files)">
+                                                <!-- <input class="file" id="chooseFile" type="file" style="display:none;" multiple="multiple" oninput="dropFile.handleFiles(this.files)"> -->
+                                            </div>
+                                        </div>
+                                        <!-- 첨부파일 업로드 정보 -->
+                                        <div class="attach_info"></div>
+                                    </div>
+
+                                    <div class="upload-box attach_area fileContents drag-file" id="drop-file">
+                                        <!-- 첨부파일 미등록 시 -->
+                                        <p class="data_info" id="uploadMsg">
+                                            {{ message('msg.029') }}
+                                        </p>
+
+                                        <!-- 청부파일 등록 시 활성화 'hide'제거-->
+                                        <div class="attach_list hide">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <button type="button" class="icon_btn" onclick="methods.deleteFileAll()">
+                                                        <i class="ic ic-close"></i>
+                                                        <span class="blind">삭제</span>
+                                                    </button>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                    <span class="f_progress">{{ message('item.info.036') }}</span>
+                                                    <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list"></ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 문서함 선택 -->
+                        <div class="group" id="docBoxGroup" style="display: none">
+                            <div class="box no_bd">
+                                <div class="group">
+                                    <h4 class="conts_s-tit collapse_head">
+                                        문서함
+                                        <div class="btn_group iconbtns">
+                                            <button type="button" class="icon_btn" onclick="methods.addDocBox();">
+                                                <i class="ic ic-folder-open"></i>
+                                                <span class="tooltip">문서함</span>
+                                            </button>
+
+                                        </div>
+
+                                        <button type="button" class="icon_btn collapse_btn">
+                                            <i class="ic ic-arrow"></i>
+                                            <span class="tooltip">문서함</span>
+                                        </button>
+                                    </h4>
+                                    <div class="collapse collapse_body scroll" id="docBox">
+                                        <!-- 문서함이 없을 경우 -->
+                                        <p class="data_info" id="noDocBox">선택된 문서함이 없습니다.</p>
+                                        <!-- 문서함이 있을 경우 -->
+                                        <span class="selected_item" id="select_naviId" style="display: none"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+<!-- 상신 알림메시지 -->
+<div class="appModal fade" style="z-index:16;">
+    <div class="pop_box alert _md" data-name="Alert" id="appConfirm">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message('item.app.010') }}</h5>
+            <button type="button" class="icon_btn pop_close appCancle">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <strong class="msg_tit">{{ message('msg.app.008') }}</strong>
+            <p>{{ message('msg.app.009') }}</p>
+            <div class="g-group g-col2 ty3">
+                <dl class="dl_box box">
+                    <dt class="jc_c">{{ message('item.app.003') }}</dt>
+                    <dd>
+                        <div class="item_group vertical" id="saveAppLine">
+                        </div>
+                    </dd>
+                </dl>
+                <dl class="dl_box box">
+                    <dt class="jc_c">{{ message('item.app.004') }}</dt>
+                    <dd>
+                        <div class="selected_list default" id="saveShare">
+                        </div>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline appCancle">{{ message('btn.005') }}</button>
+                <button type="button" class="btn _fill" id="appSave">{{ message('btn.004') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "page/eapproval/draft/draft_line" %}
+{% include "page/eapproval/draft/draft_dept_tree" %}
+{% include "page/eapproval/draft/draft_docBox" %}
+{% include "page/eapproval/eapproval" %}
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    // 로그인 유저 id 저장변수
+    const USER_ID = '{{USER_ID}}';
+
+// sssssssssss 드레그 앤 드롭 첨부파일 관련 스크립트 종료 sssssssssss
+    var fileIndex = 0;                  // 파일 리스트 번호
+    var totalFileSize = 0;              // 등록할 전체 파일 사이즈
+    var fileListCnt = 0;                // 업로드할 파일 수
+    var fileList = new Array();         // 파일 리스트
+    var fileSizeList = new Array();     // 파일 사이즈 리스트
+    var fileNameList = new Array();     // 파일명 리스트
+    var maxFilecount = 10;              // 등록 가능 파일 수
+    var uploadSize = 100;                // 등록 가능한 단일 사이즈 MB (무제한 : unlimited)
+    var maxUploadSize = 100;            // 등록 가능한 총 사이즈 MB 
+    let dropArea;
+
+    function DropFile(dropAreaId) {
+        dropArea = document.getElementById(dropAreaId);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            preventDefaults(e);
+            dropArea.classList.add("highlight");
+        }
+
+        function unhighlight(e) {
+            preventDefaults(e);
+            dropArea.classList.remove("highlight");
+        }
+
+        function handleDrop(e) {
+            unhighlight(e);
+            let dt = e.dataTransfer;
+            let files = dt.files;
+
+            handleFiles(files);
+        }
+        //파일 사이즈 형식 변경
+        function getFileSize(filesize) {
+            var text = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+            var e = Math.floor(Math.log(filesize)/Math.log(1024));
+
+            return (filesize/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+ text[e];
+        }
+        //업로드 파일 갯수 및 용량 셋팅
+        function setfilesinfo() {
+            $('.attach_info').children().remove();
+            fileListCnt = fileList.filter(item => item !== 'undefined').length;
+            let fileSize = !totalFileSize ? 0 : getFileSize(totalFileSize);
+            let spanClass = fileListCnt > 0 ? 'sucess' : 'fail';
+            let iClass = fileListCnt > 0 ? 'ic-check' : 'ic-close';
+            if(fileListCnt > 0) {
+                let resultHtml = `
+                                <span class="attach_result">
+                                    <span class="${spanClass}">
+                                        <i class="ic ${iClass}"></i>
+                                        <b class="num">${fileListCnt}</b>
+                                    </span>
+                                </span>
+                                <span class="attach_capacity">
+                                    <span class="item" id="fileSize">${fileSize}</span>
+                                    <span class="item">${maxUploadSize}MB</span>
+                                </span>
+                                `
+                $('.attach_info').append(resultHtml);
+            }
+        }
+
+        function handleFiles(files) {
+            files = [...files];
+
+            //최대 첨부파일 갯수 체크
+            if(maxFilecount < files.length + fileIndex) {
+                gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', maxFilecount));
+                return;
+            }
+
+            //동일 파일명 업로드 여부 체크
+            if(fileIndex > 0) {              
+                if(fileNameList.filter(item => files.some(i => i.name === item)).length > 0) {
+                    gaiaCommon.customAlert("{{ message('msg.app.011') }}");
+                    return;
+                }
+            }
+
+            //최대 업로드 용량 체크
+            let attFileSize = 0;
+            files.forEach(file => attFileSize += file.size); 
+            if(1024 * 1024 * maxUploadSize < totalFileSize + attFileSize) {
+                gaiaCommon.customAlert("{{ message('msg.app.012') }}".replace('{0}', maxUploadSize));
+                return;
+            }
+
+            //개별 파일 용량 체크
+            if(uploadSize !== "unlimited") {
+                var returnValue = false;
+                files.forEach(function(files) { 
+                    if(files.size > 1024 * 1024 * uploadSize) {
+                        gaiaCommon.customAlert("{{ message('msg.app.013') }}".replace('{0}', uploadSize));
+                        returnValue = true;
+                        return;
+                    }
+                    if(files.size <= 0) {
+                        gaiaCommon.customAlert("{{ message('msg.app.014') }}");
+                        returnValue = true;
+                        return;
+                    }
+                });
+
+                if(returnValue) {
+                    return;
+                }
+            }            
+            // 파일선택 값 초기화
+            $('#chooseFile').val(null);
+            // 초기 업로드 안내 요소 삭제
+            if(fileListCnt < 1) {
+                $("#uploadMsg").hide();
+            }            
+            //파일 리스트 처리
+            files.forEach(previewFile);
+            //업로드 파일 정보 셋팅
+            setfilesinfo();
+        }        
+
+        function deletefils(event, index) {     
+
+            totalFileSize -= fileSizeList[index];   // 전체 파일 사이즈 수정
+            delete fileList[index];                 // 파일 배열에서삭제
+            delete fileSizeList[index];             // 파일 사이즈 배열 삭제
+            delete fileNameList[index];             // 파일 이름 배열 삭제
+            delete dcStorageList[index];            // 문서관리 첨부파일 배열 삭제
+
+            // 업로드 파일 삭제목록에 추가
+            if(event.target.closest('li').querySelector('#filetype').value === "OLD"){
+                delFileList.push(event.target.closest('li').querySelector('#fileNo').value);
+            }
+            
+            //업로드 파일 목록에서 삭제
+            event.target.closest('li').remove();       
+
+            setfilesinfo();
+
+            fileListCnt = fileList.filter(item => item !== 'undefined').length;
+            if(fileListCnt < 1) {
+                $('.attach_list').hide();
+                $("#uploadMsg").show();
+                $('.attach_info').children().remove();
+
+                // 파일 변수 초기화
+                fileList.length = 0;
+                fileSizeList.length = 0;
+                fileNameList.length = 0;
+                totalFileSize = 0;
+                fileIndex = 0;
+                fileListCnt = fileList.filter(item => item !== 'undefined').length;
+                dcStorageList.length = 0;
+            }
+
+        }
+
+        function previewFile(file) {
+            if(file.type) {  
+                $('#uploadMsg').hide();
+                if(fileListCnt < 1) {
+                    $('.attach_list').show();
+                }
+                let attachListHtml = `
+                                    <li class="list_item attach_item">
+                                        <button type="button" id="delFile" class="icon_btn" onclick="dropFile.deletefils(event, ${fileIndex})">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                        <span class="f_name">${file.name}</span>
+                                        <span class="f_progress">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                            </span>
+                                        </span>
+                                        <span class="f_capacity">${getFileSize(file.size)}</span>
+                                        <input type="hidden" id="filetype" value="NEW">      
+                                        <input type="hidden" id="fileNo" value="">
+                                    </li>
+                                    `
+                $('.file_list').append(attachListHtml);
+
+                fileList[fileIndex] = file;
+                fileSizeList[fileIndex] = file.size;
+                fileNameList[fileIndex] = file.name;
+                fileIndex = fileIndex + 1;
+                totalFileSize = totalFileSize + file.size;
+
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.026') }}");
+            }
+        }
+
+        dropArea.addEventListener("dragenter", highlight, false);
+        dropArea.addEventListener("dragover", highlight, false);
+        dropArea.addEventListener("dragleave", unhighlight, false);
+        dropArea.addEventListener("drop", handleDrop, false);
+
+        return {
+            handleFiles, deletefils, getFileSize, setfilesinfo
+        };
+    }
+
+    const dropFile = new DropFile("drop-file");
+
+// eeeeeeeeeee 드레그 앤 드롭 첨부파일 관련 스크립트 종료 eeeeeeeeeee
+    const type = 'draft';
+    let editor_object  = [];                                                    // 스마트 에디터 내용 담는 전역변수
+    let modalApLine = document.getElementById("ol_line_list");                  // 결재선 설정 모달 팝업의 결재선 데이터 가지는 전역변수
+    let docApLine = document.getElementById("doc_apLine");                      // 매인 화면의 결재선 데이터 가지는 전역변수
+    let lineCnt = 0;                                                            // 결재선 변경 시 원복을 위한 백업 결재 라인수를 가지는 전역변수
+    let lineIndex = 0;                                                          // 결재선 고유 index를 위한 전역변수
+    let selectApDocNo = '';                                                     // 임시저장 문서번호
+    let selectApDocId = '';                                                     // 임시저장 문서아이디
+    let saveType = 'NEW';                                                       // 최초 작업 또는 임시저장문서 작업
+    let delFileList = [];                                                       // 삭제 파일 저장 변수
+    let shareList = [];                                                         // 공유자 저장 변수
+    let delShareList = [];                                                      // 삭제할 공유자 저장 변수
+    const thisUrl = '{{url}}';
+    const thisfrmNo = '{{frm_no}}';           
+    const thisfrmId = '{{frm_id}}';
+    const tempDocNo = '{{tempDocNo}}';
+    const tempDocId = '{{tempDocId}}';
+    let selectForm = '';
+    let nodeData = '';                                                          //부서 트리 선택 node data
+    let currentLineIndex = '';
+    let selectUsers = [];                                                       // 결재선 저장변수
+
+    // 문서관리 관련 변수
+    const docUuid = '{{uuid}}';  // 문서관리 uuid
+    let sharedDcStorageMainList = docUuid ? JSON.parse('{{ sharedDcStorageMainList | raw }}') : null;    // 문서관리 첨부파일
+    let dcStorageList = [];
+    let naviId = '';
+    let navigationList = [];
+
+    var methods = {
+        //초기화 함수
+        init: function () {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = docUuid ? '{{cntrctNoFromDoc}}' : pjtInfo.cntrctNo;
+
+            //스마트 에디터 초기 설정
+            methods.smartEditor();
+            // 공유자 아이콘 설정
+            eapproval.shared.updateIcon();
+
+            //임시저장된 문서 확인
+            methods.temporaryApDocSearch(selectApDocNo, selectApDocId);
+            // 선택 문서 즐겨찾기 정보
+            methods.getDraftForm();
+            // 나의 결재선 조회
+            methods.getMyAplineSetList();
+
+            if(thisfrmId === "16") {
+                $('#senderRow').show();
+                $('#recipientRow').show();
+                $('#docBoxGroup').show();
+                $('#editorTxt').css("height", "567px");
+
+                // 문서관리 첨부파일 세팅
+                methods.setDcStorageMainList();
+                // 문서관리 navi 리스트 조회
+                methods.getDocBoxList();
+            }
+            pageBindEvent();
+
+            $('.tab_item[data-id="partial_share"]').addClass('active');
+			$('#partial_share').addClass('active');
+
+            gaia.loaded = true;
+        },
+        //스마트 에이터 이벤트 함수
+        smartEditor: function () {
+            nhn.husky.EZCreator.createInIFrame({
+                oAppRef: editor_object,
+                elPlaceHolder: "editorTxt",
+                sSkinURI: "/assets/static/smarteditor2/SmartEditor2Skin.html",
+                fCreator: "createSEditor2",
+                htParams: {
+                    fOnBeforeUnload: function() { return null; }
+                },
+                fOnAppLoad : function(){                
+                    if(tempDocNo !== '' && tempDocId !== '') {
+                        methods.selectTemporaryApDoc(tempDocNo, tempDocId);
+                    }
+                }
+            });
+        },
+        //임시저장문서 닫기 버튼
+        closeTempDocList: function(){
+            $('#tempPop').removeClass('on');
+        },
+        //임시저장문서 리스트 조회
+        temporaryApDocSearch: function (searchApDocNo, searchApDocId) {
+            let param = {
+                frmNo : thisfrmNo
+            }
+            gaiaCommon.get('/api/eapproval/draft/search-TemporaryList', param, function (data) {
+                var list = data.details.temporaryApDocList;
+                if(list.length > 0) {
+                    $('#tempDoc').removeAttr('hidden');
+                    $('#tempCnt').text(list.length);
+                    $('#tempDocList').children().remove();
+
+                    // 임시저장 버튼 클릭 함수
+                    $(document).on('click', '#tempDoc', function(){
+                        $("#tempPop").addClass('on');
+                    });
+
+                    $.each(list, function(index, obj) {
+                        let tempListHtml = `<li class="list_item" data-ap-doc-no="${obj.ap_doc_no}" data-ap-doc-id="${obj.ap_doc_id}">
+                                                <span class="f_name clickTemp" style="cursor:pointer;">${gaiaCommon.decodeSafeText(obj.ap_doc_title)}</span>
+                                                <span class="update_info">
+                                                    <span class="date">${obj.chg_dt}</span>
+                                                </span>
+                                                <button type="button" class="icon_btn deleteTemp">
+                                                    <i class="ic ic-close"></i>
+                                                    <span class="blind">삭제</span>
+                                                </button>
+                                            </li>`
+                        $('#tempDocList').append(tempListHtml);
+
+                    });
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            });
+        },
+        //임시저장 문서 조회
+        selectTemporaryApDoc: function (apDocNo, apDocId) {
+            let param = {
+                apDocId: apDocId
+            }
+            gaiaCommon.get('/api/eapproval/draft/select-draft', param, function (data) {
+                gaiaCommon.customAlert("{{ message('msg.app.015') }}");
+                let tempDraft = data.details.tempDraft;
+                var selectTempDraft = tempDraft.apDoc;
+                var selectTempDraftApLineList = tempDraft.draftApLineList;
+                var selectTempDraftApFileList = tempDraft.draftApFileList;
+                var selectTempDraftApShareList = tempDraft.draftApShareList;
+                var selectDcNavigation = tempDraft.dcNavigation;
+                methods.setTemporaryApDoc(selectTempDraft, selectTempDraftApLineList, selectTempDraftApFileList, selectTempDraftApShareList, selectDcNavigation);
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        //임시저장 문서 셋팅
+        setTemporaryApDoc: function (setTempDraft, setTempDraftApLineList, setTempDraftApFileList, setTempDraftApShareList, setDcNavigation) {
+            console.log('임시저장 문서 세팅');
+            var tempDraft = setTempDraft;
+            var tempDraftApLineList = setTempDraftApLineList;
+            var tempDraftApFileList = setTempDraftApFileList;
+            var tempDraftApShareList = setTempDraftApShareList;
+            
+            //임시저장문서 셋팅을 위한 초기화 작업
+            $('#draft_title').val("");
+            editor_object.getById["editorTxt"].exec("SET_IR", [""]);   
+
+            $(docApLine).children('div').remove();                   
+            $(modalApLine).children('div').remove();
+            $('.attach_list').hide();
+            $('.file_list').children().remove();     
+
+            fileIndex = 0;
+            fileList = [];
+            fileSizeList = [];
+            fileNameList = [];
+            delFileList = []; 
+            selectUsers = [];
+            totalFileSize = 0;
+            dcStorageList = [];
+
+            //임시저장문서 셋팅 
+            selectApDocNo = tempDraft[0].ap_doc_no;                    
+            selectApDocId = tempDraft[0].ap_doc_id;
+
+            saveType = 'TEMP';
+            $('#draft_title').val(tempDraft[0].ap_doc_title);
+            $('#senderNm').val(tempDraft[0].sender_nm);
+            $('#recipientNm').val(tempDraft[0].recipient_nm);
+
+            const formatHTML = function (str) {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = str;
+                return txt.value;
+            }
+            editor_object.getById["editorTxt"].exec("SET_IR", [formatHTML(tempDraft[0].ap_doc_edtr)]);
+
+            var listNum = 0;
+            //결재선 세팅
+            if(tempDraftApLineList.length > 0 && tempDraftApLineList !== null){
+                $('#doc_info_msg').hide();
+                $.each(tempDraftApLineList, function(index, obj) {
+                    let apDivText = obj.ap_div === 'A' ? "{{ message('item.app.008') }}" : "{{ message('item.app.009') }}";
+                    let apDivClass = obj.ap_div === 'A' ? '_primary' : '_secondary';
+                    let addItem = `<div class="doc_item" id="setAppLine">
+                                        <p class="doc_item_header">
+                                            <span class="label ${apDivClass} s_small">${apDivText}</span>
+                                            <span class="writer_info">
+                                                <span>${obj.usr_nm}</span>
+                                                ${obj.dept_nm ? `<span> ${obj.dept_nm}</span>` : ''}
+                                            </span>
+                                        </p>
+                                        <input type="hidden" id="set_app_type" value="${obj.ap_div}">
+                                        <input type="hidden" id="set_usr_id" value="${obj.ap_usr_id}">
+                                        <input type="hidden" id="set_login_id" value="${obj.ap_login_id}">
+                                        <input type="hidden" id="set_deptNm" value="${obj.dept_nm}">
+                                        <input type="hidden" id="set_usrNm" value="${obj.usr_nm}">
+                                    </div>`;
+                    $("#doc_apLine").append(addItem);
+                    selectUsers.push({userId: obj.ap_usr_id, apDivType:obj.ap_div});
+                    lineCnt++;
+                });
+            }else {                        
+                $('#doc_info_msg').show();
+            }   
+
+            //첨부파일 세팅
+            if(tempDraftApFileList.length > 0 && tempDraftApFileList !== null){
+                
+                $("#uploadMsg").hide();
+                $('.attach_list').show();
+
+                $.each(tempDraftApFileList, function(index, obj) {
+                    let attachListHtml = `<li class="list_item attach_item">
+                                            <button type="button" id="delFile" class="icon_btn" onclick="dropFile.deletefils(event, ${fileIndex})">
+                                                <i class="ic ic-close"></i>
+                                                <span class="blind">삭제</span>
+                                            </button>
+                                            <span class="f_name">${obj.file_nm}</span>
+                                            <span class="f_progress">
+                                                <span class="sucess">
+                                                    <i class="ic ic-check"></i>
+                                                </span>
+                                            </span>
+                                            <span class="f_capacity">${dropFile.getFileSize(obj.file_size)}</span>
+                                            <input type="hidden" id="filetype" value="OLD">      
+                                            <input type="hidden" id="fileNo" value="${obj.file_no}">
+                                        </li>`
+                    $('.file_list').append(attachListHtml);
+                    fileList[fileIndex] = `${obj.file_nm}`;
+                    fileSizeList[fileIndex] = `${obj.file_size}`;
+                    fileNameList[fileIndex] = `${obj.file_nm}`;
+                    fileIndex = fileIndex + 1;
+                    totalFileSize = totalFileSize + Number(`${obj.file_size}`);
+                })
+            }else {       
+                $("#uploadMsg").show(); 
+            }    
+            
+            //공유자 세팅
+            if(tempDraftApShareList && tempDraftApShareList.length > 0){
+                $('#selectShareList').children().remove();
+
+                $('.tab_item').removeClass('active');
+                $('#selectShareList').addClass('on');
+
+                if(tempDraftApShareList[0].apCnrsDiv === '01') {
+                    $('li[data-id="full_share"]').addClass('active');
+                    $('#full_share').addClass('active');  
+                    $('#partial_share').removeClass('active');
+                } else {
+                    $('li[data-id="partial_share"]').addClass('active');
+                    $('#partial_share').addClass('active'); 
+                    $('#full_share').removeClass('active');
+                }
+                $('#noShared').hide();
+                var apShareHtml = '';
+                let rng = '';
+                let nm = '';
+                $.each(tempDraftApShareList, function(index, apShare){
+                    if(apShare.apCnrsRng === '03') {
+                        rng = `login_id="${apShare.loginId}"`;
+                        nm = `${apShare.usrNm}`;
+                    } else if(apShare.apCnrsRng === '02'){
+                        rng = `dept_no="${apShare.deptNo}"`;
+                        nm = `${apShare.deptNm}`;
+                    }
+
+                    apShareHtml = `<span class="selected_item" cnrs_id="${apShare.apCnrsId}" ${rng} type="OLD">
+                                        <span class="item">${nm}</span>
+                                        <button type="button" class="icon_btn" onclick="eapproval.shared.remove(this)">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                    </span>`
+                    $('#selectShareList').append(apShareHtml);
+                    shareList.push({
+                        apDocId: apShare.apDocId,
+                        apDocNo: apShare.apDocNo,
+                        apCnrsDiv: apShare.apCnrsDiv,
+                        apCnrsRng: apShare.apCnrsRng,
+                        apCnrsId: apShare.apCnrsId,
+                        loginId: apShare.loginId
+                    });
+                })
+            } else {
+                $('#noShared').show();
+                $('#selectShareList').removeClass('on').children().remove();
+            }
+
+            // 문서함 세팅
+            if(setDcNavigation) {
+                naviId = setDcNavigation.naviId;
+                let path = setDcNavigation.naviPath + ' > ' + setDcNavigation.naviNm;
+                methods.makeDocBox(path);
+            }
+
+            dropFile.setfilesinfo();
+            methods.temporaryApDocSearch(selectApDocNo, selectApDocId);        
+        },
+        //임시 저장 문서 삭제
+        deleteTemporaryApDoc: function (apDocNo, apDocId) {
+            gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.app.001') }}", "", function(){
+                let param = {
+                    apDocId: apDocId
+                }
+                gaiaCommon.get("/api/eapproval/draft/delete-tempdraft", param, function(result) {
+                    gaiaCommon.customAlert("{{ message('msg.006') }}");
+                    location.reload(true);
+                }, function (error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                })
+            })
+        },
+        //저장 유효성검사
+        draftSaveValid: function (save_type) {
+            editor_object.getById["editorTxt"].exec("UPDATE_CONTENTS_FIELD", []); //스마트 에디터 내용 텍스트 필드로 업데이트
+            
+            if ($('#draft_title').val().length === 0) {  
+                $('#draft_title').focus();
+                return gaiaCommon.customAlert("{{ message('msg.app.016') }}".replace('{text}', "{{ message('item.app.001') }}"));  
+            }
+
+            if(save_type === 'W') {
+                let content = document.getElementById("editorTxt").value;
+
+                if(thisfrmId == "16" && $('#senderNm').val().length === 0) {
+                    $('#senderNm').focus();
+                    return gaiaCommon.customAlert("발신처를 입력해주세요.");
+                }
+
+                if(thisfrmId == "16" && $('#recipientNm').val().length === 0) {
+                    $('#recipientNm').focus();
+                    return gaiaCommon.customAlert("수신처를 입력해주세요.");
+                }
+
+                if(thisfrmId == "16" && naviId == "") {
+                    return gaiaCommon.customAlert("문서함을 선택해주세요.");
+                }
+
+                if(content === '<p>&nbsp;</p>' || !content) {
+                    editor_object.getById["editorTxt"].exec("FOCUS");
+                    return gaiaCommon.customAlert("{{ message('msg.app.016') }}".replace('{text}', "{{ message('item.app.017') }}"));
+                }
+
+                if($('.doc_item input#set_app_type[value="A"]').length < 1){
+                    methods.approvalAddOpen();
+                    return gaiaCommon.customAlert("{{ message('msg.app.017') }}");
+                }
+
+                methods.approvalConfirm(save_type);
+
+            }else {
+                methods.draftSaveAction(save_type);
+            }
+            
+            
+        },
+        //알림창 오픈
+        approvalConfirm(save_type){
+            $('.appModal.fade').show();
+            $('#appConfirm').addClass('on');
+            
+            $('#saveAppLine').children().remove();
+            $('#saveShare').children().remove();
+
+            // 결재선
+            let checkAppLine = document.querySelectorAll("#setAppLine");
+            $(checkAppLine).each(function(index, obj){
+                let appType = obj.querySelector('#set_app_type').value === 'A' ? "{{ message('item.app.008') }}" : "{{ message('item.app.009') }}";
+                let userName = obj.querySelector('#set_usrNm').value;
+                let deptName = obj.querySelector('#set_deptNm').value;
+                let appLineHtml = `<span class="item">
+                                    <span>[${appType}]</span>
+                                    <span class="name">${userName} / ${deptName}</span>
+                                </span>`
+                $('#saveAppLine').append(appLineHtml);
+            });
+
+            // 공유자
+            $('#selectShareList .selected_item').each(function(index, obj) {
+                let shareName = $(obj).find('.item').text(); 
+                let shareHtml = `<span class="selected_item">
+                                    <span class="item">${shareName}</span>
+                                </span>`;
+                $('#saveShare').append(shareHtml);
+            });
+
+            // 취소버튼
+            $(".appCancle").click(function() {
+				$("#appConfirm").removeClass('on');
+				$('.appModal.fade').hide();
+			});
+
+            // 완료버튼
+			$("#appSave").click(function() {
+				$("#appConfirm").removeClass('on');
+                $('.appModal.fade').hide();
+                methods.draftSaveAction(save_type);
+			});
+
+        },
+        //기안문 임시저장 or 상신 함수
+        draftSaveAction: function (save_type) {
+            editor_object.getById["editorTxt"].exec("UPDATE_CONTENTS_FIELD", []); //스마트 에디터 내용 텍스트 필드로 업데이트
+
+            var  apDoc;                                     // 메인 저장 (제복, 내용)
+            var  draftLine = [];                            // 결재라인 저장 변수
+            var  param;                                     // 파일 외 모든 변수 모음
+
+            apDoc = {
+                apDocNo: selectApDocNo,
+                apDocId: selectApDocId,
+                frmNo: thisfrmNo,
+                frmId: thisfrmId,
+                apDocTitle: $('#draft_title').val(),
+                apDocEdtr: document.getElementById("editorTxt").value,
+                apDocTxt: document.getElementById("editorTxt").value.replace(/(<([^>]+)>)/gi, ''),
+                apDocStats: save_type,
+                recipientNm: $('#recipientNm').val(),
+                senderNm: $('#senderNm').val(),
+                cntrctNo: cntrctNo
+            };
+
+            if(thisfrmId === "16") {
+                apDoc.naviId = naviId;
+                apDoc.uuid = docUuid;
+            }
+
+            var appLine = document.querySelectorAll("#setAppLine");
+            if(appLine.length > 0) {
+                var i = 0;
+                $(appLine).each(function(index, obj){
+                    draftLine[i] = {
+                        apDiv: obj.children[1].value,
+                        apUsrId: obj.children[2].value,
+                        apLoginId: obj.children[3].value,
+                        apStats: 'I',
+                        apOrder: i + 1
+                    }
+                    i++;
+                });
+            }
+
+            param = {
+                apDoc: apDoc,
+                draftLine: draftLine,
+                delFileList: delFileList,
+                draftShareList: shareList,
+                delShareList: delShareList,
+                dcStorageList: dcStorageList,
+                saveType: saveType,
+            };
+
+            console.log('상신 data : ', param);
+            //FormData 새로운 객체 생성 
+            var formData = new FormData();
+            //등록할 파일 리스트
+            var uploadFileList = Object.keys(fileList);
+            
+            if(fileList.length > 0) {
+                for(var i = 0; i < uploadFileList.length; i++){
+                    if ( fileList[uploadFileList[i]].type !== undefined ) {
+                        formData.append('files', fileList[uploadFileList[i]]);
+                    } 
+                }
+            }
+
+            formData.append('param', new Blob([ JSON.stringify(param) ], {type : "application/json"}));
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post("/api/eapproval/draft/create-draft", formData, function(data) {
+                var returnValue = data.details.returnMap;
+
+                selectApDocNo = returnValue.apDocNo;
+                selectApDocId = returnValue.apDocId;
+                let type = returnValue.apDocStats === 'C' ? 'closed' : 'request';
+                if(save_type === 'W') {
+                    gaiaCommon.customAlert("{{ message('msg.app.018') }}", function(){
+                        window.location.href = `/eapproval/approval/detail?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=${type}&apDocNo=${selectApDocNo}&apDocId=${selectApDocId}&frmId=${thisfrmId}&page=d`;
+                    });
+                } else {
+                    saveType = 'TEMP';
+
+                    gaiaCommon.customAlert("{{ message('msg.app.019') }}")
+                    // 임시저장 문서 조회
+                    methods.temporaryApDocSearch(selectApDocNo, selectApDocId);
+
+                    var selectTempDraft = data.details.draft;
+                    var selectTempDraftApLineList = data.details.draftApLineList;
+                    var selectTempDraftApFileList = data.details.draftApFileList;
+                    var selectTempDraftApShareList = data.details.draftApShareList;
+
+                    // 문서세팅
+                    window.location.href = `/eapproval/draft/view-tempDraft?url=${thisUrl}&frmNo=${thisfrmNo}&frmId=${thisfrmId}&apDocNo=${selectApDocNo}&apDocId=${selectApDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}");
+            })
+        },
+        //선택한 문서 정보
+        getDraftForm(){
+            let param = {
+                frmNo : thisfrmNo
+            }
+            gaiaCommon.get("/api/eapproval/draft/select-form", param, function(data) {
+                selectForm = data.details.selectForm;
+                if(selectForm) {
+                    let classType = selectForm.fvrts_div === '1' ? 'favorites' : '';
+                    let formHtml = `
+                                    <h3 class="conts_tit">
+                                        <button class="btn icon_btn _outline bookmark-btn ${classType}" data-btn-toggle="favorites" data-frm-no="${selectForm.frm_no}">
+                                            <i class="ic ic-star-fill"></i>
+                                            <span class="tooltip">{{ message('btn.015') }}</span>
+                                        </button>
+                                        ${selectForm.frm_nm_krn}
+                                    </h3>
+                                    `
+                    $('#createPage').prepend(formHtml);
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        // 파일첨부 버튼 클릭
+        inputFile(){
+            $('#chooseFile').click();
+        },
+        // 업로드 파일 전체 삭제      
+        deleteFileAll(){
+            if(fileListCnt === 0) {
+                gaiaCommon.customAlert("{{ message('msg.app.020') }}");
+                return false;
+            }
+            
+            gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.app.021') }}", "", function(){
+                $('.attach_item').map(function() {
+                    if($(this).closest('li').find('#filetype').val() === 'OLD') {
+                        delFileList.push($(this).closest('li').find('#fileNo').val());
+                    };
+                })
+
+                $('.attach_item').remove();
+                $('.attach_list').hide();
+                $("#uploadMsg").show();
+                $('.attach_info').children().remove();
+
+                // 파일 변수 초기화
+                fileList.length = 0;
+                fileSizeList.length = 0;
+                fileNameList.length = 0;
+                totalFileSize = 0;
+                fileIndex = 0;
+                fileListCnt = fileList.filter(item => item !== 'undefined').length;
+                dcStorageList.length = 0;
+            })
+        },
+        // sssssssssss 결재 라인 설정 모달 팝업 함수 모음 시작 sssssssssss
+        approvalAddOpen: function (){
+            selectUsers = [];
+            lineCnt = 0;
+
+            $('#draftLineModal').addClass('open');
+            $('#modal_apLine').children().remove();
+
+            if(lineCnt < 1) {
+                $('#info_msg').show(); 
+            } 
+
+            $('#select_apLine').val('');
+            // 모달창 결재선 세팅
+            if($('#doc_apLine').children('div').length > 0) {
+                $('#info_msg').hide();
+
+                $('#doc_apLine .doc_item').each(function(index, obj) {                       
+                    lineIndex++;
+                    const data = {
+                        ap_div: $(obj).find('#set_app_type').val(),         // 결재 타입
+                        ap_usr_id: $(obj).find('#set_usr_id').val(),        // 사용자 ID
+                        ap_login_id: $(obj).find('#set_login_id').val(),    // 로그인 ID
+                        dept_nm: $(obj).find('#set_deptNm').val(),          // 부서 
+                        usr_nm: $(obj).find('#set_usrNm').val(),            // 결재자 이름
+                    };
+
+                    $('#modal_apLine').append(methods.makeAppLineHtml(data));
+                    lineCnt++;
+                    selectUsers.push({userId: $(obj).find('#set_usr_id').val(), apDivType:$(obj).find('#set_app_type').val()});
+                })
+            } else {
+                lineCnt = 0;
+                selectUsers = [];
+                $('.appModal.fade').hide();
+                $('body').removeClass('modal-open');
+                $('#info_msg').show(); 
+            } 
+        },
+        makeAppLineHtml(obj = {}) {
+            const data = {
+                index: lineIndex,
+                apDiv: $.isEmptyObject(obj) ? "A" : obj.ap_div,  
+                usrId: $.isEmptyObject(obj) ? "" : obj.ap_usr_id,      
+                loginId: $.isEmptyObject(obj) ? "" : obj.ap_login_id,  
+                deptNm: $.isEmptyObject(obj) ? "" : obj.dept_nm,
+                usrNm: $.isEmptyObject(obj) ? "" : obj.usr_nm,     
+                choiceStatus: $.isEmptyObject(obj) ? "false" : "true",
+            }
+            
+            const textA = data.apDiv === 'A' ? "selected" : "";
+            const textB = data.apDiv !== 'A' ? "selected" : "";
+            let viewNm = data.usrNm && data.deptNm ? `${data.usrNm} / ${data.deptNm}` : '';
+
+            return `<li class="sortable_item appLine" data-index="${data.index}">
+                        <div class="item_group">
+                            <div class="search_wrap w-full">
+                                <span class="selectbox">
+                                    <select name="" id="apDivType" class="" onchange="methods.changeApDiv(this)">
+                                        <option value="A" ${textA}>{{ message('item.app.008') }}</option>
+                                        <option value="R" ${textB}>{{ message('item.app.009') }}</option>
+                                    </select>
+                                </span>
+                                <div class="searchbox_wrap">
+                                    <input type="text" class="search_event" id="addAppLineName" 
+                                        placeholder="{{ message('msg.app.022') }}" 
+                                        oninput="methods.searchApproval(event)" 
+                                        onkeyup="if(window.event.keyCode == 13 ) methods.searchApproval(event)" 
+                                        value="${viewNm}">
+                                    <button type="button" class="icon_btn search_event" onclick="methods.searchApproval(event)">
+                                        <i class="ic ic-search"></i>
+                                        <span class="blind">검색</span>
+                                    </button>
+                                    <button type="button" class="icon_btn" onclick="methods.openDeptTree('appLine', ${data.index});">
+                                        <i class="ic ic-broadcast-one"></i>
+                                        <span class="blind">조직도보기</span>
+                                    </button>
+                                    <div class="lay_pop filter_list" id="autoMaker"><div>
+                                </div>
+                            </div>
+                            <button type="button" class="icon_btn" id="delAppLine" onclick="methods.delLine(event);">
+                                <i class="ic ic-close"></i>
+                                <span class="blind">삭제</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="choiceStatus" value="${data.choiceStatus}">
+                        <input type="hidden" id="add_usr_id" value="${data.usrId}">
+                        <input type="hidden" id="add_login_id" value="${data.loginId}">
+                        <input type="hidden" id="usr_nm" value="${data.usrNm}">
+                        <input type="hidden" id="dept_nm" value="${data.deptNm}">
+                    </li>`;
+        },
+        // 결재선 모달 닫기
+        modalClose(cType) {
+            if(cType === 'rollback') {
+                lineCnt = 0;
+                selectUsers = [];
+                if($('#modal_apLine').children('li').length > 0 && $('#doc_apLine').children('div').length > 0) {
+                    $('#modal_apLine').children('li').each(function(index, obj) { 
+                        var setAppType = $(obj).find('#apDivType').val();    // 결재 타입
+                        var setUsrId = $(obj).find('#add_usr_id').val(); 
+                        $(obj).show();
+                        lineCnt++;
+                        selectUsers.push({userId: setUsrId, apDivType:setAppType});
+                    })
+                }
+            } 
+            $('#draftLineModal').removeClass('open');
+            
+            if(lineCnt > 0 && selectUsers.length > 0) {
+                $('#doc_info_msg').hide();
+            } else {
+                $('#doc_info_msg').show();
+            }
+        },
+        // 결재자 추가 버튼
+        addAppLine() {
+            if(lineCnt <= 0) {
+                $('#info_msg').hide(); 
+            }
+            lineCnt++;
+            lineIndex++; //결재선 html 구분을 위한 index
+            $('#modal_apLine').append(methods.makeAppLineHtml());
+        },
+        // 결재구분 변경 이벤트
+        changeApDiv(target){
+            let usrId = $(target).closest('li').find('#add_usr_id').val();
+            let apDiv = $(target).val();
+            let prevDiv = apDiv === 'A' ? 'R' : 'A';
+
+            if(usrId === '') {
+                return
+            }
+
+            let isDuplicate = methods.duplicate(usrId, apDiv);
+
+            if (isDuplicate) {
+                gaiaCommon.customAlert("{{ message('msg.app.023') }}");
+                selectUsers = selectUsers.filter(item => !(item.userId === usrId && item.apDivType === prevDiv));
+                $(target).closest('li').find('#add_usr_id').val('');
+                $(target).closest('li').find('#add_login_id').val('');
+                $(target).closest('li').find('#usr_nm').val('');
+                $(target).closest('li').find('#addAppLineName').val('');
+                $(target).closest('li').find('#choiceStatus').val('false');
+                return;  
+            }
+
+        },
+        // 결재자 중복검사
+        duplicate(id, div){
+            let isDuplicate = false;
+
+            $.each(selectUsers, function(index, item) {
+                if (id === item.userId && div === item.apDivType) {
+                    isDuplicate = true;
+                    return false; 
+                }
+            });
+
+            return isDuplicate;
+        },
+        //결재라인 검색 함수
+        searchApproval(event) { 
+            
+            let $autoMaker = $(event.target).closest('li').find('#autoMaker');
+            let $userId = $(event.target).closest('li').find('#add_usr_id').val();
+            let $apType = $(event.target).closest('li').find('#apDivType').val();
+            
+            $autoMaker.empty();
+
+            if (!event.data && selectUsers.length > 0) {
+                selectUsers = selectUsers.filter(item => !(item.userId === $userId && item.apDivType === $apType));
+                lineCnt--;
+                if(lineCnt < 0) lineCnt = 0;
+                // 필드 값 초기화
+                $(event.target).val('');
+                $(event.target).closest('li').find('#add_usr_id').val('');
+                $(event.target).closest('li').find('#add_login_id').val('');
+                $(event.target).closest('li').find('#usr_nm').val('');
+                $(event.target).closest('li').find('#dept_nm').val('');
+                $(event.target).closest('li').find('#choiceStatus').val('false');
+
+                $autoMaker.removeClass('on');
+
+                return; 
+            }
+
+            let text = event.target.value?.trim() || $(event.target).closest('li').find('#addAppLineName').val().trim();
+
+            if(text){
+                setTimeout(function() { 
+                    $autoMaker.addClass('on'); 
+                }, 0);
+                
+                if(text.length < 2) {
+                    setTimeout(function() { 
+                        $autoMaker.append($('<div>').text("{{ message('msg.app.033') }}"));
+                    }, 0);
+                } else {
+                    var param = {
+                        searchText: text,
+                        apCnrsRng: '03'
+                    };
+                    gaiaCommon.post("/api/eapproval/draft/search-approver", param, function(data) {
+                        // 현재 설정된 결재라인
+                        var list = data.details.searchList;
+                        var appLineList = document.querySelectorAll(".appLine");
+
+                        $autoMaker.empty();
+
+                        if(list.length > 0) {
+                            $.each(list, function(index, obj) {
+                                let autoMakerHtml = `<div class="autoMakeList" usr_id=${obj.usr_id} login_id=${obj.login_id} usr_nm=${obj.usr_nm} dept_nm=${obj.dept_nm}>
+                                                        ${obj.usr_nm} / ${obj.dept_nm}
+                                                    </div>`
+                                $autoMaker.append(autoMakerHtml);
+                            });
+
+                            $autoMaker.children('.autoMakeList').each(function(){
+
+                                $(this).click(function() {
+                                    var $target = $(event.target);
+                                    let selectUserId = $(this).attr('usr_id');
+                                    let selectApDiv = $target.closest('li').find('#apDivType').val();
+
+                                    // 중복검사 진행
+                                    let isDuplicate = methods.duplicate(selectUserId, selectApDiv);
+
+                                    if (isDuplicate) {
+                                        gaiaCommon.customAlert("{{ message('msg.app.023') }}");
+                                        $target.val('');
+                                        $autoMaker.removeClass('on');
+                                        return;
+                                    }
+                                    // 중복검사 종료
+
+                                    $target.val($(this).text().trim());
+                                    $autoMaker.removeClass('on');
+                                    $target.closest('li').find('#choiceStatus').val("true");
+                                    $target.closest('li').find('#add_usr_id').val($(this).attr('usr_id'));
+                                    $target.closest('li').find('#add_login_id').val($(this).attr('login_id'));
+                                    $target.closest('li').find('#dept_nm').val($(this).attr('dept_nm'));
+                                    $target.closest('li').find('#usr_nm').val($(this).attr('usr_nm'));
+
+                                    selectUsers.push({userId: selectUserId, apDivType:selectApDiv});
+                                });
+                            });
+                        }else {
+                            setTimeout(function() {
+                                $autoMaker.append($('<div>').text("{{ message('msg.app.036') }}"));
+                            }, 0);
+                        }
+                    }, function (error) {
+                        gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    })
+                }
+            } else {
+                setTimeout(function() { 
+                    $autoMaker.addClass('on').append($('<div>').text("{{ message('msg.app.033') }}"));
+                }, 0);
+            } 
+        },
+        //결재라인 삭제 함수
+        delLine: function (event) {
+            let runYn = false;
+            const removeList = function(func){
+                if(func === 'hide') {
+                    $(event.target).closest('li').hide();
+                } else {
+                    $(event.target).closest('li').remove();
+                }
+                lineCnt--;
+                if(lineCnt < 0) lineCnt = 0;
+                if(lineCnt < 1 && $('.sortable_item.appLine:visible').length < 1) {
+                    $('#info_msg').show(); 
+                }
+                // CSS카운트 초기화
+                methods.cntInit();
+            }
+
+            if($(event.target).closest('li').find('#choiceStatus').val() === "true") {
+                if(!runYn) {
+                    runYn = true;
+                    // 중복검사 배열에서 삭제
+                    let selectUserId = $(event.target).closest('li').find('#add_usr_id').val();
+                    let selectApDiv = $(event.target).closest('li').find('#apDivType').val();
+                    for (let i = 0; i < selectUsers.length; i++) {
+                        if (selectUsers[i].userId === selectUserId && selectUsers[i].apDivType === selectApDiv) {
+                            selectUsers.splice(i, 1);
+                            break;
+                        }
+                    }
+                    // 삭제완료
+
+                    removeList('hide');
+                }
+                    
+            }else {
+                runYn = true;
+                removeList('remove');
+            }
+        },
+        // 결재선 카운트 초기화 함수
+        cntInit(){
+            if(lineCnt > 0 || $('.sortable_item.appLine:visible').length > 0) {
+                var $list = $('#modal_apLine');
+                // CSS 카운트 클래스 제거하여 카운터 초기화
+                $list.removeClass('ol_colorsquare');
+                // 강제로 리페인트(Repaint) 트리거
+                void $list[0].offsetWidth;
+                // 클래스 다시 추가하여 카운터 재설정
+                $list.addClass('ol_colorsquare');
+            }else {
+                $('#info_msg').show(); 
+            }
+        },
+        //결재선 설정내용 본문에 추가
+        ckeckAppLine() {
+            var appLine = $(".sortable_item.appLine:visible").filter(function() {
+                var input = $(this).find('input#add_usr_id').first();
+                return input.length > 0 && input.val().trim() !== '';
+            });
+
+            // var backupLineDom = docApLine.innerHTML;
+
+            // 본문에 추가되어야 cnt값 증가
+            lineCnt = appLine.length;
+
+            if(lineCnt > 0) {
+                var returnYn = false;
+                $('#doc_info_msg').hide();
+                $(docApLine).children().remove();
+
+                $(appLine).each(function(index, obj){
+                    let apLineIndex = $(obj).data('index');
+                    let apDiv = $(obj).find('#apDivType').val()
+                    let apDivText = $(obj).find('#apDivType').val() === 'A' ? "{{ message('item.app.008') }}" : "{{ message('item.app.009') }}";
+                    let apDivClass = $(obj).find('#apDivType').val() === 'A' ? '_primary' : '_secondary';
+                    let apLineViewName =  $(obj).find('#addAppLineName').val();
+                    let apLineUsrId =  $(obj).find('#add_usr_id').val();
+                    let apLineLoginId =  $(obj).find('#add_login_id').val();
+                    let apLineDeptName =  $(obj).find('#dept_nm').val();
+                    let apLineName =  $(obj).find('#usr_nm').val();
+                    if($(obj).find('#choiceStatus').val() === "true") {
+                        let addLineHtml = `<div class="doc_item" id="setAppLine" data-index="${apLineIndex}">
+                                            <p class="doc_item_header">
+                                                <span class="label ${apDivClass} s_small">${apDivText}</span>
+                                                <span class="writer_info">
+                                                    <span>${apLineViewName}</span>
+                                                </span>
+                                            </p>
+                                            <input type="hidden" id="set_app_type" value="${apDiv}">
+                                            <input type="hidden" id="set_usr_id" value="${apLineUsrId}">
+                                            <input type="hidden" id="set_login_id" value="${apLineLoginId}">
+                                            <input type="hidden" id="set_deptNm" value="${apLineDeptName}">
+                                            <input type="hidden" id="set_usrNm" value="${apLineName}">
+                                        </div>`;
+                        $("#doc_apLine").append(addLineHtml);
+                    } else {
+                        $(obj).find('#addAppLineName').focus();
+                        $(docApLine).children().remove();
+                        gaiaCommon.customAlert("{{ message('msg.app.025') }}");
+                        returnYn = true;
+                        return false;
+                    }
+                });
+
+                if(returnYn) {
+                    $('#doc_info_msg').show();
+                    return;
+                }
+                methods.modalClose('a');  //add
+            } else if(appLine.length === 0 && (!selectApDocNo || tempDocNo || saveType === 'TEMP')) {
+                methods.modalClose('c');  //cancel
+                $('#doc_apLine').children().remove(); 
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.app.037') }}");
+            }
+        },
+        // 나의 결재선 목록
+        getMyAplineSetList() {
+            gaiaCommon.get("/api/eapproval/lineset/myList", "", function(data) {
+                let myList =  data.details.lineset;
+                myList.map(obj => {
+                    $('#select_apLine').append(`<option value="${obj.ap_line_no}">${obj.ap_line_nm}</option>`)
+                })
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        // 결재선 선택 이벤트
+        getApLineSet(){
+            let apLineNo = $('#select_apLine').val();
+            if(!apLineNo) {
+                lineCnt = 0;
+                lineIndex = 0;
+                $('#info_msg').show();
+                $('#modal_apLine').empty();
+                return
+            }
+            gaiaCommon.get(`/api/eapproval/lineset/detail/${apLineNo}/${cntrctNo}`, "", function(data) {
+                let list = data.details.detailList;
+                if(list && list.length > 0) {
+                    // 카운트 초기화
+                    lineCnt = 0;
+                    lineIndex = 0;
+                    $('#modal_apLine').empty();
+                    $('#info_msg').hide();
+                    list.map(obj => {
+                        lineCnt++;
+                        lineIndex++;
+                        $('#modal_apLine').append(methods.makeAppLineHtml(obj));
+                        selectUsers.push({userId: obj.ap_usr_id, apDivType:obj.ap_div});
+                    })
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        // eeeeeeeeeee 결재 라인 설정 모달 팝업 함수 모음 종료 eeeeeeeeeee
+        // 조직도 모달 (modalType : 기안자정보(approval_ru) / 부서(조직도아이콘))
+        openDeptTree(modalType, lineIndex){
+            currentLineIndex = lineIndex;
+            $('#deptTreeModal').addClass('open');
+            $('#modalEmpList').empty();
+            if(modalType === 'dept') {
+                $('#deptTreeModal .pop_footer').show();
+            } else {
+                $('#deptTreeModal .pop_footer').hide();
+            }
+            methods.deptTree.init(modalType);
+        },
+        closeDeptTree(){
+            $('#deptTreeModal').removeClass('open');
+        },
+        deptTree: {
+            treeObj: null,
+            nodeData: null,
+            refresh: function () {
+				this.treeObj.jstree(true).refresh();
+			},
+
+            getNode: function (id) {
+				return this.treeObj.jstree("get_node", id);
+			},         
+            init: function(type) {
+                if (this.treeObj) {
+                    this.treeObj.jstree(true).destroy(); 
+                    $('#deptTree').empty(); 
+                }
+
+                this.treeObj = $("#deptTree").jstree({
+                    plugins: ["search"],
+                    core: {
+                        data: function (obj, cb) {
+                            
+                            gaiaCommon.get('/api/eapproval/approval/search-deptInfo', "", function (result) {
+                                var data = [];
+                                if (result.details?.deptInfo) {
+                                    
+                                    result.details?.deptInfo.forEach((item, index) => {
+                                        let isOpend = item.dept_lvl < 2 ? true : false;
+                                        data.push({
+                                            id: item.dept_id,
+                                            parent: item.up_dept_id ? item.up_dept_id : '#',
+                                            text: item.dept_nm,
+                                            state: { opened: isOpend },
+                                            data: item,
+                                            icons: 'fa-solid fa-caret-right',
+                                        });
+                                    });
+                                    cb.call(obj, data);
+                                }
+                            });
+                        },
+                        check_callback: true, 
+                        themes : {
+                            "theme" : "default",
+                            "dots": false,
+                            "responsive": false,
+                            "icons" : false
+                        }
+                    },
+                });
+
+                this.treeObj.on("ready.jstree", () => {
+                    let deptNode = this.treeObj.jstree("get_node", "#").children[0]; 
+                    this.nodeData = this.treeObj.jstree("get_node", deptNode).data; 
+                    this.treeObj.jstree("select_node", deptNode);
+                    methods.searchEmp(type, this.nodeData.dept_id);
+
+                })
+
+                this.treeObj.on("select_node.jstree", (e, data) => {
+                    this.nodeData = data.node.data;
+                    if(this.nodeData) {
+                        methods.searchEmp(type, this.nodeData.dept_id);
+                    }
+                    
+                });
+            }
+        },
+        // 조직트리에서 부서별 직원 조회
+        searchEmp(type, selectedDeptId){
+            let param = {
+                deptId: selectedDeptId,
+            }
+            gaiaCommon.get("/api/eapproval/approval/search-emp", param, function(data) {
+                let empList = data.details.empList;
+                $('#modalEmpList').empty();
+                $('#modalEmpList').removeClass('no_result');
+                if(empList && empList.length > 0) {
+                    $.each(empList, function(index, obj){
+                        let jsonObj = JSON.stringify(obj).replace(/"/g, '&quot;');
+                        //결재선과 공유자 부서 트리 구분해서 이벤트 적용
+                        let onclickEvent = type === 'appLine' ? `onclick="methods.addUser(${jsonObj})"` : '';
+
+                        let html = `<div class="person_info">
+                                        <strong data-item="name" style="cursor:pointer;" ${onclickEvent}>${obj.usr_nm}</strong>
+                                        <span data-item="affiliation">
+                                            <span>${obj.dept_nm}</span>
+                                        </span>
+                                        ${obj.phone_no ? `<span data-item="tel">${obj.phone_no}</span>` : `<span data-item="tel">{{ message('item.app.046') }}</span>`}
+                                        ${obj.email_adrs
+                                            ? `<a href="mailto:${obj.email_adrs}" data-item="email">${obj.email_adrs}</a>`
+                                            : `<a href="mailto:''" data-item="email">{{ message('item.app.046') }}</a>`}
+                                    </div>`
+                        $('#modalEmpList').append(html);
+                    })
+                } else {
+                    $('#modalEmpList').addClass('no_result');
+                    $('#modalEmpList').append(`<p class="data_info" id="info_msg">{{ message('msg.app.046') }}</p>`);
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        //조직트리에서 사용자 결재라인 추가
+        addUser(userInfo){
+            // if(USER_ID === userInfo.usr_id) {
+            //     gaiaCommon.customAlert("{{ message('msg.app.035') }}");
+            //     return;
+            // }
+
+            if (currentLineIndex > 0) {
+                // 현재 설정된 결재라인
+                var appLineList = document.querySelectorAll(".appLine");
+
+                let currentLine = $('.appLine[data-index="' + currentLineIndex + '"]');
+                let selectApDiv = currentLine.find('#apDivType').val();
+                let selectUserId = userInfo.usr_id;
+
+                let isDuplicate = selectUsers.some(item => item.userId === selectUserId && item.apDivType === selectApDiv);
+                if (isDuplicate) {
+                    gaiaCommon.customAlert("{{ message('msg.app.023') }}");
+                    return;  
+                }
+                currentLine.find('#addAppLineName').val(userInfo.usr_nm +' / '+userInfo.dept_nm);
+                currentLine.find('#choiceStatus').val("true"); // 사용자 이름 입력
+                currentLine.find('#add_usr_id').val(selectUserId);
+                currentLine.find('#add_login_id').val(userInfo.login_id);
+                currentLine.find('#dept_nm').val(userInfo.dept_nm);
+                currentLine.find('#usr_nm').val(userInfo.usr_nm);
+
+                selectUsers.push({userId: selectUserId, apDivType:selectApDiv});
+                if($('#autoMaker').hasClass('on')) {
+                    $('#autoMaker').removeClass('on');
+                }
+            }
+            methods.closeDeptTree();
+        },
+        // 조직 트리에서 부서 추가
+        addDept(){
+            if(this.deptTree.nodeData) {
+                let nodeData = methods.deptTree.nodeData;
+                let selectDeptId = nodeData.dept_id;
+                let selectDeptNo = nodeData.dept_no;
+                let selectDeptNm = nodeData.dept_nm;
+    
+                let isDuplicate = shareList.some(item => item.apCnrsId === selectDeptId);
+                if (isDuplicate) {
+                    gaiaCommon.customAlert("{{ message('msg.app.026') }}");
+                    return;
+                }
+    
+                let isSubDeptChecked = $("input[name='subDeptCheck']").is(":checked");
+                if(isSubDeptChecked) {
+                    shareList.push({apCnrsDiv:'02', apCnrsRng:'02', apCnrsId:selectDeptId, apSubYn:'Y'});
+                } else {
+                    shareList.push({apCnrsDiv:'02', apCnrsRng:'02', apCnrsId:selectDeptId});
+                }
+
+                let appendHtml = `<span class="selected_item" cnrs_id="${selectDeptId}" dept_no="${selectDeptNo}" type="NEW">
+                                    <span class="item">${selectDeptNm} ${isSubDeptChecked ? "({{ message('item.app.013') }})" : ''} </span>
+                                    <button type="button" class="icon_btn" onclick="eapproval.shared.remove(this)">
+                                        <i class="ic ic-close"></i>
+                                        <span class="blind">삭제</span>
+                                    </button>
+                                </span>`
+                $('#selectShareList').addClass('on').append(appendHtml);
+                $('#noShared').hide();
+                methods.closeDeptTree();
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.app.034') }}");
+                return;
+            }
+        },
+        //결재선 포커스 이벤트
+        setFocus: function(event, focusYn) {
+            let $li = $(event.target).closest('li');
+            $li.toggleClass('focused', focusYn);
+        },
+        //문서관리 첨부파일 세팅
+        setDcStorageMainList(){
+            // 문서관리 -> 전자결재 이동 시
+            if(sharedDcStorageMainList) {
+                fileIndex = 0;
+                fileList = [];
+                fileSizeList = [];
+                fileNameList = [];
+                delFileList = [];
+                selectUsers = [];
+                totalFileSize = 0;
+
+                $("#uploadMsg").hide();
+                $('.attach_list').show();
+
+                $.each(sharedDcStorageMainList, function(index, obj) {
+                    let attachListHtml = `<li class="list_item attach_item">
+                                            <button type="button" id="delFile" class="icon_btn" onclick="dropFile.deletefils(event, ${fileIndex})">
+                                                <i class="ic ic-close"></i>
+                                                <span class="blind">삭제</span>
+                                            </button>
+                                            <span class="f_name">${obj.docNm}</span>
+                                            <span class="f_progress">
+                                                <span class="sucess">
+                                                    <i class="ic ic-check"></i>
+                                                </span>
+                                            </span>
+                                            <span class="f_capacity">${dropFile.getFileSize(obj.docSize)}</span>
+                                            <input type="hidden" id="filetype" value="OLD">
+                                            <input type="hidden" id="fileNo" value="${obj.docNo}">
+                                        </li>`
+                    $('.file_list').append(attachListHtml);
+                    fileList[fileIndex] = `${obj.docNm}`;
+                    fileSizeList[fileIndex] = `${obj.docSize}`;
+                    fileNameList[fileIndex] = `${obj.docNm}`;
+                    fileIndex = fileIndex + 1;
+                    totalFileSize = totalFileSize + Number(`${obj.docSize}`);
+                    dcStorageList.push(obj.docNo);
+                })
+
+                dropFile.setfilesinfo();
+            }
+        },
+        addDocBox(){
+            $('#draftDocBox').addClass("open");
+            methods.docBoxTree.init();
+        },
+        setDocBox(docBoxData, docBoxPath) {
+            naviId = docBoxData.navi_id;
+            methods.makeDocBox(docBoxPath);
+        },
+        deleteDocBox() {
+            naviId = '';
+            $('#select_naviId').hide();
+            $('#noDocBox').show();
+        },
+        makeDocBox(path) {
+            $('#noDocBox').hide();
+            $('#select_naviId').empty().show();
+            $('#select_naviId').append(`<span class="item">${path}</span>
+                                        <button type="button" class="icon_btn" onclick="methods.deleteDocBox()">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>`);
+        },
+        getDocBoxList(){
+            gaiaCommon.get(
+                "/api/eapproval/draft/select-docBox",
+                {
+                    "cntrctNo": cntrctNo,
+                    "deptId": $('#userType').data('deptId')
+                }
+                , function (result) {
+                    let svrType = result.details?.svrType;
+                    if (result.details?.navigationList) {
+                        navigationList = result.details.navigationList;
+                    }
+
+                    const navi = navigationList.find(obj => obj.svr_type === svrType);
+                    console.log('svrType', svrType);
+                    console.log('navigationList', navigationList);
+                    console.log('navi', navi);
+
+                    if (navi && (navi.svr_type === "01" || navi.svr_type == "05")) {
+                        naviId = navi.navi_id;
+                        let path = navi.navi_path ? navi.navi_path + ' > ' + navi.navi_nm : navi.navi_nm;
+                        methods.makeDocBox(path);
+                    }
+                }
+            );
+        },
+        docBoxTree: {
+            docTreeObj: null,
+            nodeData: null,
+            docBoxPath: null,
+            search() {
+                const keyword = $('input[name="treeKeyword"]').val();
+                $("#docBoxTree").jstree("search", keyword);
+            },
+
+            init() {
+                if (this.docTreeObj) {
+                    this.docTreeObj.jstree(true).destroy();
+                    $('#docBoxTree').empty();
+                }
+                this.docTreeObj = $("#docBoxTree").jstree({
+                    plugins: ["search"],
+                    search: {
+                        "show_only_matches" : true,
+                        "show_only_matches_children" : true,
+                    },
+                    core: {
+                        data(obj, cb) {
+                            var data = [];
+                            console.log('navigationList', navigationList);
+                            if (navigationList) {
+                                navigationList.forEach((item, index) => {
+                                    data.push({
+                                        id: item.navi_id,
+                                        parent: item.up_navi_id,
+                                        text: item.navi_nm,
+                                        state: { opened: false },
+                                        data: item
+                                    });
+                                });
+                                cb.call(obj, data);
+                            }
+                        },
+                        check_callback: true, // 요거이 없으면, create_node 안먹음
+                        themes : {
+                            "theme" : "default",
+                            "dots": false,
+                            "responsive": false,
+                            "icons" : false
+                        }
+                    },
+                });
+
+                this.docTreeObj.on("ready.jstree", function(e, data){
+                    methods.docBoxTree.openFirstChild('#', data); // 루트 노드에서 시작하여 첫 번째 자식만 열기
+                });
+
+                this.docTreeObj.on("select_node.jstree", function (e, data) {
+                    let path = [];
+                    let currentNode = data.node;
+                    while (currentNode && currentNode.data) {
+                        path.push(currentNode.data.navi_nm);
+                        currentNode = $("#docBoxTree").jstree("get_node", currentNode.parent);
+                    }
+                    path.reverse();
+                    methods.docBoxTree.docBoxPath = path.join(' > ');
+                    methods.docBoxTree.nodeData = data.node.data;
+                });
+
+            },
+
+            //첫번째 노드만 열린 상태로 하는 함수
+            openFirstChild(nodeId, data){
+                var node = data.instance.get_node(nodeId);
+
+                if (node.children.length > 0) {
+                    data.instance.open_node(node.children[0]); // 첫 번째 자식 노드만 열기
+                }
+            },
+            //메뉴 선택 함수
+            select(){
+                methods.setDocBox(methods.docBoxTree.nodeData, methods.docBoxTree.docBoxPath);
+                $('#draftDocBox').removeClass("open");
+            },
+            close(){
+                $('#draftDocBox').removeClass("open");
+            }
+
+        }
+    }
+
+    // 서식 즐겨찾기 함수
+    $(document).on('click', '.bookmark-btn', function() {
+        let target = $(this);
+        let frmNo = $(this).data('frm-no');
+        let hasAddClass = target.hasClass('favorites');
+        let urlType = hasAddClass ? 'delete-bookmark' : 'create-bookmark';
+        let param = {
+            frmNo : frmNo
+        }
+        gaiaCommon.get(`/api/eapproval/draft/${urlType}`, param, function(result) {
+
+        }, function (error) {
+            gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}")
+        })
+    });
+
+    $(document).on('click', function(event) {
+        var $target = $(event.target);
+
+        // 결재선 
+        if (!$target.closest('.lay_pop.filter_list').length) {
+            $('#modal_apLine .lay_pop.filter_list').removeClass('on');
+        }
+
+        // 임시저장
+        if (!$target.closest('#tempPop').length && !$target.is('span#tempDoc') && !$target.closest('#draft_content').length) {
+            $('#tempPop').removeClass('on');
+        }
+
+    }); 
+
+    // 검색결과 focus이벤트
+    $(document).on('click focus blur', '.search_event', function(event) {
+        let focusYn = event.type === 'focus' || event.type === 'click';
+        methods.setFocus(event, focusYn);
+    });
+
+
+    // 임시저장 리스트 클릭(조회)
+    $(document).on('click', '.clickTemp', function() {
+        const apDocNo = $(this).closest('.list_item').data('ap-doc-no');
+        const apDocId = $(this).closest('.list_item').data('ap-doc-id');
+        
+        if(apDocNo !== selectApDocNo && apDocId !== selectApDocId) {
+            // $("#tempPop").removeClass('on');
+            window.location.href = `/eapproval/draft/view-tempDraft?url=${thisUrl}&frmNo=${thisfrmNo}&frmId=${thisfrmId}&apDocNo=${apDocNo}&apDocId=${apDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+            //methods.selectTemporaryApDoc(apDocNo, apDocId);
+        }
+    });
+
+    // 임시저장 리스트 삭제
+    $(document).on('click', '.deleteTemp', function(e) {
+        e.stopPropagation(); 
+        const apDocNo = $(this).closest('.list_item').data('ap-doc-no');
+        const apDocId = $(this).closest('.list_item').data('ap-doc-id');
+        $("#tempPop").removeClass('on');
+        methods.deleteTemporaryApDoc(apDocNo, apDocId);
+    }); 
+
+
+    // 뒤로가기 방지->현재 페이지를 뒷페이지로 추가
+    let backNavigation = false;
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', function() {
+        if(!backNavigation) {
+            window.history.pushState(null, '', window.location.href);
+            openAlert('back');
+        }
+    });
+
+
+    // 새로고침(F5, Ctrl+R, Cmd+R 등) 감지
+    window.addEventListener("keydown", function (e) {
+        if (!backNavigation && (e.key === "F5" || (e.ctrlKey && e.key.toLowerCase() === "r") || (e.metaKey && e.key.toLowerCase() === "r"))) {
+            e.preventDefault();
+            openAlert('refresh');
+        }
+    });
+
+    // 기안문 작성 중 페이지 이동 경고창
+    function openAlert(type){
+        let msg = type === 'back' ? "페이지를 나가시겠습니까?" : "새로고침 하시겠습니까?";
+        gaiaCommon.customConfirm("{{ message('item.com.084') }}", msg, "작성 내용이 모두 사라집니다.", function(){
+            backNavigation = true;
+            if(type === 'back') {
+                location.replace(`/eapproval/draft/select-draft?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+            } else {
+                window.location.href = `/eapproval/draft/create-draft?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&url=${thisUrl}&frm_no=${thisfrmNo}&frm_id=${thisfrmId}`;
+            }
+        })
+    }
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M060101", "{{ message('item.app.045') }}");
+
+                methods.init();
+            }
+        });
+    })
+
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

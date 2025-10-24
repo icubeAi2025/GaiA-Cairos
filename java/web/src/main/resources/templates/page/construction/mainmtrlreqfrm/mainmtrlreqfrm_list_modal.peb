@@ -1,0 +1,317 @@
+<div class="modal open">
+    <div class="pop_box _lg">
+        <div class="pop_header">
+            <h3 class="pop_tit">자재 추가</h3>
+            <button type="button" class="icon_btn pop_close" onclick="mtrlpopup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">{{ message('item.com.038') }}</span>
+            </button>
+        </div>
+        <div class="pop_body">
+            <div class="group">
+                <div class="conts_grid">
+                    <p class="selected_list">
+                    </p>
+
+                    <div class="toolbar">
+                        <div class="search_wrap">
+                            <div class="searchbox_wrap">
+                                <input type="text" id="searchText"
+                                    onkeypress="if( event.keyCode == 13 ){mtrlGrid.search();}" placeholder='품명' />
+                                <button type="button" class="icon_btn search" onclick="mtrlGrid.search()">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">
+                                        {{ message("item.com.014") }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 자재 목록 테이블 -->
+                    <div class="mat-table">
+                        <div class="scrollable-thead" style="overflow-y: scroll">
+                            <table class="table wbs-table">
+                                <colgroup>
+                                    <col style="width:6%;"> <!-- 선택 -->
+                                    <col style="width:20%;"> <!-- 품명 -->
+                                    <col style="width:8%;"> <!-- 규격 -->
+                                    <col style="width:8%;"> <!-- 단위 -->
+                                    <col style="width:10%;"> <!-- 총수량 -->
+                                    <col style="width:10%;"> <!-- 잔여 -->
+                                    <col style="width:10%;"> <!-- 금일반입량 -->
+                                    <col style="width:18%;"> <!-- 비고 -->
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>선택</th>
+                                        <th>품명</th>
+                                        <th>규격</th>
+                                        <th>단위</th>
+                                        <th>총수량</th>
+                                        <th>잔여</th>
+                                        <th>금일반입량 <span style="color: red;">*</span></th>
+                                        <th>비고</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+
+                        <div class="scrollable-tbody"
+                            style="max-height: 495px; overflow-y: scroll; border: 1px solid var(--tb-bd);">
+                            <table class="table wbs-table">
+                                <colgroup>
+                                    <col style="width:6%;"> <!-- 선택 -->
+                                    <col style="width:20%;"> <!-- 품명 -->
+                                    <col style="width:8%;"> <!-- 규격 -->
+                                    <col style="width:8%;"> <!-- 단위 -->
+                                    <col style="width:10%;"> <!-- 총수량 -->
+                                    <col style="width:10%;"> <!-- 잔여 -->
+                                    <col style="width:10%;"> <!-- 금일반입량 -->
+                                    <col style="width:18%;"> <!-- 비고 -->
+                                </colgroup>
+                                <tbody id="mtrList">
+                                    <!-- 여기에 동적으로 행이 추가됨 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="mtrlpopup.close()">{{ message('btn.007') }}</button>
+                <!-- 닫기 -->
+                <button type="button" class="btn _fill" id="action-button" onclick="mtrlpopup.save()">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var checkedItems = new Map();
+    var supervisionSearchData = [];
+
+    var mtrlpopup = {
+        init: function () {
+            mtrlGrid.init();
+        },
+
+        // 닫기
+        close: function () {
+            $("#searchText").val("");
+            $("#mtrlpopup").css("display", "none");
+        },
+
+        // 저장
+        save: function () {
+            console.log("checkedItems", checkedItems);
+
+            if (checkedItems.size === 0) {
+                gaiaCommon.customAlert("추가할 자재를 선택해주세요.");
+                return;
+            }
+
+            let invalidItems = [];
+            checkedItems.forEach((item, id) => {
+                const qty = (item.todayQty || '').trim();
+                if (qty === '' || qty === '0' || isNaN(qty)) {
+                    invalidItems.push(item.rsceNm || id); // 품명 또는 ID로 표시
+                }
+            });
+
+            if (invalidItems.length > 0) {
+                const names = invalidItems.join(', ');
+                gaiaCommon.customAlert(`금일반입량이 입력되지 않은 자재가 있습니다.\n[${names}]`);
+                return;
+            }
+
+            const targetTable = document.getElementById("targetMtrlTable");
+            const targetTbody = targetTable.getElementsByTagName("tbody")[0];
+
+            checkedItems.forEach((item, id) => {
+                const row = document.createElement("tr");
+                row.setAttribute("data-gnrlexpns-cd", id);
+
+                row.innerHTML = `
+                <td class="t-center"><input type="checkbox" class="check_mark"></td>
+                <td>${item.rsceNm || ''}</td>
+                <td class="t-center">${item.specNm || ''}</td>
+                <td class="t-center">${item.unit || ''}</td>
+                <td class="t-center">
+                    <input 
+                        type="text" 
+                        class="todayQtyEdit number maxlength"
+                        maxlength="27"
+                        value="${item.todayQty || ''}"
+                        style="width: 90%; text-align: center; padding: 2px 6px; margin-right: 6px;"
+                        oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\\..*)\\./g,'$1');"
+                    >
+                </td>
+                <td class="t-center">-</td>
+                <td class="t-center">-</td>
+                <td class="t-center">-</td>
+                <td>
+                    <input 
+                        type="text"
+                        class="rmrk maxlength"
+                        maxlength="100"
+                        value="${item.rmrk || ''}"
+                        style="width: 95%; text-align: left; padding: 2px 6px; margin-right: 6px;"
+                    >
+                </td>
+                `;
+                targetTbody.appendChild(row);
+            });
+
+            mtrlpopup.close();
+        }
+    }
+
+    // 검수요청자 목록
+    var mtrlGrid = {
+        init: function (searchText) {
+            let params = {
+                cntrctNo: cntrctNo,
+                searchValue: searchText
+            }
+
+            // 부모 테이블(#targetMtrlTable)에 이미 등록된 자재코드 목록 수집
+            const existingIds = Array.from(document.querySelectorAll("#targetMtrlTable tbody tr"))
+                .map(tr => tr.getAttribute("data-gnrlexpns-cd"))
+                .filter(id => !!id);
+
+            gaiaCommon.post("/api/construction/mainmtrlreqfrm/getMainmtrlList", params, function (data) {
+                let mtrlLists = data.details.mtrlLists;
+
+                // 이미 추가된 자재는 제외
+                mtrlLists = mtrlLists.filter(mtrl => !existingIds.includes(mtrl.gnrlexpnsCd));
+
+                $("#mtrList").empty();
+                if (mtrlLists.length >= 0) {
+                    mtrlLists.forEach((mtrlList) => {
+                        const isChecked = checkedItems.has(mtrlList.gnrlexpnsCd);
+
+                        const totalQty = Number(mtrlList.totalQty || 0).toFixed(0);
+                        const remainQty = Number(mtrlList.remainQty || 0).toFixed(0);
+
+                        const saved = checkedItems.get(mtrlList.gnrlexpnsCd) || {};
+                        const newRemainQty = saved.remainQty || '';
+                        const todayQty = saved.todayQty || '';
+                        const rmrk = saved.rmrk || '';
+
+                        let dataContent = `
+                                    <tr data-gnrlexpns-cd="${mtrlList.gnrlexpnsCd}">
+                                        <td class="t-center"><input class="check_mark" type="checkbox" ${isChecked ? 'checked' : ''}></td>
+                                        <td class="rsceNm">${mtrlList.rsceNm}</td>
+                                        <td class="specNm t-center">${mtrlList.specNm}</td>
+                                        <td class="unit t-center">${mtrlList.unit}</td>
+                                        <td class="totalQty t-center">${totalQty}</td>
+                                        <td class="remainQty t-center" data-remain-qty="${remainQty}">${newRemainQty || remainQty}</td>
+                                        <td class="t-center"><input type="text" class="todayQty maxlength" maxlength="27" value="${todayQty}" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                                        <td><input type="text" class="rmrk maxlength" maxlength="100" value="${rmrk}"></td>
+                                    </tr>`;
+                        $("#mtrList").append(dataContent);
+                    })
+                } else {
+                    let dataContent = ` <tr>
+                                            <td class="ta_c" colspan="8">조회된 데이터가 없습니다.</td>
+                                        </tr>`
+                    $("#mtrList").append(dataContent);
+                }
+            })
+
+            // 체크박스 이벤트
+            $(document).off('change', '.check_mark').on('change', '.check_mark', function () {
+                const row = $(this).closest('tr');
+                const id = row.data('gnrlexpns-cd');
+
+                const rsceNm = row.find('.rsceNm').text().trim() || '';
+                const specNm = row.find('.specNm').text().trim() || '';
+                const unit = row.find('.unit').text().trim() || '';
+                const remainQty = row.find('.remainQty').text().trim() || '';
+                const todayQty = row.find('.todayQty').val().trim() || '';
+                const rmrk = row.find('.rmrk').val().trim() || '';
+
+                if ($(this).prop('checked')) {
+                    checkedItems.set(id, { checked: true, rsceNm, specNm, unit, remainQty, todayQty, rmrk });
+                } else {
+                    checkedItems.delete(id);
+                }
+
+                mtrlGrid.updateSelectedList();
+            });
+
+            // 입력값 변경 시 Map 갱신
+            $(document).off('input', '.todayQty, .rmrk').on('input', '.todayQty, .rmrk', function () {
+                const row = $(this).closest('tr');
+                const id = row.data('gnrlexpns-cd');
+
+                // 실시간 잔여량 업데이트
+                const remainQtyVal = Number(row.find('.remainQty').data('remain-qty')) || 0;
+                const todayQtyVal = Number(row.find('.todayQty').val()) || 0;
+                const newRemain = (remainQtyVal - todayQtyVal).toFixed(0);
+                row.find('.remainQty').text(newRemain);
+
+                if (checkedItems.has(id)) {
+                    const item = checkedItems.get(id);
+                    item.rsceNm = row.find('.rsceNm').text().trim() || '';
+                    item.specNm = row.find('.specNm').text().trim() || '';
+                    item.unit = row.find('.unit').text().trim() || '';
+                    item.remainQty = row.find('.remainQty').text().trim() || '';
+                    item.todayQty = row.find('.todayQty').val().trim() || '';
+                    item.rmrk = row.find('.rmrk').val().trim() || '';
+                    checkedItems.set(id, item);
+                    mtrlGrid.updateSelectedList();
+                }
+            });
+        },
+
+        // 검색
+        search: function () {
+            let searchText = $('#searchText').val();
+            supervisionSearchData.searchData = searchText
+            gaia.setSearchData(supervisionSearchData);
+            mtrlGrid.init(searchText);
+        },
+
+        // 선택된 item selected_list에 추가
+        updateSelectedList: function () {
+            const selectedListContainer = document.querySelector(".selected_list");
+            selectedListContainer.innerHTML = "";
+
+            if (checkedItems.size > 0) {
+                selectedListContainer.classList.add("on");
+                $('.scrollable-tbody').css('maxHeight', '448px');
+            } else {
+                selectedListContainer.classList.remove("on");
+                $('.scrollable-tbody').css('maxHeight', '495px');
+            }
+
+            checkedItems.forEach((value, key) => {
+                const span = document.createElement("span");
+                span.classList.add("selected_item");
+                span.innerHTML = `
+                <span class="item">${value.rsceNm || ''} / ${value.todayQty || '0'} / ${value.rmrk || ''}</span>
+                <button type="button" class="icon_btn" onclick="mtrlGrid.removeSelectedItem('${key}')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">삭제</span>
+                </button>`;
+                selectedListContainer.appendChild(span);
+            });
+        },
+
+        // selected_list에서 제거
+        removeSelectedItem: function (gnrlexpnsCd) {
+            const row = $(`#mtrList tr[data-gnrlexpns-cd="${gnrlexpnsCd}"]`);
+            row.find('.check_mark').prop('checked', false);
+            checkedItems.delete(gnrlexpnsCd);
+            mtrlGrid.updateSelectedList();
+        }
+
+    }
+
+</script>

@@ -1,0 +1,429 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+
+    <article class="conts_area">
+        <div class="conts">
+            <div class="conts_breadcrumb" style="display: none;">
+                <h3 class="conts_tit">{{ message("item.com.018") }}</h3>
+                <span class="selectbox">
+					<select id="cntrctNo" style="line-height:1.1" disabled></select>
+				</span>
+            </div>
+            <!-- 메인 내용 시작 -->
+            <div class="conts_form">
+
+                <!-- Button - head -->
+                <div class="toolbar sort_toolbar" style="font-size: var(--font-s); padding-left: 0; gap: unset;">
+                    <div class="btn_group _outline" style="margin-bottom: 10px; display: none;">
+                        <button type="button" class="btn" onclick="exportToExcel();">Excel</button>
+                    </div>
+                    <div class="btn_group _fill" style="margin-bottom: 10px;">
+                        <button id="goback" type="button" class="btn">{{ message("btn.007") }}</button>
+                    </div>
+                </div>
+
+
+                <!-- //E: Monthly -->
+
+                <!-- S:  -->
+                <!-- Activity S-->
+                <div class="s_conts" id="activityDiv">
+                    <span class="tree_route">{{ message("item.construction.207") }}Activity</span>
+                    <div class="conts_grid" id="activityTable">
+                        <div id="activityDataGrid" class="grid"></div>
+                    </div>
+                </div>
+                <!-- Activity E-->
+
+                <!-- 세부공종 S-->
+                <div class="s_conts" id="cbsDetailDiv">
+                    <span class="tree_route">{{ message("item.construction.208") }}</span>
+
+                    <div class="conts_grid" id="cbsDetailTable">
+                        <div id="cbsDetailDataGrid" class="grid"></div>
+                    </div>
+                </div>
+                <!-- 세부공종 E-->
+
+                <!-- //E:  -->
+
+            </div>
+            <!-- 메인 내용 끝 -->
+        </div>
+    </article>
+    <!-- Monthly 구성을 위한 태그 / generateMonthlyResourceList()  -->
+    <div class="dp-none monthly_item" style="display: none;">
+        <div class="ris_item_wrap">
+            <strong class="month"></strong>
+            <dl class="dl_box ris_item">
+                <dt class="ris_dt mtrl">{{ message("item.construction.201") }}</dt>
+                <dd class="ris_dd mtrl">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+                <dt class="ris_dt lbr">{{ message("item.construction.044") }}</dt>
+                <dd class="ris_dd lbr">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+                <dt class="ris_dt expnss">{{ message("item.construction.046") }}</dt>
+                <dd class="ris_dd expnss">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+            </dl>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    //콤보박스 렌더러, 에디터
+
+    // 페이지 사용 글로벌 변수
+    var cntrctNo = null;                    // 계약 번호
+    var gbl_currentMonth = null;            // 선택된 날짜
+    var isAdmin = () => gaiaCommon.me.isAdmin();
+
+    var init = function(){
+        // 계약번호 변경 Event
+        $("#cntrctNo").change(function(e){
+            cntrctNo = e.target.value;
+        });
+
+        var param = { pjtNo: pjtNo };
+
+        $.ajax({
+            url: '/api/projectcost/contract/contract-list',
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json; charset-utf-8',
+            data: JSON.stringify(param),
+            async: false,
+            success: function(data, status, xhr){
+                var list = data.details.contractList;
+
+                if(list.length > 0) {
+                    for(var i = 0; i < list.length; i++) {
+                        var option = $("<option value="+list[i].cntrct_no+">["+list[i].cntrct_no+"] "+list[i].cntrct_nm+"</option>");
+                        $('#cntrctNo').append(option);
+                    }
+                }
+
+                if(cntrctNo){ $('#cntrctNo').val(cntrctNo).prop("selected", true); }
+                else{ cntrctNo = $('#cntrctNo').val(); }
+
+            },
+            error: function (xhr, status, error) {
+                console.error(status, error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            }
+        }).done(function() {
+            dailyDetailResource.init();
+        });
+
+    }
+
+    let dailyDetailResource = {
+        init: function (type) {
+            let _this = this;
+            let urlParams = new URLSearchParams(window.location.search);
+            let param = {
+                cntrctNo: urlParams.get('cntrctNo'),
+                rsceCd: urlParams.get('rsceCd')
+            };
+
+            $.ajax({
+                url: BASEPATH + 'resource/detail/resource-daily-list',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function(response, status, xhr){
+                    const data = response.details.resourceList.data;
+                    console.log(data);
+
+                    // Activity
+                    activity.init(data);
+
+                    // 세부공종
+                    cbsDetail.init(data);
+
+                    // 2024-12-24 그리드 리사이징 추가
+                    setTimeout(() => {
+                        refreshGrid(activity.activityDataGrid);
+                        refreshGrid(cbsDetail.cbsDetailDataGrid);
+                    }, 100)
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            });
+        }
+    }
+
+    // activity
+    let activity = {
+        init: function(data) {
+            let _this = this;
+
+            if(!this.activityDataGrid){
+                this.activityDataGrid = new tui.Grid({
+                    el: document.getElementById('activityDataGrid'),
+                    //selectionUnit: 'row',
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    bodyHeight: 300,
+                    header: {
+                        height: 80,
+                        complexColumns: [
+                            { header: '{{ message("item.com.055") }}',
+                                name: 'plan',
+                                childNames: ['planStart', 'planFinish','planDaysCount']
+                            },
+                            { header: '{{ message("item.construction.206") }}',
+                                name: 'exec',
+                                childNames: ['actualStart', 'actualFinish','actualDaysCount']
+                            }
+                        ],
+                    },
+                    columns : [
+                        {header: 'WBS', name: 'wbsNm', align:'center'},
+                        {
+                            header: 'Activity',
+                            name: 'activityNm',
+                            align:'left',
+                            renderer: {
+                                styles: {
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
+                                }
+                            }
+                        },
+                        {header: '{{ message("item.com.029") }}', name: 'planStart', align:'center'},
+                        {header: '{{ message("item.construction.030") }}', name: 'planFinish', align:'center'},
+                        {header: '{{ message("item.construction.031") }}', name: 'planDaysCount', align:'center'},
+                        {header: '{{ message("item.com.029") }}', name: 'actualStart', align:'center'},
+                        {header: '{{ message("item.com.030") }}', name: 'actualFinish', align:'center'},
+                        {header: '{{ message("item.construction.033") }}', name: 'actualDaysCount', align:'center'},
+                        {
+                            header: `{{ message("item.construction.202") }}{{ message("item.projectcost.005") }}`,
+                            name: 'multipliedQty',
+                            align:'right' ,
+                            formatter: numberFormat
+                        },
+                    ],
+                });
+
+            }
+
+            if (data) {
+                this.activityDataGrid.resetData(data);
+            }
+        }
+    }
+
+    // 세부 공종
+    let cbsDetail = {
+        init: function(data) {
+            let _this = this;
+
+            if(!this.cbsDetailDataGrid){
+                this.cbsDetailDataGrid = new tui.Grid({
+                    el: document.getElementById('cbsDetailDataGrid'),
+                    //selectionUnit: 'row',
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    //bodyHeight: 'auto',
+                    //bodyHeight: 'fitToParent',
+                    bodyHeight: 300,
+                    header: {
+                        height: 80,
+                        complexColumns: [
+                            { header: '{{ message("item.construction.202") }}',
+                                name: 'resource',
+                                childNames: ['cbsUnitQty', 'multipliedQty', 'originUprc', 'cbsCost']
+                            }
+                        ],
+                    },
+                    columns : [
+                        {
+                            header: 'Activity',
+                            name: 'activityNm',
+                            align:'left',
+                            renderer: {
+                                styles: {
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
+                                }
+                            }
+                        },
+                        {header: '{{ message("item.construction.059") }}', name: 'cbsDetailCd', align:'center'},
+                        {header: '{{ message("item.projectcost.002") }}', name: 'rsceNm', align:'center'},
+                        {
+                            header: '{{ message("item.projectcost.003") }}',
+                            name: 'specNm',
+                            align:'left',
+                            renderer: {
+                                styles: {
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
+                                }
+                            }
+                        },
+                        {header: '{{ message("item.projectcost.004") }}', name: 'unit', align:'center'},
+                        {
+                            // 공종수량
+                            header: '{{ message("item.progressstatus.010") }}{{ message("item.projectcost.005") }}',
+                            name: 'cbsRsceQty',
+                            align:'right',
+                            formatter: numberFormat
+                        },
+                        {
+                            // 단위수량
+                            header: `{{ message("item.projectcost.004") }}{{ message("item.projectcost.005") }}`,
+                            name: 'cbsUnitQty',
+                            align:'right',
+                            formatter: numberFormat
+                        },
+                        {
+                            // 자원수량
+                            header: `{{ message("item.construction.202") }}{{ message("item.projectcost.005") }}`,
+                            name: 'multipliedQty',
+                            align:'right',
+                            formatter: numberFormat
+                        },
+                        {
+                            // 단가
+                            header: '{{ message("item.projectcost.006") }}',
+                            name: 'originUprc',
+                            align:'right',
+                            formatter: numberFormat
+                        },
+                        {
+                            // 금액
+                            header: '{{ message("item.projectcost.007") }}',
+                            name: 'cbsCost',
+                            align:'right',
+                            formatter: numberFormat
+                        }
+                    ],
+                });
+
+            }
+
+            if (data) {
+                this.cbsDetailDataGrid.resetData(data);
+            }
+        }
+    }
+
+
+
+    // EXCEL DOWNLOAD
+    let exportToExcel = function () {
+        const exportName = "{{ message('item.construction.903') }}";
+
+        const options = {
+            includeHiddenColumns: false,
+            onlySelected: true,
+            fileName: exportName,
+        };
+
+        dataGrid.dataGrid.export("xlsx", options);
+    }
+
+    // 0. Page load
+    $(function(){
+
+
+    });
+
+    $(document).ready(()=>{
+		gaia.create({
+			$init: function ($params) {
+                // AS-IS
+                // if($("body").attr('class') == "gaia"){
+                //     $("#conts_tit").show();
+                //     $("#cntrct_no_select").show();
+                // }else if($("body").attr('class') == "cmis"){
+                //     cntrctNo = cNo;
+                // }
+
+                // 20241220 TO-BE
+                if (isAdmin) {  // GAIA & CMIS 관리자 계정일 때
+                    $('.conts_breadcrumb').show();
+                } else {
+                    cntrctNo = pjtInfo.cntrctNo;
+                }
+
+
+                // pageNav 구성
+                gaiaPortal.navMenuInit('M0403', '{{ message("item.construction.903") }} {{ message("btn.030") }}');
+
+                // 사용 되는 값 및 변수 초기화
+                gbl_currentMonth = DateUtils.getCurrentDateTime('month');
+
+                /******************
+                 * EVENT BINDING
+                 ******************/
+                // Monthly, Daily 변경 Event
+                $('#goback').click(function(e) {
+                    history.back();
+                });
+
+                init();
+				gaia.loaded = true;
+            }
+        });
+	})
+
+</script>
+<style> .tui-grid-cell-header{white-space:break-spaces; } </style>
+<script src="/assets/js/construction/construction.js"></script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

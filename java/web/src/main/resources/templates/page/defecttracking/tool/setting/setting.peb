@@ -1,0 +1,393 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+	<article class="conts g-row">
+		<div class="group">
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+						<!-- <button type="button" class="btn _outline" onclick="phase.delete();">{{ message('btn.002') }}</button>
+						<button type="button" class="btn _outline" onclick="phase.modify()">{{ message('btn.003') }}</button>
+						<button type="button" class="btn _outline" onclick="phase.add();">{{ message('btn.001') }}</button> -->
+					</div>
+				</div>
+
+				<div class="grid" id="phase_grid"></div>
+			</div>
+		</div>
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlCntrctNo = urlParams.get("cntrctNo");
+    var pjtNo = urlParams.get("pjtNo");
+
+    var BASEPATH = '/api/defecttracking/setting';
+
+    var isDelAuth = "{{ isAuth }}";
+    var isMoveAuth = "{{ isAuth }}";
+
+    var phase = {
+        init(){
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            if(gaiaCommon.me.isAdmin() || $('body').hasClass('gaia')) {
+                let html = `<div class="group">
+                                <div class="conts_form">
+                                    <h3 class="conts_tit">{{ message('item.com.018') }}</h3>
+                                    <span class="selectbox">
+                                        <select name="" id="cntrct_select" class="" onchange="phase.changeCntrctList($(this).val());">
+                                        </select>
+                                    </span>
+                                </div>
+                            </div>`
+                $('.contents_wrap .conts').prepend(html);
+                phase.getCntrctList();
+            } else {
+                phase.changeCntrctList(cntrctNo);
+            }
+
+            gaia.loaded = true;
+        },
+        // 계약코드 조회
+        getCntrctList(){
+			var param = {pjtNo: pjtNo};
+            $.ajax({
+				url: "/api/portal/select-cntrctList",
+				method: "POST",
+				dataType: "json",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify(param),
+                success: async function(data){
+					var list = data.details.contractList;
+                    if(list.length > 0) {
+                        $('#cntrct_select').empty();
+						list.forEach((contract) => {
+							let html = `<option value="${contract.cntrct_no }">${contract.cntrct_nm}</option>`
+							$('#cntrct_select').append(html);
+						});
+                        cntrctNo = $('#cntrct_select').val();
+                        phase.read(cntrctNo);
+                    } else {
+						gaiaCommon.customConfirm("{{ message('item.com.084') }}","{{ message('msg.092') }}","{{ message('msg.114') }}",
+							() => { window.location.replace(`/project/contractstatus?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`);},
+							() => { window.location.replace(`/dashboard?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`);
+						});
+					}
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            })
+        },
+        // 계약코드 변경
+        changeCntrctList(cntrctNo){
+            // if(urlCntrctNo) {
+            //     let currentUrl = new URL(window.location.href);
+            //     currentUrl.searchParams.delete("cntrctNo");
+            //     history.replaceState(null, null, currentUrl);
+            // }
+            phase.read(cntrctNo);
+        },
+        // 조회
+        read(cntrctNo){
+            $.ajax({
+                url: BASEPATH+'/list/'+cntrctNo,
+                method: 'GET',
+                success: function(data){
+                    var list = data.details.selectPhaseList;
+                    phaseGrid.resetData(list);
+                    refreshGrid(phaseGrid);
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            })
+        },
+        add(){
+            let cntrctNo = $('#cntrct_select').val() ?? urlCntrctNo;
+            window.location.href = `/defectTracking/setting/add?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d`;
+        },
+        modify(){
+            let chkLength = $('input:checkbox[name=delete-item-check]:checked').length;
+
+            if(chkLength === 0) {
+                let setMsg = "{{ message('msg.035') }}".replace("{0}", "{{ message('btn.003') }}")
+                gaiaCommon.customAlert(setMsg);
+                return
+            } else if (chkLength > 1) {
+                let setMsg = "{{ message('msg.036') }}".replace("{0}", "{{ message('btn.003') }}")
+                gaiaCommon.customAlert(setMsg);
+                return
+            }
+
+            let rowKey = $('input:checkbox[name=delete-item-check]:checked').data('rowKey');
+            let rowData = phaseGrid.getRow(rowKey);
+            window.location.href = `/defectTracking/setting/edit?pjtNo=${pjtNo}&cntrctNo=${rowData.cntrct_no}&page=d&pNo=${rowData.dfccy_phase_no}`;
+        },
+        // 삭제
+        delete(){
+            let selectedRow = [];
+			let deleteAble = true;
+            $('input:checkbox[name=delete-item-check]:checked').each(function() {
+                let selectRowKey = $(this).data('rowKey'); // 데이터 속성에서 행 키를 가져옴
+                let selectRowData = phaseGrid.getRow(selectRowKey); // 그리드에서 해당 행 데이터 가져오기
+				if(selectRowData.delete_able === false) {
+					deleteAble = false;
+					return false;
+				}
+                selectedRow.push(selectRowData.dfccy_phase_no);
+            });
+
+			if(!deleteAble) {
+				gaiaCommon.customAlert("{{ message('msg.dfccy.047') }}");
+				return;
+			}
+
+            if(selectedRow.length === 0 ) {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+                return;
+            }
+
+            let cntrctNo = $('#cntrct_select').val() ?? urlCntrctNo;
+
+            gaiaCommon.customConfirm("{{ message('item.dfccy.043') }}", "{{ message('msg.009') }}", "", function(){
+                let data = {
+                    ["delPhaseList"] : selectedRow,
+                    "cntrctNo": cntrctNo
+                };
+                $.ajax({
+                    url: BASEPATH+'/delete',
+                    method: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json; charset-utf-8',
+                    data: JSON.stringify(data),
+                    success: function(result){
+                        gaiaCommon.customAlert("{{ message('msg.006') }}", function(){
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        gaiaCommon.customAlert("{{ message('msg.060') }}", function(){
+                            location.reload();
+                        });
+                    }
+                })
+            })
+        },
+        convert(value) {
+            if (value === 'ing') {
+                return "{{ message('item.com.041') }}";  // 진행중
+            } else if (value === 'finish') {
+                return "{{ message('item.dfccy.004') }}"; // 종료
+            } else {
+                return "{{ message('item.dfccy.002') }}"; // 대기
+            }
+        }
+    }
+
+    var phaseGrid = new tui.Grid({
+        el: phase_grid,
+        scrollX: true,
+        scrollY: true,
+        width: 'auto',
+        bodyHeight: 480,
+        rowHeaders:[
+            {
+                type: 'checkbox',
+                header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                width: 100,
+                renderer: {
+                    type: window.IconRenderer,
+                    options: [
+						{
+							type:'checkBox'
+						},
+						{
+							type:'trash',
+							idField: "dfccy_phase_no", // 선택 고유 값
+							auth:isDelAuth == "true" ? true : false,
+							url:BASEPATH+'/delete',
+							keyName: "delPhaseList", // 배열 이름
+							msgList: {
+								confirmMsg: "{{ message('msg.009') }}",
+								confirmTit: "{{ message('item.dfccy.043') }}",
+								completeMsg: "{{ message('msg.006') }}"
+							},
+							success: (rowData) => {
+								let cntrctNo = $('#cntrct_select').val() ?? urlCntrctNo;
+								phase.read(cntrctNo);
+							}
+						},
+						{
+							type:"arrowUp",
+							auth:isMoveAuth == "true" ? true : false,
+							success:(rowData)=>{
+								changeOrder(rowData,"u");
+							}
+						},
+						{
+							type:"arrowDown",
+							auth:isMoveAuth == "true" ? true : false,
+							success:(rowData)=>{
+								changeOrder(rowData,"d");
+							}
+						},
+					]
+                }
+            }
+        ],
+        header: {
+            height: 120,
+            complexColumns: [
+                {
+                    header: "{{ message('item.dfccy.005') }}",
+                    name: 'deficiency',
+                    childNames: ['deficiency_bgn_date', 'deficiency_end_date', 'deficiency_status']
+                },
+                {
+                    header: "{{ message('item.dfccy.008') }}",
+                    name: 'response',
+                    childNames: ['response_bgn_date', 'response_end_date', 'response_status']
+                },
+                {
+                    header: "{{ message('btn.010') }}",
+                    name: 'confirm',
+                    childNames: ['confirm_bgn_date', 'confirm_end_date', 'confirm_status']
+                },
+                {
+                    header: "{{ message('item.dfccy.015') }}",
+                    name: 'finish',
+                    childNames: ['finish_bgn_date', 'finish_end_date', 'finish_status']
+                },
+
+            ],
+        },
+        columns: [
+            {name: 'dfccy_phase_no', 		header: "결함단계번호", 	 hidden: 'true'},
+            {name: 'dfccy_phase_nm', 		header: "{{ message('item.dfccy.016') }}", 	    align: 'left', resizable: true, ellipsis: true, width: 150,
+                renderer: {
+                    type: window.IconRenderer,
+                    options: [{
+						type:"newWindow",
+						align:"right",
+						isHover:true,
+                        idFields: "cntrct_no,dfccy_phase_no",
+                        gridId: "phase_grid",
+						open:{
+							url:`/defectTracking/setting/detail?pjtNo=${pjtNo}&cntrctNo={id1}&page=p&pNo={id2}`,
+							target:'settingDetailPopup',
+							width:1200,
+							height:550,
+							align:'center'
+						}
+                    }]
+
+                }
+            },
+            {name: 'dsply_ordr', 		    header: "{{ message('item.com.082') }}", 	 	align: 'right', },
+            {name: 'deficiency_bgn_date', 	header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'deficiency_end_date', 	header: "{{ message('item.com.030') }}", 	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'deficiency_status', 	header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'response_bgn_date', 	header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'response_end_date', 	header: "{{ message('item.com.030') }}", 	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'response_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'confirm_bgn_date', 	    header: "{{ message('item.com.029') }}",		align: 'center', resizable: true, ellipsis: true},
+            {name: 'confirm_end_date', 	    header: "{{ message('item.com.030') }}",	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'confirm_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'finish_bgn_date', 	    header: "{{ message('item.com.029') }}",		align: 'center', resizable: true, ellipsis: true},
+            {name: 'finish_end_date', 	    header: "{{ message('item.com.030') }}",	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'finish_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+        ],
+        contextMenu: null,
+    })
+	function changeOrder(rowData, moveType){
+		let rowKey = rowData.rowKey;
+		let currNo = rowData.dfccy_phase_no;
+		const currOrder = rowData.dsply_ordr;
+		let data = null;
+		if (moveType === 'u') {
+			// 윗 행
+			const prevRow = phaseGrid.getRow(rowKey-1);
+			if (!prevRow) {
+				gaiaCommon.customAlert("최상단 항목입니다.");
+				return;
+			}
+
+			let prevNo = prevRow.dfccy_phase_no;
+			let prevOrder = prevRow.dsply_ordr;
+
+			data = [
+				{ ["dfccyPhaseNo"]: currNo, dsplyOrdr: prevOrder },
+				{ ["dfccyPhaseNo"]: prevNo, dsplyOrdr: currOrder },
+			]
+		} else {
+			// 아래 행
+			let nextRow = phaseGrid.getRow(rowKey + 1);
+			if (!nextRow) {
+				gaiaCommon.customAlert("최하단 항목입니다.");
+				return;
+			}
+
+			let nextNo = nextRow.dfccy_phase_no;
+			let nextOrder = nextRow.dsply_ordr
+
+			data = [
+				{ ["dfccyPhaseNo"]: currNo, dsplyOrdr: nextOrder },
+				{ ["dfccyPhaseNo"]: nextNo, dsplyOrdr: currOrder },
+			]
+		}
+		$.ajax({
+			url: BASEPATH+'/move',
+			method: "POST",
+			contentType: "application/json",
+			dataType: "json",
+			data: JSON.stringify(data),
+			success: function (response) {
+				let cntrctNo = $('#cntrct_select').val() ?? urlCntrctNo;
+				phase.read(cntrctNo);
+			},
+			error: function (jqXHR, textStatus, errorThrown) {
+				gaiaCommon.customAlert("다시 시도해 주세요.");
+			}
+		});
+	}
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M090106", "{{ message('item.dfccy.046') }}");
+                phase.init();
+            }
+        });
+    })
+
+</script>
+{% endblock footer_script %}

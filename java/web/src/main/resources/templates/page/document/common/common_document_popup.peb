@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	{% include "sub/head" %}
+    <style>
+        html, body {
+            min-width: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="page_wrap">
+        <section class="contents_wrap g-row">
+            <article class="conts g-row">
+                <div class="group">
+                    <h3 class="conts_tit">{{ message('item.doc.077') }}</h3>      <!-- 사용자 목록-->
+                    <div class="conts_grid">
+                        <div class="table-scroll grid">
+                            <table class="table ta_c table-scroll" id="list-grid">
+                                <colgroup>
+                                    <col width="130px">
+                                    <col width="90px">
+                                    <col>
+                                    <col>
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>{{ message('item.com.025') }}</th>          <!-- 계정-->
+                                        <th>{{ message('item.authority.021') }}</th>    <!-- 부서-->
+                                        <th>{{ message('item.com.024') }}</th>          <!-- 이름-->
+                                        <th>{{ message('item.com.026') }}</th>          <!-- 직책-->
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="toolbar" style="float: right;">
+                            <button type="button" class="btn _outline" onclick="self.close()">{{ message('btn.007') }}</button>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </div>
+</body>
+<script>
+    $(document).ready(function(){
+        gaia.create({
+            $init: function ($params) {
+                const params = new URLSearchParams(window.location.search);
+
+                SelectNaviAuthorityGroupUserList = {
+                    rghtGrpNo: params.get('rghtGrpNo'),
+                    rghtGrpCd: params.get('rghtGrpCd'),
+                };
+                gaiaCommon.post("/api/document/navigation-authority/user-list", SelectNaviAuthorityGroupUserList, function (result) {
+                    let userInfo = result.details?.userInfo.split(':');
+                    const tableBody = document.querySelector("#list-grid tbody");
+
+                    if(userInfo[2] === "PGAIA" || userInfo[2] === "GAIA") {
+                        $("body").attr("class", "gaia");
+                    }else {
+                        $("body").attr("class", userInfo[2].toLowerCase());
+                    }
+
+                    if(result.details?.naviAuthorityGroupUserList.length) {
+                        $.each(result.details?.naviAuthorityGroupUserList, function(index, obj) {
+                            const row = document.createElement("tr");
+
+                            row.innerHTML = `   <td style="text-align: center; vertical-align: middle;">
+                                                    <div style="display: flex; justify-content: center; position: relative;">
+                                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; padding-left: 5px;">${obj.login_id}</span>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: center; vertical-align: middle;">
+                                                    <div style="display: flex; justify-content: center; position: relative;">
+                                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; padding-left: 5px;">${obj.dept_nm}</span>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: center; vertical-align: middle;">
+                                                    <div style="display: flex; justify-content: center; position: relative;">
+                                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; padding-left: 5px;">${obj.usr_nm}</span>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: center; vertical-align: middle;">
+                                                    <div style="display: flex; justify-content: center; position: relative;">
+                                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; padding-left: 5px;">${obj.pstn_nm}</span>
+                                                    </div>
+                                                </td>`;
+
+                            tableBody.appendChild(row);
+                        });
+                    }else {
+                        const row = document.createElement("tr");
+                        let msg = "{{ message('msg.doc.121') }}"; //사용자 정보가 존재하지 않습니다.
+
+                        row.innerHTML = `   <td style="text-align: center; vertical-align: middle;" colspan='4'>
+                                                <div style="display: flex; justify-content: center; position: relative;">
+                                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; padding-left: 5px;">${msg}</span>
+                                                </div>
+                                            </td>`;
+
+                        tableBody.appendChild(row);
+                    }
+                });
+
+                const box = document.querySelector('.table');
+                let strHeight = 0;
+                if(box.offsetHeight < 270) {
+                    strHeight = box.offsetHeight + 220;
+                    window.resizeTo('500', strHeight);
+                }
+                // console.log(box.offsetWidth, box.offsetHeight);
+                // console.log(strHeight);
+
+                gaia.loaded = true;
+            }
+        });
+    })
+</script>
+</html>

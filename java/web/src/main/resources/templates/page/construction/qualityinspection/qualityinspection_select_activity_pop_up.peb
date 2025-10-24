@@ -1,0 +1,254 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_grid">
+                <div class="btn_area s_default _outline">
+                    <button type="button" class="btn save-btn" onclick="popup.save()">{{ message('btn.006') }}</button>
+                    <!-- 저장 -->
+                    <button type="button" class="btn" onclick="popup.closePage()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 -->
+                </div>
+                <p class="selected_list" id="selectedItemsContainer" style="margin-top: 10px;">
+                    <!-- 선택된항목 -->
+                </p>
+                <div class="search_wrap">
+                    <div class="searchbox_wrap">
+                        <input type="text" id="searchInput" placeholder='{{ message("msg.quality.010") }}' />
+                        <!-- WBS, Activity 명 -->
+                        <button type="button" class="icon_btn search">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid" id="activityGrid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo')
+    $(function () {
+        // gaia.create({
+        // $init: function ($params) {
+
+
+        popup.init();
+        // }
+        // });
+    });
+
+    var popup = {
+        init: function () {
+            gaiaPortal.navMenuInit('', '{{ message("item.quality.025") }}');    // Activity 목록
+            activityGrid.init();
+            activityGrid.getGridData();
+        },
+        save: function () {
+            if (activityGrid.selectedItems.length > 0) {
+                // 부모 창의 각 필드
+                const activityInput = window.opener.document.getElementById('activity_nm');
+                const wbsCdInput = window.opener.document.getElementById('wbs_cd');
+                const activityIdInput = window.opener.document.getElementById('activity_id');
+
+                let activityValues = [];
+                let wbsCdValues = [];
+                let activityIdValues = [];
+
+                // 선택된 모든 항목들의 값 추가
+                activityGrid.selectedItems.forEach(item => {
+                    activityValues.push(item.activity_nm);
+                    wbsCdValues.push(item.wbs_cd);
+                    activityIdValues.push(item.activity_id);
+                });
+
+                activityInput.value = activityValues.join("\n");
+                wbsCdInput.value = wbsCdValues.join(", ");
+                activityIdInput.value = activityIdValues.join(", ");
+
+                window.close();
+            } else {
+                gaiaCommon.customAlert('{{ message("msg.021") }}'); // msg.021 = 선택된 항목이 없습니다.
+            }
+        },
+        closePage: function () {
+            window.close();
+        }
+    }
+    let activityGrid = {
+        selectedItems: [],
+
+        init: function () {
+            let _this = this;
+
+            if (!this.activityGrid) {
+                this.activityGrid = new tui.Grid({
+                    el: document.getElementById('activityGrid'),
+                    bodyHeight: 200,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 70,
+                        },
+                    ],
+                    columns: [
+                        { header: "WBS", name: "path_nm", resizable: true }, // 비율로 설정
+                        { header: '{{ message("item.construction.052") }}', name: "activity_nm", resizable: true },    // Activity 명
+                        { header: '{{ message("item.quality.026") }}', name: "plan_start", align: "center", width: 150 },    // 계획 시작일
+                        { header: '{{ message("item.quality.027") }}', name: "plan_finish", align: "center", width: 150 },   // 계획 완료일
+                        { header: '{{ message("item.quality.028") }}', name: "actual_start", align: "center", width: 150 },  // 실행 시작일
+                        { header: '{{ message("item.quality.029") }}', name: "actual_finish", align: "center", width: 150 }, // 실행 종료일
+                        { header: "wbs_cd", name: "wbs_cd", hidden: true },
+                        { header: '{{ message("item.com.051") }}', name: "activity_id", hidden: true }, // 일정
+                    ],
+                    header: {
+                        height: 70,
+                        complexColumns: [
+                            {
+                                header: '',
+                                name: 'schedule',
+                                childNames: ['plan_start', 'plan_finish', 'actual_start', 'actual_finish']
+                            },
+                        ]
+                    }
+                })
+                this.activityGrid.on('check', function () {
+                    _this.updateSelectedItems();
+                });
+
+                this.activityGrid.on('uncheck', function () {
+                    _this.updateSelectedItems();
+                });
+            }
+            // 검색
+            $('.icon_btn.search').on('click', function () {
+                const searchValue = $('#searchInput').val();
+                let list = _this.getGridData(searchValue);
+                if (list) {
+                    _this.activityGrid.resetData(list);
+                }
+                const selectedContainer = document.getElementById('selectedItemsContainer');
+                selectedContainer.innerHTML = '';
+                selectedContainer.classList.remove('on')
+            });
+            // 엔터키 검색
+            $(document).ready(function () {
+                $('#searchInput').on('keypress', function (event) {
+                    if (event.which === 13) {
+                        const searchValue = $('#searchInput').val();
+                        let list = _this.getGridData(searchValue);
+                        if (list) {
+                            _this.activityGrid.resetData(list);
+                        }
+                        const selectedContainer = document.getElementById('selectedItemsContainer');
+                        selectedContainer.innerHTML = '';
+                        selectedContainer.classList.remove('on')
+                    }
+                });
+            });
+            this.activityGrid.on("errorResponse", function (ev) {
+                const statusCode = ev.xhr.status;
+
+                if (statusCode === 403) {
+                    gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                } else {
+                    console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                }
+            });
+
+            let list = this.getGridData();
+            if (list) {
+                this.activityGrid.resetData(list);
+                refreshGrid(this.activityGrid);
+            }
+        },
+        getGridData: function (searchValue = '') {
+            if (!this.activityGrid) {
+                return;
+            }
+            let _this = this;
+            let data = [];
+            var param = {
+                cntrctNo: cntrctNo
+            };
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+            }
+
+            $.ajax({
+                url: `/api/construction/qualityinspection/activity/list`,
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function (response) {
+                    if (response && response.details) {
+                        data = response.details.activityList;
+                        _this.activityGrid.resetData(data);
+                    }
+                },
+                error: function (response) {
+                    console.log(response);
+                }
+            });
+            return data;
+        },
+        updateSelectedItems: function () {
+            const selectedRows = this.activityGrid.getCheckedRows();
+            this.selectedItems = selectedRows;
+            const selectedContainer = document.getElementById('selectedItemsContainer');
+            selectedContainer.innerHTML = '';
+
+            if (this.selectedItems.length > 0) {
+                selectedContainer.classList.add('on');
+                this.selectedItems.forEach((row, index) => {
+                    const item = document.createElement('span');
+                    item.className = 'selected_item';
+                    item.innerHTML = `
+                    <span class="item name">${index + 1}. ${row.activity_nm}</span>
+                    <button type="button" class="icon_btn" onclick="activityGrid.removeSelectedItem(${row.rowKey})">
+                        <i class="ic ic-close"></i>
+                        <span class="blind">삭제</span>
+                    </button>
+                `;
+                    selectedContainer.appendChild(item);
+                });
+            } else {
+                selectedContainer.classList.remove('on');
+            }
+        },
+        removeSelectedItem: function (rowKey) {
+            this.activityGrid.uncheck(rowKey);
+            this.updateSelectedItems();
+        },
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.body.addEventListener('click', function (event) {
+            if (event.target && event.target.id === 'checkAll') {
+                const isChecked = event.target.checked;
+
+                if (isChecked) {
+                    activityGrid.activityGrid.checkAll();
+                } else {
+                    activityGrid.activityGrid.uncheckAll();
+                }
+                activityGrid.updateSelectedItems();
+            }
+        });
+    });
+</script>
+{% endblock footer_script %}

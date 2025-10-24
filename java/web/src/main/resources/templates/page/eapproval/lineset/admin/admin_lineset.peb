@@ -1,0 +1,392 @@
+{% extends 'layout/base_content' %} {% block head %}
+
+<style>
+    .selected_item {
+        display: inline;
+        margin: 5px;
+    }
+
+    .no_result {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .sortable_item.focused {
+        z-index: 1;
+    }
+</style>
+<script src="/webjars/jstree/jstree.min.js"></script>
+
+{% endblock %} {% block content %}
+
+<section class="contents_wrap ty1">
+    <article class="conts_area">
+        <div class="conts" id="container">
+            <div class="group">
+                <div class="conts_grid" id="dfccy_list">
+                    <div class="toolbar">
+                        <div class="btn_area s_default _outline">
+                            {{ btnHtml | raw }}
+<!--                            <button type="button" class="btn" onclick="page.delete()">{{ message('btn.002') }}</button>-->
+<!--                            <button type="button" class="btn" onclick="page.modify()">{{ message('btn.003') }}</button>-->
+<!--                            <button type="button" class="btn _fill" onclick="page.add()">{{ message('btn.001') }}</button>-->
+                        </div>
+                    </div>
+                    <div class="grid" id="lineset_grid"></div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 팝업 내용 -->
+</div>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+    const USER_ID = '{{USER_ID}}';
+    const isDelAuth = '{{isDelAuth}}';
+
+    let selectUsers = [];
+    let lineCnt = 0;
+    let lineIndex = 0;
+
+    var page = {
+        init(){
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            linesetGrid.init();
+
+            gaiaCommon.makeCntrctSelectBox(
+                    "#container",
+                    () => {
+                        // 계약 없을 때
+                    },
+                    (cntrctNo) => {
+                        // 초기 콜백함수
+                        page.read(cntrctNo);
+                    },
+                    (cntrctNo) => {
+                        // Change 이벤트 함수
+                        page.read(cntrctNo);
+                    }
+            );
+
+            gaia.loaded = true;
+        },
+        read(selectedCntrctNo){
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.get(`/api/eapproval/lineset/adminList/${selectedCntrctNo}`, "", function(data) {
+                gaiaCommon.LoadingOverlay('body', false);
+                let lineset = data.details.lineset;
+                lineset.map(item => {
+                    let htmlDiv = '';
+                    if (item.ap_user_info && item.ap_user_info.trim() !== '') {
+                        let info = item.ap_user_info.split('/');
+                        info.forEach(user => {
+                            htmlDiv += `<span class="selected_item">
+                                            <span class="item">${user}</span>
+                                        </span>`;
+                        });
+                    }
+                    item.ap_user_info = htmlDiv;
+                })
+                linesetGrid.grid.resetData(lineset);
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            })
+        },
+        add(){
+            gaiaCommon.checkAuth("AP_LINESET_ADM_C_01", () => {
+                $("#popup").load(`/eapproval/lineset/admin-lineset-create?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                $("#popup").css({"display":"flex"});
+            });
+        },
+        modify(){
+            const checkedRows = linesetGrid.grid.getCheckedRows();
+            let chkLength = checkedRows.length;
+
+            if(chkLength === 0 || chkLength > 1) {
+                let setMsg = "{{ message('msg.036') }}".replace("{0}", "{{ message('btn.003') }}")
+                gaiaCommon.customAlert(setMsg);
+                return
+            }
+
+            let rowData = checkedRows[0];
+
+            gaiaCommon.checkAuth("AP_LINESET_ADM_U_01", () => {
+                $("#popup").load(`/eapproval/lineset/admin-lineset-update/${rowData.ap_line_no}?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                $("#popup").css({"display":"flex"});
+            });
+        },
+        delete(){
+            let selectedRow = [];
+
+            linesetGrid.grid.getCheckedRows().forEach((rowData)=> {
+                selectedRow.push(rowData.ap_line_no);
+            });
+
+            if(selectedRow.length === 0 ) {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+                return;
+            }
+
+            gaiaCommon.customConfirm("{{ message('btn.002') }}", "{{ message('item.app.061') }}", "{{ message('msg.009') }}", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                let data = {
+                    ["delList"] : selectedRow
+                };
+
+                gaiaCommon.post("/api/eapproval/lineset/delete-admin-lineset", data, function(result) {
+                    gaiaCommon.customAlert("{{ message('msg.006') }}", function () {
+                        location.reload();
+                    });
+                }, function (error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                });
+            });
+        },
+        search(event) {
+            let $autoMaker = $(event.target).closest('li').find('#autoMaker');
+            let $userId = $(event.target).closest('li').find('#add_usr_id').val();
+            let $apType = $(event.target).closest('li').find('#apDivType').val();
+
+            $autoMaker.empty();
+
+            // 키워드 지우기 설정
+            if (!event.data && selectUsers.length > 0) {
+                selectUsers = selectUsers.filter(item => !(item.userId === $userId && item.apDivType === $apType));
+                lineCnt--;
+                if(lineCnt < 0) lineCnt = 0;
+                // 필드 값 초기화
+                $(event.target).val('');
+                $(event.target).closest('li').find('#add_usr_id').val('');
+                $(event.target).closest('li').find('#add_login_id').val('');
+                $(event.target).closest('li').find('#usr_nm').val('');
+                $(event.target).closest('li').find('#choiceStatus').val('false');
+
+                $autoMaker.removeClass('on');
+
+                return;
+            }
+
+            let text = event.target.value?.trim() || $(event.target).closest('li').find('#addAppLineName').val().trim();
+
+            if(text){
+                setTimeout(function() {
+                    $autoMaker.addClass('on');
+                }, 0);
+
+                if(text.length < 2) {
+                    setTimeout(function() {
+                        $autoMaker.append($('<div>').text("{{ message('msg.app.033') }}"));
+                    }, 0);
+                } else {
+                    let data = {
+                        searchText: text,
+                        cntrctNo: cntrctNo
+                    }
+                    gaiaCommon.get("/api/eapproval/lineset/search-admin-lineset", data, function(result) {
+                        var list = result.details.searchList;
+                        var appLineList = document.querySelectorAll(".appLine");
+
+                        $autoMaker.empty();
+
+                        if(list.length > 0) {
+                            $.each(list, function(index, obj) {
+                                let autoMakerHtml = `<div class="autoMakeList" usr_id=${obj.usr_id} login_id=${obj.login_id} usr_nm=${obj.usr_nm}>
+                                                        ${obj.usr_nm} / ${obj.dept_nm}
+                                                    </div>`
+                                $autoMaker.append(autoMakerHtml);
+                            });
+
+                            $autoMaker.children('.autoMakeList').each(function(){
+
+                                $(this).click(function(){
+                                    var $target = $(event.target);
+                                    let selectUserId = $(this).attr('usr_id');
+                                    let selectApDiv = $target.closest('li').find('#apDivType').val();
+
+                                    // 중복검사 진행
+                                    let isDuplicate = page.duplicate(selectUserId, selectApDiv);
+
+                                    if (isDuplicate) {
+                                        gaiaCommon.customAlert("{{ message('msg.app.023') }}");
+                                        $target.val('');
+                                        $autoMaker.removeClass('on');
+                                        return;
+                                    }
+                                    // 중복검사 종료
+
+                                    $target.val($(this).text().trim());
+                                    $autoMaker.removeClass('on');
+                                    $target.closest('li').find('#choiceStatus').val("true");
+                                    $target.closest('li').find('#add_usr_id').val($(this).attr('usr_id'));
+                                    $target.closest('li').find('#add_login_id').val($(this).attr('login_id'));
+                                    $target.closest('li').find('#usr_nm').val($(this).attr('usr_nm'));
+
+                                    selectUsers.push({userId: selectUserId, apDivType:selectApDiv});
+
+                                });
+                            });
+                        } else {
+                            setTimeout(function() {
+                                $autoMaker.append($('<div>').text("{{ message('msg.app.036') }}"));
+                            }, 0);
+                        }
+                    }, function (error) {
+                        gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    })
+                }
+            } else {
+                setTimeout(function() {
+                    $autoMaker.addClass('on').append($('<div>').text("{{ message('msg.app.033') }}"));
+                }, 0);
+            }
+        },
+        duplicate(id, div){
+            let isDuplicate = false;
+
+            $.each(selectUsers, function(index, item) {
+                if (id === item.userId && div === item.apDivType) {
+                    isDuplicate = true;
+                    return false;  // 루프 종료
+                }
+            });
+
+            return isDuplicate;
+        },
+        //결재라인 삭제 함수
+        delLine: function (event) {
+            let runYn = false;
+            const removeList = function(func){
+                if(func === 'hide') {
+                    $(event.target).closest('li').hide();
+                } else {
+                    $(event.target).closest('li').remove();
+                }
+                lineCnt--;
+                if(lineCnt < 0) lineCnt = 0;
+                if(lineCnt < 1 && $('.sortable_item.appLine:visible').length < 1) {
+                    $('#addAppLineMessage').show();
+                }
+                // CSS카운트 초기화
+                page.cntInit();
+            }
+
+            if($(event.target).closest('li').find('#choiceStatus').val() === "true") {
+                if(!runYn) {
+                    runYn = true;
+                    // 중복검사 배열에서 삭제
+                    let selectUserId = $(event.target).closest('li').find('#add_usr_id').val();
+                    let selectApDiv = $(event.target).closest('li').find('#apDivType').val();
+                    for (let i = 0; i < selectUsers.length; i++) {
+                        if (selectUsers[i].userId === selectUserId && selectUsers[i].apDivType === selectApDiv) {
+                            selectUsers.splice(i, 1);
+                            break;
+                        }
+                    }
+                    // 삭제완료
+                    removeList('hide');
+                }
+
+            }else {
+                runYn = true;
+                removeList('remove');
+            }
+        },
+        // 결재선 카운트 초기화 함수
+        cntInit(){
+            if(lineCnt > 0 || $('.sortable_item.appLine:visible').length > 0) {
+                var $list = $('#modal_apLine');
+                // CSS 카운트 클래스 제거하여 카운터 초기화
+                $list.removeClass('ol_colorsquare');
+                // 강제로 리페인트(Repaint) 트리거
+                void $list[0].offsetWidth;
+                // 클래스 다시 추가하여 카운터 재설정
+                $list.addClass('ol_colorsquare');
+            }else {
+                $('#info_msg').show();
+            }
+        },
+        //결재선 포커스 이벤트
+        setFocus: function(event, focusYn) {
+            let $li = $(event.target).closest('li');
+            $li.toggleClass('focused', focusYn);
+        },
+    }
+
+    let linesetGrid = {
+        init(){
+            if(!this.grid){
+                this.grid = new tui.Grid({
+                    el: lineset_grid,
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    minBodyHeight: 40,
+                    width: 'auto',
+                    bodyHeight: 500,
+                    rowHeaders:[
+                    {
+                        type: 'checkbox',
+                        header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                        width: 100,
+                        renderer: {
+                            type: window.IconRenderer,
+                            options: [
+                                {type:"checkBox"},
+                                {
+                                    type:"trash",
+                                    //휴지통 클릭 삭제 시 필요한 값 설정
+                                    url: '/api/eapproval/lineset/delete-admin-lineset',
+                                    idField: "ap_line_no", // 선택 고유 값
+                                    auth: isDelAuth == "true",
+                                    keyName: "delList", // 배열 이름
+                                    msgList: {
+                                        confirmTit: "{{ message('btn.002') }}",
+                                        confirmSubTit: "{{ message('item.app.061') }}",
+                                        confirmMsg: "{{ message('msg.009') }}",
+                                        completeMsg: "{{ message('msg.006') }}"
+                                    },
+                                    success: function() {
+                                        location.reload();
+                                    }
+                                }
+                            ]
+                        }
+                    }],
+                    columns:[
+                        { name: 'ap_type_krn',		header: "{{ message('item.app.059') }}",	align: 'left',	resizable: true, ellipsis: true},
+                        { name: 'ap_line_nm',		header: "{{ message('item.app.058') }}",	align: 'left',	resizable: true, ellipsis: true},
+                        { name: 'ap_user_info',		header: "{{ message('item.app.003') }}",	align: 'left',	    resizable: true, ellipsis: true, width: 800} ,
+                        { name: 'chg_dt',		    header: "{{ message('item.com.002') }}",	align: 'center',	resizable: true, ellipsis: true, sortable: true, sortingType: 'asc'},
+                    ],
+                })
+            } else {
+                this.grid.resetData([]);
+            }
+            refreshGrid(this.grid);
+
+        }
+    }
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M060402", "{{ message('item.app.060') }}");
+                page.init();
+            }
+        });
+    })
+</script>
+
+
+
+{% endblock footer_script %}

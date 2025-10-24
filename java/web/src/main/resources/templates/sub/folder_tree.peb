@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jsTree Example</title>
+    
+    <!-- jsTree Theme CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+ 
+    <!-- jsTree 사용을 위한 jQuery 호출 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+ 
+    <!-- jsTree 호출 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+ 
+</head>
+<body>
+	<!-- jsTree 컨테이너 생성 -->
+	<div id="jstree">
+	  <!-- jstree의 컨테이너 안에 리스트 태그로 구성 -->
+	</div>
+  </body>
+  <script>
+	$(document).ready(function () {
+	  // DOM의 호출이 완료되면 jsTree 인스턴스 생성
+	  $("#jstree").jstree({
+          core: {
+            themes: {
+              dots: true, // 연결선을 활성화
+            },
+            data: [
+              // $.ajax({
+              //   url: '/api/sample-domain/folder-data',
+              //   method: 'GET',
+              //   async: true,
+              //   headers: {
+              //     "Content-Type" : "application/json"
+              //   },
+              //   dataType: 'json',
+              //   success : function(data) { // 결과 성공 콜백함수        
+              //     console.log(result);    
+              //   },    
+              //   error : function(request, status, error) { // 결과 에러 콜백함수
+              //     console.log(error)    
+              //   }
+              // })
+              /*예시 데이터 (임시)*/
+              {
+                text: "hjlee1",
+                children: [
+                  { text: "hjlee2" }, // 파일 아이콘을 사용할 경우
+                ],
+              },
+              {
+                text: "hj",
+              },
+            ]
+          },
+          checkbox: {
+            keep_selected_style: false, // 선택된 노드의 스타일을 기본값으로 유지
+          },
+          plugins: ["checkbox"], // 체크박스 플러그인 활성화
+        });
+	  // 트리에 이벤트 바인딩 설정
+	  $('#jstree').on("changed.jstree", function (e, data) {
+		console.log(data.selected);
+	  });
+	});
+  </script>
+</html>

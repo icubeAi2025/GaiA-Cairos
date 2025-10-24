@@ -1,0 +1,1339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval">
+    <insert id="insertAlarm" parameterType="alarmInput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.insertAlarm][dhjung]  */
+        INSERT INTO alarmtb (
+            knd, imp, tarid, contit, context, url, transtm, useyn, usr_id, usr_ip, ins_dat, upt_dat
+        )
+        VALUES (
+            '1', '2', #{tarid}, #{contit}, #{context}, #{url}, #{transtm}, 'Y', #{usrId}, #{usrIp}, now(), now()
+        )
+    </insert>
+
+    <insert id="insertNextAlarms" parameterType="list">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.insertNextAlarms][dhjung]  */
+        INSERT INTO alarmtb (
+            knd, imp, tarid, contit, context, url, transtm, useyn, usr_id, usr_ip, ins_dat, upt_dat
+        )
+        VALUES 
+        <foreach collection="list" item="item" separator=",">
+        ( 
+            '1', '2', #{item.tarid}, #{item.contit}, #{item.context}, #{item.url}, #{item.transtm}, 'Y', #{item.usrId}, #{item.usrIp}, now(), now()
+        )
+        </foreach>
+    </insert>
+
+
+    <insert id="insertCompleteAlarms">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.insertCompleteAlarms][dhjung]  */
+        INSERT INTO alarmtb (
+            knd, imp, tarid, contit, context, url, transtm, useyn, usr_id, usr_ip, ins_dat, upt_dat
+        )
+        VALUES
+        <foreach collection="list" item="alarm" separator=",">
+            (
+                '1', '2', #{alarm.tarid}, #{alarm.contit}, #{alarm.context}, #{alarm.url}, #{alarm.transtm}, 'Y', #{alarm.usrId}, #{alarm.usrIp}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+
+    <update id="updateDeleteShare">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.updateDeleteShare][dhjung]  */
+        <foreach collection="list" item="item" separator=";">
+            UPDATE ap_share
+            SET dlt_yn = 'Y'
+            WHERE ap_doc_id = #{item.apDocId}
+              AND ap_cnrs_id = #{item.apCnrsId}
+        </foreach>
+    </update>
+
+    <update id="updateApLine" parameterType="apLineUpdate">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.updateApLine][dhjung]  */
+        UPDATE ap_line
+           SET ap_stats = #{apStats},
+               ap_usr_opnin = #{apUsrOpnin},
+               chg_id = #{apUsrId},
+               chg_dt = NOW()
+         WHERE ap_doc_id = #{apDocId}
+           AND ap_usr_id = #{apUsrId}
+           AND ap_div = 'A'
+    </update>
+
+    <update id="updateApDoc">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.updateApDoc][dhjung]  */
+        <foreach collection="list" item="item" separator=";">
+            UPDATE ap_doc 
+               SET ap_doc_stats = #{item.apDocStats}
+                 , chg_id = #{item.apUsrId}
+                 , chg_dt = NOW()
+                    <if test='item.apDocStats == "C" or item.apDocStats == "R"'>
+                        , ap_cmplt_dt = NOW()
+                    </if>
+             WHERE ap_doc_id = #{item.apDocId}
+               AND dlt_yn = 'N'
+               AND ap_doc_stats IN ('I', 'W')
+        </foreach>
+    </update>
+
+    <update id="updateReferenceDate">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.updateReferenceDate][dhjung]  */
+        UPDATE ap_line 
+           SET ap_stats = 'A', chg_id = #{apUsrId}, chg_dt = NOW() 
+         WHERE ap_usr_id = #{apUsrId} 
+           AND ap_doc_id = #{apDocId}
+           AND ap_div = 'R'
+           AND ap_stats = 'I'
+    </update>
+
+    <select id="selectRequestList" parameterType="approvalListInput" resultType="approvalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectRequestList][dhjung]  */
+        SELECT DISTINCT 
+               A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type,
+               A.ap_doc_title,
+               A.ap_doc_txt,
+               A.frm_no,
+               A.frm_id,
+               A.ap_usr_id,
+               C.usr_nm,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+               A.ap_doc_stats,
+               E.cmn_cd_nm_krn "ap_doc_stats_krn",
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               SCC.cmn_cd_nm_krn AS "ap_type_krn",
+               A.ap_type
+          FROM ap_doc A
+     LEFT JOIN ap_form B USING (frm_no)
+     LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+     LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+     LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+         WHERE A.pjt_no = #{pjtNo}
+           AND A.cntrct_no LIKE #{cntrctNo}||'%'
+           AND A.dlt_yn = 'N'
+           AND A.ap_doc_stats != 'T'
+           AND A.ap_usr_id = #{apUsrId}
+        <include refid="getDetailSearch_Where"></include>
+      ORDER BY ap_app_dt DESC
+        <include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectRequestListCount" parameterType="approvalListInput" resultType="long">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectRequestListCount][dhjung]  */
+        SELECT COUNT(*)
+        FROM (SELECT DISTINCT
+                     A.ap_doc_no,
+                     A.ap_doc_id,
+                     A.pjt_no,
+                     A.cntrct_no,
+                     A.pjt_type,
+                     A.ap_doc_title,
+                     A.ap_doc_txt,
+                     A.frm_no,
+                     A.ap_usr_id,
+                     C.usr_nm,
+                     to_char(A.ap_app_dt,
+                     'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                     to_char(A.ap_cmplt_dt,
+                     'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                     A.ap_doc_stats,
+                     E.cmn_cd_nm_krn "ap_doc_stats_krn",
+                     B.frm_nm_krn,
+                     UP.frm_nm_krn "up_frm_nm_krn"
+                FROM ap_doc A
+           LEFT JOIN ap_form B USING (frm_no)
+           LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+           LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+           LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+               WHERE A.pjt_no = #{pjtNo}
+                 AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                 AND A.dlt_yn = 'N'
+                 AND A.ap_doc_stats != 'T'
+                 AND A.ap_usr_id = #{apUsrId}
+            <include refid="getDetailSearch_Where"></include>
+            ) countTbl
+    </select>
+
+    <select id="selectTemporaryList" parameterType="approvalListInput" resultType="approvalListOutput">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectTemporaryList][dhjung]  */
+        SELECT DISTINCT 
+               A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type,
+               A.ap_doc_title,
+               A.ap_doc_txt,
+               A.frm_no,
+               A.frm_id,
+               B.frm_url,
+               A.ap_usr_id,
+               C.usr_nm,
+               to_char(A.rgst_dt, 'YYYY-MM-DD HH24:MI') AS rgst_dt,
+               A.ap_doc_stats,
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               SCC.cmn_cd_nm_krn AS "ap_type_krn",
+               A.ap_type
+          FROM ap_doc A
+     LEFT JOIN ap_form B USING (frm_no)
+     LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+     LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+         WHERE A.pjt_no = #{pjtNo}
+           AND A.cntrct_no LIKE #{cntrctNo}||'%'
+           AND A.dlt_yn = 'N'
+           AND A.ap_doc_stats = 'T'
+           AND A.ap_usr_id = #{apUsrId}
+		<include refid="getDetailSearch_Where"></include>
+        ORDER BY rgst_dt DESC    
+		<include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectTemporaryListCount" parameterType="approvalListInput" resultType="long">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectTemporaryListCount][dhjung]  */
+		SELECT COUNT(*)
+        FROM (SELECT DISTINCT
+                     A.ap_doc_no,
+                     A.ap_doc_id,
+                     A.pjt_no,
+                     A.cntrct_no,
+                     A.pjt_type,
+                     A.ap_doc_title,
+                     A.ap_doc_txt,
+                     A.frm_no,
+                     A.frm_id,
+                     B.frm_url,
+                     A.ap_usr_id,
+                     C.usr_nm,
+                     to_char(A.rgst_dt, 'YYYY-MM-DD HH24:MI') AS rgst_dt,
+                     A.ap_doc_stats,
+                     B.frm_nm_krn,
+                     UP.frm_nm_krn "up_frm_nm_krn"
+                FROM ap_doc A
+           LEFT JOIN ap_form B USING (frm_no)
+           LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+           LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+               WHERE A.pjt_no = #{pjtNo}
+                 AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                 AND A.dlt_yn = 'N'
+                 AND A.ap_doc_stats = 'T'
+                 AND A.ap_usr_id = #{apUsrId}
+		    <include refid="getDetailSearch_Where"></include>
+        ) countTbl
+    </select>
+
+    <select id="selectWaitingList" resultType="ApprovalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectWaitingList][dhjung]  */
+        SELECT DISTINCT 
+               ROW_NUMBER() OVER (ORDER BY A.ap_app_dt) AS rnum,
+               A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type,
+               A.ap_doc_title,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               A.frm_no,
+               A.frm_id,
+               A.ap_doc_stats,
+               A.dlt_yn,
+               A.ap_usr_id,
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               E.cmn_cd_nm_krn "ap_doc_stats_krn",
+               C.usr_nm,
+               D.ap_usr_id "ap_req_id",
+               D.ap_stats,
+               D.ap_div,
+               SCC.cmn_cd_nm_krn AS "ap_type_krn",
+               A.ap_type
+          FROM ap_doc A
+     LEFT JOIN ap_form B	ON A.frm_no = B.frm_no AND B.dlt_yn = 'N'
+     LEFT JOIN ap_form UP ON	UP.frm_no = B.up_frm_no AND UP.dlt_yn = 'N'
+     LEFT JOIN sm_user_info C ON	A.ap_usr_id = C.usr_id 
+          JOIN ap_line D ON A.ap_doc_id = D.ap_doc_id 
+           AND D.ap_usr_id = #{apUsrId}
+           AND D.ap_div = 'A' 
+           AND D.ap_stats = 'I' 
+           AND NOT EXISTS (
+                        SELECT 1 
+                        FROM ap_line prev 
+                        WHERE prev.ap_doc_id = D.ap_doc_id
+                        AND prev.ap_order <![CDATA[ < ]]> D.ap_order 
+                        AND prev.ap_div = 'A' 
+                        AND prev.ap_stats != 'A'
+                    )
+        LEFT JOIN sm_com_code E ON	A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+        LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+        WHERE A.pjt_no = #{pjtNo}
+          AND A.cntrct_no LIKE #{cntrctNo}||'%'
+          AND A.dlt_yn = 'N'
+          AND A.ap_doc_stats IN ('I', 'W')
+        <include refid="getDetailSearch_Where"></include>
+        ORDER BY ap_app_dt DESC
+		<include refid="sqlx.commonPageable"></include>    
+    </select>
+
+    <select id="selectWaitingListCount" resultType="long">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectWaitingListCount][dhjung]  */
+            SELECT count(*)
+              FROM ap_doc A
+              JOIN ap_line D ON A.ap_doc_id = D.ap_doc_id
+               AND D.ap_usr_id = #{apUsrId}
+               AND D.ap_div = 'A' 
+               AND D.ap_stats = 'I' 
+               AND NOT EXISTS (
+                           SELECT 1 
+                           FROM ap_line prev 
+                           WHERE prev.ap_doc_id = D.ap_doc_id
+                           AND prev.ap_order <![CDATA[ < ]]> D.ap_order 
+                           AND prev.ap_div = 'A' 
+                           AND prev.ap_stats != 'A'
+                       )
+             WHERE A.pjt_no = #{pjtNo}
+                AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                AND A.dlt_yn = 'N'
+                AND A.ap_doc_stats IN ('I', 'W')
+            <include refid="getDetailSearch_Where"></include>
+    </select>
+
+    <select id="selectProgressList" parameterType="approvalListInput" resultType="approvalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectProgressList][dhjung]  */
+        SELECT DISTINCT 
+               ROW_NUMBER() OVER (ORDER BY A.ap_app_dt) AS rnum,
+               A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type, 
+               A.ap_doc_title, 
+               A.ap_doc_txt,
+               A.frm_no,
+               A.frm_id,
+               A.ap_usr_id,
+               C.usr_nm,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+               A.ap_doc_stats,
+               E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               SCC.cmn_cd_nm_krn AS "ap_type_krn"
+          FROM ap_doc A
+     LEFT JOIN ap_form B USING (frm_no)
+     LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+     LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+    INNER JOIN ap_line D using (ap_doc_id)
+     LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+         WHERE A.pjt_no = #{pjtNo}
+            AND A.cntrct_no LIKE #{cntrctNo}||'%'
+            AND A.dlt_yn = 'N'
+            AND D.ap_usr_id = #{apUsrId}
+            AND A.ap_doc_stats ='I'
+            AND D.ap_stats = 'A'
+        <include refid="getDetailSearch_Where"></include>
+        ORDER BY ap_app_dt DESC
+        <include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectProgressListCount" parameterType="approvalListInput" resultType="long">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectProgressListCount][dhjung]  */
+            SELECT COUNT(*)
+            FROM (SELECT DISTINCT
+                         A.ap_doc_no,
+                         A.ap_doc_id,
+                         A.pjt_no,
+                         A.cntrct_no,
+                         A.pjt_type, 
+                         A.ap_doc_title, 
+                         A.ap_doc_txt,
+                         A.frm_no, 
+                         A.ap_usr_id,
+                         C.usr_nm,
+                         to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                         to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                         A.ap_doc_stats,
+                         E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+                         B.frm_nm_krn,
+                         UP.frm_nm_krn "up_frm_nm_krn"
+                    FROM ap_doc A
+               LEFT JOIN ap_form B USING (frm_no)
+               LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+               LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+              INNER JOIN ap_line D using (ap_doc_id)
+               LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+                   WHERE A.pjt_no = #{pjtNo}
+                     AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                     AND A.dlt_yn = 'N'
+                     AND D.ap_usr_id = #{apUsrId}
+                     AND A.ap_doc_stats ='I'
+                     AND D.ap_stats = 'A'
+            <include refid="getDetailSearch_Where"></include>
+        ) countTbl
+    </select>
+
+    <select id="selectClosedList" parameterType="approvalListInput" resultType="approvalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectClosedList][dhjung]  */
+        SELECT DISTINCT
+               ROW_NUMBER() OVER (ORDER BY A.ap_app_dt) AS rnum,
+    	       A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type, 
+               A.ap_doc_title, 
+               A.ap_doc_txt,
+               A.frm_no,
+               A.frm_id,
+               A.ap_usr_id,
+               C.usr_nm,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+               A.ap_doc_stats,
+               E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               SCC.cmn_cd_nm_krn AS "ap_type_krn"
+          FROM ap_doc A
+     LEFT JOIN ap_form B USING (frm_no)
+     LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+     LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+    INNER JOIN ap_line D using (ap_doc_id)
+     LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+         WHERE A.pjt_no = #{pjtNo}
+            AND A.cntrct_no LIKE #{cntrctNo}||'%'
+            AND A.dlt_yn = 'N'
+            AND D.ap_usr_id = #{apUsrId} 
+            AND A.ap_doc_stats ='C'
+            AND D.ap_stats = 'A'
+            AND D.ap_div = 'A'
+        <include refid="getDetailSearch_Where"></include>
+        ORDER BY ap_app_dt DESC
+        <include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectClosedListCount" parameterType="approvalListInput" resultType="long">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectClosedListCount][dhjung]  */
+            SELECT COUNT(*)
+            FROM (SELECT DISTINCT
+                         A.ap_doc_no,
+                         A.ap_doc_id,
+                         A.pjt_no,
+                         A.cntrct_no,
+                         A.pjt_type, 
+                         A.ap_doc_title, 
+                         A.ap_doc_txt,
+                         A.frm_no, 
+                         A.ap_usr_id,
+                         C.usr_nm,
+                         to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                         to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                         A.ap_doc_stats,
+                         E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+                         B.frm_nm_krn,
+                         UP.frm_nm_krn "up_frm_nm_krn"
+                    FROM ap_doc A
+               LEFT JOIN ap_form B USING (frm_no)
+               LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+               LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+              INNER JOIN ap_line D using (ap_doc_id)
+               LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+                   WHERE A.pjt_no = #{pjtNo}
+                     AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                     AND A.dlt_yn = 'N'
+                     AND D.ap_usr_id = #{apUsrId}
+                     AND A.ap_doc_stats ='C'
+                     AND D.ap_stats = 'A'
+                     AND D.ap_div = 'A'
+            <include refid="getDetailSearch_Where"></include>
+        ) countTbl
+    </select>
+
+    <select id="selectRejectedList" parameterType="approvalListInput" resultType="approvalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectRejectedList][dhjung]  */
+        SELECT DISTINCT
+               ROW_NUMBER() OVER (ORDER BY A.ap_app_dt) AS rnum,
+    	       A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type, 
+               A.ap_doc_title, 
+               A.ap_doc_txt,
+               A.frm_no,
+               A.frm_id,
+               A.ap_usr_id,
+               C.usr_nm,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+               A.ap_doc_stats,
+               E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+               B.frm_nm_krn,
+               UP.frm_nm_krn "up_frm_nm_krn",
+               SCC.cmn_cd_nm_krn AS "ap_type_krn"
+          FROM ap_doc A
+     LEFT JOIN ap_form B USING (frm_no)
+     LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+     LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+    INNER JOIN ap_line D ON A.ap_doc_id = D.ap_doc_id
+           AND D.ap_div = 'A' 
+           AND D.ap_stats IN ('A', 'R') 
+           AND D.ap_usr_id = #{apUsrId}
+     LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+         WHERE A.pjt_no = #{pjtNo}
+            AND A.cntrct_no LIKE #{cntrctNo}||'%'
+            AND A.dlt_yn = 'N'   
+            AND A.ap_doc_stats = 'R'
+        <include refid="getDetailSearch_Where"></include>
+        ORDER BY ap_app_dt DESC
+        <include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectRejectedListCount" parameterType="approvalListInput" resultType="long">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectRejectedListCount][dhjung]  */
+            SELECT COUNT(*)
+            FROM (SELECT DISTINCT
+                         A.ap_doc_no,
+                         A.ap_doc_id,
+                         A.pjt_no,
+                         A.cntrct_no,
+                         A.pjt_type, 
+                         A.ap_doc_title, 
+                         A.ap_doc_txt,
+                         A.frm_no, 
+                         A.ap_usr_id,
+                         C.usr_nm,
+                         to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                         to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                         A.ap_doc_stats,
+                         E.cmn_cd_nm_krn "ap_doc_stats_krn",     
+                         B.frm_nm_krn,
+                         UP.frm_nm_krn "up_frm_nm_krn"
+                    FROM ap_doc A
+               LEFT JOIN ap_form B USING (frm_no)
+               LEFT JOIN ap_form UP ON UP.frm_no = B.up_frm_no
+               LEFT JOIN sm_user_info C ON A.ap_usr_id = C.usr_id
+              INNER JOIN ap_line D ON A.ap_doc_id = D.ap_doc_id
+                     AND D.ap_div = 'A' 
+                     AND D.ap_stats IN ('A', 'R') 
+                     AND D.ap_usr_id = #{apUsrId}
+               LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+                   WHERE A.pjt_no = #{pjtNo}
+                     AND A.cntrct_no LIKE #{cntrctNo}||'%'
+                     AND A.dlt_yn = 'N'    
+                     AND A.ap_doc_stats = 'R'
+            <include refid="getDetailSearch_Where"></include>
+        ) countTbl
+    </select>    
+
+    <select id="selectSharedList" parameterType="approvalListInput" resultType="approvalListOutput">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectSharedList][dhjung]  */
+        WITH base_doc AS (
+            SELECT A.ap_doc_no,
+                   A.ap_doc_id,
+                   A.cntrct_no,
+                   A.pjt_no,
+                   A.pjt_type,
+                   A.frm_no,
+                   A.frm_id,
+                   A.ap_doc_title,
+                   A.ap_doc_txt,
+                   A.ap_usr_id,
+                   to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                   to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                   A.dlt_yn,
+                   A.ap_doc_stats,
+                   E.cmn_cd_nm_krn AS ap_doc_stats_krn,
+                   C.frm_nm_krn,
+                   UP.frm_nm_krn AS up_frm_nm_krn,
+                   U.usr_nm,
+                   A.ap_type,
+                   T.cmn_cd_nm_krn AS ap_type_krn
+              FROM ap_doc A
+         LEFT JOIN ap_form C USING (frm_no)
+         LEFT JOIN ap_form UP ON UP.frm_no = C.up_frm_no
+         LEFT JOIN sm_user_info U ON A.ap_usr_id = U.usr_id
+         LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+         LEFT JOIN sm_com_code T ON A.ap_type = T.cmn_cd AND T.cmn_grp_cd = #{cmnGrpCdType}
+             WHERE A.dlt_yn = 'N'
+               AND A.ap_doc_stats = 'C'
+               AND A.pjt_no = #{pjtNo}
+               AND A.cntrct_no LIKE #{cntrctNo}||'%'
+        ),
+        ref_list AS (
+            SELECT B.*
+              FROM base_doc B
+              JOIN ap_line L ON B.ap_doc_id = L.ap_doc_id
+             WHERE L.ap_div = 'R' AND L.ap_usr_id = #{apUsrId}
+        ),
+        share_list AS (
+            SELECT B.*
+            FROM base_doc B
+            JOIN ap_share S ON B.ap_doc_id = S.ap_doc_id AND S.dlt_yn = 'N'
+            WHERE (
+                    (S.ap_cnrs_rng = '01' AND S.ap_cnrs_id IN ( SELECT A.cntrct_no
+                                                                  FROM sm_department A
+                                                                  JOIN sm_organization B ON A.dept_no = B.dept_no
+                                                                   AND B.dlt_yn = 'N'
+                                                                 WHERE A.dlt_yn = 'N'
+                                                                   AND A.pjt_no = #{pjtNo}
+                                                                   AND A.cntrct_no LIKE #{cntrctNo}||'%'))
+                 OR (S.ap_cnrs_rng = '02' AND S.ap_cnrs_id IN ( SELECT A.dept_id
+                                                                  FROM sm_department A
+                                                                  JOIN sm_organization B ON A.dept_no = B.dept_no
+                                                                   AND B.dlt_yn = 'N'
+                                                                   AND B.usr_id = #{apUsrId}
+                                                                 WHERE A.dlt_yn = 'N'
+                                                                   AND A.pjt_no = #{pjtNo}
+                                                                   AND A.cntrct_no LIKE #{cntrctNo}||'%'))
+                 OR (S.ap_cnrs_rng = '03' AND S.ap_cnrs_id = #{apUsrId})
+                 OR (S.ap_sub_yn = 'Y' AND S.ap_cnrs_id IN (SELECT A.up_dept_id
+                                                              FROM sm_department A
+                                                             WHERE A.up_dept_id LIKE '%'||S.ap_cnrs_id||'%'))
+            )
+        )
+        SELECT DISTINCT
+               ROW_NUMBER() OVER (ORDER BY ap_app_dt DESC) AS rnum,
+               *
+        FROM (
+            SELECT * FROM ref_list
+            UNION ALL
+            SELECT * FROM share_list
+        ) AS union_result
+        WHERE 1=1
+        <include refid="getDetailSearch_Where"></include>
+        ORDER BY ap_app_dt DESC
+		<include refid="sqlx.commonPageable"></include>
+    </select>
+
+    <select id="selectSharedListCount" parameterType="approvalListInput" resultType="long">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectSharedListCount][dhjung]  */
+        WITH base_doc AS (
+            SELECT A.ap_doc_no,
+                   A.ap_doc_id,
+                   A.cntrct_no,
+                   A.pjt_no,
+                   A.pjt_type,
+                   A.frm_no,
+                   A.ap_doc_title,
+                   A.ap_doc_txt,
+                   A.ap_usr_id,
+                   to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                   to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                   A.dlt_yn,
+                   A.ap_doc_stats,
+                   E.cmn_cd_nm_krn AS ap_doc_stats_krn,
+                   C.frm_nm_krn,
+                   UP.frm_nm_krn AS up_frm_nm_krn,
+                   U.usr_nm,
+                   A.ap_type,
+                   T.cmn_cd_nm_krn AS ap_type_krn
+              FROM ap_doc A
+         LEFT JOIN ap_form C USING (frm_no)
+         LEFT JOIN ap_form UP ON UP.frm_no = C.up_frm_no
+         LEFT JOIN sm_user_info U ON A.ap_usr_id = U.usr_id
+         LEFT JOIN sm_com_code E ON A.ap_doc_stats = E.cmn_cd AND E.cmn_grp_cd = #{cmnGrpCdDcsts}
+         LEFT JOIN sm_com_code T ON A.ap_type = T.cmn_cd AND T.cmn_grp_cd = #{cmnGrpCdType}
+             WHERE A.dlt_yn = 'N'
+               AND A.ap_doc_stats = 'C'
+               AND A.pjt_no = #{pjtNo}
+               AND A.cntrct_no LIKE #{cntrctNo}||'%'
+        ),
+        ref_list AS (
+            SELECT B.*
+              FROM base_doc B
+              JOIN ap_line L ON B.ap_doc_id = L.ap_doc_id
+             WHERE L.ap_div = 'R' AND L.ap_usr_id = #{apUsrId}
+        ),
+        share_list AS (
+            SELECT B.*
+            FROM base_doc B
+            JOIN ap_share S ON B.ap_doc_id = S.ap_doc_id AND S.dlt_yn = 'N'
+            WHERE (
+                    (S.ap_cnrs_rng = '01' AND S.ap_cnrs_id IN ( SELECT A.cntrct_no
+                                                                  FROM sm_department A
+                                                                  JOIN sm_organization B ON A.dept_no = B.dept_no
+                                                                   AND B.dlt_yn = 'N'
+                                                                 WHERE A.dlt_yn = 'N'
+                                                                   AND A.pjt_no = #{pjtNo}
+                                                                   AND A.cntrct_no LIKE #{cntrctNo}||'%'))
+                 OR (S.ap_cnrs_rng = '02' AND S.ap_cnrs_id IN ( SELECT A.dept_id
+                                                                  FROM sm_department A
+                                                                  JOIN sm_organization B ON A.dept_no = B.dept_no
+                                                                   AND B.dlt_yn = 'N'
+                                                                   AND B.usr_id = #{apUsrId}
+                                                                 WHERE A.dlt_yn = 'N'
+                                                                   AND A.pjt_no = #{pjtNo}
+                                                                   AND A.cntrct_no LIKE #{cntrctNo}||'%'))
+                 OR (S.ap_cnrs_rng = '03' AND S.ap_cnrs_id = #{apUsrId})
+                 OR (S.ap_sub_yn = 'Y' AND S.ap_cnrs_id IN (SELECT A.up_dept_id
+                                                              FROM sm_department A
+                                                             WHERE A.up_dept_id LIKE '%'||S.ap_cnrs_id||'%'))
+            )
+        )
+        SELECT count(*)
+        FROM (
+            SELECT * FROM ref_list
+            UNION ALL
+            SELECT * FROM share_list
+        ) AS union_result
+        WHERE 1=1
+        <include refid="getDetailSearch_Where"></include>
+    </select>
+
+    <select id="selectPendingList" parameterType="approvalListInput" resultType="approvalListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectPendingList][dhjung]  */
+        SELECT DISTINCT
+               ROW_NUMBER() OVER (ORDER BY A.ap_app_dt) AS rnum,
+               A.ap_doc_no,
+               A.ap_doc_id,
+               A.pjt_no,
+               A.cntrct_no,
+               A.pjt_type, 
+               A.ap_doc_title, 
+               A.ap_usr_id,
+               B.usr_nm,
+               to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+               A.ap_doc_stats,
+               SCC.cmn_cd_nm_krn AS "ap_type_krn"
+          FROM ap_doc A
+     LEFT JOIN sm_user_info B ON A.ap_usr_id = B.usr_id
+     LEFT JOIN sm_com_code SCC ON A.ap_type = SCC.cmn_cd AND SCC.cmn_grp_cd = #{cmnGrpCdType}
+        WHERE A.pjt_no = #{pjtNo}
+          AND A.cntrct_no LIKE #{cntrctNo}||'%'
+          AND A.dlt_yn = 'N'
+          AND A.ap_doc_stats IN ('I', 'W')
+          AND A.ap_usr_id = #{apUsrId}
+     ORDER BY ap_app_dt DESC
+        <include refid="sqlx.commonPageable"></include>	
+    </select>
+
+    <select id="selectPendingListCount" parameterType="approvalListInput" resultType="long">
+        /* [kr.co.ideait.gaiacmis.eapproval.approval.selectPendingListCount][dhjung]  */
+        SELECT count(*)
+          FROM ap_doc A
+     LEFT JOIN sm_user_info B ON A.ap_usr_id = B.usr_id
+         WHERE A.pjt_no = #{pjtNo}
+           AND A.cntrct_no LIKE #{cntrctNo}||'%'
+           AND A.dlt_yn = 'N'
+           AND A.ap_doc_stats IN ('I', 'W')
+           AND A.ap_usr_id = #{apUsrId}
+    </select>
+    
+    <select id="selectApprovalFormList" parameterType="input" resultType="approvalFormListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApprovalFormList][dhjung]  */
+	    SELECT DISTINCT
+	           A.frm_no,
+	    	   B.frm_nm_krn,
+	    	   B.frm_nm_eng,
+	    	   UP.frm_nm_krn "up_frm_nm_krn", 
+	    	   UP.frm_nm_eng "up_frm_nm_eng", 
+	    	   UP.frm_no "up_frm_no"
+  		  FROM ap_draft_form A 
+     LEFT JOIN ap_form B ON (A.frm_no = B.frm_no) AND B.dlt_yn = 'N'
+     LEFT JOIN ap_form UP ON (B.up_frm_no = UP.frm_no) AND UP.dlt_yn = 'N'
+         WHERE A.pjt_no = #{pjtNo} 
+           AND A.dlt_yn = 'N'
+           AND A.cntrct_no LIKE #{cntrctNo}||'%'
+  	  ORDER BY UP.frm_nm_krn
+    </select>
+
+    <select id="selectApprovalMaxOrder" parameterType="String" resultType="Integer">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApprovalMaxOrder][dhjung]  */
+        SELECT count(*)
+          FROM ap_line
+         WHERE ap_doc_id = #{apDocId}
+           AND ap_div='A'
+    </select>
+
+    <select id="selectMyApLineOrder" parameterType="HashMap" resultType="Integer">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectMyApLineOrder][dhjung]  */
+        SELECT row_num
+          FROM (SELECT ROW_NUMBER() OVER (PARTITION BY ap_doc_id order by ap_order) as row_num, * 
+                  FROM ap_line
+                 WHERE ap_div = 'A') sub
+         WHERE ap_doc_id = #{apDocId} 
+           AND ap_usr_id = #{apUsrId}
+    </select>
+
+    <select id="selectMyApLine" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectMyApLine][dhjung]  */
+        WITH apLine AS (
+            SELECT ROW_NUMBER() OVER (PARTITION BY ap_usr_id, ap_div ORDER BY dept_lvl, dsply_ordr) AS dept_rnum,
+                   A.ap_doc_no,
+                   A.ap_doc_id,
+                   A.ap_div,
+                   A.ap_order,
+                   A.ap_stats,
+                   A.ap_usr_id,
+                   B.usr_nm,
+                   A.ap_usr_opnin,
+                   dept.dept_nm,
+                   dept.dept_lvl,
+                   dept.dsply_ordr,
+                   TO_CHAR(A.chg_dt, 'YYYY-MM-DD HH24:MI') AS chg_dt
+              FROM ap_line A
+         LEFT JOIN sm_user_info B ON A.ap_usr_id = B.usr_id
+              JOIN sm_organization org ON org.usr_id = A.ap_usr_id 
+               AND org.dlt_yn = 'N'
+              JOIN sm_department dept ON dept.dept_no = org.dept_no 
+               AND dept.dlt_yn = 'N'
+            <if test="userType != 'ADMIN'">
+               AND dept.cntrct_no LIKE #{cntrctNo}||'%'
+               AND dept.pjt_no = #{pjtNo}
+            </if>
+             WHERE A.ap_doc_id = #{apDocId}
+          ORDER BY ap_div = 'A' DESC, ap_order, dsply_ordr
+        ),
+        deptFiltered AS (
+            SELECT ROW_NUMBER() OVER (PARTITION BY ap_div ORDER BY ap_order) AS rOrder, 
+                   ap_doc_no,
+                   ap_doc_id,
+                   ap_div,
+                   ap_order,
+                   ap_stats,
+                   ap_usr_id,
+                   usr_nm,
+                   ap_usr_opnin,
+                   dept_nm,
+                   chg_dt,
+                   LAG(ap_stats) OVER (ORDER BY ap_div, ap_order) AS prev_ap_stats
+              FROM apLine
+             WHERE dept_rnum = 1
+        )
+        SELECT rOrder,
+               ap_doc_no,
+               ap_doc_id,
+               ap_div,
+               ap_order,
+               ap_stats,
+               ap_usr_id,
+               usr_nm,
+               ap_usr_opnin,
+               dept_nm,
+               chg_dt,
+               CASE WHEN ap_div = 'A' AND ap_stats = 'I' AND (rOrder = 1 OR prev_ap_stats = 'A') THEN 'Y'
+                    ELSE 'N'
+               END AS is_curr_approval
+          FROM deptFiltered
+         WHERE ap_usr_id = #{apUsrId}
+      ORDER BY ap_div = 'A' DESC, ap_order;
+    </select>
+
+    <select id="selectApDocDetail" parameterType="input" resultType="approvalDetailOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApDocDetail][dhjung]  */
+        WITH ap_doc_tbl AS (
+            SELECT ROW_NUMBER() OVER (PARTITION BY A.ap_doc_id, A.ap_usr_id ORDER BY dept.dept_lvl, dept.dsply_ordr) AS rnum,
+                   A.ap_doc_no,
+                   A.ap_doc_id,
+                   A.pjt_no,
+                   A.cntrct_no,
+                   A.pjt_type,
+                   A.ap_doc_stats,
+                   C.cmn_cd_nm_krn "ap_doc_stats_krn",
+                   A.ap_usr_id,
+                   A.ap_doc_title,
+                   A.ap_doc_edtr,
+                   A.ap_doc_txt,
+                   sub.usr_nm,
+                   sub.tel_no,
+                   sub.phone_no,
+                   sub.email_adrs,
+                   dept.dept_nm,
+                   dept.dept_id,
+                   dept.cntrct_no,
+                   dept.pjt_type,
+                   dept.dept_lvl,
+                   dept.dsply_ordr,
+                   B.frm_url,
+                   to_char(A.ap_app_dt, 'YYYY-MM-DD HH24:MI') AS ap_app_dt,
+                   to_char(A.ap_cmplt_dt, 'YYYY-MM-DD HH24:MI') AS ap_cmplt_dt,
+                   A.ap_type,
+                   A.frm_no,
+                   A.frm_id,
+                   A.sender_nm,
+                   A.recipient_nm,
+                   A.uuid,
+                   A.navi_id
+              FROM ap_doc A
+         LEFT JOIN sm_user_info sub ON sub.usr_id = A.ap_usr_id
+         LEFT JOIN ap_form B ON A.frm_no = B.frm_no
+         LEFT JOIN sm_organization org ON sub.usr_id = org.usr_id
+               AND org.dlt_yn = 'N'
+        LEFT JOIN sm_department dept ON org.dept_no = dept.dept_no
+                AND dept.cntrct_no LIKE #{cntrctNo}||'%'
+                AND dept.pjt_no = #{pjtNo}
+                AND dept.dlt_yn = 'N'
+          LEFT JOIN sm_com_code C ON cmn_grp_cd = #{cmnGrpCdDcsts}
+                AND a.ap_doc_stats = C.cmn_cd
+              WHERE A.pjt_no = #{pjtNo}
+                AND A.cntrct_no like #{cntrctNo}||'%'
+                AND A.ap_doc_id = #{apDocId}
+        )
+        SELECT * 
+        FROM ap_doc_tbl
+        WHERE rnum = 1;
+    </select>
+	
+    <select id="selectApprovalLine" parameterType="input" resultType="output">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApprovalLine][dhjung]  */
+        WITH apLine_tbl AS ( 
+            SELECT 
+                B.ap_doc_no,
+                B.ap_doc_id, 
+                B.ap_doc_stats, 
+                B.pjt_no, 
+                B.cntrct_no, 
+                B.pjt_type, 
+                A.ap_order, 
+                sub.usr_nm, 
+                A.ap_usr_opnin, 
+                A.ap_stats, 
+                dept.dept_nm,
+                ROW_NUMBER() OVER (PARTITION BY A.ap_usr_id, A.ap_div ORDER BY dept.dept_lvl, dept.dsply_ordr) AS dept_rnum, 
+                to_char(B.rgst_dt, 'YYYY-MM-DD HH24:MI') AS rgst_dt, 
+                to_char(B.chg_dt, 'YYYY-MM-DD HH24:MI') AS chg_dt
+            FROM 
+                ap_line A
+            JOIN 
+                ap_doc B ON A.ap_doc_id = B.ap_doc_id
+            LEFT JOIN sm_user_info sub ON sub.usr_id = A.ap_usr_id
+            JOIN sm_organization org ON org.usr_id = A.ap_usr_id 
+             AND org.dlt_yn = 'N'
+            JOIN sm_department dept ON dept.dept_no = org.dept_no 
+             AND dept.dlt_yn = 'N'
+                <if test="userType != 'ADMIN'">
+                    AND dept.cntrct_no LIKE #{cntrctNo}||'%'
+                    AND dept.pjt_no = #{pjtNo}
+                </if>
+            WHERE B.ap_doc_id = #{apDocId}
+              AND A.ap_div = 'A'
+        )
+        SELECT *
+        FROM apLine_tbl
+        WHERE dept_rnum = 1
+        ORDER BY ap_order
+    </select>
+
+    <select id="selectApLineDetail" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApLineDetail][dhjung]  */
+        WITH ap_line_tbl AS (
+            SELECT ROW_NUMBER() OVER (PARTITION BY A.ap_div, A.ap_usr_id ORDER BY dept.dept_lvl, dept.dsply_ordr) AS rnum
+                 , A.ap_doc_no
+                 , A.ap_doc_id
+                 , A.ap_order
+                 , A.ap_div
+                 , A.ap_stats
+                 , A.ap_usr_id
+                 , B.usr_nm
+                 , dept.dept_nm
+                 , dept.dept_id
+                 , dept.cntrct_no
+                 , dept.dept_lvl
+                 , dept.dsply_ordr
+                 , to_char(A.chg_dt, 'YYYY-MM-DD HH24:MI') AS chg_dt
+                 , A.ap_usr_opnin
+                 , sp.file_disk_path
+                 , sp.file_disk_nm
+              FROM ap_line A
+         LEFT JOIN ap_doc ad ON A.ap_doc_id = ad.ap_doc_id AND ad.dlt_yn = 'N'
+         LEFT JOIN sm_user_info B ON B.usr_id = A.ap_usr_id AND B.dlt_yn = 'N'
+         LEFT JOIN sm_profile sp ON sp.usr_id = B.usr_id AND sp.dlt_yn = 'N' AND sp.stamp_yn = 'Y'
+         LEFT JOIN sm_organization org ON B.usr_id = org.usr_id AND org.dlt_yn = 'N' 
+              JOIN sm_department dept ON org.dept_no = dept.dept_no 
+               AND dept.dlt_yn = 'N'
+                <if test="userType != 'ADMIN'">
+                    AND dept.cntrct_no LIKE #{cntrctNo}||'%'
+                    AND dept.pjt_no = ad.pjt_no 
+                </if>
+             WHERE A.ap_doc_id = #{apDocId}
+        )
+        SELECT *
+        FROM ap_line_tbl
+        WHERE rnum = 1
+        ORDER BY ap_order
+    </select>
+
+    <select id="selectApShareDetail" parameterType="String" resultType="approvalShareListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApShareDetail][dhjung]  */
+        SELECT A.ap_cnrs_no, 
+               A.ap_doc_no,
+               A.ap_doc_id, 
+               A.ap_cnrs_div, 
+               A.ap_cnrs_rng, 
+               A.ap_cnrs_id,
+               A.login_id,
+               sub.usr_nm,
+               B.dept_no,
+               CASE WHEN A.ap_sub_yn = 'Y' THEN CONCAT(B.dept_nm, ' (하위조직포함)')
+                    ELSE B.dept_nm
+               END AS dept_nm 
+          FROM ap_share A
+     LEFT JOIN sm_user_info sub ON sub.usr_id = A.ap_cnrs_id
+     LEFT JOIN sm_department B ON A.ap_cnrs_id = B.dept_id AND B.dlt_yn = 'N'
+         WHERE A.ap_doc_id = #{apDocId}
+           AND A.dlt_yn = 'N'
+    </select>
+
+    <select id="selectDepartmentInfo" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectDepartmentInfo][dhjung]  */
+        WITH RECURSIVE dept_list AS (
+            SELECT dept_no
+                 , dept_id
+                 , dept_nm
+                 , up_dept_id
+                 , 0 AS level
+              FROM sm_department
+             WHERE dlt_yn = 'N'
+               AND dept_id = #{deptId}
+            UNION ALL
+            SELECT sd.dept_no
+                 , sd.dept_id
+                 , sd.dept_nm
+                 , sd.up_dept_id
+                 , dl.level + 1 AS level
+              FROM sm_department sd
+        INNER JOIN dept_list dl ON sd.up_dept_id = dl.dept_id
+             WHERE sd.dlt_yn = 'N' 
+               AND sd.use_yn = 'Y'
+        )
+        SELECT dept_no
+             , dept_id
+             , dept_nm
+             , CASE WHEN LEVEL = 1 THEN '#'
+                    ELSE up_dept_id
+               END AS up_dept_id
+             , level
+          FROM dept_list
+         WHERE LEVEL != 0
+      ORDER BY level, dept_id;
+    </select>
+
+    <select id="selectAdminDept" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectAdminDept][dhjung]  */
+        WITH RECURSIVE parent_tbl AS (
+            SELECT dp.pjt_no
+                 , dp.cntrct_no
+                 , dp.dept_lvl
+                 , CASE WHEN dp.up_dept_id IS null OR dp.up_dept_id = '' THEN '#' 
+                        ELSE dp.up_dept_id 
+                   END AS up_dept_id
+                 , dp.dept_id
+                 , dp.dept_nm
+                 , dp.dsply_ordr
+              FROM sm_department dp
+             WHERE dp.dept_id IN ('A', 'WBS', #{deptType})
+               AND dp.dlt_yn = 'N'
+            UNION ALL   
+            SELECT sd.pjt_no
+                 , sd.cntrct_no
+                 , sd.dept_lvl
+                 , CASE WHEN sd.up_dept_id IS null OR sd.up_dept_id = '' THEN '#'
+                        ELSE sd.up_dept_id 
+                   END AS up_dept_id
+                 , sd.dept_id
+                 , sd.dept_nm
+                 , sd.dsply_ordr
+              FROM sm_department sd
+              JOIN parent_tbl pt ON sd.up_dept_id = pt.dept_id
+             WHERE sd.dlt_yn = 'N'
+        AND sd.pjt_no IN (#{pjtNo}, 'ADMIN', 'WBSGEN')
+        )
+        SELECT * FROM parent_tbl
+        ORDER BY dept_lvl, dsply_ordr;
+    </select>
+    
+    <select id="selectEmployeeList" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectEmployeeList][dhjung]  */
+        SELECT  A.dept_no,
+                C.dept_id, 
+                C.dept_nm, 
+                B.usr_id,
+                B.login_id,
+                B.usr_nm,
+                B.email_adrs,
+                B.phone_no,
+                C.dept_lvl,
+	            C.dsply_ordr  
+        FROM    sm_organization A, sm_user_info B, sm_department C 
+        WHERE   A.usr_id = B.usr_id
+        AND     A.dept_no = C.dept_no
+        AND     A.dlt_yn = 'N'
+        AND     B.dlt_yn = 'N'
+        AND     C.dlt_yn = 'N'
+        AND     C.dept_id = #{deptId}
+       ORDER BY dept_lvl, dsply_ordr
+    </select>
+
+    <select id="selectProjectName" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectProjectName][dhjung]  */
+        SELECT  B.pjt_nm
+        FROM    cn_contract A, cn_project B
+        WHERE   A.pjt_no = B.pjt_no
+        AND     A.cntrct_no = #{cntrctNo}
+        AND     A.dlt_yn = 'N'
+        AND     B.dlt_yn = 'N';
+    </select>
+
+    <select id="selectFirstApproval" parameterType="String" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectFirstApproval][dhjung]  */
+        SELECT ap_usr_id
+          FROM (
+               SELECT ROW_NUMBER() OVER (PARTITION BY ap_div ORDER BY ap_order) AS rnum
+                    , ap_div
+                    , ap_usr_id
+                    , ap_order
+                 FROM ap_line
+                WHERE ap_doc_id = #{apDocId}
+                  AND ap_div = 'A'
+               ) AS apLine_tbl
+         WHERE rnum = 1;
+    </select>
+
+    <select id="selectCompleteTarget" parameterType="String" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectCompleteTarget][dhjung]  */
+        WITH ap_line_tbl AS (
+            SELECT ap_usr_id
+                , ap_order
+                , RANK() OVER (PARTITION BY ap_doc_id ORDER BY ap_order DESC) AS order_num
+             FROM ap_line
+            WHERE ap_doc_id = #{apDocId}
+              AND ap_div = 'A'
+        )
+        SELECT ap_usr_id
+          FROM ap_line_tbl
+         WHERE order_num <![CDATA[ > ]]> 1;
+    </select>
+
+    <select id="selectNextApproval" parameterType="nextApprovalInput" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectNextApproval][dhjung]  */
+        WITH ap_line AS (
+            SELECT ROW_NUMBER() OVER (PARTITION BY ap_div ORDER BY ap_order) AS rnum
+                 , ap_usr_id
+                 , ap_order
+              FROM ap_line
+             WHERE ap_doc_id = #{apDocId}
+               AND ap_div = 'A'
+        )
+        SELECT next_tb.ap_usr_id AS next_approver_id
+          FROM ap_line AS current_tb
+          JOIN ap_line AS next_tb ON current_tb.rnum + 1 = next_tb.rnum
+         WHERE current_tb.ap_usr_id = #{apUsrId}; 
+    </select>
+
+    <select id="selectPjtInfo" parameterType="searchPjtInfo" resultType="searchPjtInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectPjtInfo][dhjung]  */
+        SELECT a.pjt_no as pjt_no
+             , a.pjt_nm as pjt_nm
+             , COALESCE(b.cntrct_no, a.pjt_no) as cntrct_no
+             , COALESCE(b.cntrct_nm, a.pjt_nm) as cntrct_nm 
+          FROM cn_project a 
+     LEFT JOIN cn_contract b ON a.pjt_no = b.pjt_no and b.cntrct_no = #{cntrctNo}
+         WHERE a.pjt_no = #{pjtNo};
+    </select>
+
+    <select id="selectActivityNmForQuality" parameterType="map" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectActivityNmForQuality][dhjung]  */
+        SELECT DISTINCT pa.activity_nm 
+          FROM cw_quality_activity cqa 
+          JOIN pr_activity pa ON pa.wbs_cd = cqa.wbs_cd AND pa.activity_id = cqa.activity_id AND pa.cntrct_chg_id LIKE #{cntrctNo}||'%' AND pa.dlt_yn = 'N'
+         WHERE cqa.dlt_yn = 'N'
+           AND cqa.qlty_isp_id = #{qltyIspId};
+    </select>
+
+    <select id="checkPgaiaFirstApprover" parameterType="HashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.checkPgaiaFirstApprover][dhjung]  */
+        SELECT EXISTS (
+            SELECT	1
+            FROM sm_department sd
+            JOIN sm_organization so ON sd.dept_no = so.dept_no
+             AND so.usr_id = (SELECT als.ap_usr_id
+                                FROM ap_line_set als, ap_lineset_mng alm
+                                WHERE 1=1
+                                  AND als.ap_line_no = alm.ap_line_no
+                                  AND als.ap_order = 1
+                                  AND als.dlt_yn = 'N'
+                                  AND alm.ap_type = #{apType}
+                                  AND alm.dlt_yn = 'N'
+                                  AND alm.cntrct_no = #{cntrctNo})
+            JOIN cn_project cp ON sd.pjt_no = cp.pjt_no
+            WHERE sd.dlt_yn = 'N'
+              AND sd.dept_id LIKE '%'||'m1'
+              AND so.dlt_yn = 'N'
+              AND cp.dlt_yn = 'N'
+              AND cp.pjt_no = #{pjtNo}
+              AND cp.pjt_div = 'P'
+        );
+    </select>
+
+    <select id="checkPgaiaApprover" parameterType="HashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.checkPgaiaApprover][dhjung]  */
+        SELECT EXISTS (
+            SELECT 1
+              FROM sm_department sd
+              JOIN cn_project cp ON sd.pjt_no = cp.pjt_no
+               AND cp.dlt_yn = 'N'
+               AND cp.pjt_div = 'P'
+              JOIN sm_organization so ON sd.dept_no = so.dept_no
+               AND so.dlt_yn = 'N'
+               AND so.usr_id IN (WITH ap_line AS (
+                                    SELECT ap_usr_id
+                                         , ap_order
+                                      FROM ap_line
+                                     WHERE ap_doc_id = #{apDocId}
+                                )
+                                SELECT next_tb.ap_usr_id AS next_approver_id
+                                  FROM ap_line AS current_tb
+                                  JOIN ap_line AS next_tb ON current_tb.ap_order + 1 = next_tb.ap_order
+                                  WHERE current_tb.ap_usr_id = #{usrId})
+            WHERE sd.dlt_yn = 'N'
+              AND sd.pjt_no = #{pjtNo}
+              AND sd.dept_id LIKE '%'||'m1'
+        );
+    </select>
+
+    <select id="checkSupervisor" parameterType="HashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.checkSupervisor][dhjung]  */
+        SELECT EXISTS (
+            SELECT 1
+            FROM sm_department sd
+            JOIN cn_project cp ON sd.pjt_no = cp.pjt_no
+               AND cp.dlt_yn = 'N'
+               AND cp.pjt_div = 'P'
+            JOIN sm_organization so2 ON sd.dept_no = so2.dept_no
+               AND so2.dlt_yn = 'N'
+               AND so2.usr_id = #{usrId}
+            WHERE sd.dlt_yn = 'N'
+              AND sd.pjt_no = #{pjtNo}
+              AND sd.dept_id LIKE '%m1'
+        );
+    </select>
+
+    <select id="checkPgaiaReference" parameterType="HashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.checkPgaiaReference][dhjung]  */
+        SELECT EXISTS (
+            SELECT	1
+            FROM sm_department sd
+            JOIN sm_organization so ON sd.dept_no = so.dept_no
+             AND so.dlt_yn = 'N'
+             AND so.usr_id IN (SELECT ap_usr_id
+                                 FROM ap_line
+                                WHERE ap_doc_id = #{apDocId})
+            JOIN cn_project cp ON sd.pjt_no = cp.pjt_no
+              AND cp.dlt_yn = 'N'
+              AND cp.pjt_div = 'P'
+              AND cp.pjt_no = #{pjtNo}
+            WHERE sd.dlt_yn = 'N'
+              AND sd.dept_id LIKE '%'||'m1'
+              AND so.dlt_yn = 'N'
+        );
+    </select>
+
+    <select id="selectApLineSet" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectApLineSet][dhjung]  */
+        SELECT alm.ap_line_no
+             , alm.cntrct_no
+             , alm.ap_type
+             , als.ap_order 
+             , als.ap_div 
+             , als.ap_usr_id 
+             , als.ap_login_id 
+          FROM ap_lineset_mng alm
+          JOIN ap_line_set als ON alm.ap_line_no = als.ap_line_no AND als.dlt_yn = 'N'
+         WHERE alm.cntrct_no = #{cntrctNo}
+           AND alm.dlt_yn = 'N'
+           AND alm.ap_type = #{apType}
+    </select>
+
+    <select id="checkSendDeptId" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.checkDeptId][dhjung]  */
+        SELECT
+            (
+                SELECT CASE
+                            WHEN sd.dept_id LIKE '%m2' OR sd.dept_id LIKE '%M2' OR sd.up_dept_id LIKE '%m2' OR sd.dept_id LIKE '%M2' THEN 'm2'
+                            WHEN sd.dept_id LIKE '%m3' OR sd.dept_id LIKE '%M3' OR sd.up_dept_id LIKE '%m3' OR sd.up_dept_id LIKE '%M3' THEN 'm3'
+                            ELSE null
+                        END
+                   FROM sm_department sd
+                   JOIN sm_organization so ON so.dept_no = sd.dept_no
+                   JOIN ap_doc ad ON so.usr_id = ad.ap_usr_id
+                  WHERE sd.pjt_no = #{pjtNo}
+                    AND sd.cntrct_no = #{cntrctNo}
+                    AND sd.dlt_yn = 'N'
+                    AND so.dlt_yn = 'N'
+                    AND ad.dlt_yn = 'N'
+                    AND ad.ap_doc_id = #{apDocId}
+            ) AS sender_dept
+    </select>
+
+    <update id="updateDeleteApShareByApDocId" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.updateDeleteApShareByApDocId][dhjung]  */
+        UPDATE  ap_share
+        SET     dlt_yn = 'Y',
+                dlt_id = #{usrId},
+                dlt_dt = NOW()
+        WHERE   ap_doc_id = #{apDocId}
+    </update>
+
+    <select id="selectUserNameForDocument" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.eapproval.approval.selectUserNameForDocument][dhjung]  */
+        SELECT drafter.usr_nm AS ap_usr_nm
+             , string_agg(approver.usr_nm, ', ' ORDER BY al.ap_order) AS ap_cmplt_usr_nms
+          FROM ap_doc ad
+          JOIN ap_line al ON al.ap_doc_id = ad.ap_doc_id AND al.ap_div = 'A'
+          JOIN sm_user_info drafter ON drafter.usr_id = ad.ap_usr_id
+          JOIN sm_user_info approver ON approver.usr_id = al.ap_usr_id
+         WHERE ad.ap_doc_id = #{apDocId}
+      GROUP BY drafter.usr_nm;
+    </select>
+
+    <sql id="getDetailSearch_Where">
+        <if test="keyword != null and keyword != ''">
+            AND (ap_doc_title LIKE '%'||#{keyword}||'%' OR ap_doc_txt LIKE '%'||#{keyword}||'%')
+        </if>
+	    <if test="apDocTitle != null and apDocTitle != ''">
+            AND ap_doc_title LIKE '%'||#{apDocTitle}||'%'
+        </if>	
+        <if test="apDocTxt != null and apDocTxt != ''">
+            AND ap_doc_txt LIKE '%'||#{apDocTxt}||'%'
+        </if>
+        <if test="selectedApType != null and selectedApType.size > 0">
+            AND ap_type IN
+            <foreach item="type" collection="selectedApType" open="(" separator="," close=")">
+                #{type}
+            </foreach>
+        </if>
+        <if test="selectedForm != null and selectedForm != ''">
+            AND A.frm_no = #{selectedForm}
+        </if>
+        <if test="selectedStatus != null and selectedStatus != ''">
+            AND A.ap_doc_stats = #{selectedStatus}
+        </if>
+	    <if test="startAppDt != null and startAppDt != ''">
+            AND DATE(ap_app_dt) <![CDATA[ >= ]]> DATE(#{startAppDt})
+	    </if>
+	    <if test="endAppDt != null and endAppDt != ''">
+            AND DATE(ap_app_dt) <![CDATA[ <= ]]> DATE(#{endAppDt})
+	    </if>  		
+	    <if test="startCmpltDt != null and startCmpltDt != ''">
+            AND DATE(ap_cmplt_dt) <![CDATA[ >= ]]> DATE(#{startCmpltDt})
+	    </if>
+	    <if test="endCmpltDt != null and endCmpltDt != ''">
+            AND DATE(ap_cmplt_dt) <![CDATA[ <= ]]> DATE(#{endCmpltDt})
+	    </if>
+	</sql>	    
+</mapper>
+    
+
+    

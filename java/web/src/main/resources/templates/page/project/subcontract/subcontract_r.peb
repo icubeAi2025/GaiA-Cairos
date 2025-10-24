@@ -1,0 +1,239 @@
+{% extends 'layout/base_content' %} {% block content %}
+<article class="conts g-row">
+    <div class="group">
+        <div class="conts_form">
+            <div class="btn_area s_default _outline">
+                {{ btnHtml | raw }}
+                <button type="button" class="btn" id="close-popup" onclick="page.close()">
+                    {{ message("btn.007") }}
+                </button>
+            </div>
+            <form name="addForm" id="addForm">
+                <div class="form_box readonly">
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.003") }}
+                            </div>
+                            <div class="form_data" id="cntrctNm">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.004") }}
+                            </div>
+                            <div class="form_data " id="scontrctCcnsttyCd">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.005") }}
+                            </div>
+                            <div class="form_data" id="scontrctCntrctNo">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.006") }}
+                            </div>
+                            <div class="form_data" id="CorpNm">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.007") }}
+                            </div>
+                            <div class="form_data" id="scontrctCntrctNm">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.008") }}
+                            </div>
+                            <div class="form_data" id="scontrctIndstrytyCd">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                    {{ message("item.sub.011") }}
+                            </div>
+                            <div class="form_data" id="cntrctDate">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                    {{ message("item.sub.012") }}
+                            </div>
+                            <div class="form_data cost" style="text-align: right;" id="scontrctCntrctAmt">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                    {{ message("item.sub.013") }}
+                            </div>
+                            <div class="form_data" id="cntrctBgnDate">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                    {{ message("item.sub.014") }}
+                            </div>
+                            <div class="form_data" id="cntrctEndDate">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.009") }}
+                            </div>
+                            <div class="form_data" id="scontrctCorpBsnsmnNo">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.010") }}
+                            </div>
+                            <div class="form_data" id="scontrctCorpNm">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge2">
+                            <div class="form_label">업체 대표자</div> <!-- 업체 대표자 -->
+                            <div class="form_data" id="scontrctCorpCeo">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">사무실번호</div> <!-- 사무실번호 -->
+                            <div class="form_data" id="scontrctTelNo" >
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">팩스번호</div> <!-- 팩스번호 -->
+                            <div class="form_data" id="scontrctFaxNo">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.020') }}</div> <!-- 업체주소 -->
+                            <div class="form_data" id="scontrctCorpAdrs">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.com.022") }}
+                            </div>
+                            <div class="form_data" id="rmrk">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</article>
+{% endblock content %} {% block footer_script %}
+
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+
+    const params = new URLSearchParams(window.location.search);
+    let pjtNo;
+    const cntrctNo = params.get("cntrctNo");
+    const scontrctCorpId = params.get("scontrctCorpId");
+    let scontrctCorpNo = "";
+
+    var page = {
+        data: {
+            init: ""
+        },
+
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+            this.loadData(cntrctNo, scontrctCorpId);
+            gaiaPortal.navMenuInit("M010202", "{{ message('item.sub.025') }}");
+            $("#menuDepth").append(`<li class="breadcrumb_item">{{ message('item.sub.025') }}</li>`);
+        },
+
+        close: function () { sessionStorage.setItem('cntrctNo', cntrctNo); window.location.replace(`/project/subcontract?pjtNo=${pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&scontrctCorpId=${scontrctCorpId}`); },
+
+
+        enableInputs: function () {
+            window.location.replace(`/project/subcontract/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&scontrctCorpId=${scontrctCorpId}`);
+        },
+
+        loadData: function (cntrctNo, scontrctCorpId) {
+            const url = "/api/project/subcontract/" + cntrctNo + "/" + scontrctCorpId;
+
+            gaiaCommon.get(url, '', function (data) {
+                let subcontract = data.details.subcontract;
+
+                $("#cntrctNm").text(gaiaCommon.decodeSafeText(subcontract.cntrctNm));
+                $("#scontrctCcnsttyCd").text(gaiaCommon.decodeSafeText(subcontract.scontrctCcnsttyCdNm));
+                $("#scontrctCntrctNo").text(gaiaCommon.decodeSafeText(subcontract.scontrctCntrctNo));
+                $("#gcontrctCorpNo").text(gaiaCommon.decodeSafeText(subcontract.gcontrctCorpNo));
+                $("#CorpNm").text(gaiaCommon.decodeSafeText(subcontract.corpNm));
+                $("#scontrctCntrctNm").text(gaiaCommon.decodeSafeText(subcontract.scontrctCntrctNm));
+                $("#scontrctIndstrytyCd").text(gaiaCommon.decodeSafeText(subcontract.scontrctIndstrytyNm));
+                $("#scontrctCorpBsnsmnNo").text(gaiaCommon.decodeSafeText(subcontract.scontrctCorpBsnsmnNo));
+                $("#scontrctCorpNm").text(gaiaCommon.decodeSafeText(subcontract.scontrctCorpNm));
+                $("#scontrctCorpNo").text(gaiaCommon.decodeSafeText(subcontract.scontrctCorpNo));
+                $("#scontrctCorpAdrs").text(gaiaCommon.decodeSafeText(subcontract.scontrctCorpAdrs));
+                $("#scontrctTelNo").text(gaiaCommon.decodeSafeText(subcontract.scontrctTelNo));
+                $("#scontrctFaxNo").text(gaiaCommon.decodeSafeText(subcontract.scontrctFaxNo));
+                $("#scontrctCorpCeo").text(gaiaCommon.decodeSafeText(subcontract.scontrctCorpCeo));
+                $("#cntrctDate").text(gaiaCommon.decodeSafeText(formatDate2(subcontract.cntrctDate)));
+                $("#scontrctCntrctAmt").text(gaiaCommon.decodeSafeText(addCommas(subcontract.scontrctCntrctAmt)));
+                $("#cntrctBgnDate").text(gaiaCommon.decodeSafeText(formatDate2(subcontract.cntrctBgnDate)));
+                $("#cntrctEndDate").text(gaiaCommon.decodeSafeText(formatDate2(subcontract.cntrctEndDate)));
+                $("#rmrk").text(gaiaCommon.decodeSafeText(subcontract.rmrk));
+                scontrctCorpNo = subcontract.scontrctCorpNo;
+            }, function (xhr, status, error) {
+                    console.error("Error:", error);
+            });
+        },
+    }
+
+    // YYYY-MM-DD 형식으로 변환
+    function formatDate2(dateStr) {
+        if (!dateStr) {
+            return null;
+        }
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return `${year}-${month}-${day}`;
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

@@ -1,0 +1,100 @@
+
+
+<div class="pop_open modal" id="updateActivity">
+    <input type="hidden" id="modalType">
+    <div class="pop_box _xlg">
+        <div class="pop_header">
+            <h5 class="pop_tit"></h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="modalActi.closeModal()">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">창닫기</span>
+                </button>
+            </div>
+
+        </div>
+        <div class="pop_body">
+            <div class="group">
+                <h4 class="conts_s-tit">Activity {{ message("item.com.066") }}</h4>
+                <div class="conts_grid">
+                    <!-- S: search wrap ---------------------------------------------- -->
+                    <!-- <div class="search_wrap">
+                        <span class="item_group">
+                            <input type="date" class="date w-md" id="start_date">
+                            <span class="_tilde">~</span>
+                            <input type="date" class="date w-md" id="end_date">
+                        </span>
+    
+                        <div class="searchbox_wrap">
+                            <input type="text" id="modal_search_input" placeholder="WBS, Activity" onkeyup="if(window.event.keyCode == 13) modalActi.search();">
+                            <button type="submit" class="icon_btn search" onclick="modalActi.search();">
+                                <i class="ic ic-search"></i>
+                                <span class="blind">검색</span>
+                            </button>
+                        </div>
+                    </div> -->
+                    <!-- // E: search wrap ---------------------------------------------- -->
+    
+                    <div class="sticky_wrap" style="margin-top: 10px;">
+                        <div class="sticky_box">
+                            <div style="height:300px;min-width:1280px;" id="update_add_tbl">
+                                <table class="table sticky" style="border:0px; border-right: 1px solid var(--tb-bd);">
+                                    <colgroup>
+                                        <col style="width: 90px;">  
+                                        <col style="width: 250px;"> 
+                                        <col style="width: 120px;"> 
+                                        <col style="width: 300px;"> 
+                                        <col style="width: 150px;"> 
+                                        <col style="width: 90px;"> 
+                                        <col style="width: 90px;"> 
+                                        <col style="width: 90px;"> 
+                                        <col style="width: 90px;"> 
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2">{{ message("btn.001") }}</th>
+                                            <th rowspan="2">WBS</th>
+                                            <th rowspan="2">Activity ID</th>
+                                            <th rowspan="2">{{ message("item.activity.003") }}</th>
+                                            <th rowspan="2">{{ message("item.construction.055") }}</th>
+                                            <th colspan="2">{{ message("item.com.055") }}</th>
+                                            <th colspan="2">{{ message("item.construction.206") }}</th>
+                                        </tr>
+                                        <tr>
+                                            <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                            <th style="top:51.5px;">{{ message("item.construction.030") }}</th>
+                                            <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                            <th style="top:51.5px;">{{ message("item.com.030") }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="addActivityTbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div id="update_add_grid" class="grid"></div> -->
+                </div>
+            </div>
+            
+            <div class="group">
+                <div class="s_conts">
+                    <span class="tree_route"></span>
+                    <div class="sticky_wrap">
+                        <div class="sticky_box">
+                            <div style="max-height:300px;min-width:1280px;" id="tblDiv">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+		    <div class="btn_area s_default jc_e">
+				<button type="button" class="btn _fill" onclick="modalActi .update()">{{ message("btn.006") }}</button>
+		        <button type="button" class="btn _outline" onclick="modalActi.closeModal()">{{ message("btn.007") }}</button>
+		    </div>
+		</div>
+    </div>
+</div>

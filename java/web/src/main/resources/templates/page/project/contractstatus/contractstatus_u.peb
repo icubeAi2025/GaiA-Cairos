@@ -1,0 +1,642 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<section class="contents_wrap g-row">
+
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_form">
+                <div class="btn_area s_default _outline">
+                    <button type="button" class="btn _outline" onclick="page.updateContract()">{{ message('btn.006') }}</button>
+                    <!-- 저장 -->
+                    <button type="button" class="btn" onclick="page.close()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 -->
+                </div>
+
+                <div class="form_box" id="contract-form">
+                    <div class="container" style="display: flex; align-items: center;">
+                        <span class="caption">
+                            <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                        </span>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge3">
+                            <div class="form_label required">{{ message('item.contract.009') }}</div> <!-- 공사계약명 -->
+                            <div class="form_data">
+                                <input type="text" name="cntrctNm" class="maxlength" maxlength="100" required>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.007') }}</div> <!-- 공사기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <input type="text" class="form-control number maxlength" maxlength="10"
+                                        name="conPrd">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge">
+                            <div class="form_label required">{{ message('item.contract.033') }}</div> <!-- 관리계약번호 -->
+                            <div class="form_data">
+                                <input type="text" class="form-control maxlength" maxlength="20" name="mngCntrctNo"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.contract.010') }}</div> <!-- 계약 주공종 -->
+                            <div class="form_data">
+                                <span class="selectbox" id="contractTypeSelect">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.contract.053') }}</div> <!-- 계약구분 -->
+                            <div class="form_data">
+                                <span class="selectbox" id="contractSelect">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.contract.011') }}</div> <!-- 계약종류 -->
+                            <div class="form_data">
+                                <span class="selectbox" id="contractCategorySelect">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.022') }}</div> <!-- 계약일자 -->
+                            <div class="form_data">
+                                <input type="date" name="cntrctDate" class="date" data-date-format="DD/MM/YYYY">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.037') }}</div> <!-- 보증일 -->
+                            <div class="form_data">
+                                <input type="date" name="grntyDate" class="date" data-date-format="DD/MM/YYYY">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.010') }}</div> <!-- 착공일자 -->
+                            <div class="form_data">
+                                <input type="date" name="cbgnDate" class="date" data-date-format="DD/MM/YYYY">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.012') }}</div> <!-- 준공일자 -->
+                            <div class="form_data">
+                                <input type="date" name="ccmpltDate" class="date" data-date-format="DD/MM/YYYY">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.025') }}</div> <!-- 최초계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <input type="text" class="form-control maxlength cost" maxlength="40"
+                                        name="cntrctCost">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.013') }}</div> <!-- 계약보증금 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <input type="text" class="form-control maxlength cost" maxlength="40"
+                                        name="grntyCost">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.014') }}</div> <!-- 지체상금율 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _per">
+                                    <input type="text" class="form-control maxlength decimal2 3" maxlength="16"
+                                        name="dfrcmpnstRate">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.015') }}</div> <!-- 부가세율 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _per">
+                                    <input type="text" class="form-control maxlength decimal2 3" maxlength="18"
+                                        name="vatRate">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3" id="this-box" style="display: none;">
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.contract.054') }}</div> <!-- 금차계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <span class="item_wrap put_txt _won">
+                                        <input type="text" class="form-control cost maxlength" maxlength="40"
+                                            name="thisCntrctCost">
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.055') }}</div> <!-- 금차준공일자 -->
+                            <div class="form_data">
+                                <input type="date" name="thisCcmpltDate" class="date" data-date-format="DD/MM/YYYY">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.056') }}</div> <!-- 금차공사기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <input type="text" class="form-control number maxlength" maxlength="10"
+                                        name="thisConPrd">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.010') }}</div> <!-- 사업자등록번호 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <input type="text" id="bsnsmnNo" name="bsnsmnNo" class="form-control number maxlength"
+                                        maxlength="10">
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.016') }}</div> <!-- 대표계약 회사명 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <input type="hidden" name="corpNo" id="corpNo">
+                                    <input type="text" class="maxlength" maxlength="100" name="corpNm" id="corpNm" readonly />
+                                    <button type="button" class="btn icon_btn" id='corpNmResetBtn' onclick="popup.corpNmReset()">
+                                       <i class="ic ic-close"></i>
+                                    </button>
+                                    <button type="button" class="btn icon_btn _fill search" onclick="popup.corpNmSearch()">
+                                       <i class="ic ic-search"></i>
+                                       <span class="blind">검색</span>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.017') }}</div> <!-- 업체 대표자 -->
+                            <div class="form_data">
+                                <input type="text" id="corpCeo" class="maxlength" maxlength="20" name="corpCeo">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.005') }}</div> <!-- 담당자명 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <input type="hidden" name="ofclId" id="ofclId">
+                                    <input type="text" name="ofclNm" id="ofclNm" class="maxlength" maxlength="20" readonly>
+                                    <button type="button" class="btn icon_btn" id='ofclNmResetBtn' onclick="popup.ofclNmReset()">
+                                        <i class="ic ic-close"></i>
+                                    </button>
+                                    <button type="button" class="btn icon_btn _fill ofclNmSearchBtn" onclick="popup.ofclNmSearch()">
+                                        <i class="ic ic-search"></i>
+                                        <span class="blind">{{ message('btn.015') }}</span> <!-- 조회 -->
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.018') }}</div> <!-- 사무실번호 -->
+                            <div class="form_data">
+                                <input type="text" id="telNo" name="telNo" class="form-control telNo maxlength" maxlength="15">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.019') }}</div> <!-- 팩스번호 -->
+                            <div class="form_data">
+                                <input type="text" id="faxNo" name="faxNo" class="form-control telNo maxlength" maxlength="15">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.020') }}</div> <!-- 업체주소 -->
+                            <div class="form_data">
+                                <input type="text" id="corpAdrs" name="corpAdrs" class="maxlength" maxlength="200">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 모달창 내용 -->
+</div>
+{% endblock content %}
+{% block footer_script %}
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const cntrctNo = params.get('cntrctNo');
+    const pjtNo = params.get('pjtNo');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+            }
+        });
+    });
+
+    var popup = {
+        data: {},
+        close: function () {
+            $("#popup").html("");
+        },
+        add: function () {
+            if (popup.data.ofclNm) {
+                $("#ofclNm").val(popup.data.ofclNm);
+                // 2025-06-10 담당자ID - Eureca 연동 mandatory 변경에따른 추가
+                $('#ofclId').val(popup.data.ofclId);
+
+                $('#ofclNmResetBtn').show();
+            }
+            if (popup.data.corpNm) {
+                $("#corpNm").val(popup.data.corpNm);
+                $('#corpNo').val(popup.data.corpNo);
+                $('#corpAdrs').val(popup.data.compAdrs);
+                $('#corpCeo').val(popup.data.corpCeo);
+                $('#bsnsmnNo').val(popup.data.bsnsmnNo);
+                $('#telNo').val(popup.data.compTelno);
+                $('#faxNo').val(popup.data.compFaxno);
+
+                $('#corpNmResetBtn').show();
+            }
+
+
+            $("#popup").html("");
+        },
+
+        ofclNmSearch: function () {
+            gaiaCommon.checkAuth("CNTRCT_U_02", () => {
+                $("#popup").load("/project/ofclNmSearch");
+                $("#popup").css({ "display": "flex" });
+            });
+        },
+        ofclNmReset: function (){
+            $("#ofclNm").val('');
+            $('#ofclId').val('');
+
+            $('#ofclNmResetBtn').hide();
+        },
+
+        corpNmSearch: function () {
+            gaiaCommon.checkAuth("CNTRCT_U_02", () => {
+                $("#popup").load(`/project/corpNmSearch`);
+                $("#popup").css({ "display": "flex" });
+            });
+        },
+        corpNmReset: function (){
+            $("#corpNm").val('');
+            $('#corpNo').val('');
+            $('#corpAdrs').val('');
+            $('#corpCeo').val('');
+            $('#bsnsmnNo').val('');
+            $('#telNo').val('');
+            $('#faxNo').val('');
+
+            $('#corpNmResetBtn').hide();
+        }
+    }
+
+    // YYYYMMDD 형식으로 변환
+    function formatDate(dateStr) {
+        if (!dateStr) {
+            return null;
+        }
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = ("0" + (date.getMonth() + 1)).slice(-2);
+        const day = ("0" + date.getDate()).slice(-2);
+
+        return year + month + day;
+    }
+
+    // YYYY-MM-DD 형식으로 변환
+    function formatDate2(dateStr) {
+        if (!dateStr || dateStr.length !== 8) return "";
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return `${year}-${month}-${day}`;
+    }
+
+    var page = {
+        data: {},
+
+        init: function () {
+            // URL에서 쿼리 파라미터를 추출하여 mode 값을 설정
+
+            const titleElement = document.querySelector('h3.conts_tit');    // nav 주소 바꾸기
+            var title;
+
+            this.loadContractData(cntrctNo);
+
+            title = "{{ message('item.contract.028') }}";   // 계약 수정
+            gaiaPortal.navMenuInit('M010201', title);
+            $("#menuDepth").append(`<li class=\"breadcrumb_item\" name=\"new_item\">${title}</li>`);
+
+            $('input[name="cbgnDate"], input[name="ccmpltDate"]').on('change', function () {
+                const startDateStr = $('input[name="cbgnDate"]').val();
+                const endDateStr = $('input[name="ccmpltDate"]').val();
+                page.calculateConstructionPeriod(startDateStr, endDateStr);
+            });
+            $('input[name="cbgnDate"], input[name="thisCcmpltDate"]').on('change', function () {
+                const startDateStr = $('input[name="cbgnDate"]').val();
+                const endDateStr = $('input[name="thisCcmpltDate"]').val();
+                page.calculateConstructionPeriod(startDateStr, endDateStr, "this");
+            });
+        },
+        // "장기계속계약_차수별"을 선택하면 표시
+        toggleThisBox: function () {
+            const contractType = $('#contractType').val();
+            if (contractType === "0104") {
+                $('#this-box').show();
+            } else {
+                $('#this-box').hide();
+                $('input[name="thisCntrctCost"]').val("");
+                $('input[name="thisCcmpltDate"]').val("");
+                $('input[name="thisConPrd"]').val("");
+            }
+        },
+        // 공사기간 계산
+        calculateConstructionPeriod: function (startDateStr, endDateStr, param) {
+            const startDate = new Date(startDateStr);
+            const endDate = new Date(endDateStr);
+            if (param) {    // 금차 관련
+                if (startDateStr && endDateStr) {
+                    if (endDate < startDate) {
+                        gaiaCommon.customAlert("{{ message('msg.contract.011') }}");
+                        if (this.mode === "update") {
+                            $('input[name="cbgnDate"]').val(this.originalDates.cbgnDate);
+                            $('input[name="thisCcmpltDate"]').val(this.originalDates.thisCcmpltDate);
+                            $('input[name="thisConPrd"]').val(this.originalDates.thisConPrd);
+                        } else {
+                            $('input[name="cbgnDate"]').val('');
+                            $('input[name="thisCcmpltDate"]').val('');
+                            $('input[name="thisConPrd"]').val('');
+                        }
+                        return;
+                    }
+                    const timeDiff = endDate - startDate;
+                    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1; // 밀리초를 일수로 변환
+                    $('input[name="thisConPrd"]').val(daysDiff);
+                } else {
+                    $('input[name="conPrd"]').val('');
+                }
+            } else {
+                if (startDateStr && endDateStr) {
+                    if (endDate < startDate) {
+                        gaiaCommon.customAlert("{{ message('msg.contract.011') }}");    // 준공일자가 착공일자보다 이전입니다. 착공일자와 준공일자를 확인하세요.
+                        if (this.mode === "update") {
+                            $('input[name="cbgnDate"]').val(this.originalDates.cbgnDate);
+                            $('input[name="ccmpltDate"]').val(this.originalDates.ccmpltDate);
+                            $('input[name="conPrd"]').val(this.originalDates.conPrd);
+                        } else {
+                            $('input[name="cbgnDate"]').val('');
+                            $('input[name="ccmpltDate"]').val('');
+                            $('input[name="conPrd"]').val('');
+                        }
+                        return;
+                    }
+
+                    const timeDiff = endDate - startDate;
+                    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1; // 밀리초를 일수로 변환
+                    $('input[name="conPrd"]').val(daysDiff);
+                } else {
+                    $('input[name="conPrd"]').val('');
+                }
+            }
+        },
+
+        // 데이터 출력
+        loadContractData: function () {
+            gaiaCommon.get("/api/project/contractstatus/get/" + cntrctNo + "/update", {}, function (result) {
+                let data = result.details.contract;
+                page.data = data;
+                console.log("data: ", data)
+
+                if (data.cntrctDivCd === "0104") {
+                    $('#this-box').show();
+                } else {
+                    $('#this-box').hide();
+                }
+
+                data.corp_no === null || data.corp_no === '' ? $('#corpNmResetBtn').hide() : $('#corpNmResetBtn').show();
+                data.ofcl_id === null || data.ofcl_id === '' ? $('#ofclNmResetBtn').hide() : $('#ofclNmResetBtn').show();
+
+                $('input[name="cntrctNm"]').val(gaiaCommon.decodeSafeText(data.cntrct_nm));
+                $('input[name="conPrd"]').val(data.con_prd);
+                $('input[name="mngCntrctNo"]').val(data.mng_cntrct_no);
+                $('#majorCnsttyCd').val(data.major_cnstty_cd);
+                $('#cntrctType').val(data.cntrct_type);
+                $('input[name="cntrctDate"]').val(formatDate2(data.cntrct_date));
+                $('input[name="grntyDate"]').val(formatDate2(data.grnty_date));
+                $('input[name="cbgnDate"]').val(formatDate2(data.cbgn_date));
+                $('input[name="ccmpltDate"]').val(formatDate2(data.ccmplt_date));
+                $('input[name="cntrctCost"]').val(addCommas(data.cntrct_cost));
+                $('input[name="grntyCost"]').val(addCommas(data.grnty_cost));
+                $('input[name="dfrcmpnstRate"]').val(data.dfrcmpnst_rate);
+                $('input[name="vatRate"]').val(data.vat_rate);
+                $('input[name="bsnsmnNo"]').val(data.bsnsmn_no);
+                $('input[name="corpNm"]').val(gaiaCommon.decodeSafeText(data.corp_nm));
+                $('input[name="corpNo"]').val(gaiaCommon.decodeSafeText(data.corp_no));
+                $('input[name="corpCeo"]').val(gaiaCommon.decodeSafeText(data.corp_ceo));
+                $('input[name="ofclNm"]').val(gaiaCommon.decodeSafeText(data.ofcl_nm));
+                $('input[name="ofclId"]').val(gaiaCommon.decodeSafeText(data.ofcl_id));
+                $('input[name="telNo"]').val(gaiaCommon.decodeSafeText(data.tel_no));
+                $('input[name="faxNo"]').val(gaiaCommon.decodeSafeText(data.fax_no));
+                $('input[name="corpAdrs"]').val(gaiaCommon.decodeSafeText(data.corp_adrs));
+
+                $('input[name="thisCcmpltDate"]').val(formatDate2(data.this_ccmplt_date));
+                $('input[name="thisConPrd"]').val(data.this_con_prd);
+                $('input[name="thisCntrctCost"]').val(addCommas(data.this_cntrct_cost));
+                $('#contractType').val(data.cntrct_div_cd);
+
+                const conPrd = data.con_prd;
+                const cbgnDate = formatDate2(data.cbgn_date);
+                const ccmpltDate = formatDate2(data.ccmplt_date);
+                const thisConPrd = data.this_con_prd;
+                const thisCcmpltDate = formatDate2(data.this_ccmplt_date);
+
+                page.originalDates = {
+                    conPrd: conPrd,
+                    cbgnDate: cbgnDate,
+                    ccmpltDate: ccmpltDate,
+                    thisConPrd: thisConPrd,
+                    thisCcmpltDate: thisCcmpltDate
+                };
+
+                page.toggleThisBox();
+            });
+        },
+        // 계약 수정
+        updateContract: function () {
+            const cntrctNm = $('input[name="cntrctNm"]').val();
+            const mngCntrctNo = $('input[name="mngCntrctNo"]').val();
+            const majorCnsttyCd = $('#majorCnsttyCd').val();
+            const cntrctType = $("#cntrctType").val();
+            const contractType = $("#contractType").val();
+
+            if (!cntrctNm) {
+                gaiaCommon.customAlert("{{ message('msg.contract.024') }}");    // 공사계약명을 입력해 주세요.
+                $('input[name="cntrctNm"]').focus();
+                return;
+            }
+            if (!mngCntrctNo) {
+                gaiaCommon.customAlert("{{ message('msg.contract.013') }}");    // 관리계약번호를 입력해 주세요.
+                $('input[name="mngCntrctNo"]').focus();
+                return;
+            }
+            if (!majorCnsttyCd) {
+                gaiaCommon.customAlert("{{ message('msg.contract.014') }}");    // 주공종을 선택해 주세요.
+                $("#majorCnsttyCd").focus();
+                return;
+            }
+            if (!contractType) {
+                gaiaCommon.customAlert("{{ message('msg.contract.204') }}");    // 계약구분을 선택해 주세요.
+                $("#contractType").focus();
+                return;
+            }
+            if (!cntrctType) {
+                gaiaCommon.customAlert("{{ message('msg.contract.015') }}");    // 계약종류를 선택해 주세요.
+                $('#cntrctType').focus();
+                return;
+            }
+            // if (!ofclNm) {
+            //     gaiaCommon.customAlert("{{ message('msg.072') }}");    // 담당자명은 필수 값입니다.
+            //     $('.ofclNmSearchBtn').focus();
+            //     return;
+            // }
+
+            const contractData = {
+                cntrctNm: $('input[name="cntrctNm"]').val(),
+                mngCntrctNo: $('input[name="mngCntrctNo"]').val(),
+                cntrctType: cntrctType,
+                majorCnsttyCd: majorCnsttyCd,
+                cntrctDivCd: contractType,
+                conPrd: $('input[name="conPrd"]').val(),
+                cntrctDate: formatDate($('input[name="cntrctDate"]').val()),
+                grntyDate: formatDate($('input[name="grntyDate"]').val()),
+                cbgnDate: formatDate($('input[name="cbgnDate"]').val()),
+                ccmpltDate: formatDate($('input[name="ccmpltDate"]').val()),
+                cntrctCost: removeCommas($('input[name="cntrctCost"]').val()),
+                grntyCost: removeCommas($('input[name="grntyCost"]').val()),
+                vatRate: $('input[name="vatRate"]').val(),
+                dfrcmpnstRate: $('input[name="dfrcmpnstRate"]').val(),
+                thisCcmpltDate: formatDate($('input[name="thisCcmpltDate"]').val()),
+                thisConPrd: $('input[name="thisConPrd"]').val(),
+                thisCntrctCost: removeCommas($('input[name="thisCntrctCost"]').val()),
+                bsnsmnNo: $('input[name="bsnsmnNo"]').val(),
+                corpNm: $('input[name="corpNm"]').val(),
+                corpNo: $('input[name="corpNo"]').val(),
+                corpAdrs: $('input[name="corpAdrs"]').val(),
+                telNo: $('input[name="telNo"]').val(),
+                faxNo: $('input[name="faxNo"]').val(),
+                corpCeo: $('input[name="corpCeo"]').val(),
+                ofclNm: $('input[name="ofclNm"]').val(),
+                ofclId: $('input[name="ofclId"]').val(),
+                pjtNo: this.pjtNo
+            };
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            let URL = "/api/project/contractstatus/update/" + cntrctNo;
+            let callback = function (result) {
+                gaiaCommon.customAlert("{{ message('msg.contract.012') }}", function () {   // 계약 등록이 완료되었습니다.
+                    gaiaCommon.LoadingOverlay('body', false);
+                    window.location.replace(`/project/contractstatus?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                });
+            };
+
+            let errorCallback = function (error) {
+                gaiaCommon.LoadingOverlay('body', false);
+                console.error(error);
+                gaiaCommon.customAlert("{{ message('msg.api.001') }}");
+            }
+
+            gaiaCommon.post(URL, contractData, callback, errorCallback);
+
+        },
+
+        makeSelectBox: function (cmnGrpCd, selectBoxId, elementId) {
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR",
+                ckeckedValue: "",
+                orderByCol: "",
+                orderByType: "",
+                initText: "=선택=",
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "",
+                funtype: "onchange",
+            };
+
+            gaiaCommon.post("/api/util/make-selectBox", [requestData], function (data) {
+                let returnMap = data.details.returnMap;
+                let selectBoxElement = document.getElementById(elementId);
+                selectBoxElement.innerHTML = returnMap[selectBoxId];
+
+                $(selectBoxElement).on('change', function () {
+                    page.toggleThisBox();
+                });
+            }, function (xhr, status, error) {
+                console.error("Error making select box:", status, error);
+            })
+        },
+
+        initializeSelectBoxes() {
+            // 계약 중공종 셀렉트 박스 설정
+            this.makeSelectBox(
+                "19a8bb53-74b4-405a-8d91-2b38555fc7d9", // 계약 중공종 코드
+                "majorCnsttyCd", // 셀렉트 박스 ID
+                "contractTypeSelect" // 셀렉트 박스 요소 ID
+            );
+
+            // 계약 구분 셀렉트 박스 설정
+            this.makeSelectBox(
+                "0575cf90-0d6a-4d96-a298-d252c8179c32", // 계약 구분 코드
+                "contractType", // 셀렉트 박스 ID
+                "contractSelect" // 셀렉트 박스 요소 ID
+            );
+
+            // 계약 종류 셀렉트 박스 설정
+            this.makeSelectBox(
+                "a825da4b-dafa-f272-a550-338ad9fd213b", // 계약 종류 코드
+                "cntrctType", // 셀렉트 박스 ID
+                "contractCategorySelect" // 셀렉트 박스 요소 ID
+            );
+        },
+        close: function () {
+            window.location.replace(`/project/contractstatus?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+        }
+    };
+
+
+    page.initializeSelectBoxes();
+</script>
+{% endblock footer_script %}

@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection">
+    <select id="getQuality"  resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getQuality][leejw]  */
+            SELECT 
+            CQ.CNTRCT_NO,
+            CQ.QLTY_ISP_ID,
+            CQ.ISP_DOC_NO,
+            CQ.ISP_LCT,
+            CQ.CNSTTY_CD,
+            SC.CMN_CD_NM_KRN,
+            CQ.ISP_ISSUE,
+            TO_CHAR(CQ.ISP_REQ_DT, 'YYYY-MM-DD') AS ISP_REQ_DT,
+            SU.USR_NM AS CQC_ID,
+            TO_CHAR(CQ.RSLT_DT, 'YYYY-MM-DD') AS RSLT_DT,
+            SUI.USR_NM AS APPRVL_ID,
+            TO_CHAR(CQ.APPRVL_DT, 'YYYY-MM-DD') AS APPRVL_DT,
+            SCC.CMN_CD_NM_KRN AS APPRVL_STATS,
+            CQ.ISP_AP_DOC_ID,
+            CQ.AP_DOC_ID,
+            CQ.AP_REQ_ID,
+            CQ.RSLT_DOC_NO,
+            CQ.DOC_ID, 
+            DC.AP_DOC_STATS AS INSPECTION_STATS,
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM CW_QUALITY_CHECK_LIST CQL
+                    WHERE CQL.QLTY_ISP_ID = CQ.QLTY_ISP_ID
+                    AND CQL.ACTN_DSCRPT IS NOT NULL
+                ) THEN 'true'
+                ELSE 'false'
+            END AS HAS_ACTION,
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM CW_REQUEST_ITEM CRI
+                    WHERE CRI.REQ_INS_ID = CQ.QLTY_ISP_ID
+                    AND CRI.DLT_YN = 'N'
+                ) THEN 'true'
+                ELSE 'false'
+            END AS HAS_REQUEST,
+            RSC.CMN_CD_NM_KRN AS RSLT_CD_NM,
+            COALESCE(DC.AP_DOC_STATS, '') AS AP_DOC_STATS,
+            CASE 
+		    	WHEN DSM.DLT_YN = 'N' THEN 'true'
+		    	WHEN DSM.DLT_YN = 'Y' THEN 'false'
+		    ELSE 'false'
+            END AS DSM_VALID
+            FROM CW_QUALITY_INSPECTION CQ
+            LEFT JOIN SM_COM_CODE SC
+                ON CQ.CNSTTY_CD = SC.CMN_CD
+                AND SC.CMN_GRP_CD = #{workcode}
+            LEFT JOIN SM_COM_CODE RSC
+                ON CQ.RSLT_CD = RSC.CMN_CD
+                AND RSC.CMN_GRP_CD = #{resultcode}
+            LEFT JOIN SM_USER_INFO SU
+                ON CQ.CQC_ID = SU.USR_ID 
+            LEFT JOIN SM_USER_INFO SUI
+                ON CQ.APPRVL_ID = SUI.USR_ID
+            LEFT JOIN SM_COM_CODE SCC 
+                ON CQ.APPRVL_STATS = SCC.CMN_CD
+                AND SCC.CMN_GRP_CD = #{paymentcode}
+            LEFT JOIN AP_DOC DC
+                ON CQ.ISP_AP_DOC_ID = DC.AP_DOC_ID
+            LEFT JOIN DC_STORAGE_MAIN DSM
+                ON CQ.DOC_ID = DSM.DOC_ID
+            WHERE CQ.CNTRCT_NO = #{cntrctNo}
+            AND (#{selectedWorkType} = '' OR CQ.CNSTTY_CD = #{selectedWorkType})
+            AND CQ.DLT_YN = 'N'
+            <if test="searchValue != null and searchValue != ''">
+                AND (
+                    CQ.ISP_DOC_NO ILIKE '%' || #{searchValue} || '%'
+                    OR CQ.ISP_LCT ILIKE '%' || #{searchValue} || '%'
+                    OR CQ.ISP_ISSUE ILIKE '%' || #{searchValue} || '%'
+                    OR SU.USR_NM ILIKE '%' || #{searchValue} || '%'
+                )
+            </if>
+            GROUP BY 
+                CQ.CNTRCT_NO,
+                CQ.QLTY_ISP_ID,
+                CQ.ISP_DOC_NO,
+                CQ.ISP_LCT,
+                CQ.CNSTTY_CD,
+                SC.CMN_CD_NM_KRN,
+                CQ.ISP_ISSUE,
+                TO_CHAR(CQ.ISP_REQ_DT, 'YYYY-MM-DD'),
+                SU.USR_NM,
+                TO_CHAR(CQ.RSLT_DT, 'YYYY-MM-DD'),
+                SUI.USR_NM,
+                TO_CHAR(CQ.APPRVL_DT, 'YYYY-MM-DD'),
+                CQ.APPRVL_STATS,
+                CQ.RSLT_DOC_NO, 
+                RSC.CMN_CD_NM_KRN,
+                SCC.CMN_CD_NM_KRN,
+                CQ.ISP_AP_DOC_ID,
+                CQ.AP_DOC_ID,
+                CQ.AP_REQ_ID,
+                CQ.DOC_ID, 
+                DC.AP_DOC_STATS,
+                DSM.DLT_YN
+            ORDER BY CQ.ISP_REQ_DT DESC;
+    </select>
+
+    <select id="getQualityInspection"  parameterType="map" resultType="qualityOutPut">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getQualityInspection][leejw]  */
+        SELECT 
+            CQI.AP_DOC_ID,
+            CQI.AP_OPNIN,
+            CQI.AP_REQ_DT,
+            CQI.AP_REQ_ID,
+            CQI.APPRVL_DT,
+            CQI.APPRVL_ID,
+            CQI.APPRVL_STATS,
+            CQI.ATCH_FILE_NO,
+            CQI.CHG_DT,
+            CQI.CHG_ID,
+            CQI.CNSTRTN_ID,
+            CQI.CNSTTY_CD,
+            CQI.CNSTTY_CD_L1,
+            CQI.CNSTTY_CD_L2,
+            CQI.CNTRCT_NO,
+            CQI.CQC_ID,
+            CQI.DLT_YN,
+            CQI.ISP_AP_DOC_ID,
+            CQI.ISP_DOC_NO,
+            CQI.ISP_ISSUE,
+            CQI.ISP_LCT,
+            CQI.ISP_PART,
+            CQI.ISP_REQ_DT,
+            CQI.ORDE_OPNIN,
+            CQI.QLTY_ISP_ID,
+            CQI.RSLT_CD,
+            CQI.RSLT_DT,
+            CQI.RSLT_DOC_NO,
+            SUI.USR_NM,
+            SCC.CMN_CD_NM_KRN AS PAYMENTRESULT,
+            SC.CMN_CD_NM_KRN AS CNSTTYCDKRN
+        FROM 
+            CW_QUALITY_INSPECTION CQI
+        LEFT JOIN 
+            SM_USER_INFO SUI 
+        ON
+            CQI.APPRVL_ID = SUI.USR_ID 
+        LEFT JOIN 
+            SM_COM_CODE SCC 
+        ON
+            CQI.APPRVL_STATS = SCC.CMN_CD 
+            AND SCC.CMN_GRP_CD = #{paymentcode}
+        LEFT JOIN 
+        	SM_COM_CODE SC
+        ON 
+            CQI.CNSTTY_CD = SC.CMN_CD
+        	AND SC.CMN_GRP_CD = #{workcode}
+        WHERE
+            CQI.CNTRCT_NO = #{cntrctNo}
+        AND 
+            CQI.QLTY_ISP_ID = #{qltyIspId};
+    </select>
+
+    
+    <select id="getQualityActivity"  resultType="activity">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getQualityActivity][leejw]  */
+        SELECT
+            PA.WBS_CD,
+            PA.ACTIVITY_ID,
+            PA.ACTIVITY_NM
+        FROM
+            PR_ACTIVITY PA
+        WHERE
+            (PA.WBS_CD,
+            PA.ACTIVITY_ID) IN (
+            SELECT
+                CQA.WBS_CD,
+                CQA.ACTIVITY_ID
+            FROM
+                CW_QUALITY_ACTIVITY CQA
+            WHERE
+                CQA.QLTY_ISP_ID = #{qltyIspId}
+                AND CQA.DLT_YN = 'N'
+            )
+            AND (PA.REVISION_ID,
+            PA.CNTRCT_CHG_ID) IN (
+            SELECT
+                PR.REVISION_ID,
+                PR.CNTRCT_CHG_ID
+            FROM
+                PR_REVISION PR
+            WHERE
+                PR.CNTRCT_CHG_ID IN (
+                SELECT
+                    CCC.CNTRCT_CHG_ID
+                FROM
+                    CN_CONTRACT_CHANGE CCC
+                WHERE
+                    CCC.CNTRCT_NO = #{cntrctNo}
+                )
+                AND PR.LAST_REVISION_YN = 'Y'
+            );
+    </select>
+
+    <select id="getQualityCheckList"  resultType="checkList">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getQualityCheckList][leejw]  */
+        SELECT DISTINCT
+            CQL.CHKLST_ID,
+            CQL.CHKLST_SNO,
+            CQL.CHKLST_BSS_CD,
+            CQL.CNSTRTN_YN,
+            CQL.CQC_YN,
+            CQL.ACTN_DSCRPT,
+            CL.CHKLST_DSCRPT,
+            CL.CNSTTY_NM AS CNSTTY_CD1,
+            UP_CL.CNSTTY_NM AS CNSTTY_CD2
+        FROM CW_QUALITY_CHECK_LIST CQL
+        JOIN CW_CNTQLTY_CHECK_LIST CL
+        ON CQL.CHKLST_ID = CL.CHKLST_ID
+        LEFT JOIN CW_CNTQLTY_CHECK_LIST UP_CL
+        ON CL.UP_CNSTTY_CD = UP_CL.CNSTTY_CD
+        AND UP_CL.DLT_YN = 'N'
+        WHERE CQL.CNTRCT_NO in ('CMIS', #{cntrctNo})
+        AND CQL.QLTY_ISP_ID = #{qltyIspId}
+        AND CQL.DLT_YN = 'N'
+        ORDER BY CQL.CHKLST_SNO;
+    </select>
+    
+    <select id="getActivity"  parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getActivity][leejw]  */
+        WITH RECURSIVE WBS_PATH_TBL AS (
+            SELECT 
+                WBS_CD,
+                WBS_NM,
+                UP_WBS_CD,
+                1 AS DEPTH,
+                ARRAY[WBS_NM]::VARCHAR[] AS PATH,
+                CNTRCT_CHG_ID
+            FROM PR_WBS
+            WHERE WBS_LEVEL = '1'
+            AND CNTRCT_CHG_ID IN (
+                SELECT CCC.CNTRCT_CHG_ID
+                FROM CN_CONTRACT_CHANGE CCC
+                WHERE CCC.CNTRCT_NO = #{cntrctNo}
+            )
+            UNION ALL
+            SELECT 
+                PW.WBS_CD,
+                PW.WBS_NM,
+                PW.UP_WBS_CD,
+                WPT.DEPTH + 1,
+                WPT.PATH || PW.WBS_NM,
+                PW.CNTRCT_CHG_ID
+            FROM PR_WBS PW
+            JOIN WBS_PATH_TBL WPT 
+                ON PW.UP_WBS_CD = WPT.WBS_CD
+            AND PW.CNTRCT_CHG_ID = WPT.CNTRCT_CHG_ID
+        ),
+        LATEST_REVISION AS (
+            SELECT PR.REVISION_ID, PR.CNTRCT_CHG_ID
+            FROM PR_REVISION PR
+            WHERE PR.LAST_REVISION_YN = 'Y'
+            AND PR.CNTRCT_CHG_ID IN (
+                SELECT CCC.CNTRCT_CHG_ID
+                FROM CN_CONTRACT_CHANGE CCC
+                WHERE CCC.CNTRCT_NO = #{cntrctNo}
+            )
+        )
+        SELECT DISTINCT
+            ARRAY_TO_STRING(WPT.PATH, ' / ') AS PATH_NM,
+            PA.WBS_CD,
+            PA.ACTIVITY_ID,
+            PA.ACTIVITY_NM,
+            PA.PLAN_START,
+            PA.PLAN_FINISH,
+            PA.ACTUAL_START,
+            PA.ACTUAL_FINISH
+        FROM PR_ACTIVITY PA
+        JOIN LATEST_REVISION LR 
+            ON PA.REVISION_ID = LR.REVISION_ID 
+        AND PA.CNTRCT_CHG_ID = LR.CNTRCT_CHG_ID
+        JOIN WBS_PATH_TBL WPT 
+            ON PA.WBS_CD = WPT.WBS_CD 
+        AND PA.CNTRCT_CHG_ID = WPT.CNTRCT_CHG_ID
+        WHERE PA.DLT_YN = 'N'
+        AND PA.REVISION_ID IN (SELECT REVISION_ID FROM LATEST_REVISION)
+         <if test="searchValue != null and searchValue != ''">
+            AND (
+                ARRAY_TO_STRING(WPT.PATH, ' / ') ILIKE '%' || #{searchValue} || '%'
+                OR PA.ACTIVITY_NM ILIKE '%' || #{searchValue} || '%'
+            )
+        </if>
+        ORDER BY PA.WBS_CD, PA.ACTIVITY_ID;
+    </select>
+
+    <select id="getCheckTreeList" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getCheckTreeList][leejw]  */
+        WITH RECURSIVE TREE AS (
+            SELECT
+                SC.CMN_CD AS ID,                
+                SC.CMN_CD_NM_KRN AS TEXT,       
+                NULL::TEXT AS PARENT,           
+                1 AS LEVEL,
+                CAST('0' AS TEXT) AS CHKLSTID,
+                CAST(NULL AS TEXT) AS CNTRCT_NO
+            FROM
+                SM_COM_CODE SC
+            WHERE
+                SC.CMN_GRP_CD = #{code}
+            UNION ALL
+            SELECT
+                CC.CNSTTY_CD AS ID,             
+                CC.CNSTTY_NM AS TEXT,           
+                CC.UP_CNSTTY_CD AS PARENT,      
+                CC.CNSTTY_LVL AS LEVEL,
+                CC.CHKLST_ID::TEXT AS CHKLSTID,
+                CC.CNTRCT_NO AS CNTRCT_NO
+            FROM
+                CW_CNTQLTY_CHECK_LIST CC
+            JOIN
+                TREE T ON CC.UP_CNSTTY_CD = T.ID
+            WHERE 
+                CC.CNTRCT_NO = 'CMIS'
+            AND
+                CC.DLT_YN = 'N'
+            AND 
+                CC.CNSTTY_YN = 'Y'
+        )
+        SELECT 
+            T.ID,
+            T.TEXT,
+            T.PARENT,
+            T.LEVEL,
+            T.CHKLSTID,
+            T.CNTRCT_NO
+        FROM TREE T
+        ORDER BY T.LEVEL, T.ID;
+    </select>
+
+    <select id="getCheckTreeContractList" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getCheckTreeContractList][leejw]  */
+        WITH RECURSIVE TREE AS (
+            SELECT 
+                SC.CMN_CD AS ID,                
+                SC.CMN_CD_NM_KRN AS TEXT,       
+                NULL::TEXT AS PARENT,           
+                1 AS LEVEL,
+                CAST('0' AS TEXT) AS CHKLSTID,
+                CAST(NULL AS TEXT) AS CNTRCT_NO
+            FROM SM_COM_CODE SC
+            WHERE SC.CMN_GRP_CD = #{code}
+            UNION ALL
+            SELECT 
+                CC.CNSTTY_CD AS ID,             
+                CC.CNSTTY_NM AS TEXT,       
+                CC.UP_CNSTTY_CD AS PARENT,      
+                CC.CNSTTY_LVL AS LEVEL,     
+                CC.CHKLST_ID::TEXT AS CHKLSTID,
+                CC.CNTRCT_NO AS CNTRCT_NO
+            FROM CW_CNTQLTY_CHECK_LIST CC
+            JOIN TREE T ON CC.UP_CNSTTY_CD = T.ID
+            WHERE 
+                CC.DLT_YN = 'N'
+                AND CC.CNSTTY_YN = 'Y'
+                AND CC.CNTRCT_NO in('CMIS', #{cntrctNo})
+            GROUP BY 
+                CC.CNSTTY_CD, 
+                CC.CNSTTY_NM,
+                CC.UP_CNSTTY_CD,
+                CC.CNSTTY_LVL,     
+                CC.CHKLST_ID,
+                CC.CNTRCT_NO
+        )
+        SELECT 
+            T.ID,
+            T.TEXT,
+            T.PARENT,
+            T.LEVEL,
+            T.CHKLSTID,
+            T.CNTRCT_NO
+        FROM TREE T
+        ORDER BY T.LEVEL, T.ID;
+    </select>
+
+    <select id="getCheckGridList" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getCheckGridList][leejw]  */
+        SELECT
+ 	        CL.CHKLST_ID,
+            CL.CHKLST_DSCRPT,
+            CL.CHKLST_SNO, 
+            SC.CMN_CD_NM_KRN,
+            CL.CNTRCT_NO
+        FROM
+            CW_CNTQLTY_CHECK_LIST CL
+        JOIN
+            SM_COM_CODE SC ON
+            CL.CHKLST_BSS_CD = SC.CMN_CD
+        WHERE
+            CL.CNSTTY_CD = #{cnsttyCd}
+            AND CL.CNSTTY_YN = 'N'
+            AND CL.DLT_YN = 'N'
+            AND SC.CMN_GRP_CD = #{code}
+            <if test="searchValue != null and searchValue != ''">
+                AND (
+                    CL.CHKLST_DSCRPT ILIKE '%' || #{searchValue} || '%'
+                )
+            </if>
+            <choose>
+                <when test="useType == 'common'">
+                    AND CL.CNTRCT_NO = #{cntrctNo}
+                </when>
+                <otherwise>
+                    AND CL.CNTRCT_NO IN ('CMIS', #{cntrctNo})
+                </otherwise>
+            </choose>
+            ORDER BY CL.CHKLST_SNO;
+    </select>
+
+    <select id="getCheckList" parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getCheckList][leejw]  */
+        SELECT
+            ROW_NUMBER() OVER (
+            ORDER BY CL.CHKLST_SNO) AS ROW_NUM,
+            CL.CHKLST_ID,
+            CL.CHKLST_DSCRPT,
+            CL.CHKLST_BSS_CD
+        FROM
+            CW_CNTQLTY_CHECK_LIST CL
+        WHERE
+            CL.CNTRCT_NO in ('CMIS', #{cntrctNo})
+        AND CL.CNSTTY_CD = #{cnsttyCd}
+        AND CL.CNSTTY_YN = 'N'
+        AND CL.DLT_YN = 'N'
+        <if test="upCnsttyCd != null and upCnsttyCd != ''">
+            AND CL.UP_CNSTTY_CD = #{upCnsttyCd}
+        </if>
+        <if test="searchValue != null and searchValue != ''">
+            AND (
+                CL.CHKLST_DSCRPT ILIKE '%' || #{searchValue} || '%'
+            )
+        </if>
+        ORDER BY
+            CL.CHKLST_SNO;
+    </select>
+
+    <select id="selectBox" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.selectBox][leejw]  */
+        SELECT
+            CL.CNSTTY_NM,
+            CL.CNSTTY_CD
+        FROM
+            CW_CNTQLTY_CHECK_LIST CL
+        WHERE
+            UP_CNSTTY_CD = #{upCnsttyCd}
+            AND CL.DLT_YN = 'N'
+            AND CL.CNSTTY_YN = 'Y'
+            AND CNTRCT_NO in ('CMIS', #{cntrctNo})
+        ORDER BY
+            CL.CHKLST_ID;
+    </select>
+
+    <select id="getSupervisionList" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getSupervisionList][leejw]  */
+        SELECT
+            A.*,
+            B.*,
+            C.*,
+            F.CMN_CD_NM_KRN AS WORK_NM   -- 공종명 추가
+        FROM
+            SM_DEPARTMENT A
+            INNER JOIN SM_ORGANIZATION B
+                ON A.DEPT_UUID = B.DEPT_UUID
+            INNER JOIN SM_USER_INFO C
+                ON B.USR_ID = C.USR_ID
+            LEFT JOIN SM_COM_CODE F
+                ON B.RATNG_CD = F.CMN_CD
+                AND F.CMN_GRP_CD = '7de5a73e-ec43-475a-a10b-78cbc4ceec77'
+        WHERE
+            A.DEPT_ID = 'C' || #{cntrctNo} || '.m3'
+             <if test="searchValue != null and searchValue != ''">
+                AND (
+                    C.USR_NM ILIKE '%' || #{searchValue} || '%'
+                    OR A.DEPT_NM ILIKE '%' || #{searchValue} || '%'
+                )
+            </if>
+            AND A.USE_YN = 'Y'
+            AND A.DLT_YN = 'N'
+            AND B.DLT_YN = 'N'
+            AND C.USE_YN = 'Y'
+            AND C.DLT_YN = 'N'
+            AND A.PJT_NO = #{pjtNo}
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND A.PJT_TYPE = #{pjtType};
+    </select>
+
+    <select id="getSupervisionListCount" resultType="long">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getSupervisionListCount][leejw]  */
+        SELECT COUNT(1)
+        FROM SM_DEPARTMENT A
+        JOIN SM_ORGANIZATION B ON A.DEPT_UUID = B.DEPT_UUID
+        LEFT JOIN SM_USER_INFO C ON B.USR_ID = C.USR_ID
+        WHERE A.CNTRCT_NO = #{cntrctNo}
+        <if test="searchValue != null and searchValue != ''">
+            AND (
+                C.USR_NM ILIKE '%' || #{searchValue} || '%'
+                OR A.DEPT_NM ILIKE '%' || #{searchValue} || '%'
+            )
+        </if>
+        <if test="workType != null and workType != ''">
+            AND B.RATNG_CD = #{workType}
+        </if>
+        AND B.PSTN_CD = '05'
+    </select>
+
+    <insert id="insertRequestItem" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.insertRequestItem][leejw]  */
+        INSERT INTO CW_REQUEST_ITEM (
+            REQ_INS_ID,
+            PJT_NO,
+            CNTRCT_NO,
+            REQ_APP_DIV,
+            TO_USR_ID,
+            RGSTR_ID,
+            RGST_DT,
+            END_YN,
+            DLT_YN
+        ) VALUES (
+            #{reqInsId},
+            #{pjtNo},
+            #{cntrctNo},
+            #{reqAppDiv},
+            #{toUsrId},
+            #{rgstrId},
+            #{rgstDt},
+            #{endYn},
+            #{dltYn}
+        )
+    </insert>
+
+    <select id = "getCntrctNoAndPjtNo" parameterType="String" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getCntrctNoAndPjtNo][leejw]  */
+        SELECT
+           cc.pjt_no,
+           cc.cntrct_no
+        FROM cw_quality_inspection cqi
+        JOIN cn_contract cc
+        ON cc.cntrct_no = cqi.cntrct_no
+        WHERE cqi.qlty_isp_id = #{qltyispId}
+    </select>
+
+    <update id="updateIQualityDocId" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.updateIQualityDocId] [leejw] */
+        UPDATE CW_QUALITY_INSPECTION CQI
+            SET DOC_ID = #{docId}
+        WHERE CQI.QLTY_ISP_ID = #{qltyIspId}
+            AND CQI.CNTRCT_NO = #{cntrctNo}
+    </update>   
+
+    <update id="deleteReqItemYn" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.deleteReqItemYn] [leejw] */
+        UPDATE cw_request_item
+        SET dlt_yn  = 'Y',          
+            dlt_dt  = CURRENT_DATE, 
+            dlt_id  = #{dltId}        
+        WHERE req_ins_id = #{qltyIspId}
+    </update>
+
+    <delete id="deleteReqItem" parameterType="String">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.deleteReqItem] [leejw] */
+        DELETE
+        FROM cw_request_item
+        WHERE req_ins_id = #{qltyIspId}
+    </delete>  
+
+    <update id="updateReqItem" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.updateReqItem] [leejw] */
+        UPDATE cw_request_item
+        SET chg_dt  = CURRENT_DATE,
+            chg_id  = #{chgId}              
+        WHERE req_ins_id = #{qltyIspId}
+    </update>
+
+    <select id = "getUser" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getUser][leejw]  */
+        SELECT
+            B.RATNG_CD,
+            C.USR_NM,
+            C.USR_ID,
+            C.EMAIL_ADRS
+        FROM
+            SM_DEPARTMENT A
+            INNER JOIN SM_ORGANIZATION B
+                ON A.DEPT_UUID = B.DEPT_UUID
+            INNER JOIN SM_USER_INFO C
+                ON B.USR_ID = C.USR_ID
+                AND C.USE_YN = 'Y'
+                AND C.DLT_YN = 'N'
+        WHERE
+            A.DEPT_ID = 'C' || #{cntrctNo} || '.m3'
+            AND A.USE_YN = 'Y'
+            AND A.DLT_YN = 'N'
+            AND B.DLT_YN = 'N'
+            AND B.USR_ID = #{usrId};
+    </select>  
+
+    <select id="getApDocIds" parameterType="map" resultType="string">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getApDocIds] */
+        SELECT 
+            cqi.ap_doc_id
+        FROM cw_quality_inspection cqi
+        WHERE cqi.qlty_isp_id IN
+        <foreach collection="qidLists" item="qId" open="(" separator="," close=")">
+            #{qId}
+        </foreach>
+          AND cqi.dlt_yn = 'N'
+          AND cqi.apprvl_stats = 'A'  -- '승인'인 녀석만
+          AND cqi.ap_doc_id IS NOT NULL  -- 전자결재 id가 존재하는 것만
+    </select>
+
+    <select id="getDocIds" parameterType="map" resultType="string">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.qualityinspection.getDocIds] */
+        SELECT 
+            cqi.doc_id
+        FROM cw_quality_inspection cqi
+        WHERE cqi.qlty_isp_id IN
+        <foreach collection="qidLists" item="qId" open="(" separator="," close=")">
+            #{qId}
+        </foreach>
+          AND cqi.dlt_yn = 'N'
+          AND cqi.doc_id IS NOT NULL  -- 통합문서 id가 존재하는 것만
+    </select>
+</mapper>

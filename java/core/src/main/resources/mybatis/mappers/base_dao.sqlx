@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="sqlx">
+
+    <sql id="commonPageable"> 
+        <if test="pageable != null and !pageable.sort.isEmpty()">
+            order by 
+            <foreach collection="pageable.sort" item="sort" separator=",">
+                ${sort.property} ${sort.direction}
+            </foreach>
+        </if>
+        <if test="pageable != null">
+            OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY
+        </if>
+    </sql>
+
+    <sql id="commonPageableWithoutSort">
+        <if test="pageable != null">
+            OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY
+        </if>
+    </sql>
+    
+    <sql id="myAuthorityGroup">
+        select
+            ag.rght_grp_no, ag.rght_grp_cd
+        from 
+            sm_authority_group ag
+        inner join sm_authority_group_users agu
+            on ag.rght_grp_no = agu.rght_grp_no
+            and agu.rght_grp_usr_ty in ('U', 'R')
+            and ag.cntrct_no = #{user.cntrctNo}
+            and ag.dlt_yn = 'N'
+        inner join sm_organization o 
+            on agu.auth_no = o.org_no
+            and o.usr_id = #{user.usrId}
+            and o.dlt_yn = 'N'
+            
+        union all
+        select
+            ag.rght_grp_no, ag.rght_grp_cd
+        from 
+            sm_authority_group ag
+        inner join sm_authority_group_users agu
+            on ag.rght_grp_no = agu.rght_grp_no
+            and agu.rght_grp_usr_ty = 'D'
+            and ag.cntrct_no = #{user.cntrctNo}
+            and ag.dlt_yn = 'N'
+        inner join sm_department d on
+            agu.auth_no = d.dept_no
+            and d.dlt_yn = 'N'
+        inner join sm_organization o on
+            d.dept_no = o.dept_no
+            and o.usr_id = #{user.usrId}
+            and o.dlt_yn = 'N'
+    </sql>
+</mapper>

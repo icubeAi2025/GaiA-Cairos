@@ -1,0 +1,419 @@
+{% extends 'layout/base_content' %} {% block content %}
+<article class="conts g-row">
+    <div class="group">
+        <div class="conts_form">
+            <div class="btn_area s_default _outline">
+                <button type="button" class="btn" id="action-button" onclick="page.save()">{{ message("btn.006") }}</button>
+                <button type="button" class="btn" id="close-popup" onclick="page.close()">{{ message("btn.007") }}</button>
+            </div>
+            <form name="addForm" id="addForm">
+                <div class="form_box">
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.003") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="cntrctNm" name="cntrctNm" readonly />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.004") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="scontrctCcnsttyCdNm"
+                                    name="scontrctCcnsttyCdNm" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.005") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="scontrctCntrctNo" name="scontrctCntrctNo"
+                                    readonly />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.006") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="corpNm" name="corpNm" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.009") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="scontrctCorpBsnsmnNo"
+                                    name="scontrctCorpBsnsmnNo" readonly />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.010") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="scontrctCorpNm" name="scontrctCorpNm"
+                                    readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.018") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="cntrctChgNo" name="cntrctChgNo" readonly />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.027") }}
+                            </div>
+                            <div class="form_data">
+                                <span class="selectbox" id="selectBox1">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.028") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="date" class="form-control date" id="chgApprDate" name="chgApprDate"
+                                    required />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.029") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="date" class="form-control date" id="cntrctChgDate" name="cntrctChgDate"
+                                    required />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.030") }}
+                            </div>
+                            <div class="form_data">
+                                <span class="item_group">
+                                    <input type="date" class="w-md date" id="cntrctBgnDate" name="cntrctBgnDate"
+                                        readonly />
+                                    <span class="_tilde">~</span>
+                                    <input type="date" class="w-md date" id="chgCbgnDate" name="chgCbgnDate" required />
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.031") }}
+                            </div>
+                            <div class="form_data">
+                                <span class="item_wrap w-sm put_txt _day">
+                                    <input type="text" id="chgConPrd" name="chgConPrd" readonly />
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.032") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="fstCntrctAmt" name="fstCntrctAmt"
+                                    readonly />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.033") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="preCntrctAmt" name="preCntrctAmt"
+                                    readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.034") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control cost" id="cntrctAmt" name="cntrctAmt"
+                                    style="text-align: right;" maxlength="15" />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.035") }}
+                            </div>
+                            <div class="form_data">
+                                <input type="text" class="form-control" id="Amt" name="Amt" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">
+                                {{ message("item.sub.036") }}
+                            </div>
+                            <div class="form_data">
+                                <span class="item_group">
+                                    <textarea class="form-control" id="rmrk" name="rmrk" maxlength="2000"></textarea>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</article>
+{% endblock content %} {% block footer_script %}
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+
+    const params = new URLSearchParams(window.location.search);
+    let pjtNo;
+    const cntrctNo = params.get("cntrctNo");
+    const scontrctCorpId = params.get("scontrctCorpId");
+    const cntrctChgId = params.get("cntrctChgId");
+
+    var page = {
+        data: {
+            init: "={{ message('item.com.005') }}="
+        },
+
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+
+            this.loadData(cntrctNo, scontrctCorpId, cntrctChgId);
+            var title = "{{ message('item.sub.037') }}";
+            gaiaPortal.navMenuInit("M010202", title);
+            $("#menuDepth").append(`<li class="breadcrumb_item">${title}</li>`);
+        },
+
+        close: function () {
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+            window.location.replace(`/project/subcontract?pjtNo=${pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&scontrctCorpId=${scontrctCorpId}`);
+        },
+
+        // 수정 모드: 데이터 수정
+        save: function () {
+            const cntrctChgNo = $("#cntrctChgNo").val();
+            const cntrctChgType = $("#cntrctChgType").val();
+            const chgApprDate = formatDate($("#chgApprDate").val());
+            const cntrctChgDate = formatDate($("#cntrctChgDate").val());
+            const chgCbgnDate = formatDate($("#chgCbgnDate").val());
+            const chgConPrd = $("#chgConPrd").val();
+            const cntrctAmt = removeCommas($("#cntrctAmt").val());
+            const rmrk = $("#rmrk").val();
+            const preCntrctAmt = removeCommas($("#preCntrctAmt").val());
+
+            let changeData = {
+                cntrctNo: cntrctNo,
+                scontrctCorpId: scontrctCorpId,
+                cntrctChgId: cntrctChgId,
+                cntrctChgNo: cntrctChgNo,
+                cntrctChgType: cntrctChgType,
+                chgApprDate: chgApprDate,
+                cntrctChgDate: cntrctChgDate,
+                chgCbgnDate: chgCbgnDate,
+                chgConPrd: chgConPrd,
+                cntrctAmt: cntrctAmt || preCntrctAmt,
+                rmrk: rmrk,
+            };
+
+            const url = "/api/project/subcontract/changeUpdate";
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post(url, changeData, function (result) {
+                gaiaCommon.customAlert("{{ message('msg.007') }}", function () {
+                    sessionStorage.setItem('cntrctNo', cntrctNo);
+                    gaiaCommon.LoadingOverlay('body', false);
+                    window.location.replace("/project/subcontract");
+                });
+            });
+        },
+
+        //데이터 출력
+        loadData: function (cntrctNo, scontrctCorpId, cntrctChgId) {
+            const url = "/api/project/subcontract/" + cntrctNo + "/" + scontrctCorpId + "/" + cntrctChgId;
+
+            gaiaCommon.get(url, '', function (data) {
+                let subcontractChange = data.details.subcontractChange;
+                $("#cntrctChgNo").val(subcontractChange.cntrctChgNo);
+                $("#cntrctChgType").val(gaiaCommon.decodeSafeText(subcontractChange.cntrctChgType));
+                $("#chgApprDate").val(formatDate2(subcontractChange.chgApprDate));
+                $("#cntrctChgDate").val(formatDate2(subcontractChange.cntrctChgDate));
+                $("#chgCbgnDate").val(formatDate2(subcontractChange.chgCbgnDate));
+                $("#chgConPrd").val(subcontractChange.chgConPrd);
+                $("#cntrctAmt").val(addCommas(subcontractChange.cntrctAmt));
+                $("#rmrk").val(gaiaCommon.decodeSafeText(subcontractChange.rmrk));
+
+                $("#cntrctNm").val(gaiaCommon.decodeSafeText(subcontractChange.cntrctNm));
+                $("#scontrctCcnsttyCdNm").val(gaiaCommon.decodeSafeText(subcontractChange.scontrctCcnsttyCdNm));
+                $("#scontrctCntrctNo").val(gaiaCommon.decodeSafeText(subcontractChange.scontrctCntrctNo));
+                $("#gcontrctCorpNo").val(gaiaCommon.decodeSafeText(subcontractChange.gcontrctCorpNo));
+                $("#corpNm").val(gaiaCommon.decodeSafeText(subcontractChange.corpNm));
+                $("#scontrctCorpBsnsmnNo").val(gaiaCommon.decodeSafeText(subcontractChange.scontrctCorpBsnsmnNo));
+                $("#scontrctCorpNm").val(gaiaCommon.decodeSafeText(subcontractChange.scontrctCorpNm));
+                $("#cntrctBgnDate").val(formatDate2(subcontractChange.cntrctBgnDate));
+                $("#fstCntrctAmt").val(addCommas(subcontractChange.fstCntrctAmt));
+                $("#preCntrctAmt").val(addCommas(subcontractChange.preCntrctAmt));
+                Amt();
+            }, function (xhr, status, error) {
+                console.error("Error:", error);
+            });
+        },
+
+        makeSelectBox: function (comCodeSelectBoxGets) {
+            gaiaCommon.post("/api/util/make-selectBox", comCodeSelectBoxGets, function (data) {
+                let returnMap = data.details.returnMap;
+                comCodeSelectBoxGets.forEach(function (item, index) {
+                    let addAppLineContent = document.getElementById(
+                        item.selectBoxId
+                    );
+                    let categorySelect = `${returnMap[item.selectBoxId]}`;
+                    if (addAppLineContent) {
+                        addAppLineContent.innerHTML =
+                            returnMap[item.selectBoxId];
+                    }
+                    $(`#selectBox${index + 1}`).append(categorySelect);
+                });
+            },function (xhr, status, error) {
+                console.error("Error making select box:", status, error);
+            });
+        },
+        initializeSelectBoxes() {
+            let selectBoxRequests = [
+                {
+                    cmnGrpCd: "4140bc95-7a72-c1c3-69f5-0137a653c18f",
+                    selectBoxId: "cntrctChgType",
+                    selectBoxNmType: "KOR",
+                    ckeckedValue: "",
+                    orderByCol: "",
+                    orderByType: "",
+                    initText: page.data.init,
+                    paramNm: "cntrctChgType",
+                    funName: "",
+                    funParam: "this.value",
+                    funtype: "",
+                },
+            ];
+            page.makeSelectBox(selectBoxRequests);
+        },
+    };
+
+    document
+        .getElementById("cntrctBgnDate")
+        .addEventListener("change", calculateDays);
+    document
+        .getElementById("chgCbgnDate")
+        .addEventListener("change", calculateDays);
+
+    document.getElementById("cntrctAmt").addEventListener("input", Amt);
+
+    // YYYYMMDD 형식으로 변환
+    function formatDate(dateStr) {
+        if (!dateStr) {
+            return null;
+        }
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = ("0" + (date.getMonth() + 1)).slice(-2);
+        const day = ("0" + date.getDate()).slice(-2);
+
+        return year + month + day;
+    }
+    // YYYY-MM-DD 형식으로 변환
+    function formatDate2(dateStr) {
+        if (!dateStr) {
+            return null;
+        }
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return `${year}-${month}-${day}`;
+    }
+
+    //기간계산
+    function calculateDays() {
+        const bgnDate = document.getElementById("cntrctBgnDate").value;
+        const endDate = document.getElementById("chgCbgnDate").value;
+
+        if (bgnDate && endDate) {
+            const start = new Date(bgnDate);
+            const end = new Date(endDate);
+
+            if (end < start) {
+                gaiaCommon.customAlert("{{ message('msg.027') }}");
+                // 입력 필드 값 초기화
+                document.getElementById("chgCbgnDate").value = "";
+                document.getElementById("cnstwkDaynum").value = "";
+                return;
+            }
+
+            const timeDiff = end - start;
+            const dayDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            document.getElementById("chgConPrd").value = dayDiff + 1;
+        }
+    }
+
+    // 변경 차액 계산
+    function Amt() {
+        const preCntrctAmt =
+                removeCommas(document.getElementById("preCntrctAmt").value) || 0;
+        const cntrctAmt =
+                removeCommas(document.getElementById("cntrctAmt").value) || 0;
+        const Amt = preCntrctAmt - cntrctAmt; // A-B
+
+        if (Amt < 0) {
+            $('#Amt').css('color', 'red');
+        } else {
+            $('#Amt').css('color', 'blue');
+        }
+
+        $('#Amt').val(Amt === 0 ? "0" : addCommas(Amt));
+    }
+
+    page.initializeSelectBoxes();
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init()
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

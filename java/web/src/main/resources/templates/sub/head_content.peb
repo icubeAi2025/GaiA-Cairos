@@ -1,0 +1,175 @@
+<header>
+    <h1 class="brand">
+        <a href="/"></a>
+    </h1>
+
+    <article class="family_link" {% if ["cairos", "wbsgen"] contains platform %}style="display: none;"{% endif %}>
+        <!-- GAIA 메인화면 / 특정 사용자에게만 보여지는 링크 -->
+        <div id="selectDbdItem" class="dashboard_list" style="display:none">
+            <i class="ic ic-bydesign"><span class="path1"></span><span class="path2"></span><span
+                    class="path3"></span><span class="path4"></span></i>
+            <i class="ic ic-dot-partline"></i>
+            <a href="/dashboard/dashBoard_type01">종합대시보드 <i class="ic ic-arrow"></i></a>
+            <!-- <a href="#">종합대시보드 <i class="ic ic-arrow"></i></a> -->
+        </div>
+
+        <!-- 프로젝트 화면 / 프로젝트 이동 링크 -->
+        <div id="selectPjtItem" class="pj_link" style="display:none">
+            <nav class="pj_link_wrap" id="topSelectProject">
+                <i class="ic ic-city"><span class="path1"></span><span class="path2"></span><span
+                        class="path3"></span><span class="path4"></span><span class="path5"></span><span
+                        class="path6"></span><span class="path7"></span><span class="path8"></span></i>
+                <p class="pj_name" id="selectProject"></p>
+                <!-- 사용자별 클래스 변경 : user_groups1 / user_groups2 : 프로젝트명, 계약명 출력 -->
+                <div id="pj_list_box" class="pj_list_wrap">
+                    <div class="list_th">
+                        <b class="th">프로젝트명</b>
+                        <b class="th">계약명</b>
+                    </div>
+                    <div class='pj_list ty_tb' id="selectList">
+
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </article>
+    <article class="login_info">
+{#        <button type="button" class="icon_btn logout" id="">#}
+{#            <i class="fa-regular fa-bell"></i>#}
+{#        </button>#}
+{#        <div class='pj_list ty_tb' id="selectList">#}
+{#            <a href='javascript:void(0)'>#}
+{#                <span class='td'>test</span>#}
+{#            </a>#}
+{#        </div>#}
+        <button type="button" class="icon_btn arrow_btn" onclick="mypage()">
+            <span class="user_belong" id="userNm" data-after="/"></span>
+            <span class="user_id" id="userType"></span>
+        </button>
+        <button type="button" class="icon_btn logout" id="logOut">
+            <i class="ic ic-logout"></i>
+            <span class="blind">Log out</span>
+        </button>
+        <span class="selectbox">
+            <select id="changeLang" onchange="langChang(this.value)">
+                <option value="ko">한국어</option>
+                <option value="en">영어</option>
+            </select>
+        </span>
+    </article>
+</header>
+<script>
+    var value = document.cookie.match('(^|;) ?lang=([^;]*)(;|$)');
+
+    if (value) {
+        $("#changeLang").val(value[2].toLowerCase().substr(0, 2)).prop("selected", true);
+    }
+
+    $("#logOut").click(function () {
+        commonJs.delSessionStorage('pageCommonData');
+		//window.location.href = '/logout';
+		$.ajax({
+			url: '/api/logout',
+			method: 'GET',
+			dataType: 'json',
+			contentType: 'application/json; charset-utf-8',
+			async: false,
+			success: function (data, status, xhr) {
+                commonJs.delSessionStorage("mypageAuth");
+				console.log("data.details.currentMode : " + data.details.currentMode);
+				let currentMode = data.details.currentMode;
+                if (currentMode === "prod") window.close();
+                else location.href="/login";
+
+			},
+			error: function (xhr, status, error) {
+				if (isProd()) window.close();
+                else location.href="/login";
+			}
+		});       
+    });
+
+    function langChang(lang) {
+        gaiaPortal.customAlert(lang);
+        $.ajax({
+            url: `/api/portal/change-lang/${lang}`,
+            method: 'GET',
+            dataType: 'json',
+            contentType: 'application/json; charset-utf-8',
+            async: false,
+            success: function (data, status, xhr) {
+
+                if (lang === 'ko') {
+                    msg = '한국어로 전환되었습니다.';
+                } else {
+                    msg = '영어로 전환되었습니다.';
+                }
+                gaiaPortal.customAlert(msg);
+                location.reload();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const gridContainers = document.querySelectorAll('.grid');
+
+        // 스크롤 막기 함수
+        const preventScroll = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        };
+
+        gridContainers.forEach((grid) => {
+            grid.addEventListener('mouseenter', () => {
+                // 내부 .tui-grid-body-area 요소 찾기
+                const scrollTarget = grid.querySelector('.tui-grid-body-area');
+                if (!scrollTarget) return;
+
+                const hasScroll = scrollTarget.scrollHeight > scrollTarget.clientHeight;
+
+                if (hasScroll) {
+                    window.addEventListener('wheel', preventScroll, { passive: false });
+                    window.addEventListener('touchmove', preventScroll, { passive: false });
+                }
+            });
+
+            grid.addEventListener('mouseleave', () => {
+                window.removeEventListener('wheel', preventScroll);
+                window.removeEventListener('touchmove', preventScroll);
+            });
+        });
+        /**
+         * 2025-02-02
+         * #795 워크샵 피드백 - [CMIS] 진입 시 종합대시보드 노출이 숨겨져야 한다.
+         */
+        if (isCAIROS()) {
+            let $dashboard_link = $('.dashboard_list');
+            $dashboard_link.empty();
+        }
+
+    });
+
+    function mypage(){
+        //*추후 복원(2차 인증)
+        // const mypageAuth = commonJs.getSessionStorage("mypageAuth");
+        // if(!mypageAuth){
+        //     location.href = '/checkpw?to=mypage'
+        // }
+        // else{
+        //     if (Date.now() < mypageAuth.expireAt) {
+        //         console.log("사용 가능");
+        //         if(mypageAuth.value){
+        //             location.href = '/mypage'
+        //         }
+        //     } else {
+        //         console.log("만료됨");
+        //         commonJs.delSessionStorage("mypageAuth");
+        //         location.href = '/checkpw?to=mypage'
+        //     }
+        // }
+        if(!gaiaCommon.me.isAdmin()){
+            location.href = '/mypage';
+        }
+	}
+</script>

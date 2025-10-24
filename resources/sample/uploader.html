@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+
+    <link type="text/css" rel="stylesheet" href="/assets/sstatic/bootstrap/4.4.1/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="/assets/static/toast/zephyr-toast.css" />
+    <link rel="stylesheet" href="/assets/static/toast/zephyr-toast-animate.css" />
+
+    <script src="/assets/static/vue/vue.global.js"></script>
+    <script src="/assets/static/axios/axios.min.js"></script>
+
+    <!-- Vue 3 -->
+
+    <script type="text/javascript" src="/assets/js/jquery-3.4.1.min.js"></script>
+
+    <script src="/assets/static/toast/zephyr-toast.js"></script>
+
+    <script src="/assets/static/tware/tware.class.js"></script>
+    <script src="/assets/js/common/axios.common.js"></script>
+    <script src="/assets/js/common.js"></script>
+    <script src="/assets/js/gaia_common.js"></script>
+    <script src="/assets/js/gaia-cairos.js"></script>
+
+
+    <!-- 신규 CSS 적용 Start -->
+    <link rel="stylesheet" href="/assets/css/common.css" />
+    <link rel="stylesheet" href="/assets/css/content.css" />
+    <link rel="stylesheet" href="/assets/css/icofonts.css" />
+    <link rel="stylesheet" href="/assets/css/pretendard-subset.css" />
+    <link rel="stylesheet" href="/assets/css/slick.css" />
+    <link rel="stylesheet" href="/assets/css/component.css" />
+    <link rel="stylesheet" href="/assets/css/custom.css" />
+</head>
+<body>
+<!-- alert창 -->
+<div class="pop_box toast" id="popBoxToast" style="display:none; position:absolute; z-index:50; opacity: 100 !important;">
+    <span class="toast_msg"></span>
+    <button type="button" class="icon_btn pop_close">
+        <i class="ic ic-close"></i>
+        <span class="blind">창닫기</span>
+    </button>
+</div>
+
+<h1>file uploader</h1>
+
+<button id="btnUpload" class="btn _fill">saveForMultiple</button>
+
+<section class="contents_wrap g-row">
+    <article class="conts g-row">
+        <div class="group" id="formBox">
+            <div class="conts_form">
+                <div class="s_conts">
+                    <div class="form_box" id="quality-form">
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label">파일첨부</div> <!-- 파일첨부 -->
+                                <div class="form_data" id="fileUploaderApp">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+<br/>
+<br/>
+<br/>
+
+<button id="btnBatchUpload" class="btn _fill">saveForBatch</button>
+<div id="batchUploaderApp"></div>
+
+<div id="onlyReadUploaderApp"></div>
+<script>
+
+    function loadFileUploader() {
+        return new Promise((resolve, reject) => {
+            $('#hiddenSection').load('/assets/templates/vue-templates.html', (res) => {
+                console.log('loaded template');
+                resolve();
+            });
+        });
+    };
+
+    $(async () => {
+        await gaia.utils.loadFileUploader();
+
+        const limitSize = 1024 * 1024 * 100;
+        const fnSave = (data) => {
+            console.log('업로드 완료', data );
+            gaiaCommon.customAlert("업로드 완료")
+        }
+
+        $('#btnUpload').on('click', function () {
+            console.log('uploader', uploader.totalSize, uploader.files.length)
+
+            if (uploader.files.length > 0 && uploader.totalSize > limitSize) {
+                alert(`초과 ${uploader.totalSize} / ${limitSize}`)
+                return false;
+            }
+
+            uploader.upload();
+        })
+
+        $('#btnBatchUpload').on('click', function () {
+            console.log('batchUploader', batchUploader.totalSize, batchUploader.files.length)
+
+            if (batchUploader.files.length > 0 && batchUploader.totalSize > limitSize) {
+                alert(`초과 ${batchUploader.totalSize} / ${limitSize}`)
+                return false;
+            }
+
+            batchUploader.upload();
+        })
+
+        const files = [{
+            originalFilename: 'sign.png'
+            , fileName: 'ce366ea0-cfc1-4c1a-82ad-d8c21efa70a9.png'
+            , filePath: 'd:\\upload\\sign.png'
+            , dirPath: 'd:\\upload'
+            , size: 721359
+            , mode: ''
+        }];
+
+        const uploader = await gaia.utils.createUploader({
+            mode: 'U',
+            type: 'multiple',
+            wrapId: 'fileUploaderApp',
+            limitFileSize: limitSize,
+            files: files,
+            url: '/resource/upload',
+            params: {aaa: 'value'},
+            callbackHandler: (data) => {
+                console.log('callback()', data)
+
+                fnSave(data);
+            }
+        });
+
+        const batchUploader = await gaia.utils.createUploader({
+            mode: 'U',
+            type: 'batch',
+            wrapId: 'batchUploaderApp',
+            limitFileSize: limitSize,
+            files: files,
+            url: '/resource/upload',
+            params: {aaa: 'value'},
+            callbackHandler: (data) => {
+                console.log('callback()', data)
+
+                fnSave(data);
+            }
+        });
+        console.log('uploader', uploader)
+        console.log('batchUploader', batchUploader)
+
+        const readFiles = [
+            {
+                originalFilename: 'read1.png'
+                , fileName: 'onlyread-0001-4c1a-82ad-d8c21efa70a9.png'
+                , filePath: 'D:\\upload\\read1.png'
+                , dirPath: 'D:\\upload'
+                , size: 721359
+                , mode: 'R'
+            },
+            {
+                originalFilename: 'apple.txt'
+                , fileName: 'ssokey.txt'
+                , filePath: 'D:\\ssokey.txt'
+                , dirPath: 'D:\\'
+                , size: 16
+                , mode: 'R'
+            },
+            {
+                originalFilename: 'read2.png'
+                , fileName: 'onlyread-0002-4c1a-82ad-d8c21efa70a9.png'
+                , filePath: 'D:\\upload\\read2.png'
+                , dirPath: 'D:\\upload'
+                , size: 721359
+                , mode: 'R'
+            }
+        ]
+        const onlyReadUploaderApp = await gaia.utils.createUploader({
+            mode: 'R',
+            type:'multiple',
+            wrapId:'onlyReadUploaderApp',
+            files:readFiles,
+        })
+    });
+</script>
+
+<div id="hiddenSection"></div>
+</body>
+</html>

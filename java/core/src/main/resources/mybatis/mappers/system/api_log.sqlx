@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log">
+
+    <sql id="columns">
+        api_log_no,
+        api_id,
+		api_type,
+		source_system_code,
+		target_system_code,
+		service_type,
+		service_uuid,
+		req_method,
+		result_code,
+		req_header,
+		req_data,
+		req_dt,
+		res_header,
+		res_data,
+		res_dt,
+		error_yn,
+		error_reason,
+		rgstr_id,
+		rgst_dt
+    </sql>
+
+    <select id="selectList" parameterType="apiLogListInput" resultType="apiLogOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectList][mjjo]  */
+        SELECT api_log_no, source_system_code, target_system_code, api_type, service_type, api_id, result_code, rgst_dt
+        FROM sm_api_log
+        <where>
+        	<if test="apiSource != null and apiSource != ''">
+        		AND source_system_code = #{apiSource}
+		    </if>
+		    <if test="target != null and target != ''">
+        		AND target_system_code = #{target}
+		    </if>
+		    <if test="apiType != null and apiType != ''">
+        		AND api_type = #{apiType}
+		    </if>
+		    <if test="apiId != null and apiId != ''">
+        		AND api_id LIKE CONCAT ('%', #{apiId}, '%')
+		    </if>
+		    <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
+                AND rgst_dt BETWEEN CONCAT(#{startDt}, ' 00:00:00')::timestamp
+                AND CONCAT(#{endDt}, ' 23:59:59')::timestamp
+		    </if>
+		</where>
+		<if test="pageable.sort.isEmpty()">
+        	ORDER BY rgst_dt DESC
+        </if>
+        <include refid="sqlx.commonPageable"></include>
+    </select>
+    
+    <select id="selectCount" parameterType="apiLogListInput" resultType="long">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectCount][mjjo]  */
+        SELECT COUNT(1)
+        FROM sm_api_log
+        <where>
+        	<if test="apiSource != null and apiSource != ''">
+        		AND source_system_code = #{apiSource}
+		    </if>
+		    <if test="target != null and target != ''">
+        		AND target_system_code = #{target}
+		    </if>
+		    <if test="apiType != null and apiType != ''">
+        		AND api_type = #{apiType}
+		    </if>
+		    <if test="apiId != null and apiId != ''">
+        		AND api_id LIKE CONCAT ('%', #{apiId}, '%')
+		    </if>
+		    <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
+                AND rgst_dt BETWEEN CONCAT(#{startDt}, ' 00:00:00')::timestamp
+                AND CONCAT(#{endDt}, ' 23:59:59')::timestamp
+		    </if>
+		</where>
+    </select>
+
+    <select id="selectOne" parameterType="long" resultType="smApiLogDto">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectOne][mjjo]  */
+        SELECT <include refid="columns" />
+        FROM sm_api_log
+        <where>
+            AND api_log_no = #{apiLogNo}
+		</where>
+    </select>
+
+    <insert id="insert">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user_log.insert][bjkim]  */
+        INSERT INTO sm_api_log (
+            api_id,
+            api_type,
+            source_system_code,
+            target_system_code,
+            service_type,
+            service_uuid,
+            req_method,
+            result_code,
+            req_header,
+            req_data,
+            req_dt,
+            res_header,
+            res_data,
+            res_dt,
+            error_yn,
+            error_reason,
+            rgstr_id,
+            rgst_dt
+        ) values (
+            #{apiId}
+            , #{apiType}
+            , #{sourceSystemCode}
+            , #{targetSystemCode}
+            , #{serviceType}
+            , #{serviceUuid}
+            , #{reqMethod}
+            , #{resultCode}
+            , #{reqHeader}
+            , #{reqData}
+            , #{reqDt}
+            , #{resHeader}
+            , #{resData}
+            , #{resDt}
+            , #{errorYn}
+            , #{errorReason}
+            , #{rgstrId}
+            , now()
+        )
+
+        <selectKey resultType="long" keyProperty="apiLogNo" order="AFTER">
+            SELECT MAX(api_log_no) FROM sm_api_log
+        </selectKey>
+    </insert>
+
+    <update id="update">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user_log.update][bjkim]  */
+        UPDATE sm_api_log
+        <set>
+            , result_code = #{resultCode}
+            , res_dt = #{resDt}
+            <if test=' resHeader != null and resHeader != "" '>
+                , res_header = #{resHeader}
+            </if>
+            <if test=' resData != null and resData != "" '>
+                , res_data = #{resData}
+            </if>
+            <if test=' errorYn != null and errorYn != "" '>
+                , error_yn = #{errorYn}
+            </if>
+            <if test=' errorReason != null and errorReason != "" '>
+                , error_reason = #{errorReason}
+            </if>
+        </set>
+        WHERE api_log_no = #{apiLogNo}
+    </update>
+</mapper>

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm">
+
+    <select id="getMainmtrlReqfrmList"  parameterType="mainmtrlReqfrmInput" resultType="mainmtrlReqfrmOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getMainmtrlReqfrmList][jhkim]  */
+        SELECT
+                CMR.CNTRCT_NO,
+                CMR.REQFRM_NO,
+                CMR.DOC_NO,
+                CMR.CNSTTY_CD,
+                STRING_AGG(SCC1.CMN_CD_NM_KRN, ',' ORDER BY SCC1.CMN_CD_DSPLY_ORDER) AS CNSTTY_NM,
+                CMR.PRDNM,
+                TO_CHAR(CMR.REQ_DT, 'YYYY-MM-DD') AS REQ_DT,
+                SUI1.USR_NM AS CM_NM,
+                TO_CHAR(CMR.CM_DT, 'YYYY-MM-DD') AS CM_DT,
+                SCC2.CMN_CD_NM_KRN AS RSLT_NM,
+                SUI2.USR_NM AS APPRVL_NM,
+                TO_CHAR(CMR.APPRVL_DT, 'YYYY-MM-DD') AS APPRVL_DT,
+                SCC3.CMN_CD_NM_KRN AS APPRVL_STATS_NM,
+                CMR.DOC_ID,
+                CASE 
+                    WHEN DSM.DLT_YN = 'N' THEN 'true'
+                    WHEN DSM.DLT_YN = 'Y' THEN 'false'
+                ELSE 'false'
+                END AS DSM_VALID
+        FROM    CW_MAINMTRL_REQFRM CMR
+                LEFT JOIN LATERAL (
+                    SELECT CMN_CD_NM_KRN, CMN_CD, CMN_CD_DSPLY_ORDER
+                    FROM SM_COM_CODE
+                    WHERE CMN_GRP_CD = #{workcode}
+                    AND CMN_CD = ANY (STRING_TO_ARRAY(CMR.CNSTTY_CD, ','))
+                ) SCC1 ON TRUE
+                LEFT JOIN SM_COM_CODE SCC2 ON CMR.RSLT_CD  = SCC2.CMN_CD AND SCC2.CMN_GRP_CD = #{resultcode}
+                LEFT JOIN SM_COM_CODE SCC3 ON CMR.APPRVL_STATS  = SCC3.CMN_CD AND SCC3.CMN_GRP_CD = #{paymentcode}
+                LEFT JOIN SM_USER_INFO SUI1 ON CMR.CM_ID = SUI1.USR_ID AND SUI1.DLT_YN = 'N'
+                LEFT JOIN SM_USER_INFO SUI2 ON CMR.APPRVL_ID = SUI2.USR_ID AND SUI2.DLT_YN = 'N'
+                LEFT JOIN DC_STORAGE_MAIN DSM ON CMR.DOC_ID = DSM.DOC_ID
+        WHERE   CMR.CNTRCT_NO = #{cntrctNo}
+        AND CMR.DLT_YN = 'N'
+        <if test="workType != null and workType != ''">
+            AND (#{workType} = ANY (STRING_TO_ARRAY(CMR.CNSTTY_CD, ',')))
+        </if>
+        AND     (CMR.DOC_NO ILIKE '%' || #{searchValue} || '%'
+                OR CMR.PRDNM ILIKE '%' || #{searchValue} || '%'
+                OR SUI1.USR_NM ILIKE '%' || #{searchValue} || '%')
+        GROUP BY
+            CMR.CNTRCT_NO,
+            CMR.REQFRM_NO,
+            CMR.DOC_ID,
+            CMR.PRDNM,
+            CMR.REQ_DT,
+            SUI1.USR_NM,
+            CMR.CM_DT,
+            SCC2.CMN_CD_NM_KRN,
+            SUI2.USR_NM,
+            CMR.APPRVL_DT,
+            SCC3.CMN_CD_NM_KRN,
+            CMR.RGST_DT,
+            DSM.DLT_YN
+        ORDER BY CMR.REQ_DT DESC;
+    </select>
+
+    <update id="deleteMainmtrlReqfrm" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.deleteMainmtrlReqfrm][jhkim]  */
+        UPDATE  CW_MAINMTRL_REQFRM
+        SET
+                DLT_ID = #{usrId} ,
+                DLT_YN = 'Y',
+                DLT_DT = NOW()
+        WHERE   CNTRCT_NO = #{cntrctNo}
+        AND     REQFRM_NO = #{reqfrmNo}
+        AND     DLT_YN = 'N';
+    </update>
+
+    <select id="getMainmtrlReqfrm"  parameterType="map" resultType="mainmtrlReqfrmOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getMainmtrlReqfrm][leejw]  */
+     SELECT
+        CMR.REQFRM_NO,
+        CMR.CNTRCT_NO,
+        CMR.DOC_NO,
+        TO_CHAR(CMR.REQ_DT, 'YYYY-MM-DD') AS REQ_DT,
+        CMR.CNSTTY_CD,
+        STRING_AGG(SCC.CMN_CD_NM_KRN, ', ') AS CNSTTY_CD_NM_KRN,
+        CMR.PRDNM,
+        CMR.MAKR_NM,
+        CMR.RMRK,
+        CMR.ATCH_FILE_NO,
+        CMR.RXCORP_NM,
+        CMR.REQ_ID,
+        CMR.RSLT_CD,
+        TO_CHAR(CMR.CM_DT, 'YYYY-MM-DD') AS CM_DT,
+        CMR.RSLT_OPNIN,
+        SUI.USR_NM AS APPRVL_NM,
+        TO_CHAR(CMR.APPRVL_DT, 'YYYY-MM-DD') AS APPRVL_DT,
+        CMR.AP_OPNIN,
+        SCC2.CMN_CD_NM_KRN AS APPRVL_STATS_NM,
+        SCC3.CMN_CD_NM_KRN AS RSLT_CD_KRN
+     FROM CW_MAINMTRL_REQFRM CMR
+     LEFT JOIN LATERAL UNNEST(STRING_TO_ARRAY(CMR.CNSTTY_CD, ',')) AS CD(CMN_CD) ON TRUE
+     LEFT JOIN SM_COM_CODE SCC ON SCC.CMN_CD = TRIM(CD.CMN_CD) AND SCC.CMN_GRP_CD = #{workcode}
+     LEFT JOIN SM_COM_CODE SCC2 ON SCC2.CMN_CD = CMR.APPRVL_STATS AND SCC2.CMN_GRP_CD = #{paymentcode}
+     LEFT JOIN SM_COM_CODE SCC3 ON SCC3.CMN_CD = TRIM(CMR.RSLT_CD) AND SCC3.CMN_GRP_CD = #{rsltcode}
+     LEFT JOIN SM_USER_INFO SUI ON SUI.USR_ID = CMR.APPRVL_ID
+     WHERE 
+        CMR.CNTRCT_NO = #{cntrctNo}
+     AND
+        CMR.REQFRM_NO = #{reqfrmNo}
+     GROUP BY
+        CMR.REQFRM_NO,
+        CMR.CNTRCT_NO,
+        CMR.DOC_NO,
+        CMR.CNSTTY_CD,
+        CMR.PRDNM,
+        CMR.MAKR_NM,
+        CMR.RXCORP_NM,
+        CMR.REQ_ID,
+        CMR.REQ_DT,
+        SUI.USR_NM,
+        SCC2.CMN_CD_NM_KRN,
+        SCC3.CMN_CD_NM_KRN;
+    </select>
+
+    <select id="getSupervisionList" parameterType="input" resultType="mainmtrlReqfrmSupervisionOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getSupervisionList][jhkim]  */
+        SELECT  A.*,
+                B.*,
+                C.*,
+                F.CMN_CD_NM_KRN AS WORK_NM   -- 공종명 추가
+        FROM    SM_DEPARTMENT A
+                INNER JOIN SM_ORGANIZATION B ON A.DEPT_UUID = B.DEPT_UUID
+                INNER JOIN SM_USER_INFO C ON B.USR_ID = C.USR_ID
+                LEFT JOIN SM_COM_CODE F ON B.RATNG_CD = F.CMN_CD AND F.CMN_GRP_CD = #{rankCd}
+        WHERE A.DEPT_ID = 'C' || #{cntrctNo} || '.m3'
+                <if test="searchValue != null and searchValue != ''">
+                AND (
+                    C.USR_NM ILIKE '%' || #{searchValue} || '%'
+                    OR A.DEPT_NM ILIKE '%' || #{searchValue} || '%'
+                )
+                </if>
+                AND A.USE_YN = 'Y'
+                AND A.DLT_YN = 'N'
+                AND B.DLT_YN = 'N'
+                AND C.USE_YN = 'Y'
+                AND C.DLT_YN = 'N'
+                AND A.PJT_NO = #{pjtNo}
+                AND A.CNTRCT_NO = #{cntrctNo}
+                AND A.PJT_TYPE = #{pjtType};
+    </select>
+
+    <select id="getMainmtrlList"  parameterType="mainmtrlReqfrmInput" resultType="mainmtrlOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getMainmtrlList][jhkim]  */
+        WITH LAST_CHG_ID AS (
+            SELECT  DISTINCT CCC.CNTRCT_CHG_ID
+            FROM    CN_CONTRACT_CHANGE CCC
+            JOIN    CN_CONTRACT CC
+                    ON      CC.CNTRCT_NO = CCC.CNTRCT_NO
+                    AND CC.DLT_YN = 'N'
+            WHERE   CCC.CNTRCT_CHG_ID LIKE #{cntrctNo} || '%'
+                    AND CCC.LAST_CHG_YN = 'Y'
+                    AND CCC.DLT_YN = 'N'
+        ),
+        RESOURCE AS (
+                SELECT
+                        CCR.CNTRCT_CHG_ID,
+                        CCR.GNRLEXPNS_CD,
+                        CCR.RSCE_NM,
+                        CCR.SPEC_NM,
+                        CCR.UNIT,
+                        CEIL(SUM (CCR.TOTAL_QTY)) as TOTAL_QTY,
+                        COALESCE (
+                            (SELECT
+                                <![CDATA[
+                                    SUM (   CASE
+                                                WHEN CMR.REQ_DT < CURRENT_DATE THEN CM.PASS_QTY
+                                                WHEN CMR.REQ_DT = CURRENT_DATE THEN CM.TODAY_QTY
+                                                ELSE 0
+                                            END
+                                    )
+                               ]]>
+                            FROM    CW_MAINMTRL CM
+                            LEFT JOIN
+                                    CW_MAINMTRL_REQFRM CMR
+                                    ON      CM.CNTRCT_NO = CMR.CNTRCT_NO
+                                    AND     CM.REQFRM_NO = CMR.REQFRM_NO
+                            WHERE   CM.CNTRCT_NO = #{cntrctNo}
+                                    AND     CM.GNRLEXPNS_CD = CCR.GNRLEXPNS_CD
+                                    AND     CM.DLT_YN = 'N'
+                            ), 0) AS USE_QTY
+                    FROM    CT_CBS_RESOURCE CCR
+                    JOIN    LAST_CHG_ID LCI
+                            ON  LCI.CNTRCT_CHG_ID = CCR.CNTRCT_CHG_ID
+                    WHERE   CCR.DLT_YN = 'N'
+                    AND     CCR.RSCE_TP_CD = 'M'
+                    <if test="searchValue != null and searchValue != ''">
+                    AND     (CCR.RSCE_NM ILIKE '%' || #{searchValue} || '%'
+                            OR  CCR.SPEC_NM ILIKE '%' || #{searchValue} || '%'
+                            OR  CCR.UNIT ILIKE '%' || #{searchValue} || '%')
+                    </if>
+                    GROUP BY
+                            CCR.CNTRCT_CHG_ID, CCR.GNRLEXPNS_CD, CCR.RSCE_NM, CCR.SPEC_NM, CCR.UNIT
+                    ORDER BY
+                            RSCE_NM, SPEC_NM, UNIT
+        )
+        SELECT
+                CNTRCT_CHG_ID,
+                GNRLEXPNS_CD,
+                RSCE_NM,
+                SPEC_NM,
+                UNIT,
+                TOTAL_QTY,
+                (TOTAL_QTY - USE_QTY) as REMAIN_QTY
+        FROM RESOURCE;
+    </select>
+
+    <select id="getApDocIds" parameterType="map" resultType="string">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getApDocIds] */
+        SELECT 
+            CMR.AP_DOC_ID
+        FROM CW_MAINMTRL_REQFRM CMR
+        WHERE CMR.REQFRM_NO IN
+        <foreach collection="idList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND CMR.DLT_YN = 'N'
+          AND CMR.APPRVL_STATS = 'A'  -- '승인'인 녀석만
+          AND CMR.AP_DOC_ID IS NOT NULL  -- 전자결재 ID가 존재하는 것만
+    </select>
+
+    <select id="getAddMainmtrlList" parameterType="input" resultType="mainmtrlOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getAddMainmtrlList][jhkim]  */
+        SELECT
+            CM.GNRLEXPNS_CD,
+            CM.RSCE_NM,
+            CM.SPEC_NM,
+            CM.UNIT,
+            CM.TODAY_QTY,
+            CM.PASS_QTY,
+            CM.FAIL_QTY,
+            CM.RMRK,
+            <![CDATA[
+                (SELECT
+                            SUM (   CASE
+                                            WHEN CMR.REQ_DT < CURRENT_DATE THEN CM2.PASS_QTY
+                                            WHEN CMR.REQ_DT = CURRENT_DATE THEN CM2.TODAY_QTY
+                                            ELSE 0
+                                        END
+                                    )
+                            FROM    CW_MAINMTRL CM2
+                            LEFT JOIN
+                                    CW_MAINMTRL_REQFRM CMR
+                                    ON      CM2.CNTRCT_NO = CMR.CNTRCT_NO
+                                    AND     CM2.REQFRM_NO = CMR.REQFRM_NO
+                            WHERE   CM2.CNTRCT_NO = #{cntrctNo}
+                                    AND     CM2.REQFRM_NO = #{reqfrmNo}
+                                    AND     CM2.GNRLEXPNS_CD = CM.GNRLEXPNS_CD
+                                    AND     CM2.DLT_YN = 'N'
+                ) AS USE_QTY
+            ]]>
+        FROM
+            CW_MAINMTRL CM
+        WHERE
+            CM.CNTRCT_NO = #{cntrctNo}
+          AND CM.REQFRM_NO = #{reqfrmNo}
+          AND CM.DLT_YN = 'N'
+    </select>
+
+    <update id="updateMainmtrlList" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.updateMainmtrlList][jhkim]  */
+        UPDATE  CW_MAINMTRL
+        <choose>
+            <when test='passYn eq "Y"'>
+            SET
+                    PASS_QTY = TODAY_QTY,
+                    FAIL_QTY = 0
+            </when>
+            <when test='passYn eq "N"'>
+            SET
+                PASS_QTY = 0,
+                FAIL_QTY = TODAY_QTY
+            </when>
+            <otherwise>
+            SET
+                PASS_QTY = #{passQty},
+                FAIL_QTY = #{failQty}
+            </otherwise>
+        </choose>
+        WHERE   CNTRCT_NO = #{cntrctNo}
+        AND     REQFRM_NO = #{reqfrmNo}
+        <if test='passYn != "Y" and passYn != "N"'>
+        AND		GNRLEXPNS_CD = #{gnrlexpnsCd}
+        </if>
+        AND     DLT_YN = 'N';
+    </update>
+
+    <update id="deleteMainmtrlList" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.deleteMainmtrlList][leejw]  */
+        UPDATE cw_mainmtrl CM
+        SET dlt_yn = 'Y',
+            chg_id = #{chgId},
+            chg_dt = #{chgDt}
+        WHERE CM.cntrct_no = #{cntrctNo}
+        AND CM.reqfrm_no = #{reqfrmNo}
+        AND CM.gnrlexpns_cd = #{gnrlexpnsCd}
+        AND CM.dlt_yn = 'N'
+    </update>
+
+    <select id="getGnrlexpnsCdList" parameterType="input" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getGnrlexpnsCdList][leejw]  */
+        SELECT
+            CM.GNRLEXPNS_CD 
+        FROM CW_MAINMTRL CM 
+        WHERE CM.CNTRCT_NO = #{cntrctNo}
+        AND CM.REQFRM_NO = #{reqfrmNo}
+        AND CM.DLT_YN = 'N';
+    </select>
+
+    <select id = "getCntrctNoAndPjtNo" parameterType="String" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getCntrctNoAndPjtNo][leejw]  */
+        SELECT
+           cc.pjt_no,
+           cc.cntrct_no
+        FROM cw_mainmtrl_reqfrm cmr
+        JOIN cn_contract cc
+        ON cc.cntrct_no = cmr.cntrct_no
+        WHERE cmr.reqfrm_no = #{reqfrmNo}
+    </select>
+
+    <update id="updateMainmtrlDocId" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.updateMainmtrlDocId] [leejw] */
+        UPDATE cw_mainmtrl_reqfrm cmr
+            SET DOC_ID = #{docId}
+        WHERE cmr.reqfrm_no = #{reqfrmNo}
+            AND cmr.cntrct_no = #{cntrctNo}
+    </update>
+
+    <select id="getDocIds" parameterType="map" resultType="string">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainmtrlreqfrm.getDocIds] */
+        SELECT 
+            cmr.doc_id
+        FROM cw_mainmtrl_reqfrm cmr
+        WHERE cmr.reqfrm_no IN
+        <foreach collection="idList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND cmr.dlt_yn = 'N'
+          AND cmr.doc_id IS NOT NULL  -- 통합문서 id가 존재하는 것만
+    </select>   
+</mapper>

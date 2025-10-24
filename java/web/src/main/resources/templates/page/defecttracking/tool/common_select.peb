@@ -1,0 +1,111 @@
+<div id="container" style="margin-bottom: 2em;">
+</div>
+<!-- <span class="tree_route" id="dfccy_phase_path">
+    결함단계
+</span> -->
+
+<script>
+    let cntrctNo;
+    const selectParam = new URLSearchParams(window.location.search);
+    let paramCntrctNo = selectParam.get("cntrctNo");
+    let paramDfccyPhaseNo = selectParam.get("dfccyPhaseNo");
+
+    var select = {
+        init() {
+            const self = this;
+
+            pjtNo = pjtInfo.pjtNo;
+            // GAIA일 때 셀렉트박스 생성
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                var param = {pjtNo: pjtNo};
+                $.ajax({
+                    url: "/api/portal/select-cntrctList",
+                    method: "POST",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify(param),
+                    success: function (data) {
+                        var list = data.details.contractList;
+
+                        // HTML 구조를 상위에 추가
+                        $("#container").prepend(
+                            "<div class='group'><h3 class='conts_tit'>{{ message('item.com.018') }}</h3>" +
+                            "<div class='conts_form'><span class='selectbox'>" +
+                            "<select name='cntrctNo' id='cntrctNo' class=''></select></span></div></div>"
+                        );
+
+                        // 계약 목록을 드롭다운에 추가
+                        if (list.length > 0) {
+                            $('#cntrctNo').empty();
+                            list.forEach((contract) => {
+                                let html = `<option value="${contract.cntrct_no }">${contract.cntrct_nm}</option>`
+                                $('#cntrctNo').append(html);
+                            });
+                        } else {
+                            gaiaCommon.customConfirm("{{ message('item.com.084') }}","{{ message('msg.092') }}","{{ message('msg.114') }}",
+                                () => { window.location.replace(`/project/contractstatus?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`);},
+                                () => { window.location.replace(`/dashboard?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`);
+                            });
+                        }
+
+                        if (paramCntrctNo != pjtNo) {
+                            $("#cntrctNo").val(paramCntrctNo);
+                        }
+
+                        const initialCntrctNo = list.length > 0 ? list[0].cntrctNo : '';
+                        cntrctNo = $("#cntrctNo").val() ? $("#cntrctNo").val() : initialCntrctNo;
+
+                        $("#cntrctNo").change(function (e) {
+                            cntrctNo = e.target.value;
+                            dfccyPhaseNo = null;
+                            if (typeof dfccyPhase !== "undefined") {
+                                dfccyPhase.tree.init();
+                            } else {
+                                page.init();
+                            }
+                        });
+
+                        dfccyPhaseNo = paramDfccyPhaseNo ? paramDfccyPhaseNo : null;
+                        if (typeof dfccyPhase !== "undefined") {
+                            dfccyPhase.tree.init();
+                        } else {
+                            page.init();
+                        }
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading contract list:", error);
+                    },
+                });
+            } else if (isCAIROS()) {
+                cntrctNo = pjtInfo.cntrctNo;
+                $("#container").append(
+                    `<input type='hidden' id='cntrctNo' value='${cntrctNo}'/>`
+                );
+
+                if (paramCntrctNo != pjtNo) {
+                    $("#cntrctNo").val(paramCntrctNo);
+                }
+
+                dfccyPhaseNo = paramDfccyPhaseNo ? paramDfccyPhaseNo : null;
+                if (typeof dfccyPhase !== "undefined") {
+                    dfccyPhase.tree.init();
+                } else {
+                    page.init();
+                }
+
+                $("#cntrctNo").change(function (e) {
+                    cntrctNo = e.target.value;
+                    dfccyPhaseNo = null;
+                    if (typeof dfccyPhase !== "undefined") {
+                        dfccyPhase.tree.init();
+                    } else {
+                        page.init();
+                    }
+                });
+            }
+        },
+    }
+
+</script>

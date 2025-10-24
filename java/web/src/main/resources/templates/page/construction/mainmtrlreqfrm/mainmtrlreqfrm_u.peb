@@ -1,0 +1,1067 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+	<article class="conts g-row">
+		<div class="group" id="formBox">
+			<div class="conts_form">
+				<div class="btn_area s_default _outline">
+					<button type="button" class="btn save-btn" id="addButton" onclick="page.saveMtrlReqfrm()">{{
+						message('btn.006') }}</button> <!-- 저장 -->
+					<button type="button" class="btn" id="deleteButton" onclick="page.closePage()">{{
+						message('btn.007')}}</button> <!-- 닫기 -->
+					<button class="icon_btn" onclick="newWindow()" id="newWindow">
+						<i class="fa-solid fa-up-right-from-square"></i>
+						<span class="tooltip" style="position: absolute; z-index: 1000;">{{ message('item.com.017') }}
+						</span>
+					</button> <!-- 새창으로 열기 -->
+				</div>
+				<div class="s_conts">
+					<span class="tree_route">개요</span>
+					<div class="form_box" id="mtrl-form">
+						<div class="container" style="display: flex; align-items: center;">
+							<span class="caption">
+								<span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+							</span>
+						</div>
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="form_label required">{{ message('item.quality.007')}}</div> <!-- 문서 번호 -->
+								<div class="form_data">
+									<input type="text" id="docNo" class="maxlength" maxlength="100">
+								</div>
+							</div>
+							<div class="col merge3">
+								<div class="form_label required">검수요청일자</div>
+								<div class="form_data">
+									<input type="date" id="reqDt" class="date">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="form_label required">수신</div> <!-- 수신업체 명 -->
+								<div class="form_data">
+									<input type="text" id="rxcorpNm" class="maxlength" maxlength="100">
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label required">{{ message("item.progressstatus.010") }}</div>
+								<!-- 공종 -->
+								<div class="form_data">
+									<div class="selectbox" id="cnsttyCdTypeSelect">
+										<div class="select_header">
+											<span>{{ message('item.com.005') }}</span> <!-- 선택 -->
+											<i class="ic ic-arrow-down"></i>
+										</div>
+										<ul class="list_sty dropdown_list checkbox_list" style="display: none;"
+											id="contractType" tabindex="-1">
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="form_label required">품명</div>
+								<div class="form_data">
+									<input type="text" id="prdnm" class="maxlength" maxlength="100">
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label required">제조회사명</div>
+								<div class="form_data">
+									<input type="text" id="makrNm" class="maxlength" maxlength="50">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="col merge">
+									<div class="form_label">비고</div>
+									<div class="form_data">
+										<textarea id="rmrk" class="maxlength" maxlength="250"></textarea>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('btn.021') }}</div> <!-- 파일첨부 -->
+								<div class="form_data">
+
+									<div class="attach_wrap">
+										<div class="attach_toolbar">
+											<div class="btn_area s_small">
+												<div class="attach_btn">
+													<input type="file" id="fileInput" name="files" multiple>
+													<button type="button" class="btn _fill" id="addFileButton">{{
+														message('btn.021') }}</button> <!-- 파일첨부 -->
+												</div>
+												<button type="button" class="btn _outline" id="removeAllButton">{{
+													message('btn.020') }}</button> <!-- 모두삭제 -->
+											</div>
+											<div class="attach_info">
+												<span class="attach_result">
+												</span>
+												<span class="attach_capacity">
+													<span class="item" id="uploadedFileSize">0 KB</span>
+													<span class="item">25 MB</span>
+												</span>
+											</div>
+										</div>
+
+										<div class="attach_area">
+											<!-- 첨부파일 미등록 시 -->
+											<p class="data_info">
+												{{ message('msg.pinstall.003') }}
+											</p>
+
+											<!-- 첨부파일 등록 시 활성화 'hide'제거-->
+											<div class="attach_list hide">
+												<ul class="file_header">
+													<li class="header_item" style="display:flex;">
+														<span class="f_name" style="padding-left: 38px;">{{
+															message('item.com.020') }}</span>
+														<!-- 파일명 -->
+														<span class="f_capacity">{{ message('item.com.021') }}</span>
+														<!-- 크기 -->
+													</li>
+												</ul>
+												<ul class="file_list" id="fileList"></ul>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="group">
+			<div class="s_conts">
+				<span class="tree_route">자재 목록</span>
+
+				<div class="conts_grid">
+					<div class="toolbar">
+						<div class="btn_area s_default">
+							<button type="button" class="btn _outline" onclick="page.addMtrl('add')">추가</button>
+							<button type="button" class="btn _outline" onclick="page.deleteMtrl()">삭제 </button>
+						</div>
+					</div>
+
+					<!-- 자재 목록 테이블 -->
+					<table class="mat-table" id="targetMtrlTable">
+						<colgroup>
+							<col style="width:6%;"> <!-- 선택 -->
+							<col style="width:20%;"> <!-- 품명 -->
+							<col style="width:8%;"> <!-- 규격 -->
+							<col style="width:8%;"> <!-- 단위 -->
+							<col style="width:10%;"> <!-- 금일반입량 -->
+							<col style="width:10%;"> <!-- 판정 합격 -->
+							<col style="width:10%;"> <!-- 판정 불합격 -->
+							<col style="width:10%;"> <!-- 입고누계 -->
+							<col style="width:18%;"> <!-- 비고 -->
+						</colgroup>
+
+						<thead>
+							<tr>
+								<th rowspan="2">선택</th>
+								<th rowspan="2">품명</th>
+								<th rowspan="2">규격</th>
+								<th rowspan="2">단위</th>
+								<th rowspan="2">금일<br>반입량</th>
+								<th colspan="2">판정</th>
+								<th rowspan="2">입고누계</th>
+								<th rowspan="2">비고</th>
+							</tr>
+							<tr class="sub-header">
+								<th>합격</th>
+								<th>불합격</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="group">
+			<div class="s_conts">
+				<span class="tree_route">{{ message("item.quality.024") }}</span>
+
+
+				<!-- S: Slick Slider -->
+				<div class="process_photo">
+					<div class="mtrl_photo_list" id="mtrlPhotoList">
+					</div>
+
+					<div class="slick_nav">
+						<div class="btn_area">
+							<div class="btn_group _outline">
+								<button type="button" class="btn icon_btn" onclick="page.addPhoto()">
+									<i class="ic ic-picture-one"></i>
+									<span class="blind">추가</span>
+								</button>
+								<button type="button" class="btn icon_btn" onclick="photo.delPhoto()">
+									<i class="ic ic-delete"></i>
+									<span class="blind">삭제</span>
+								</button>
+							</div>
+
+							<div class="btn_group _outline slick_indigator">
+								<button type="button" class="btn icon_btn prev">
+									<span class="blind">이전</span>
+								</button>
+								<button type="button" class="btn icon_btn next">
+									<span class="blind">다음</span>
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="mtrlpopup" class="popup_overlay modal_base" style="display: none;">
+			<!-- 팝업 내용 -->
+		</div>
+		<div id="photopopup" class="popup_overlay modal_base" style="display: none;">
+			<!-- 팝업 내용 -->
+		</div>
+	</article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+	/* 첨부파일 영역 */
+	.file_header .header_item,
+	.file_list .list_item {
+		display: flex;
+		align-items: center;
+	}
+
+	.f_name {
+		flex: 1;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.f_capacity {
+		margin-left: auto;
+		min-width: 110px;
+		text-align: right;
+	}
+
+	/* 공종 선택 드롭다운 */
+	.selectbox {
+		position: relative;
+		width: 100%;
+		cursor: pointer;
+	}
+
+	.select_header {
+		position: relative;
+		height: 1.8rem;
+		line-height: 1.8rem;
+		padding: 0 .25em 0 1em;
+		border: 1px solid var(--component-bd);
+		border-radius: 4px;
+		box-sizing: border-box;
+		background: transparent;
+		color: var(--color-default);
+		font-size: inherit;
+	}
+
+	.checkbox_list {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		background: white;
+		border: 1px solid #ccc;
+		z-index: 1000;
+		display: none;
+	}
+
+	.form_checkbox {
+		display: block;
+		padding: 5px;
+		margin-left: 0;
+	}
+
+	/* 자재 목록 테이블 */
+	.mat-table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+		font-size: 13px;
+	}
+
+	.mat-table colgroup col {
+		width: auto;
+	}
+
+	.mat-table th,
+	.mat-table td {
+		border: 1px solid #e2e5e9;
+		padding: 8px 10px;
+		word-break: break-all;
+		background: #fff;
+	}
+
+	.mat-table thead th {
+		background: #f6f8fb;
+		color: #333;
+		text-align: center;
+		font-weight: 600;
+	}
+
+	.mat-table thead tr.sub-header th {
+		background: #fbfcfe;
+		font-weight: 500;
+	}
+
+	.mat-table td.t-center {
+		text-align: center;
+	}
+
+	.mat-table tbody tr:hover {
+		background: #fcfdff;
+	}
+</style>
+<script>
+	var pjtNo;
+	var urlParams = new URLSearchParams(location.search);
+	var reqfrmNo = urlParams.get('reqfrmNo');
+	const type = urlParams.get('type')	// 팝업 or 새창 
+
+	var cntrctNo = urlParams.get('cntrctNo')
+	var qltyIspId = urlParams.get('qltyIspId');
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				page.initializeSelectBoxes();
+			}
+		});
+	});
+
+	var page = {
+		init: function () {
+			if (type === 'p') {
+				$("#newWindow").hide();
+			}
+			pjtNo = pjtInfo.pjtNo;
+
+			var title = '주요자재 검수요청서 수정'
+			gaiaPortal.navMenuInit('M0407', title);
+			$("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+
+			// Slick slide
+			$('.mtrl_photo_list').not('.slick-initialized').slick({
+				arrows: true,
+				prevArrow: $('.process_photo .prev'),
+				nextArrow: $('.process_photo .next'),
+				dots: true,
+				infinite: false,
+				slidesToShow: 4,
+				slidesToScroll: 4,
+				autoplay: false,
+				speed: 1000,
+				draggable: true
+			});
+
+			file.init();
+			page.getMainMtrlReqFrm();
+		},
+		closePage: function () {
+			if (type === 'p') {
+				window.close();
+			} else {
+				window.location.href = `/construction/mainmtrlreqfrm?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&_condition=init`;
+			}
+		},
+		// 검수요청서 데이터
+		getMainMtrlReqFrm: function () {
+			gaiaCommon.get("/api/construction/mainmtrlreqfrm/get/" + cntrctNo + "/" + reqfrmNo, {}, function (result) {
+				let mtrlreqfrmData = result.details.mainmtrlReqfrm;
+				let photoList = result.details.photoList;
+				let attachments = result.details.attachments
+				let photoAttachments = result.details.photoAttachments;
+				let mainmtrlData = result.details.mainmtrls;
+
+				$('#docNo').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.docNo));  // 문서번호 
+				$('#reqDt').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.reqDt));  // 검수요청일자 
+				$('#rxcorpNm').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.rxcorpNm));  // 수신
+				$('#prdnm').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.prdnm));  // 품명
+				$('#makrNm').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.makrNm));  // 제조회사명
+				$('#rmrk').val(gaiaCommon.decodeSafeText(mtrlreqfrmData.rmrk));  // 비고
+
+				// 공종값 드롭박스에 적용
+				const cnsttyCdVal = gaiaCommon.decodeSafeText(mtrlreqfrmData.cnsttyCd);
+				if (cnsttyCdVal) {
+					const codes = cnsttyCdVal.split(',').map(c => c.trim());	// ex) "A,E,F" -> ["A", "E", "F"]
+
+					$('input[name="cnsttyCd"]').each(function () {
+						const val = $(this).val();
+						if (codes.includes(val)) {
+							$(this).prop('checked', true);
+						} else {
+							$(this).prop('checked', false);
+						}
+					});
+
+					// 헤더 텍스트 업데이트
+					page.updateSelectedItems();
+				}
+
+				// 파일 처리
+				if (attachments && attachments.length > 0) {
+					file.processFetchedFiles(attachments);
+				} else {
+					file.serverFiles = [];
+					file.existingFiles = [];
+					file.renderFileList();
+				}
+
+				// 사진 데이터 처리
+				if (photoList && photoList.length > 0) {
+					photoList.forEach(function (photoData) {
+						let attachedFile = photoAttachments.find(function (file) {
+							return file.fileNo === photoData.atchFileNo && file.sno === photoData.phtSno;
+						});
+
+						if (attachedFile) {
+							photoData.fileDiskPath = attachedFile.fileDiskPath;
+							photoData.fileDiskNm = attachedFile.fileDiskNm;
+							photoData.sno = attachedFile.sno;
+						}
+					});
+					photo.init(photoList);
+				}
+
+				page.renderMainMtrlTable(result.details.mainmtrls);
+			});
+		},
+		// 자재목록 조회
+		renderMainMtrlTable: function (mainmtrlData) {
+			const table = document.getElementById("targetMtrlTable");
+			const tbody = table.getElementsByTagName("tbody")[0];
+			tbody.innerHTML = ""; // 기존 데이터 초기화
+
+			mainmtrlData.forEach(item => {
+				const row = document.createElement("tr");
+				row.setAttribute("data-gnrlexpns-cd", item.gnrlexpnsCd || "");
+
+				const formatNumber = (val) => {
+					if (val === null || val === undefined || val === '') return '-';
+					const num = parseFloat(val);
+					if (isNaN(num) || num === 0) return '-';
+					return num % 1 === 0 ? num.toFixed(0) : num.toString().replace(/0+$/, '').replace(/\.$/, '');
+				};
+
+				row.innerHTML = `
+					<td class="t-center"><input type="checkbox" class="check_mark"></td>
+					<td>${gaiaCommon.decodeSafeText(item.rsceNm || '')}</td>
+					<td class="t-center">${gaiaCommon.decodeSafeText(item.specNm || '')}</td>
+					<td class="t-center">${gaiaCommon.decodeSafeText(item.unit || '')}</td>
+					<td class="t-center">
+						<input 
+							type="text" 
+							class="todayQtyEdit number maxlength"
+							maxlength="27"
+							value="${item.todayQty != null ? parseFloat(item.todayQty) : ''}"
+							style="width: 90%; text-align: center; padding: 2px 6px; margin-right: 6px;"
+							oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\\..*)\\./g,'$1');"
+						>
+					</td>
+					<td class="t-center">${formatNumber(item.passQty)}</td>
+					<td class="t-center">${formatNumber(item.failQty)}</td>
+					<td class="t-center">-</td>
+					<td>
+						<input 
+							type="text"
+							class="rmrk maxlength"
+							maxlength="100"
+							value="${gaiaCommon.decodeSafeText(item.rmrk || '')}"
+							style="width: 95%; text-align: left; padding: 2px 6px; margin-right: 6px;"
+						>
+					</td>
+					`;
+				tbody.appendChild(row);
+			});
+		},
+		saveMtrlReqfrm: function () {
+			const docNo = $('#docNo').val()?.trim();
+			const rxcorpNm = $('#rxcorpNm').val()?.trim();
+			const prdnm = $('#prdnm').val()?.trim();
+			const makrNm = $('#makrNm').val()?.trim();
+
+			// 체크된 공종
+			const cnsttyCdList = $('input[name="cnsttyCd"]:checked')
+				.map(function () { return $(this).val(); })
+				.get();
+
+			// 선택된 공종들을 'A,C,D' 형태로 변환(String 형태)
+			const cnsttyCd = cnsttyCdList.join(',');
+
+			if (!docNo) {
+				gaiaCommon.customAlert('문서번호를 입력해 주세요.');
+				$('#docNo').focus();
+				return;
+			}
+
+			if (!rxcorpNm) {
+				gaiaCommon.customAlert('수신업체를 입력해주세요.');
+				$('#rxcorpNm').focus();
+				return;
+
+			}
+
+			// 공종 미선택 시 알림
+			if (cnsttyCdList.length === 0) {
+				gaiaCommon.customAlert('공종을 하나 이상 선택해주세요.');
+				$('#cnsttyCdTypeSelect .select_header').focus();
+				return;
+			}
+
+			if (!prdnm) {
+				gaiaCommon.customAlert('품명을 입력해 주세요.');
+				$('#prdnm').focus();
+				return;
+			}
+
+			if (!makrNm) {
+				gaiaCommon.customAlert('제조사를 입력해 주세요.');
+				$('#makrNm').focus();
+				return;
+			}
+
+			// 자재 목록
+			const targetTable = document.getElementById("targetMtrlTable");
+			const tbody = targetTable.getElementsByTagName("tbody")[0];
+			const rows = tbody.getElementsByTagName("tr");
+
+			let mtrlList = [];
+
+			for (let i = 0; i < rows.length; i++) {
+				const cols = rows[i].getElementsByTagName("td");
+				const id = rows[i].getAttribute("data-gnrlexpns-cd") || "";
+				const rsceNm = cols[1].textContent.trim();
+				const specNm = cols[2].textContent.trim();
+				const unit = cols[3].textContent.trim();
+				const todayQtyInput = cols[4].getElementsByTagName("input")[0];
+				const todayQty = todayQtyInput ? todayQtyInput.value.trim() : "0";
+				const rmrkInput = cols[8].getElementsByTagName("input")[0];
+				const rmrk = rmrkInput ? rmrkInput.value.trim() : "";
+
+				// 공백 or 0인 경우 저장 방지
+				if (todayQty === "" || todayQty === "0" || isNaN(todayQty)) {
+					gaiaCommon.customAlert("금일반입량이 입력되지 않은 자재가 있습니다.\n[" + rsceNm + "]");
+					return;
+				}
+
+				mtrlList.push({
+					gnrlexpnsCd: id,
+					rsceNm: rsceNm,
+					specNm: specNm,
+					unit: unit,
+					todayQty: todayQty,
+					rmrk: rmrk
+				});
+			}
+
+			let param = {
+				cntrctNo: cntrctNo,
+				reqfrmNo: reqfrmNo,
+				docNo: docNo,
+				reqDt: $('#reqDt').val(),
+				rxcorpNm: rxcorpNm,
+				cnsttyCd: cnsttyCd,
+				prdnm: prdnm,
+				makrNm: makrNm,
+				rmrk: $('#rmrk').val(),
+				photos: photo.photoArr.map(photo => {
+					let shotDate = '';
+					if (Array.isArray(photo.shotDate)) {
+						const [year, month, day] = photo.shotDate;
+						shotDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+					} else if (typeof photo.shotDate === 'string') {
+						shotDate = photo.shotDate.split('T')[0];
+					} else {
+						shotDate = '';
+					}
+
+					return {
+						cntnts: photo.cntnts,	// 내용
+						lct: photo.lct,			// 위치
+						shotDate: shotDate,
+						phtSno: photo.phtSno
+					};
+				}),
+				deleteSno: photo.deleteSno,
+				deletePhtSno: photo.deletePhtSno,
+
+				mtrlList: mtrlList,
+			}
+
+			const formData = new FormData();
+			formData.append('mainmtrlreqfrm', new Blob([JSON.stringify(param)], { type: 'application/json' }));
+
+			// 사진 파일 추가
+			photo.photoArr.forEach(photo => {
+				const file = photo.file;
+				if (file) {
+					formData.append('photos', file);
+				}
+			});
+
+			// 첨부 파일 관리(삭제된 파일, 새로 추가된 파일 등)
+			if (file.removedFiles && file.removedFiles.length > 0) {
+				file.removedFiles.forEach(f => {
+					formData.append('removedFiles[]', f.fileNo);
+					formData.append('removedSnos[]', f.sno);
+				});
+			}
+
+			for (let [key, value] of formData.entries()) {
+				console.log("FormData:", key, value);
+			}
+
+			formData.delete('files');
+			file.existingFiles.forEach(file => {
+				formData.append('files', file);
+			});
+
+			gaiaCommon.LoadingOverlay('body', true);
+			$.ajax({
+				url: `/api/construction/mainmtrlreqfrm/update`,
+				method: 'POST',
+				processData: false,
+				contentType: false,
+				data: formData,
+				success: function (response) {
+					if (response.ok) {
+						gaiaCommon.customAlert('수정되었습니다.', function () {
+							gaiaCommon.LoadingOverlay('body', false);
+							if (type === 'p') {
+								if (window.opener && !window.opener.closed) {
+									window.opener.location.replace(`/construction/mainmtrlreqfrm?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`);
+								}
+								window.close();
+							} else {
+								window.location.replace(`/construction/mainmtrlreqfrm?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`);
+							}
+						});
+					}
+				},
+				error: function (xhr, status, error) {
+					gaiaCommon.LoadingOverlay('body', false);
+					gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+				},
+			});
+		},
+		// 사진추가 모달
+		addPhoto: function () {
+			gaiaCommon.checkAuth("MREQ_C_01", () => {
+				$("#photopopup").load("/construction/mainmtrlreqfrm/photo", function () {
+					const reqDt = $("#reqDt").val();
+
+					if (reqDt) {
+						$("#shotDate").val(reqDt);
+					}
+
+					// 날짜 세팅 후 팝업 표시
+					$("#photopopup").css({ "display": "flex" });
+				});
+			});
+		},
+		//자재추가모달
+		addMtrl: function (type) {
+			gaiaCommon.checkAuth("MREQ_C_01", () => {
+				$("#mtrlpopup").load(`/construction/mainmtrlreqfrm/mainmtrlList?type=${type}`, function () {
+					$("#mtrlpopup").css({ "display": "flex" });
+					mtrlpopup.init();
+				});
+			});
+		},
+		deleteMtrl: function () {
+			const table = document.getElementById("targetMtrlTable");
+			if (!table) return;
+
+			const tbody = table.getElementsByTagName("tbody")[0];
+			const rows = tbody.getElementsByTagName("tr");
+
+			// 삭제할 대상이 있는지 확인
+			let hasChecked = false;
+
+			// 거꾸로 순회 (삭제 시 인덱스 꼬임 방지)
+			for (let i = rows.length - 1; i >= 0; i--) {
+				const checkbox = rows[i].getElementsByTagName("input")[0];
+				if (checkbox && checkbox.type === "checkbox" && checkbox.checked) {
+					tbody.removeChild(rows[i]);
+					hasChecked = true;
+				}
+			}
+		},
+		// 공종 다중 선택 드롭다운
+		initializeSelectBoxes: function () {
+			gaiaCommon.get("/api/project/contractstatus/company/types", '', function (result) {
+				const checkboxList = $('#cnsttyCdTypeSelect .dropdown_list');
+				checkboxList.empty();
+
+				if (result.details && result.details.cnsttyCd) {
+					result.details.cnsttyCd.forEach(function (item) {
+						const checkbox = `
+                    <li class="list_item">
+                        <label class="form_checkbox">
+                            <input class="check_mark" type="checkbox" name="cnsttyCd" value="${item.cmn_cd}" />
+                            <span class="check_label">${item.cmn_cd_nm_krn}</span>
+                        </label>
+                    </li>
+                    `;
+						checkboxList.append(checkbox);
+					});
+				}
+
+				// 드롭다운 클릭 시 체크박스 목록 토글
+				$('#cnsttyCdTypeSelect').on('click', function (event) {
+					event.stopPropagation();
+					checkboxList.toggle();
+				});
+
+				checkboxList.on('click', function (event) {
+					event.stopPropagation();
+				});
+
+				// 다른 화면 클릭 시 드롭박스 닫기
+				$(document).on('click', function () {
+					checkboxList.hide();
+				});
+
+				// 체크박스 클릭 시 텍스트 업데이트
+				checkboxList.on('click', 'input[name="cnsttyCd"]', function () {
+					page.updateSelectedItems();
+				});
+
+				page.init();	// 드롭박스 생성 후 초기함수 호출
+			}, function (xhr, status, error) {
+				console.error("Failed to fetch data:", status, error);
+				page.init();
+			})
+		},
+		updateSelectedItems: function () {
+			selectedItems = $('input[name="cnsttyCd"]:checked').map(function () {
+				return $(this).next('.check_label').text();
+			}).get();
+
+			const selectedCount = selectedItems.length;
+			const headerText = selectedItems.join(', ');
+
+			$('#cnsttyCdTypeSelect .select_header span').text(headerText);
+		},
+	}
+
+	// 첨부파일 관련
+	let file = {
+		serverFiles: [],     // 서버에서 불러온 파일들
+		existingFiles: [],   // 새로 추가한 파일들
+		removedFiles: [],    // 삭제할 서버 파일들
+
+		init() {
+			this.cacheElements();
+			this.addEventListeners();
+		},
+
+		cacheElements() {
+			this.fileInput = document.getElementById('fileInput');
+			this.addFileButton = document.getElementById('addFileButton');
+			this.removeAllButton = document.getElementById('removeAllButton');
+			this.fileList = document.getElementById('fileList');
+		},
+
+		addEventListeners() {
+			this.addFileButton.addEventListener('click', () => this.fileInput.click());
+			this.fileInput.addEventListener('change', () => this.handleNewFiles(this.fileInput.files));
+			this.removeAllButton.addEventListener('click', () => this.removeAllFiles());
+
+			// 드래그앤드롭
+			const attachArea = document.querySelector('.attach_area');
+			attachArea.addEventListener('dragover', (e) => { e.preventDefault(); attachArea.classList.add('dragging'); });
+			attachArea.addEventListener('dragleave', () => attachArea.classList.remove('dragging'));
+			attachArea.addEventListener('drop', (e) => {
+				e.preventDefault();
+				attachArea.classList.remove('dragging');
+				this.handleNewFiles(e.dataTransfer.files);
+			});
+		},
+
+		/** 신규 파일 추가 */
+		handleNewFiles(files) {
+			for (let f of files) {
+				this.existingFiles.push(f);
+			}
+			this.fileInput.value = ""; // 초기화
+			this.renderFileList();
+		},
+
+		/** 서버에서 받은 파일 세팅 */
+		processFetchedFiles(attachments) {
+			this.serverFiles = (attachments || []).map(file => ({
+				name: file.fileNm,
+				size: Number(file.fileSize ?? file.size ?? 0),
+				fileNo: file.fileNo,
+				sno: file.sno
+			}));
+			this.renderFileList();
+		},
+
+		/** 파일 삭제 */
+		removeFile(index, fromServer = false) {
+			if (fromServer) {
+				const target = this.serverFiles[index];
+				this.removedFiles.push({ fileNo: target.fileNo, sno: target.sno });
+				this.serverFiles.splice(index, 1);
+			} else {
+				this.existingFiles.splice(index, 1);
+			}
+			this.renderFileList();
+		},
+
+		/** 전체 삭제 */
+		removeAllFiles() {
+			this.serverFiles.forEach(f => this.removedFiles.push({ fileNo: f.fileNo, sno: f.sno }));
+			this.serverFiles = [];
+			this.existingFiles = [];
+			this.renderFileList();
+		},
+
+		/** 파일 목록 렌더링 */
+		renderFileList() {
+			this.fileList.innerHTML = "";
+
+			if (this.serverFiles.length === 0 && this.existingFiles.length === 0) {
+				document.querySelector('.data_info').classList.remove('hide');
+				document.querySelector('.attach_list').classList.add('hide');
+				this.updateSummary();
+				return;
+			}
+
+			document.querySelector('.data_info').classList.add('hide');
+			document.querySelector('.attach_list').classList.remove('hide');
+
+			// 서버 파일
+			this.serverFiles.forEach((f, idx) => {
+				const li = this.createFileItem(f.name, f.size, true, idx, f.fileNo, f.sno);
+				this.fileList.appendChild(li);
+			});
+
+			// 새 파일
+			this.existingFiles.forEach((f, idx) => {
+				const li = this.createFileItem(f.name, f.size, false, idx);
+				this.fileList.appendChild(li);
+			});
+
+			this.updateSummary();
+		},
+
+		/** 개별 행 생성 */
+		createFileItem(name, size, fromServer, index, fileNo = "", sno = "") {
+			const li = document.createElement("li");
+			li.classList.add("list_item");
+			li.style.display = "flex";
+			li.style.alignItems = "center";
+
+			const removeBtn = document.createElement("button");
+			removeBtn.type = "button";
+			removeBtn.classList.add("icon_btn");
+			removeBtn.innerHTML = '<i class="ic ic-close"></i>';
+			removeBtn.addEventListener("click", () => this.removeFile(index, fromServer));
+
+			const fileName = document.createElement("span");
+			fileName.classList.add("f_name");
+			fileName.textContent = name;
+
+			// 서버 파일이면 다운로드 가능
+			if (fromServer && fileNo && sno) {
+				fileName.style.cursor = "pointer";
+				fileName.addEventListener("click", () => {
+					const url = ``;
+					if (typeof window.download === 'function') window.download(url);
+					else window.open(url, "_blank");
+				});
+			}
+
+			const fileSize = document.createElement("span");
+			fileSize.classList.add("f_capacity");
+			fileSize.style.marginLeft = "auto";
+			fileSize.textContent = this.formatFileSize(Number(size) || 0);
+
+			li.appendChild(removeBtn);
+			li.appendChild(fileName);
+			li.appendChild(fileSize);
+			return li;
+		},
+
+		/** 총 용량 업데이트 */
+		updateSummary() {
+			const totalSize = [...this.serverFiles, ...this.existingFiles]
+				.reduce((sum, f) => sum + (Number(f.size) || 0), 0);
+
+			const sizeEl = document.getElementById("uploadedFileSize");
+			if (sizeEl) sizeEl.textContent = this.formatFileSize(totalSize);
+		},
+
+		/** 파일 크기 포맷 */
+		formatFileSize(size) {
+			return size < 1024
+				? `${size} bytes`
+				: size < 1048576
+					? `${(size / 1024).toFixed(2)} KB`
+					: `${(size / 1048576).toFixed(2)} MB`;
+		}
+	};
+
+	// 사진관련
+	let photo = {
+		photoArr: [],
+		deleteSno: [],
+		deletePhtSno: [],
+		init: function (data) {
+			data.forEach((row, seq) => {
+				let formattedDate = '';
+				if (Array.isArray(row.shotDate)) {
+					const [year, month, day] = row.shotDate;
+					formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+				} else if (typeof row.shotDate === 'string') {
+					formattedDate = row.shotDate.split('T')[0]; // ISO 형식일 경우
+				}
+
+				let webPath = row.fileDiskPath;
+
+				// 백슬래시 경로 처리 (윈도우)
+				if (webPath.includes('\\')) {
+					webPath = webPath.replace(/^.*\\upload/, '/upload').replace(/\\/g, '/');
+				} else {
+					// 슬래시 경로 처리 (리눅스)
+					webPath = webPath.replace(/^.*\/upload/, '/upload');
+				}
+
+				const imgSrc = `${webPath}/${row.fileDiskNm}`;
+
+				$(".mtrl_photo_list").slick('slickAdd',
+					`<div>` +
+					`<dl class="dl_box p_photo">` +
+					`<dt class="item_dt">` +
+					`<label class="form_check">` +
+					`<input class="check_mark" type="checkbox" name="check" value="` + seq + `">` +
+					`<span class="check_label">` + row.cntnts + `</span>` +
+					`</label>` +
+					`</dt>` +
+					`<dd class="item_dd">` +
+					`<figure class="p_photo_info">` +
+					`<img src="${imgSrc}" alt="${row.fileNm}" style="height:200px;">` +
+					`<figcaption>` +
+					`<p class="tit">` + row.cntnts + `</p>` +
+					`<p class="desc">` + row.lct + `</p>` +
+					`<p class="date">` + formattedDate + `</p>` +
+					`<input type="hidden" id="phtSno" value="` + row.phtSno + `">` +
+					`<input type="hidden" id="sno" value="` + row.sno + `">` +
+					`</figcaption>` +
+					`</figure>` +
+					`</dd>` +
+					`</dl>` +
+					`</div>`
+				);
+				this.photoArr.push(row);
+			});
+		},
+		// 사진 추가
+		setPhoto: function (data) {
+			this.photoArr.push(data);
+			const seq = this.photoArr.length - 1;
+
+			let imgSrc = data.base;
+			if (imgSrc && !imgSrc.startsWith("data:")) {
+				imgSrc = "data:image/jpeg;base64," + imgSrc;
+			}
+
+			$(".mtrl_photo_list").slick('slickAdd',
+				`<div>` +
+				`<dl class="dl_box p_photo">` +
+				`<dt class="item_dt">` +
+				`<label class="form_check">` +
+				`<input class="check_mark" type="checkbox" name="check" value="` + seq + `">` +
+				`<span class="check_label">` + data.cntnts + `</span>` +
+				`</label>` +
+				`</dt>` +
+				`<dd class="item_dd">` +
+				`<figure class="p_photo_info">` +
+				`<img src="` + imgSrc + `" alt="품질검측사진" style="height:200px;">` +
+				`<figcaption>` +
+				`<p class="tit">` + data.cntnts + `</p>` +
+				`<p class="desc">` + data.lct + `</p>` +
+				`<p class="date">` + data.shotDate + `</p>` +
+				`</figcaption>` +
+				`</figure>` +
+				`</dd>` +
+				`</dl>` +
+				`</div>`
+			);
+		},
+		// 사진 삭제
+		delPhoto: function () {
+			const checkedItems = $('input[name=check]:checked');
+			if (checkedItems.length < 1) {
+				gaiaCommon.customAlert('{{ message("msg.055") }}'); // 삭제할 항목을 선택해주세요.
+				return;
+			}
+
+			let deleteIndices = [];
+
+			checkedItems.each((index, checkbox) => {
+				const seq = parseInt($(checkbox).val(), 10);
+
+				if (this.photoArr[seq]) {
+					if (this.photoArr[seq].sno) {
+						this.deleteSno.push(this.photoArr[seq].sno);
+					}
+					if (this.photoArr[seq].phtSno) {
+						this.deletePhtSno.push(this.photoArr[seq].phtSno);
+					}
+					deleteIndices.push(seq);
+				}
+			});
+			deleteIndices.sort((a, b) => b - a).forEach((seq) => {
+				$(".mtrl_photo_list").slick('slickRemove', seq);
+				this.photoArr.splice(seq, 1);
+			});
+
+			this.reIndexSlides();
+		},
+		reIndexSlides: function () {
+			this.photoArr.forEach((item, idx) => {
+				$('.mtrl_photo_list .slick-slide').eq(idx).find('.check_mark').val(idx);
+			});
+		}
+	}
+
+	// 새창으로 열기
+	function newWindow() {
+		const width = 1300;
+		const height = 800;
+		let left = Math.ceil((window.screen.width - width) / 2);
+		left += window.screenLeft; // 듀얼 모니터일 때
+		const top = Math.ceil((window.screen.height - height) / 2);
+
+		window.open(`/construction/mainmtrlreqfrm/updateMtrlReqfrm?&type=p&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&reqfrmNo=${reqfrmNo}`, '_blank', `scrollbars=yes,resizable=yes,width=${width},height=${height},left=${left},top=${top}`);
+		window.location.href = `/construction/mainmtrlreqfrm?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&_condition=init`
+	}
+</script>
+{% endblock footer_script %}

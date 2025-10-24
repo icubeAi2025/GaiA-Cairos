@@ -1,0 +1,505 @@
+{% extends 'layout/base_content' %}
+    {% block head %}
+    <style>
+        .division_row {
+            flex: 1;
+            justify-content: center;
+            border-left: 1px solid var(--form-in-bd);
+            padding-right: 1.5em;
+        }
+
+        .cbs-table { min-height: 7.6rem; }
+        .cbs-table tbody td div,.wbs-table tbody td, #rmrkCntnts { height: 7.6rem; white-space: pre-line; vertical-align: text-top; overflow-y: auto; }
+
+        .scrollable-tbody {
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+
+        textarea {
+           min-height: 7.6rem;
+        }
+    </style>
+    {% endblock %}
+    {% block content %}
+    <section class="contents_wrap g-row">
+        <article class="conts g-row">
+            <div class="group" id="outline">
+                <div class="conts_form">
+                    <div class="btn_area s_default _outline">
+                        {{ btnHtml | raw }}
+                        <button type="button" class="btn" onclick="page.close()">{{message('btn.007')}}</button> <!-- 닫기 -->
+                    </div>
+                    <div class="s_conts">
+                        <span class="tree_route">개요</span>
+                        <div class="form_box">
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">보고일자</div>
+                                    <div class="form_data" id="dailyReportDate">
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="form_label">보고서 번호</div>
+                                    <div class="form_data" id="reportNo">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">제목</div>
+                                    <div class="form_data" id="title">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="form_label">기상현황</div>
+                                <div style="width: 100%;">
+                                    <div class="row cols">
+                                        <div class="col">
+                                            <div class="form_label">날씨 오전</div>
+                                            <div class="form_data" id="amWthr">
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">날씨 오후</div>
+                                            <div class="form_data" id="pmWthr">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row cols">
+                                        <div class="col">
+                                            <div class="form_label">최저 온도</div>
+                                            <div class="form_data">
+                                        <span class="item_wrap put_txt _celsius" id="dlowstTmprtVal">
+                                        </span>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">최고 온도</div>
+                                            <div class="form_data">
+                                        <span class="item_wrap put_txt _celsius" id="dtopTmprtVal">
+                                        </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row cols">
+                                        <div class="col">
+                                            <div class="form_label">강수량</div>
+                                            <div class="form_data">
+                                        <span class="item_wrap put_txt _mm" id="prcptRate">
+                                        </span>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">강설량</div>
+                                            <div class="form_data">
+                                        <span class="item_wrap put_txt _mm"  id="snowRate">
+                                        </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row cols" id="progressRow">
+                                <div class="form_label">공정현황</div>
+                                <div style="width: 100%;">
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label division_row">구분</div>
+                                            <div class="form_label division_row">계획(%)</div>
+                                            <div class="form_label division_row">실적(%)</div>
+                                            <div class="form_label division_row">대비(%)</div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label  division_row">당일</div>
+                                            <div class="form_data  division_row">
+                                                <span id="todayPlanBohalRate"></span>
+                                            </div>
+                                            <div class="form_data  division_row">
+                                                <span id="todayArsltBohalRate"></span>
+                                            </div>
+                                            <div class="form_data  division_row">
+                                                <span id="todayProcess"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label division_row">누적</div>
+                                            <div class="form_data division_row">
+                                                <span id="acmltPlanBohalRate"></span>
+                                            </div>
+                                            <div class="form_data  division_row">
+                                                <span id="acmltArsltBohalRate"></span>
+                                            </div>
+                                            <div class="form_data  division_row">
+                                                <span id="acmltProcess"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group" id="activityGroup">
+                <div class="s_conts">
+                    <span class="tree_route">공종 및 세부공정</span> <!-- 공종 및 세부공정 -->
+                    <table class="table cbs-table">
+                        <thead>
+                        <tr>
+                            <th scope="col" style="width: 20%">공종</th>
+                            <th scope="col" style="width: 50%">작업내용</th>
+                            <th scope="col" style="width: 30%">특이사항</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><textarea readonly id="majorMatter"></textarea></td>
+                            <td><textarea readonly id="significantNote"></textarea></td>
+                            <td><textarea readonly id="commentResult"></textarea></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="scrollable-tbody" style="overflow-y: scroll">
+                        <table class="table wbs-table">
+                            <colgroup>
+                                <col style="width:15%;"> <!-- WBS -->
+                                <col style="width:15%;"> <!-- Activity -->
+                                <col style="width: 8%;"> <!-- 금일계획 시작일 -->
+                                <col style="width: 8%;"> <!-- 금일계획 완료일 -->
+                                <col style="width: 8%;"> <!-- 금일실행 시작일 -->
+                                <col style="width: 8%;"> <!-- 금일실행 종료일 -->
+                                <col style="width:19%;"> <!-- 작업내용 -->
+                                <col style="width:19%;"> <!-- 특이사항 -->
+                            </colgroup>
+                            <thead>
+                            <tr>
+                                <th scope="col" rowspan="2" >WBS</th>
+                                <th scope="col" rowspan="2" >Activity</th>
+                                <th scope="col" colspan="2" >{{ message("item.construction.026") }}</th>
+                                <th scope="col" colspan="2" >{{ message("item.construction.027") }}</th>
+                                <th scope="col" rowspan="2" >작업내용</th>
+                                <th scope="col" rowspan="2" >특이사항</th>
+                            </tr>
+                            <tr>
+                                <th scope="col">{{ message("item.construction.029") }}</th>
+                                <th scope="col">{{ message("item.construction.030") }}</th>
+                                <th scope="col">{{ message("item.construction.029") }}</th>
+                                <th scope="col">{{ message("item.construction.032") }}</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <!-- tbody 따로 분리하여 스크롤 -->
+                    <div class="scrollable-tbody">
+                        <table class="table wbs-table">
+                            <colgroup>
+                                <col style="width:15%;">
+                                <col style="width:15%;">
+                                <col style="width: 8%;">
+                                <col style="width: 8%;">
+                                <col style="width: 8%;">
+                                <col style="width: 8%;">
+                                <col style="width:19%;">
+                                <col style="width:19%;">
+                            </colgroup>
+                            <tbody id="activityBody">
+                            <tr>
+                                <td class="ta_c" colspan="8" style="vertical-align: middle;">조회된 데이터가 없습니다.</td>
+                            </tr>
+                            <!-- 여기에 동적으로 행이 추가됨 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="group" id="chiefGroup">
+                <div class="conts_form">
+                    <div class="s_conts">
+                        <span class="tree_route">책임기술인</span>
+                        <div class="conts_grid">
+                            <table class="table ta_c chief-table">
+                                <colgroup>
+                                    <col> <!-- 상태 -->
+                                    <col> <!-- 시간대별 -->
+                                    <col> <!-- 업무내용 -->
+                                    <col> <!-- 내용 -->
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th style="width: 6%;">상태</th>
+                                    <th style="width: 15%;">시간대별</th>
+                                    <th style="width: 64%;">업무내용</th>
+                                    <th style="width: 15%;">비고</th>
+                                </tr>
+                                </thead>
+                                <tbody id="chiefBody">
+                                <tr class='cfinspectContent'>
+                                    <td id='apprvlStats'></td>
+                                    <td><textarea id='cfTimeRange' readonly></textarea></td>
+                                    <td><textarea id='cfMajorMatter' readonly></textarea></td>
+                                    <td><textarea id='cfRmrkCntnts' readonly></textarea></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="group" id="inspectionGroup">
+                <div class="conts_form">
+                    <div class="s_conts">
+                        <span class="tree_route">기술인별 업무 수행 내용</span>
+                        <div class="conts_grid">
+                            <table class="table ta_c inspection-table">
+                                <colgroup>
+                                    <col> <!-- 상태 -->
+                                    <col> <!-- 업무구분 -->
+                                    <col> <!-- 성명 -->
+                                    <col> <!-- 서명 -->
+                                    <col> <!-- 주요 업무 수행내용 -->
+                                    <col> <!-- 지시사항 -->
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th style="width: 6%;">상태</th>
+                                    <th style="width: 7%;">업무구분</th>
+                                    <th style="width: 7%;">성명</th>
+                                    <th style="width: 10%;">서명</th>
+                                    <th style="width: 50%;">주요 업무 수행내용</th>
+                                    <th style="width: 20%;">지시사항</th>
+                                </tr>
+                                </thead>
+                                <tbody id="inspectBody">
+                                    <td colspan="6">조회된 데이터가 없습니다.</td>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="group" id="docGroup">
+                <div class="conts_form">
+                    <div class="s_conts">
+                        <span class="tree_route">관련문서</span>
+                        <div class="conts_grid">
+                            <table class="table ta_c">
+                                <colgroup>
+                                    <col> <!-- 체크박스 -->
+                                    <col> <!-- 수/발신일 -->
+                                    <col> <!-- 수발처 -->
+                                    <col> <!-- 문서번호 -->
+                                    <col> <!-- 제목(내용요약) -->
+                                    <col> <!-- 비고 -->
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th style="width: 8%;">구분</th>
+                                    <th style="width: 8%;">수/발신일</th>
+                                    <th style="width: 10%;">수/발신처</th>
+                                    <th style="width: 10%;">문서번호</th>
+                                    <th style="width: 50%;">제목(내용요약)</th>
+                                    <th style="width: 10%;">비고</th>
+                                </tr>
+                                </thead>
+                                <tbody id="docBody">
+                                    <td colspan="6">조회된 데이터가 없습니다.</td>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="group" id="rmrkCntntsGroup">
+                <div class="conts_form">
+                    <div class="s_conts">
+                        <span class="tree_route">특이사항</span>
+                        <div class="form_box">
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">특이사항</div>
+                                    <div class="form_data">
+                                        <textarea  id="rmrkCntnts" readonly>
+                                        </textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </article>
+    </section>
+    {% endblock content %}
+{% block footer_script %}
+
+    <script>
+        var pjtNo;
+        var urlParams = new URLSearchParams(location.search);
+        var cntrctNo = urlParams.get('cntrctNo');
+        var dailyReportId = urlParams.get('dailyReportId');
+
+        $(function () {
+            gaia.create({
+                $init: function ($params) {
+                    page.init();
+                }
+            });
+        });
+
+        let page = {
+
+            init: function () {
+                pjtNo = pjtInfo.pjtNo;
+                cntrctNo = cntrctNo ?? pjtInfo.cntrctNo;
+
+                gaiaPortal.navMenuInit('M0406', "CM 책임기술인 업무일지 조회");
+
+                page.getReportData();
+            },
+
+            // 수정
+            update: function () {
+                window.location.href = `/construction/chiefinspectionreport/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&dailyReportId=${dailyReportId}&_condition=init`;
+            },
+
+            // 닫기
+            close: function () {
+                window.location.href = `/construction/chiefinspectionreport?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`; sessionStorage.setItem('cntrctNo', cntrctNo);
+            },
+
+            // 책임감리일지 상세정보조회
+            getReportData:function (){
+                gaiaCommon.LoadingOverlay('body', true);
+
+                gaiaCommon.get(`/api/construction/chiefinspectionreport/detail`,{
+                    dailyReportId: dailyReportId,
+                    cntrctNo: cntrctNo
+                }, function(response){
+                    gaiaCommon.LoadingOverlay('body', false);
+                    const report = response.details.reportList.report;
+                    const activity = response.details.reportList.activity;
+                    const inspection = response.details.reportList.inspection;
+                    const doc = response.details.reportList.doc;
+
+                    dailyReportId = report.dailyReportId;
+                    $("#dailyReportDate").text(report.dailyReportDate);
+                    $("#reportNo").text(gaiaCommon.decodeSafeText(report.reportNo));
+                    $("#title").text(gaiaCommon.decodeSafeText(report.title));
+
+                    // 날씨 정보
+                    $("#amWthr").text(gaiaCommon.decodeSafeText(report.amWthr));
+                    $("#pmWthr").text(gaiaCommon.decodeSafeText(report.pmWthr));
+                    $("#prcptRate").text(gaiaCommon.decodeSafeText(report.prcptRate));
+                    $("#snowRate").text(gaiaCommon.decodeSafeText(report.snowRate));
+                    $("#dlowstTmprtVal").text(gaiaCommon.decodeSafeText(report.dlowstTmprtVal));
+                    $("#dtopTmprtVal").text(gaiaCommon.decodeSafeText(report.dtopTmprtVal));
+
+                    //공정율 정보
+                    $("#acmltPlanBohalRate").text(report.acmltPlanBohalRate);
+                    $("#acmltArsltBohalRate").text(report.acmltArsltBohalRate);
+                    $("#acmltProcess").text(report.acmltProcess);
+                    $("#todayPlanBohalRate").text(report.todayPlanBohalRate);
+                    $("#todayArsltBohalRate").text(report.todayArsltBohalRate);
+                    $("#todayProcess").text(report.todayProcess);
+
+                    // 기술인별 업무 수행내용
+                    $("#apprvlStats").text(report.apprvlStats != 'A' ? '작성 중' : '작성완료');
+                    $("#usrNm").text(gaiaCommon.decodeSafeText(report.usrNm));
+                    $("#signImg").append(`<img class="stamp_thumbnail thumbnail" src="/api/user/mypage/thumbnail?fileNo=${report.fileNo}" />`);
+                    $("#cfMajorMatter").text(gaiaCommon.decodeSafeText(report.cfMajorMatter));
+                    $("#cfRmrkCntnts").text(gaiaCommon.decodeSafeText(report.cfRmrkCntnts));
+                    $("#cfTimeRange").text(gaiaCommon.decodeSafeText(report.cfTimeRange));
+
+                    // 특이 사항
+                    $("#rmrkCntnts").text(gaiaCommon.decodeSafeText(report.rmrkCntnts));
+
+                    // 공종 및 세부사항 정보
+                    $("#majorMatter").text(gaiaCommon.decodeSafeText(report.majorMatter));
+                    $("#significantNote").text(gaiaCommon.decodeSafeText(report.significantNote));
+                    $("#commentResult").text(gaiaCommon.decodeSafeText(report.commentResult));
+
+                    // TODO XSS
+                    if (activity != null && activity.length > 0) {
+                        $('#activityBody').empty();
+
+                        activity.forEach(item => {
+                            let innerHTML = `
+                                    <tr>
+                                        <td>${item.path_nm || ''}</td>
+                                        <td>${item.activity_nm || ''}</td>
+                                        <td class="ta_c">${item.plan_bgn_date || ''}</td>
+                                        <td class="ta_c">${item.plan_end_date || ''}</td>
+                                        <td class="ta_c">${item.actual_bgn_date || ''}</td>
+                                        <td class="ta_c">${item.actual_end_date || ''}</td>
+                                        <td><textarea readonly>${item.taskContent || ''}</textarea></td>
+                                        <td><textarea readonly>${item.specialNote || ''}</textarea></td>
+                                    <tr>
+                                    `;
+                            $('#activityBody').append(innerHTML);
+                        })
+                    }
+
+                    // 기술인별 업무수행내용
+                    if (inspection != null && inspection.length > 0) {
+                        $('#inspectBody').empty();
+                        $("#apprvlStats").text(report.apprvlStats != 'A' ? '작성 중' : '작성완료');
+
+                        inspection.forEach(item => {
+                            let fileHtml = '';
+                            if (item.fileNo != null) {
+                                fileHtml = `<img class="stamp_thumbnail thumbnail" src="/api/user/mypage/thumbnail?fileNo=${item.fileNo}" />`;
+                            }
+
+                            let innerHTML = `
+                                    <tr>
+                                        <td>${item.apprvlStatsNm != null ? item.apprvlStatsNm : '작성 중' || '작성 중'}</td>
+                                        <td>${item.workNm || ''}</td>
+                                        <td>${item.usrNm || ''}</td>
+                                        <td>${fileHtml}</td>
+                                        <td><textarea readonly>${item.majorMatter || ''}</textarea></td>
+                                        <td><textarea readonly>${item.commentResult || ''}</textarea></td>
+                                    </tr>
+                                    `;
+
+                            $('#inspectBody').append(innerHTML);
+                        });
+                    }
+
+                    // 관련 문서
+                    if (doc != null && doc.length > 0) {
+                        $('#docBody').empty();
+
+                        doc.forEach(item => {
+                            let innerHTML = `
+                                    <tr class='docContent'>
+                                        <td>${item.docType === 'S' ? '발송' : '수신'|| ''}</td>
+                                        <td>${item.date || ''}</td>
+                                        <td>${item.target || ''}</td>
+                                        <td>${item.docNo || ''}</td>
+                                        <td style='text-align: left;'>${item.title || ''}</td>
+                                        <td>${item.rmrkCntnts || ''}</td>
+                                    </tr>
+                                    `;
+                            $('#docBody').append(innerHTML);
+                        })
+                    }
+                }, function(){
+                    gaiaCommon.LoadingOverlay('body', false);
+                    return false;
+                })
+            },
+        }
+    </script>
+{% endblock footer_script %}

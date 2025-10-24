@@ -1,0 +1,33 @@
+<div class="modal" id="deptTreeModal">
+    <div class="pop_box _lg">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message('item.dept.001') }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="methods.closeDeptTree();">
+                    <i class="ic ic-close"></i>
+                    <span class="tooltip">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="pop_body">
+            <div class="s_conts ty1">
+                <div class="g-group g-col2" style="height: 550px;">
+                    <div class="group" id="deptTree" style="border-right: 1px solid var(--form-bd); overflow: auto; width: 600px;">
+                        <!--트리 영역-->
+                    </div>
+                    <div class="group" id="modalEmpList" style="overflow: auto; width: 380px;">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area s_default jc_e">
+                <button type="button" class="btn _outline" onclick="methods.closeDeptTree();">{{ message('btn.005') }}</button>
+                <button type="button" class="btn _fill" id="ckeckAppLine" onclick="methods.addDept();">{{ message('btn.004') }}</button>
+            </div>
+        </div>
+    </div>
+</div>

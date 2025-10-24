@@ -1,0 +1,214 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %} {% block head %}
+<!-- css -->
+<style>
+    .stamp_info{
+        max-width: 120px;
+        max-height: 65px;
+
+        margin-left: 0;
+    }
+</style>
+{% endblock %} {% block content %}
+<article class="conts_area">
+    <div class="conts">
+        <div class="conts_form">
+            <div class="btn_area s_default _outline">
+                {{ btnHtml | raw }}
+                <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">
+                    {{ message("btn.007") }}
+                </button>
+                <div class="btn_group iconbtns" id="newWindow">
+                    <button class="icon_btn" onclick="page.open()">
+                        <i class="ic ic-sent-to-back"></i>
+                        <span class="tooltip">{{ message("item.com.017") }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form_box readonly">
+                <div class="group">
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.001") }}</div>
+                            <div class="form_data" id="loginId">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">직인</div>
+                            <div class="form_data" id="stmpImg">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.003") }}</div>
+                            <div class="form_data" id="usrNm">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.002") }}</div>
+                            <div class="form_data" id="phoneNo"></div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.005") }}</div>
+                            <div class="form_data" id="ratngCd">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.004") }}</div>
+                            <div class="form_data" id="telNo">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.006") }}</div>
+                            <div class="form_data" id="pstnCd">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.007") }}</div>
+                            <div class="form_data" id="emailAdrs">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.user.017") }}</div>
+                            <div class="form_data" id="mngDiv">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.com.003") }}</div>
+                            <div class="form_data" id="useYn">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+{% endblock content %} {% block footer_script %}
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const usrId = params.get("usrId");
+    const type = params.get("type");
+    let pjtNo;
+    let cntrctNo;
+
+    var page = {
+        data: {
+            init: ""
+        },
+        init: async function () {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+            this.loadData(usrId);
+            gaiaPortal.navMenuInit("M070202", "{{ message('item.user.014') }}");
+            $("#menuDepth").append(`<li class="breadcrumb_item">{{ message('item.user.014') }}</li>`);
+        },
+        open: function () {
+            const width = 1000;
+            const height = 450;
+            let left = Math.ceil((window.screen.width - width) / 2);
+            left += window.screenLeft; // 듀얼 모니터일 때
+            const top = Math.ceil((window.screen.height - height) / 2);
+
+            window.open(
+                `/system/user/read?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=p&usrId=${usrId}`,
+                "",
+                `width=${width},height=${height},left=${left},top=${top}`
+            );
+
+            window.location.replace(`/system/user?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+
+            return false;
+        },
+
+        enableInputs: function () {
+            if (type === 'd') {
+                window.location.href = `/system/user/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=d&usrId=${usrId}`;
+            } else if (type === 'p') {
+                window.location.href = `/system/user/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=p&usrId=${usrId}`;
+            }
+        },
+
+        close: function () {
+            if (type === 'd') {
+                window.location.replace(`/system/user?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+            } else if (type === 'p') {
+                window.close();
+            }
+        },
+
+        setStampImg: function (stmpDiskPath, stmpDiskNm) {
+            const stampContainer = $("#stmpImg");
+
+            const imgPath = gaiaCommon.convertAbsoluteToRelativePath(stmpDiskPath, stmpDiskNm);
+            console.log("imgPath : ", imgPath);
+
+            const stampImgEl = `
+                <figure class="stamp_info">
+                    <img src="${imgPath}" style="max-height:50px;">
+                </figure>
+            `
+
+            stampContainer.append(stampImgEl);
+        },
+
+        loadData: function (usrId) {
+            const url = "/api/system/user/" + usrId;
+
+            $.ajax({
+                url: url,
+                method: "GET",
+                dataType: "json",
+                success: function (result) {
+                    let data = result.details.user;
+
+                    // 폼 데이터 채우기
+                    $("#loginId").text(gaiaCommon.decodeSafeText(data.loginId));
+                    $("#usrNm").text(gaiaCommon.decodeSafeText(data.usrNm));
+                    $("#ratngCd").text(gaiaCommon.decodeSafeText(data.ratngNm));
+                    $("#pstnCd").text(gaiaCommon.decodeSafeText(data.pstnNm));
+                    $("#phoneNo").text(data.phoneNo);
+                    $("#telNo").text(data.telNo);
+                    $("#emailAdrs").text(gaiaCommon.decodeSafeText(data.emailAdrs));
+                    $("#mngDiv").text(gaiaCommon.decodeSafeText(data.mngDivNm));
+
+                    if (data.useYn === "Y") {
+                        $("#useYn").text('{{ message("item.com.015") }}');
+                    } else {
+                        $("#useYn").text('{{ message("item.com.016") }}');
+                    }
+
+                    page.setStampImg(data.fileDiskPath, data.fileDiskNm);
+
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error:", error);
+                }
+            });
+
+        },
+    };
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}
