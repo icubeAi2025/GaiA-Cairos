@@ -1,0 +1,839 @@
+{% extends 'layout/base_content' %} {% block content %}
+<section class="contents_wrap">
+
+    <article class="conts g-row">
+        <div class="group">
+
+            <div class="conts_grid" id="container">
+                <div class="search_wrap">
+                    <span class="selectbox">
+                        <select name="workType" id="workType" onchange="toggleWork()">
+                            <option value="work" selected>
+                                전체 <!-- 전체 -->
+                            </option>
+                            <option value="A">
+                                {{ message("item.quality.001") }} <!-- 건축 -->
+                            </option>
+                            <option value="C">
+                                {{ message("item.quality.002") }} <!-- 토목 -->
+                            </option>
+                            <option value="F">
+                                {{ message("item.quality.003") }} <!-- 조경 -->
+                            </option>
+                            <option value="T">
+                                {{ message("item.quality.004") }} <!-- 통신 -->
+                            </option>
+                            <option value="M">
+                                {{ message("item.quality.005") }} <!-- 설비 -->
+                            </option>
+                            <option value="E">
+                                {{ message("item.quality.006") }} <!-- 전기 -->
+                            </option>
+                            <option value="O">
+                                {{ message("item.dash.043") }} <!-- 기타 -->
+                            </option>
+                        </select>
+                    </span>
+                    <div class="searchbox_wrap">
+                        <input type="text" id="searchInput" placeholder='문서번호, 위치, 검측 사항, 검측자' />
+                        <button type="button" class="icon_btn search">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <div class="toolbar">
+                    <div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+                        <!-- <button type="button" class="btn _outline" id="pdf"
+                            onclick="qualityGrid.makePdf()">PDF다운로드</button> -->
+                    </div>
+                </div>
+                <div class="grid" id="qualityGrid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 모달창 내용 -->
+</div>
+{% endblock content %}
+{% block footer_script %}
+<script>
+    let pjtNo;
+    let cntrctNo;
+    let selectedQualityIds = [];
+    let gridData = [];
+    let selectedValue;
+    let imgDir = '{{imgDir}}';
+
+    const params = new URLSearchParams(window.location.search);
+    let returnCntrctNo = params.get("returnCntrctNo");
+    const urlSearchValue = params.get("urlSearchValue");
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init($params.search);
+            }
+        });
+    });
+
+    var page = {
+        init: function (search) {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+            console.log("imgDir: ", imgDir)
+            console.log("baseUrl: ", window.location.origin)
+            console.log("info: ", gaiaCommon.me.info)
+
+            // 검색조건, 검색어가 존재한 상태로 화면으로 돌아왔을 시
+            const searchType = search?.searchType ?? "work";
+            const searchText = urlSearchValue || (search?.searchText ?? "");
+
+            if (performance.navigation.type === 1) { // F5(새로고침) 했을 때
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('returnCntrctNo')) {
+                    urlParams.delete('returnCntrctNo');
+                    window.history.replaceState({}, '', '/construction/qualityinspection');
+                }
+                returnCntrctNo = null;
+            }
+
+            gaiaPortal.navMenuInit('M0404', '{{ message("item.quality.000") }}');   // 품질검측관리
+            selectedValue = "work"
+
+            qualityGrid.init();
+            gaiaCommon.makeCntrctSelectBox(
+                "#container", // id: 컨테이너
+                () => {
+                    $(".btn_area").hide();
+                },
+                function initCb(initialCntrctNo) {   // 초기 콜백
+                    cntrctNo = initialCntrctNo
+
+                    if (searchType || searchText) {
+                        $('#workType').val(searchType);
+                        $('#searchInput').val(searchText);
+                        qualityGrid.getData(searchText, searchType);
+                    } else {
+                        qualityGrid.getData();
+                    }
+
+                    refreshGrid(qualityGrid.qualityGrid);
+                },
+                function chgCb(changedCntrctNo) {   // 변경 콜백
+                    cntrctNo = changedCntrctNo;
+                    if (qualityGrid) {
+                        $('#searchInput').val("");
+                        $("#workType").val("work");
+                        qualityGrid.getData();
+                    }
+                }
+            );
+
+            gaia.loaded = true
+        },
+        // 페이지 이동 함수들
+        addQuality: function () {
+            if (selectedValue === "") {
+                gaiaCommon.customAlert("{{ message('msg.quality.002') }}");    // 공종을 선택해주세요
+                return;
+            }
+            window.location.href = `/construction/qualityinspection/addQuality?type=d&mode=create&cntrctNo=${cntrctNo}&workType=${selectedValue}` + `&pjtNo=${pjtInfo.pjtNo}`;
+        },
+        checkList: function () {
+            // if (selectedValue === "work") {
+            //     gaiaCommon.customAlert("{{ message('msg.quality.002') }}");    // 공종을 선택해주세요
+            //     return;
+            // }
+            window.location.href = `/construction/qualityinspection/checklist?type=d&cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`;
+        },
+    }
+
+    let qualityGrid = {
+        init: function () {
+            let _this = this;
+
+            let bodyHeight;
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                bodyHeight = window.innerHeight - 500;
+            } else if (isCAIROS()) {
+                bodyHeight = window.innerHeight - 420;
+            }
+
+            if (!this.qualityGrid) {
+                this.qualityGrid = new tui.Grid({
+                    el: document.getElementById('qualityGrid'),
+                    bodyHeight: bodyHeight,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 70,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+                                    {
+                                        type: "checkBox",
+                                    },
+                                    {
+                                        type: "trash",
+                                        url: "/api/construction/qualityinspection/delete/qualityList",
+                                        idFields: "cntrctNo,qltyIspId",
+                                        keyName: "qualityList",
+                                        auth: `{{ isDelAuth | raw }}` == 'true' ? true : false,
+                                        msgList: {
+                                            confirmTit: "{{ message('item.quality.061') }}",
+                                            confirmSubTit: "{{ message('item.quality.061') }}",
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        },
+                                        condition: (rowData) => {
+                                            if (rowData.isp_ap_doc_id) {
+                                                gaiaCommon.customAlert("처리중인 항목은 삭제할 수 없습니다.");
+                                                return false;
+                                            }
+                                            return true;
+                                        },
+                                        success: function () {
+                                            qualityGrid.getData('', selectedValue);
+                                            $('#searchInput').val("");
+                                        }
+                                    },
+                                    {
+                                        type: "eyes",
+                                        success: (rowData) => {
+                                            gaiaCommon.openReportViewer('/quality-inspection-report/qualityinspection_report.jrf', {
+                                                'qltyIspId': rowData.qltyIspId,
+                                                'apprvlId': rowData.apprvlId
+                                                , 'imgDir': imgDir.substring(0, imgDir.indexOf("/upload"))
+                                                , 'baseUrl': window.location.origin
+                                            })
+                                        }
+                                    }
+                                ]
+                            },
+                        },
+                    ],
+                    columns: [
+                        {
+                            header: '{{ message("item.quality.007") }}', // 문서 번호
+                            name: "isp_doc_no",
+                            className: "isp_doc_no",
+                            align: "left",
+                            renderer: {
+                                type: IconRenderer,
+                                options: [{
+                                    type: 'newwindow',
+                                    isHover: true,
+                                    align: "right",
+                                    idFields: "cntrctNo,qltyIspId",
+                                    open: {
+                                        url: "/construction/qualityinspection/getQuality?cntrctNo={id1}&qltyIspId={id2}&returnType=A" + `&pjtNo=${pjtInfo.pjtNo}`,
+                                        width: "1300",
+                                        height: "550",
+                                        align: "center"
+                                    }
+                                }],
+                            },
+                            width: 300,
+                            resizable: true,
+                        },
+                        {
+                            header: '{{ message("item.quality.008") }} ', name: "isp_lct", width: 250, resizable: true   // 위치
+                        },
+                        {
+                            header: '{{ message("item.progressstatus.010") }}', name: "cmn_cd_nm_krn", width: 90, align: "center"   // 공종
+                        },
+                        {
+                            header: "cnstty_cd", name: "cnstty_cd", hidden: true
+                        },
+                        {
+                            header: '{{ message("item.quality.009") }}', name: "isp_issue", width: 200, resizable: true  // 검측 사항
+                        },
+                        {
+                            header: '{{ message("item.quality.010") }}', name: "isp_req_dt", align: "center",  // 검측 요청 일자
+
+                        },
+                        {
+                            header: '{{ message("item.quality.013") }}', name: "cqc_id", align: "center",   // 검측자
+                        },
+                        {
+                            header: '검측요청 상태', name: "has_request", align: "center",
+                        },
+                        {
+                            header: '{{ message("item.quality.014") }}', name: "rslt_dt", align: "center", // 검측일
+                        },
+                        {
+                            header: '{{ message("item.quality.015") }}', name: "rslt_doc_nm", align: "center",   // 결과
+                        },
+                        {
+                            header: "rslt_doc_no", name: "rslt_doc_no", hidden: true
+                        },
+                        {
+                            header: '{{ message("item.quality.016") }}', name: "apprvlId", align: "center",   // 결재자
+                        },
+                        {
+                            header: '{{ message("item.quality.017") }}', name: "apprvl_dt", align: "center",   // 결재일
+                        },
+                        {
+                            header: '{{ message("item.quality.015") }}', name: "apprvl_stats", align: "center",  // 결과
+                            renderer: {
+                                type: IconRenderer,
+                                options: [
+                                    {
+                                        type: "printer",
+                                        auth: (rowData) => {
+                                            return rowData.dsm_valid === "true";
+                                        },
+                                        success: (rowData) => {
+                                            // PDF 미리보기
+                                            const docId = rowData.doc_id;
+                                            // 파라미터 1: 통합문서관리(DOC), 2: 열람할 문서 key, 3: 다운로드 여부(o: 'DA', x: 입력안함)
+                                            gaiaCommon.pdfViewUtil('DOC', docId, 'DA');
+                                        }
+                                    }
+                                ]
+                            },
+                        },
+                    ],
+                    header: {
+                        height: 70,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.quality.011") }}',
+                                name: 'testResult',
+                                childNames: ['usr_nm', 'rslt_dt', 'rslt_doc_nm']
+                            },
+                            {
+                                header: '{{ message("item.quality.012") }}',
+                                name: 'payment',
+                                childNames: ['apprvl_nm', 'apprvl_dt', 'apprvl_stats']
+                            },
+                        ]
+                    }
+                });
+            }
+            // 검색
+            $('.icon_btn.search').on('click', function () {
+                const searchValue = $('#searchInput').val();
+                let list = _this.getData(searchValue, selectedValue);
+
+                const searchData = {
+                    searchText: searchValue,
+                    searchType: selectedValue
+                }
+
+                gaia.setSearchData(searchData);
+
+                if (list) {
+                    _this.qualityGrid.resetData(list);
+                }
+            });
+            // 엔터키 검색
+            $(document).ready(function () {
+                $('#searchInput').on('keypress', function (event) {
+                    if (event.which === 13) {
+                        const searchValue = $('#searchInput').val();
+                        let list = _this.getData(searchValue, selectedValue);
+
+                        const searchData = {
+                            searchText: searchValue,
+                            searchType: selectedValue
+                        }
+
+                        gaia.setSearchData(searchData);
+
+                        if (list) {
+                            _this.qualityGrid.resetData(list);
+                        }
+                    }
+                });
+            });
+            // 체크상태 확인
+            this.qualityGrid.on('click', function (e) {
+                const rowKey = e.rowKey;
+                if (e.columnName == "_checked") {   // 체크박스 클릭 시 체크 상태 확인
+                    let temp = _this.qualityGrid.getRow(rowKey);
+                    temp._attributes.checked = _this.qualityGrid.getRow(rowKey)._attributes.checked ? false : true;
+                    _this.qualityGrid.setRow(rowKey, temp);
+
+                    // 버튼명 변환
+                    const checkedRows = _this.qualityGrid.getCheckedRowKeys();
+                    const resultButton = document.getElementById("result");
+                    const actionButton = document.getElementById("action");
+
+                    if (checkedRows.length === 1) {
+                        const selectedRowData = _this.qualityGrid.getRow(checkedRows[0]);
+
+                        if (resultButton) {
+                            if (selectedRowData.rslt_doc_no) {
+                                resultButton.textContent = '{{ message("btn.053") }}'; // 검측 결과 수정
+                            } else {
+                                resultButton.textContent = '{{ message("btn.043") }}'; // 검측 결과 등록
+                            }
+
+                        }
+
+                        if (actionButton) {
+                            if (selectedRowData.has_action === "true") {
+                                actionButton.textContent = '{{ message("btn.054") }}'; // 조치 사항 수정
+                            } else if (selectedRowData.has_action === "false") {
+                                actionButton.textContent = '{{ message("btn.044") }}'; // 조치 사항 등록
+                            }
+                        }
+                    } else {
+                        if (resultButton) {
+                            resultButton.textContent = '{{ message("btn.043") }}'; // 검측 결과 등록
+                        }
+                        if (actionButton) {
+                            actionButton.textContent = '{{ message("btn.044") }}'; // 조치 사항 등록
+                        }
+                    }
+                }
+            });
+            this.qualityGrid.on("errorResponse", function (ev) {
+                const statusCode = ev.xhr.status;
+
+                if (statusCode === 403) {
+                    gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                } else {
+                    console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                }
+            });
+        },
+        getData: function (searchValue = '', selectedWorkType = '') {
+            if (!this.qualityGrid) {
+                return;
+            }
+            let _this = this;
+            let param = {
+                cntrctNo: cntrctNo,
+                selectedWorkType: selectedWorkType
+            }
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+            }
+
+            $.ajax({
+                url: '/api/construction/qualityinspection/get/qualityList',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function (response) {
+                    const data = response.details.qualitylist;
+
+                    gridData = data.map((item, index) => {
+                        let hasRequest = "";
+
+                        if (item.has_request === "true") {
+                            if (item.rslt_cd_nm && item.rslt_cd_nm.trim() !== "") {
+                                hasRequest = "검측완료";
+                            } else {
+                                hasRequest = "요청중";
+                            }
+                        }
+
+                        return {
+                            cntrctNo: item.cntrct_no,
+                            qltyIspId: item.qlty_isp_id,
+                            isp_doc_no: gaiaCommon.decodeSafeText(item.isp_doc_no),
+                            isp_lct: item.isp_lct,
+                            cmn_cd_nm_krn: item.cmn_cd_nm_krn,
+                            cnstty_cd: item.cnstty_cd,
+                            isp_issue: item.isp_issue,
+                            isp_req_dt: item.isp_req_dt,
+                            cqc_id: item.cqc_id,
+                            rslt_dt: item.rslt_dt,
+                            rslt_doc_nm: item.rslt_cd_nm,
+                            rslt_doc_no: item.rslt_doc_no,
+                            apprvl_nm: item.apprvl_nm,
+                            apprvlId: item.apprvl_id,
+                            apprvl_dt: item.apprvl_dt,
+                            apprvl_stats: item.apprvl_stats,
+                            has_action: item.has_action,   // 조치사항 여부(체크리스트들 중 하나라도 조치사항 존재시 'true')
+                            has_request: hasRequest,  // 검측요청 여부
+                            isp_ap_doc_id: item.isp_ap_doc_id,
+                            ap_req_id: item.ap_req_id,
+                            ap_doc_stats: item.ap_doc_stats,
+                            ap_doc_id: item.ap_doc_id,
+                            doc_id: item.doc_id,
+                            dsm_valid: item.dsm_valid,
+                        };
+                    });
+
+                    if (gridData.length > 0) {
+                        _this.qualityGrid.resetData(gridData);
+                    } else {
+                        _this.qualityGrid.resetData([]);
+                    }
+
+                },
+                error: function (response) {
+                    console.log(response);
+                }
+            });
+        },
+        updateQuality: function () {    // 검측 수정
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();
+
+            // 선택된 항목이 없는 경우
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.contract.022') }}"); // 수정할 항목을 선택해주세요.
+                return;
+            }
+
+            // 여러 개 선택한 경우
+            if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.020') }}"); // 수정할 항목을 하나만 선택해주세요.
+                return;
+            }
+
+            const row = checkedRows[0];
+            const qltyIspId = row.qltyIspId;
+
+            // 수정 페이지로 이동
+            window.location.href = `/construction/qualityinspection/addQuality?type=d&mode=update&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&workType=${selectedValue}&pjtNo=${pjtInfo.pjtNo}`;
+        },
+        deleteQuality: function () {    // 삭제
+            const allRows = qualityGrid.qualityGrid.getCheckedRows();
+            const listName = "qualityList";
+            let checked = [];
+
+            allRows.forEach(row => {
+                if (row._attributes.checked) {
+                    const qltyIspId = row.qltyIspId;
+                    checked.push({ cntrctNo, qltyIspId });
+                }
+            });
+
+            if (checked.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.055') }}");    // 삭제할 항목을 선택해주세요.
+                return;
+            } else {
+                gaiaCommon.customConfirm("{{ message('item.quality.061') }}", "{{ message('item.quality.061') }}", "{{ message('msg.009') }}", function () {
+                    let data = { [listName]: checked };
+                    $.ajax({
+                        url: '/api/construction/qualityinspection/delete/qualityList',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        dataType: "json",
+                        data: JSON.stringify(data),
+                        success: function (response) {
+                            if (response.ok) {
+                                gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+                                qualityGrid.getData('', selectedValue);
+                                $('#searchInput').val("");
+                            }
+                        }
+                    });
+                });
+            }
+        },
+        addResult: function () {    // 검측 결과 등록/수정
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();
+            const checkedNos = checkedRows.length;
+
+            if (checkedNos === 0) {
+                gaiaCommon.customAlert("{{ message('msg.quality.003') }}"); // 검측 결과를 등록/수정할 항목을 선택해주세요.
+                return;
+            }
+            if (checkedNos == 1) {
+                const RowData = checkedRows[0];
+                const qltyIspId = RowData.qltyIspId;
+                const rsltDocNo = RowData.rslt_doc_no;
+                const hasAction = RowData.has_action;
+                const apprvlStats = RowData.apprvl_stats;
+
+                if (hasAction === "true") {
+                    gaiaCommon.customAlert("조치사항이 등록된 항목은 검측결과 등록/수정이 불가합니다.");
+                    return;
+                }
+
+                if (apprvlStats === "승인요청") {
+                    gaiaCommon.customAlert("처리중인 항목입니다.");
+                    return;
+                }
+
+                if (apprvlStats === "승인") {
+                    gaiaCommon.customAlert("{{ message('msg.070') }}");
+                    return;
+                }
+
+                const mode = rsltDocNo ? "update" : "create";
+                window.location.href = `/construction/qualityinspection/addResult?type=d&mode=${mode}&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&returnType=A&pjtNo=${pjtInfo.pjtNo}`;
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.quality.004') }}"); // 검측 결과를 등록/수정할 항목을 하나만 선택해주세요.
+            }
+        },
+        inspectionRequest: function () {    // 검측요청
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("검측요청을 보낼 항목을 선택 해 주세요");
+                return;
+            }
+
+            const hasApproved = checkedRows.some(r => r.apprvl_stats?.trim() === '승인');
+            if (hasApproved) {
+                gaiaCommon.customAlert("승인된 항목은 검측요청을 보낼 수 없습니다.");
+                return;
+            }
+
+            const firstCmnCdNmKrn = checkedRows[0].cnstty_cd?.trim();
+            const hasDifferent = checkedRows.some(r => r.cnstty_cd?.trim() !== firstCmnCdNmKrn);
+
+            if (hasDifferent) {
+                gaiaCommon.customAlert("선택된 항목들의 공종이 모두 동일해야 검측요청을 보낼 수 있습니다.");
+                return;
+            }
+
+            const selectedRows = checkedRows.map(r => ({
+                cnsttyCd: r.cnstty_cd,
+                qltyIspId: r.qltyIspId
+            }));
+
+            gaiaCommon.checkAuth("QRQ_AP_REQ", () => {
+                $("#popup").load(`/construction/qualityinspection/request`, function () {
+                    $("#popup").css({ "display": "flex" });
+                    popup.init(selectedRows);
+                });
+            });
+        },
+        addAction: function () {    // 조치 사항 등록
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();  // 전체 checked row 가져오기 (virtual scroll 대응)
+            const checkedNos = checkedRows.length;
+
+            if (checkedNos === 0) {
+                gaiaCommon.customAlert("{{ message('msg.quality.005') }}"); // 조치 사항을 등록/수정할 항목을 선택해주세요.
+                return;
+            }
+
+            if (checkedNos == 1) {
+                const row = checkedRows[0];   // 하나만 선택된 row
+                const qltyIspId = row.qltyIspId;
+                const hasAction = row.has_action;
+                const rsltDocNo = row.rslt_doc_no;
+                const RsltDoc = row.rslt_doc_nm;
+                const apprvlStats = row.apprvl_stats;
+
+                if (apprvlStats === "승인") {
+                    gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                    return;
+                }
+
+                if (RsltDoc === "적합" && apprvlStats !== "반려") {
+                    gaiaCommon.customAlert("검측결과가 적합인 경우 조치 사항을 등록할 수 없습니다."); // 검측결과가 적합인 경우 조치 사항을 등록할 수 없습니다.
+                    return;
+                }
+
+                if (!rsltDocNo) {
+                    gaiaCommon.customAlert("{{ message('msg.quality.006') }}"); // 검측결과가 등록되지 않았습니다.
+                    return;
+                }
+
+                if (apprvlStats === "승인요청") {
+                    gaiaCommon.customAlert("처리중인 항목입니다.");
+                    return;
+                }
+
+                const url = hasAction === "true"
+                    ? `/construction/qualityinspection/addAction?mode=update&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&returnType=A&pjtNo=${pjtInfo.pjtNo}`   // 조치사항이 등록된 경우 -> 수정
+                    : `/construction/qualityinspection/addAction?mode=create&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&returnType=A&pjtNo=${pjtInfo.pjtNo}`;  // 조치사항이 없을 경우 -> 추가
+
+                window.location.href = url;
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.quality.004') }}"); // 조치 사항을 등록/수정할 항목을 하나만 선택해주세요.
+            }
+        },
+        paymentRequest: function () {   // 결재 요청
+            const listName = "qualityList";
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();  // 전체 checked row 가져오기
+            let checked = [];
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.quality.027') }}"); // 결재요청을 보낼 항목을 선택해주세요.
+                return;
+            }
+
+            // 다건 체크 처리
+            for (let row of checkedRows) {
+                const qltyIspId = row.qltyIspId;
+                const rsltDocNo = row.rslt_doc_no;
+                const hasAction = row.has_action;
+                const apprvlStats = row.apprvl_stats;
+                const RsltDoc = row.rslt_doc_nm;
+                const apDocId = row.ap_doc_id;
+
+                // 처리중인 항목 체크
+                if (apDocId && apprvlStats !== "반려") {
+                    gaiaCommon.customAlert("{{ message('msg.069') }}"); // 처리중인 항목입니다.
+                    return;
+                }
+
+                if (apprvlStats === "승인") {
+                    gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                    return;
+                }
+
+                if (!rsltDocNo) {
+                    gaiaCommon.customAlert("검측결과가 등록되지 않았습니다. 검측결과를 등록해주세요");
+                    return;
+                }
+
+                if (!(hasAction === 'true' || RsltDoc === "적합")) {
+                    gaiaCommon.customAlert("{{ message('msg.quality.028') }}"); // 조치사항이 등록되지 않았습니다.
+                    return;
+                }
+
+                checked.push({ cntrctNo, qltyIspId });
+            }
+
+            if (checked.length > 0) {
+                let data = {
+                    [listName]: checked,
+                    cmnCdNmKrn: checkedRows[0].cmn_cd_nm_krn,   // 다건이어도 동일 공종
+                };
+
+                gaiaCommon.customConfirm(
+                    "{{ message('item.app.025') }}",
+                    "{{ message('item.app.025') }}",
+                    "{{ message('msg.quality.034') }}",
+                    function () {
+                        $.ajax({
+                            url: '/api/construction/qualityinspection/request/payment',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            dataType: "json",
+                            data: JSON.stringify(data),
+                            success: function (response) {
+                                if (response.ok) {
+                                    gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                                        location.reload();
+                                    });
+                                } else if (response.errorCode === '1000') {
+                                    gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+                                }
+                            }
+                        });
+                    }
+                );
+            }
+        },
+        cancelApproval: function () {   // 결재 취소
+            const listName = "qualityList";
+            const checkedRows = qualityGrid.qualityGrid.getCheckedRows();  // 전체 checked row 가져오기
+            let checked = [];
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("결재취소를 할 항목을 선택해주세요."); // 결재취소를 할 항목을 선택해주세요.
+                return;
+            }
+
+            for (let row of checkedRows) {
+                const qltyIspId = row.qltyIspId;
+                const apprvlStats = row.apprvl_stats;
+                const apDocId = row.ap_doc_id;
+
+                if (!apDocId) {
+                    gaiaCommon.customAlert("결재가 완료되지 않은 항목입니다.");
+                    return;
+                }
+
+                checked.push({ cntrctNo, qltyIspId });
+            }
+
+            if (checked.length > 0) {
+                let data = { [listName]: checked };
+
+                gaiaCommon.customConfirm(
+                    "결재취소",
+                    "결재취소",
+                    "결재를 취소 하시겠습니까?",
+                    function () {
+                        $.ajax({
+                            url: '/api/construction/qualityinspection/cancel/payment',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            dataType: "json",
+                            data: JSON.stringify(data),
+                            success: function (response) {
+                                if (response.ok) {
+                                    gaiaCommon.customAlert("결재취소가 완료되었습니다.", function () {
+                                        location.reload();
+                                    });
+                                }
+                            }
+                        });
+                    }
+                );
+            }
+        },
+        // makePdf: function () {
+        //     const checkedRows = qualityGrid.qualityGrid.getCheckedRows();
+
+        //     if (checkedRows.length === 0) {
+        //         gaiaCommon.customAlert("PDF파일을 생성할 항목을 선택해주세요.");
+        //         return;
+        //     }
+
+        //     if (checkedRows.length === 1) {
+        //         const row = checkedRows[0];
+        //         const qltyIspId = row.qltyIspId;
+
+        //         // 서버에서 PDF 병합 시 필요한 파라미터 구성
+        //         const query = tware.utils.parseQuery();
+        //         query.transactionId = 'TRAN_PDF_MERGE_SAMPLE';
+        //         query.qltyIspId = qltyIspId;
+        //         query.cntrctNo = cntrctNo;
+        //         query.baseUrl = window.location.origin;
+        //         query.imgDir = imgDir.substring(0, imgDir.indexOf("/upload"));
+
+        //         gaiaCommon.customConfirm("PDF파일 생성", "PDF파일 생성", "PDF파일을 생성하시겠습니까?", function () {
+        //             // Blob 방식 다운로드
+        //             gaiaCommon.getBlob(
+        //                 "/api/construction/qualityinspection/pdf",
+        //                 query,
+        //                 (data, xhr) => {
+        //                     const allHeaders = xhr.getAllResponseHeaders();
+        //                     console.log('모든 헤더:', allHeaders);
+
+        //                     const contentType = xhr.getResponseHeader('Content-Type');
+        //                     console.log('contentType', contentType);
+        //                     const fileName = xhr.getResponseHeader('X-FILE-NAME') || 'merge.pdf';
+        //                     console.log('fileName', fileName);
+
+        //                     const url = URL.createObjectURL(data);
+        //                     const a = document.createElement('a');
+        //                     a.href = url;
+        //                     a.download = decodeURIComponent(fileName);
+        //                     document.body.appendChild(a);
+        //                     a.click();
+        //                     document.body.removeChild(a);
+        //                     URL.revokeObjectURL(url); // 메모리 정리
+        //                 }
+        //             );
+        //         });
+        //     } else {
+        //         gaiaCommon.customAlert("PDF파일을 생성할 항목을 하나만 선택해주세요.");
+        //     }
+        // }
+    }
+    // 공종 선택
+    function toggleWork() {
+        $("#searchInput").val("");
+        selectedValue = document.getElementById("workType").value;
+        qualityGrid.getData('', selectedValue);
+    }
+</script>
+{% endblock footer_script %}

@@ -1,0 +1,208 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+    <div class="group" id="contractSelectBox">
+        <div class="conts_form">
+            <span class="selectbox">
+                <select id="pjtNo" name="pjtNo"></select>
+            </span>
+        </div>
+        <!-- 히든 값 저장용 -->
+        <input type="hidden" id="pjtDiv" name="pjtDiv">
+        <input type="hidden" id="PjtNo" name="PjtNo">
+    </div>
+
+    <article class="conts g-row" id="container">
+        <div class="group" id="formBox">
+            <div class="conts_form">
+                <div class="form_box">
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">계정</div>
+                            <div class="form_data">
+                                <span id="usrId"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">이름</div>
+                            <div class="form_data">
+                                <span id="usrNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">직책 / 직급</div>
+                            <div class="form_data">
+                                <input type="text" id="position" placeholder="시공사 공무 / 부장">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="form_label">기타</div>
+                            <div class="form_data">
+                                <textarea id="content" style="height: 200px;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="btn_area s_default _outline">
+            <button type="button" class="btn _outline" onclick="submitRequest()">
+                전송</button>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    .btn_area.s_default._outline {
+        justify-content: flex-end;
+    }
+</style>
+<script>
+    var pjtNo;
+    var cntrctNo;
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+            }
+        });
+    });
+
+    var page = {
+        init: function () {
+            var title = "사용 요청"
+            gaiaPortal.navMenuInit("MAIN", title);
+            $("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+
+            $("#usrId").text(gaiaCommon.decodeSafeText(gaiaCommon.me.info.loginId));
+            $("#usrNm").text(decodeURIComponent(gaiaCommon.me.info.name));
+
+            loadContractList();
+
+            console.log("DATA: ", gaiaCommon.me.info)
+
+            function loadContractList() {
+                gaiaCommon.get("/api/project/useRequest/contract", '', function(data){
+                    var list = data.details.contractList;
+                    var title = "계약 목록";
+
+                    // 기존 박스 제거
+                    $("#contractSelectBox").remove();
+
+                    // 셀렉트 박스 DOM 생성 (formBox 위에 삽입)
+                    $("#formBox").before(`
+                            <div class="group" id="contractSelectBox">
+                                <h3 class="conts_tit">${title}</h3>
+                                <div class="conts_form">
+                                    <span class="selectbox">
+                                        <select id="cntrctSelect"></select>
+                                    </span>
+                                </div>
+                                <!-- 히든 값 저장용 -->
+                                <input type="hidden" id="pjtNo" name="pjtNo">
+                                <input type="hidden" id="pjtNm" name="pjtNo">
+                                <input type="hidden" id="cntrctNo" name="cntrctNo">
+                                <input type="hidden" id="cntrctNm" name="cntrctNm">
+                            </div>
+                        `);
+
+                    if (list.length > 0) {
+                        list.forEach(function (contract) {
+                            $("#cntrctSelect").append(
+                                    $("<option>")
+                                            .val(contract.cntrct_no)
+                                            .text(gaiaCommon.decodeSafeText(`[${contract.pjt_nm}] ${contract.cntrct_nm}`))
+                                            .data("pjtNo", contract.pjt_no)
+                                            .data("cntrctNm", contract.cntrct_nm)
+                                            .data("pjtNm",contract.pjt_nm)
+                            );
+                        });
+
+                        // 첫 번째 항목 기본 선택
+                        const first = list[0];
+                        cntrctNo = first.cntrct_no;
+                        pjtNo = first.pjt_no;
+                        $("#cntrctNo").val(first.cntrct_no);
+                        $("#pjtNo").val(first.pjt_no);
+                        $("#cntrctNm").val(first.cntrct_nm);
+                        $("#pjtNm").val(first.pjt_nm);
+
+                        // 선택 변경 이벤트: 전역 변수 및 히든 필드 업데이트
+                        $(document).on("change", "#cntrctSelect", function () {
+                            const selected = $(this).find("option:selected");
+                            const cntrctNoVal = selected.val();
+                            const pjtNoVal = selected.data("pjtNo");
+                            const cntrctNmVal = selected.data("cntrctNm");
+                            const pjtNmVal = selected.data("pjtNm");
+
+                            cntrctNo = cntrctNoVal;
+                            pjtNo = pjtNoVal;
+
+                            $("#cntrctNo").val(cntrctNoVal);
+                            $("#pjtNo").val(pjtNoVal);
+                            $("#cntrctNm").val(cntrctNmVal);
+                            $("#pjtNm").val(pjtNmVal);
+                        });
+
+                        // 트리거 한 번 실행 이벤트 강제로 반영
+                        $("#cntrctSelect").trigger("change");
+                    } else {
+                        $("#cntrctSelect").append($("<option>").val("").text("계약 없음"));
+                        cntrctNo = "";
+                        pjtNo = "";
+                        $("#cntrctNo").val("");
+                        $("#pjtNo").val("");
+                        $("#cntrctNm").val("");
+                        $("#pjtNm").val("");
+                    }
+                }, function(error){
+                    console.error("request failed:", error);
+                })
+            }
+        }
+    }
+    function submitRequest() {
+        const loginId = gaiaCommon.me.info.loginId;
+        const usrNm = decodeURIComponent(gaiaCommon.me.info.name);
+        const position = $("#position").val();
+        const content = $("#content").val();
+        const pjtNo = $("#pjtNo").val();
+        const cntrctNo = $("#cntrctNo").val();
+        const pjtNm = $("#pjtNm").val();
+        const cntrctNm = $("#cntrctNm").val();
+
+        const requestData = {
+            loginId: loginId,
+            usrNm: usrNm,
+            position: position,
+            content: content,
+            pjtNm: pjtNm,
+            cntrctNm: cntrctNm,
+            pjtNo: pjtNo,
+            cntrctNo: cntrctNo
+        };
+
+        gaiaCommon.LoadingOverlay('body', true);
+        gaiaCommon.post("/resource/mail/send/request", requestData, function(response){
+            gaiaCommon.customAlert("요청이 성공적으로 전송되었습니다.", function () {
+                gaiaCommon.LoadingOverlay('body', false);
+                window.close();
+            });
+        }, function(error){
+            gaiaCommon.customAlert("요청 전송 중 오류가 발생했습니다.");
+        })
+    }
+</script>
+{% endblock footer_script %}

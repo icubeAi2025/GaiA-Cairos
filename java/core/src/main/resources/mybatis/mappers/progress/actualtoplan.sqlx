@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.actualtoplan">
+
+<select id="getActivityGraphList" parameterType="map" resultType="activityGraphOutPut">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.actualtoplan.getActivityGraphList][leejw]  */
+    SELECT 
+        A.ACTIVITY_ID, 
+        A.ACTIVITY_NM, 
+        A.PLAN_START,
+        A.PLAN_FINISH,
+        CASE 
+            WHEN A.ACTUAL_START IS NULL OR A.ACTUAL_START = '' THEN A.PLAN_START 
+            ELSE A.ACTUAL_START 
+        END AS ACTUAL_START,
+        CASE 
+            WHEN A.ACTUAL_FINISH IS NULL OR A.ACTUAL_FINISH = '' THEN A.PLAN_FINISH 
+            ELSE A.ACTUAL_FINISH 
+        END AS ACTUAL_FINISH
+    FROM 
+        PR_ACTIVITY A
+    INNER JOIN 
+        PR_REVISION B ON A.REVISION_ID = B.REVISION_ID 
+        AND B.cntrct_chg_id = #{cntrctChgId}
+        AND B.LAST_REVISION_YN = 'Y'
+    WHERE 
+        A.CNTRCT_CHG_ID = #{cntrctChgId}
+    ORDER BY ACTIVITY_ID;
+</select>
+
+<select id="getGraphYear" parameterType="map" resultType="map">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.actualtoplan.getGraphYear][leejw]  */
+    <![CDATA[
+    WITH ACTIVITY_DATA AS (
+		SELECT 
+			A.PLAN_START,
+			A.PLAN_FINISH,
+			A.ACTUAL_START,
+			A.ACTUAL_FINISH
+		FROM 
+			PR_ACTIVITY A
+		WHERE 
+			A.REVISION_ID IN (  
+				SELECT B.REVISION_ID
+				FROM PR_REVISION B
+				WHERE B.LAST_REVISION_YN = 'Y'
+				AND B.CNTRCT_CHG_ID = #{cntrctChgId}
+			)
+			AND A.CNTRCT_CHG_ID = #{cntrctChgId} 
+	)
+	SELECT 
+		LEAST(
+			COALESCE(EXTRACT(YEAR FROM MIN(CASE WHEN PLAN_START IS NOT NULL AND PLAN_START <> '' AND PLAN_START <> '0001-01-01' THEN TO_DATE(PLAN_START, 'YYYY-MM-DD') END)), 9999),
+			COALESCE(EXTRACT(YEAR FROM MIN(CASE WHEN PLAN_FINISH IS NOT NULL AND PLAN_FINISH <> '' AND PLAN_FINISH <> '0001-01-01' THEN TO_DATE(PLAN_FINISH, 'YYYY-MM-DD') END)), 9999),
+			COALESCE(EXTRACT(YEAR FROM MIN(CASE WHEN ACTUAL_START IS NOT NULL AND ACTUAL_START <> '' AND ACTUAL_START <> '0001-01-01' THEN TO_DATE(ACTUAL_START, 'YYYY-MM-DD') END)), 9999),
+			COALESCE(EXTRACT(YEAR FROM MIN(CASE WHEN ACTUAL_FINISH IS NOT NULL AND ACTUAL_FINISH <> '' AND ACTUAL_FINISH <> '0001-01-01' THEN TO_DATE(ACTUAL_FINISH, 'YYYY-MM-DD') END)), 9999)
+		) AS MIN_YEAR,
+		GREATEST(
+			COALESCE(EXTRACT(YEAR FROM MAX(CASE WHEN PLAN_START IS NOT NULL AND PLAN_START <> '' AND PLAN_START <> '0001-01-01' THEN TO_DATE(PLAN_START, 'YYYY-MM-DD') END)), -1),
+			COALESCE(EXTRACT(YEAR FROM MAX(CASE WHEN PLAN_FINISH IS NOT NULL AND PLAN_FINISH <> '' AND PLAN_FINISH <> '0001-01-01' THEN TO_DATE(PLAN_FINISH, 'YYYY-MM-DD') END)), -1),
+			COALESCE(EXTRACT(YEAR FROM MAX(CASE WHEN ACTUAL_START IS NOT NULL AND ACTUAL_START <> '' AND ACTUAL_START <> '0001-01-01' THEN TO_DATE(ACTUAL_START, 'YYYY-MM-DD') END)), -1),
+			COALESCE(EXTRACT(YEAR FROM MAX(CASE WHEN ACTUAL_FINISH IS NOT NULL AND ACTUAL_FINISH <> '' AND ACTUAL_FINISH <> '0001-01-01' THEN TO_DATE(ACTUAL_FINISH, 'YYYY-MM-DD') END)), -1)
+		) AS MAX_YEAR
+	FROM 
+		ACTIVITY_DATA;
+    ]]>
+</select>
+
+    <select id="getMonthData" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.progress.actualtoplan.getMonthData][leejw]  */
+        WITH LAST_CHG_ID AS (
+            <choose>
+                <when test="cntrctNo != null and cntrctNo != ''">
+                    SELECT  DISTINCT CCC.CNTRCT_CHG_ID
+                    FROM    CN_CONTRACT_CHANGE CCC
+                    JOIN    CN_CONTRACT CC
+                    ON      CC.CNTRCT_NO = CCC.CNTRCT_NO
+                    AND     CC.DLT_YN = 'N'
+                    WHERE   CCC.CNTRCT_CHG_ID LIKE #{cntrctNo} || '%'
+                    AND     CCC.LAST_CHG_YN = 'Y'
+                    AND     CCC.DLT_YN = 'N'
+                </when>
+                <otherwise>
+                    SELECT #{cntrctChgId} AS CNTRCT_CHG_ID
+                </otherwise>
+            </choose>
+        ),
+        LAST_REVISION_ID AS (
+            SELECT  PR.CNTRCT_CHG_ID, PR.REVISION_ID
+            FROM    PR_REVISION PR
+            JOIN    LAST_CHG_ID LCI
+            ON      PR.CNTRCT_CHG_ID = LCI.CNTRCT_CHG_ID
+            WHERE   PR.LAST_REVISION_YN = 'Y'
+            AND     PR.DLT_YN = 'N'
+        ),
+        TOTAL_CST AS (
+            SELECT  SUM(CCC.CNTRCT_AMT)::NUMERIC AS TOTAL_CST
+            FROM    CN_CONTRACT_CHANGE CCC
+            JOIN    LAST_CHG_ID LCI
+            ON      CCC.CNTRCT_CHG_ID = LCI.CNTRCT_CHG_ID
+        ),
+        PLANS AS (
+            SELECT
+                    SUBSTRING(PAP.PLAN_DT, 1, 7)                    AS MNTH,      -- 'YYYY-MM'
+                    COALESCE(SUM(PAP.PLAN_CST),   0)::NUMERIC       AS PLAN_SUM,  -- 월 합계
+                    COALESCE(MAX(PAP.CST_CUM),    0)::NUMERIC       AS PLAN_MAX,  -- 월 말 누적
+                    COALESCE(SUM(PAP.ACTUAL_CST), 0)::NUMERIC       AS ACTUAL_SUM,
+                    COALESCE(MAX(PAP.ACTUAL_CUM), 0)::NUMERIC       AS ACTUAL_MAX
+            FROM     PR_ACTIVITY_PLAN PAP
+            JOIN    LAST_REVISION_ID LRI
+            ON      LRI.CNTRCT_CHG_ID = PAP.CNTRCT_CHG_ID
+            AND     LRI.REVISION_ID   = PAP.REVISION_ID
+            WHERE   PAP.DLT_YN = 'N'
+            GROUP BY 
+            SUBSTRING(PAP.PLAN_DT, 1, 7)
+        )
+        SELECT
+            TO_CHAR(DATE_TRUNC('MONTH', TO_DATE(P.MNTH, 'YYYY-MM')), 'YYYY-MM') AS DT,
+            P.PLAN_SUM,
+            P.PLAN_MAX,
+            P.ACTUAL_SUM,
+            P.ACTUAL_MAX,
+            ROUND(P.PLAN_SUM   / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS PLAN_CST_PER,
+            ROUND(P.PLAN_MAX   / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS PLAN_CUM_PER,
+            ROUND(P.ACTUAL_SUM / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS ACTUAL_CST_PER,
+            ROUND(P.ACTUAL_MAX / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS ACTUAL_CUM_PER
+        FROM PLANS P
+                 LEFT JOIN TOTAL_CST T ON TRUE 
+        ORDER BY DT;
+    </select>
+
+    <select id="getQuarterData" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.progress.actualtoplan.getQuarterData][leejw]  */
+        WITH LAST_REVISION_ID AS (
+            SELECT  PR.REVISION_ID
+            FROM    PR_REVISION PR
+            WHERE   PR.CNTRCT_CHG_ID = #{cntrctChgId}
+            AND     PR.LAST_REVISION_YN = 'Y'
+            AND     PR.DLT_YN = 'N'
+            LIMIT 1
+        ),
+        TOTAL_CST AS (
+            SELECT  SUM(CCC.CNTRCT_AMT)::NUMERIC AS TOTAL_CST
+            FROM    CN_CONTRACT_CHANGE CCC
+            WHERE   CCC.CNTRCT_CHG_ID = #{cntrctChgId}
+            AND     CCC.LAST_CHG_YN = 'Y'
+            AND     CCC.DLT_YN = 'N'
+        ),
+        PLANS AS (
+            SELECT
+                    SUBSTRING(PAP.PLAN_DT, 1, 7) AS MNTH,            -- 'YYYY-MM'
+                    COALESCE(SUM(PAP.PLAN_CST), 0)::NUMERIC  AS PLAN_CST,
+                    COALESCE(MAX(PAP.CST_CUM), 0)::NUMERIC   AS PLAN_CUM,
+                    COALESCE(SUM(PAP.ACTUAL_CST), 0)::NUMERIC AS ACTUAL_CST,
+                    COALESCE(MAX(PAP.ACTUAL_CUM), 0)::NUMERIC AS ACTUAL_CUM
+            FROM    PR_ACTIVITY_PLAN PAP
+            WHERE   PAP.CNTRCT_CHG_ID = #{cntrctChgId}
+            AND     PAP.REVISION_ID = (SELECT REVISION_ID FROM LAST_REVISION_ID)
+            AND     PAP.DLT_YN = 'N'
+            GROUP BY
+                    SUBSTRING(PAP.PLAN_DT, 1, 7)
+        )
+        SELECT
+                TO_CHAR(DATE_TRUNC('QUARTER', TO_DATE(P.MNTH, 'YYYY-MM')), 'YYYY-MM') AS DT,
+                TRUNC(P.PLAN_CST,0)   AS PLAN_SUM,
+                TRUNC(P.PLAN_CUM,0)   AS PLAN_MAX,
+                TRUNC(P.ACTUAL_CST,0) AS ACTUAL_SUM,
+                TRUNC(P.ACTUAL_CUM,0) AS ACTUAL_MAX,
+                ROUND(P.PLAN_CST   / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS PLAN_CST_PER,
+                ROUND(P.PLAN_CUM   / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS PLAN_CUM_PER,
+                ROUND(P.ACTUAL_CST / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS ACTUAL_CST_PER,
+                ROUND(P.ACTUAL_CUM / NULLIF(T.TOTAL_CST, 0) * 100, 2) AS ACTUAL_CUM_PER
+        FROM    PLANS P
+        LEFT JOIN
+                TOTAL_CST T ON TRUE
+        WHERE   P.MNTH = TO_CHAR(DATE_TRUNC('QUARTER', CONCAT(P.MNTH, '-01')::DATE), 'YYYY-MM')
+        ORDER BY DT;
+    </select>
+
+</mapper>

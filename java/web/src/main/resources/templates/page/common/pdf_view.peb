@@ -1,0 +1,212 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row" style="height: auto;">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default _outline">
+						<a class="btn" id="pdf_download"  style="display: none;">{{ message('btn.034') }}</a> <!-- 다운로드-->
+					</div>
+				</div>
+				<!-- PDF 미리보기를 위한 iframe -->
+				<iframe id="pdf-frame" style="width: 100%; height: 80vh;"></iframe>
+			</div>
+			<div class="btn_area s_default" style="justify-content: end;">
+				<button type="button" class="btn _outline" onclick="popup.close()" style="margin-top: 10px;">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</article>
+</section>
+<!-- 토스트 메세지 : 활성화:'on'추가, 수초 후 'on'제거-->
+<div class="pop_box toast" style="display: none; z-index: 16;">
+	<span class="toast_msg">
+	</span>
+	<button type="button" class="icon_btn pop_close">
+		<i class="ic ic-close"></i>
+		<span class="blind">창닫기</span>
+	</button>
+</div>
+
+<div class="alertModal fade" style="z-index:16;" id="pdf_alert">
+	<div class="pop_box alert on" id="pdf_popBoxAlert" data-name="Alert" style="display:none;">
+	    <div class="pop_header">
+	        <h5 class="pop_tit">{{ message('item.com.084') }}</h5> <!--알림-->
+	        <button type="button" class="icon_btn pop_close">
+	            <i class="ic ic-close"></i>
+	            <span class="blind">창닫기</span>
+	        </button>
+	    </div>
+	    <div class="pop_body">
+	        <strong class="msg_tit"></strong>
+	        <p class="msg_tit_dlt"></p>
+	    </div>
+	    <div class="pop_footer">
+	        <div class="btn_area jc_e">
+	            <button type="button" class="btn _outline" id="pop_box_confirm">{{ message('btn.007') }}</button> <!--닫기-->
+	        </div>
+	    </div>
+	</div>
+</div>
+<script>
+	let page = null;
+	let pdfViewParam = commonJs.getSessionStorage("pdfViewParam"); 
+
+	// 새창 모드일때, 부모창이 있는지 감지.
+	if(opener){
+		page = opener.page;
+
+		opener.document.onkeydown = fkey;
+		opener.document.onkeypress = fkey;
+		opener.document.onkeyup = fkey;
+
+		if(pdfViewParam.viewType !== 'GUIDE') {
+			// 부모창의 f5 새로고침 누를때 열려있는 팝업 창 닫기
+			function fkey(e){
+				if (window.event.keyCode == 116) {
+					console.log("새로고침!!!");
+					window.close();
+				}
+			};
+
+			window.opener.onbeforeunload = function () {
+				//부모창이 새로고침되거나 페이지 이동할 때 실행
+				if (window) {
+					// 자식 창 닫기
+					console.log("부모창 변경");
+					window.close();
+				}
+			};
+		}
+	}else{
+		gaiaCommon.customAlert("{{ message('msg.059') }}", function(){	// 잘못된 요청입니다.
+			location.replace('/');
+		});
+	}
+
+	var popup = {
+		viewType: null,
+		viewKey: null,
+		downloadAuthority: null,
+
+		init(){
+
+			viewType 			= pdfViewParam.viewType;
+			viewKey 			= pdfViewParam.viewKey;
+			downloadAuthority 	= pdfViewParam.downloadAuthority ? pdfViewParam.downloadAuthority : "DD";
+
+			 // 다운로드 권한 체크
+			if (downloadAuthority === 'DA') {
+				$("#pdf_download").show(); // 다운로드 버튼 보이기
+				this.downloadSetup();
+			} else {
+				$("#pdf_download").hide(); // 다운로드 버튼 숨기기
+			}
+			
+			let navMenuItem = `<h2 class="page_tit" id="menuName">PDF 미리보기</h2>`;
+            document.getElementById('pageNav').innerHTML = navMenuItem;
+
+			let paramData = { 
+								viewType: viewType,
+								viewKey	: viewKey
+							};
+			console.log("paramData : ", paramData);
+
+			const iframe = document.getElementById("pdf-frame");
+			gaiaCommon.LoadingOverlay('body', true); 
+			// 미리보기 할 파일에 대해 미리 존재여부 검증
+			$.ajax({
+				url: '/api/util/pdf-file-check',
+				method: "POST",
+				contentType: "application/json",
+				dataType: "json",
+				data: JSON.stringify(paramData),
+				success: function (data) {
+					console.log(data.details?.checkValue);
+					if(data.details?.checkValue.returnValue === "TRUE") {
+						let navMenuItem = `<h2 class="page_tit" id="menuName">${data.details?.checkValue.docNm}</h2>`;
+            			document.getElementById('pageNav').innerHTML = navMenuItem;
+						
+						iframe.src = "/assets/static/pdfjs/web/viewer.html?file=/api/util/"+viewKey+"/pdf-view-down/"+viewType;
+					}else if (data.details?.checkValue.returnValue === "FALSE") {
+						gaiaCommon.LoadingOverlay('body', false);
+						popup.customPDFAlert(
+							"{{ message('item.com.084') }}",		// 알림
+							"{{ message('item.doc.076') }}",		// 파일 정보 없음
+							"{{ message('msg.doc.115') }}", 	 	// 해당 파일 정보가 존재하지 않습니다.
+							function () {
+								popup.close();
+							}
+						);
+					}else if (data.details?.checkValue.returnValue === "AMBIGUOUS") {
+						gaiaCommon.LoadingOverlay('body', false);
+						popup.customPDFAlert(
+							"{{ message('item.com.084') }}",		// 알림
+							"{{ message('msg.115') }}",				// 요청 타입 오류
+							"{{ message('msg.116') }}", 	 		// 미리보기 요청 문서 타입이 존재하지 않습니다.
+							function () {
+								popup.close();
+							}
+						);
+					}else if (data.details?.checkValue.returnValue === "NOPDF") {
+						gaiaCommon.LoadingOverlay('body', false);
+						popup.customPDFAlert(
+							"{{ message('item.com.084') }}",		// 알림
+							"{{ message('msg.117') }}",				// 문서 형식 오류
+							"{{ message('msg.118') }}", 	 		// 미리보기 문서가 PDF문서가 아닙니다.
+							function () {
+								popup.close();
+							}
+						);
+					}					
+				},
+			});
+
+			// PDF.js 뷰어 로드 완료 시 로딩 바 비활성화
+			iframe.onload = function () {
+				gaiaCommon.LoadingOverlay('body', false); 	// 로딩 바 비활성화
+			};		
+			
+			gaia.loaded = true;
+		},
+		
+		close() {
+			window.close();
+		},
+
+		downloadSetup(){
+			$("#pdf_download").attr("onclick", "gaiaCommon.download('/api/util/"+viewKey+"/pdf-file-down/"+viewType+"')"); // 다운로드 버튼 속성 추가
+		},
+
+		//pdf 파일 데이터 불러오기 실패 시, 알림창 설정.
+		customPDFAlert(msg1, msg2, msg3, cb){
+			$('#pdf_alert').show();
+            $('#pdf_alert #pdf_popBoxAlert').show();
+
+            $('.pop_tit').text(msg1);
+            $('.msg_tit').text(msg2);
+            $('.msg_tit_dlt').text(msg3);
+            $('.msg_tit_dlt').css('white-space', 'pre-line'); //줄바꿈 처리
+            $('#pdf_popBoxAlert').addClass('on');
+
+            document.body.style.overflow = 'hidden';
+
+            $("#pop_box_confirm").click(function () {
+                if (cb) {
+                    cb();
+                }
+                $("#pdf_popBoxAlert").hide();
+
+                $('#pdf_alert').hide();
+                document.body.style.overflow = 'unset';
+            });
+		}
+
+	}
+
+	$(function () {
+		popup.init();
+	});
+</script>
+{% endblock content %}

@@ -1,0 +1,492 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+{% include 'sub/grid' %}
+
+<style>
+    #p6_grid .tui-grid-cell-current-row {
+        background-color: var(--select-list-bg);
+    }
+</style>
+
+<section class="contents_wrap">
+    <article class="conts">
+        <div class="group">
+            <!-- <h3 class="conts_tit">공정관리</h3> -->
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    <!-- <button type="button" class="btn _fill" onclick="revision.validate('c');">{{ message('btn.037') }}</button> -->
+                    {{ addBtnHtml | raw }}
+                    <button type="button" class="btn _outline" onclick="revision.close();">{{ message('btn.007') }}</button>
+                    {{ updateBtnHtml | raw }}
+                    <div class="btn_group iconbtns" id="pop_up_btn">
+                        <button class="icon_btn" onclick="revision.openPopup();">
+                            <i class="ic ic-sent-to-back"></i>
+                            <span class="tooltip">{{ message('item.com.017') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="s_conts">
+                <div class="conts_area">
+                    <div class="group">
+                        <h4 class="conts_s-tit">EPS {{ message('item.com.005') }}</h4>
+                        <div class="selectbox w-lg">
+                            <select name="" id="eps_select" class="" onchange="revision.changeEPS();">
+                                <option selected value="">{{ message('item.com.005') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="group">
+                        <h4 class="conts_s-tit">P6 {{ message('item.revision.008') }}</h4>
+                        <div class="conts_grid">
+                            <div id="p6_grid" class="grid"></div>
+                        </div>
+                    </div>
+
+                    <div class="group">
+                        <div class="form_box">
+                            <div class="row ">
+                                <div class="col">
+                                    <!-- 계약회차 -->
+                                    <div class="form_label">{{ message('item.revision.013') }}</div>
+                                    <div class="form_data" id="cntChgNo"></div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form_label">Revision</div>
+                                <div class="form_data">
+                                    <div class="item_group">
+                                        <input type="text" class="w-md" id="r_id" placeholder="Revision {{ message('item.app.035') }}" disabled>
+                                        <input type="date" class="date w-md" id="r_date">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form_label">{{ message('item.com.022') }}</div>
+                                <div class="form_data">
+                                    <div class="item_group vertical">
+                                        <textarea class="maxlength" name="" id="r_rmrk" maxlength="2000"></textarea>
+                                        <label class="form_check">
+                                            <input class="check_mark" type="checkbox" name="lastYn">
+                                            <span class="check_label">{{ message('item.revision.009') }}</span>
+                                        </label>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </article>
+</section>
+
+
+
+
+<!-- progress modal-->
+<div class="modal">
+    <div class="progress_wrap">
+        <div class="progress_info">
+            <span class="wbs">WBS : <b>398</b></span>
+            <span class="activity">Activity : <b>632</b></span>
+        </div>
+        <div class="progress">
+            <b class="count"> 23 / 1000</b>
+            <span class="bar" style="width: 30%;"></span>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+    var BASEPATH = '/api/progress/wbs/revision';
+    //var cntrctNo = JSON.parse(localStorage.getItem("pageCommonData")).cntrctNo;   // AS-IS
+    var urlParams = new URLSearchParams(window.location.search);
+    var type = urlParams.get('type');   // d: 기본, p: 팝업
+    var cntrctNo = urlParams.get('cntrctNo');     // TO-BE
+    var contractChange = '';        // 계약변경 정보 (계약변경id, 계약차수, 계약번호)
+    var selectedEpsP6 = '';         // 선택된 p6 데이터
+    var isAddAuth = "{{ isAddAuth }}"; // 추가 권한 여부
+
+    var epsList = null;
+    var projectList = null;
+    var wbsList = null;
+    var activityList = null;
+
+    const p6grid = new tui.Grid({
+        el: document.getElementById('p6_grid'),
+        scrollX: false,
+        scrollY: true,
+        bodyHeight: 200,
+        columns: [
+            {
+                header: "P6 {{ message('item.revision.002') }} ID",
+                name: 'pjid'
+            },
+            {
+                header: "P6 {{ message('item.revision.003') }}",
+                name: 'pjname'
+            },
+            {
+                header: "{{ message('item.revision.005') }}",
+                name: 'date'
+            },
+            {
+                header: "{{ message('item.revision.006') }}",
+                name: 'update'
+            }
+        ],
+        contextMenu: null,
+    });
+
+    var revision = {
+        init(){
+            if(isAddAuth === 'false') {
+                $('.form_check').remove();
+                $('#pop_up_btn').remove();
+            }
+
+            revision.selectCntrctChg();
+            $('#r_date').val(new Date().toISOString().slice(0, 10));
+            if(type === 'p') {
+                $('#pop_up_btn').hide();
+            }
+        },
+        // 저장 유효성
+        validate(saveType){
+            if($('#eps_select').val()===""){
+                let msg = "{{ message('msg.revision.002') }}".replace("{text}", "EPS");
+                gaiaCommon.customAlert(msg);
+                $('#update_checkbox').prop("checked", false);
+                return
+            }
+            if(!selectedEpsP6){
+                let msg = "{{ message('msg.revision.002') }}".replace("{text}", "P6 {{ message('item.revision.002') }}");
+                gaiaCommon.customAlert(msg);
+                $('#update_checkbox').prop("checked", false);
+                return
+            }
+            let lastYn = $('input:checkbox[name="lastYn"]').is(":checked")==true ? 'Y' : 'N';
+            // 날짜 포맷팅
+            let today = new Date();
+            let formattedTime = 'T'+String(today.getHours()).padStart(2, '0') + ':' + 
+                                    String(today.getMinutes()).padStart(2, '0') + ':' + 
+                                    String(today.getSeconds()).padStart(2, '0') + '.' + 
+                                    String(today.getMilliseconds()).padStart(3, '0');
+
+            let p6ProjectObjId = projectList.filter(elem => elem.id === selectedEpsP6.p6ProjectId)[0].objectId;
+
+            // 20250620 관리자 계약정보가 없을때 예외처리
+            if (contractChange === null) {
+                gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}");
+                location.replace('/progress/wbs/revision');
+            }
+
+            let revisionData = {
+                cntrctChgId: contractChange.cntrct_chg_id,
+                epsId: selectedEpsP6.epsId,
+                epsNm: selectedEpsP6.epsNm,
+                p6EpsObjId: selectedEpsP6.p6EpsObjId,
+                p6ProjectId: selectedEpsP6.p6ProjectId,
+                p6ProjectNm: selectedEpsP6.p6ProjectNm,
+                p6ProjectObjId: p6ProjectObjId,
+                lastRevisionYn: lastYn,
+                rmrk: $('#r_rmrk').val(),
+                cntrctPhaseYn: contractChange.cntrctPhaseYn,
+            }
+
+            /**
+             * 250630 덮어쓰기 EVENT 호출방식 변경
+             * 체크박스 클릭 -> 체크박스 클릭 후 가져오기
+             */
+            let updateFlag = $('#update_checkbox').prop('checked');
+
+            if (!updateFlag){
+                // revision 생성
+                revisionData.revisionId = $('#r_id').val() === '' ? '1' : parseInt($('#r_id').val(), 10) + 1;
+                revisionData.rgstDt = $('#r_date').val().concat(formattedTime);
+                revision.save(revisionData);
+            } else {
+                // revision 수정
+                revisionData.revisionId = $('#r_id').val();
+                revisionData.chgDt = $('#r_date').val().concat(formattedTime);
+                revision.update(revisionData);
+            }
+
+            
+        },
+        // revision 저장(가져오기)
+        save(data){
+
+            gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.revision.003') }}", "", function(){
+
+                // 로딩창 활성화
+                gaiaCommon.LoadingOverlay('body', true);
+
+                $.ajax({
+                    url: BASEPATH+'/create?cntrctNo='+ encodeURIComponent(cntrctNo),
+                    method: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json; charset-utf-8',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        gaiaCommon.customAlert('{{ message("msg.044") }}', function(){
+                            if(type === 'd') {
+                                window.location.href = '/progress/wbs/revision'+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&callbackCntrctNo=${contractChange.cntrct_no}`;
+                                sessionStorage.setItem('cntrctNo', cntrctNo);
+                            } else {
+                                window.close();
+                                window.opener.location.reload();
+                            }
+                        });
+
+                    },
+                    error(xhr, status, error) {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        try {
+                            // const responseText = xhr.responseText;
+                            // const parsed = JSON.parse(responseText); // 여기서 직접 파싱
+
+                            let result = JSON.parse(xhr.responseJSON.message);
+                            console.warn('예외발생', result);
+                            gaiaCommon.customAlert(`${result.error.message} [${result.error.field}: ${result.error.value}]`);
+                        } catch (ex) {
+                            console.warn('예외 발생: ', ex)
+                            const errorMsg = '{{ message("msg.api.001") }}'; // API 통신에러 메시지
+                            gaiaCommon.customAlert(errorMsg);
+                        }
+                    }
+                })
+            })
+        },
+        // revision 수정(덮어쓰기)
+        update(data){
+            let confirmFn = function() {
+
+                // 로딩창 활성화
+                gaiaCommon.LoadingOverlay('body', true);
+
+                $.ajax({
+                    url: BASEPATH+'/update?cntrctNo='+ encodeURIComponent(cntrctNo),
+                    method: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json; charset-utf-8',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        gaiaCommon.customAlert("{{ message('msg.007') }}", function(){
+                            if(type === 'd') {
+                                window.location.href = '/progress/wbs/revision'+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`;
+                                sessionStorage.setItem('cntrctNo', cntrctNo);
+                            } else {
+                                window.close();
+                                window.opener.location.reload();
+                            }
+                        });
+                    },
+                    error(error) {
+                        gaiaCommon.customAlert(error.responseJSON?.message);
+                        gaiaCommon.LoadingOverlay('body', false);
+                        $('#update_checkbox').prop("checked", false);
+                    }
+                })
+            };
+            let cancelFn = function() {
+                // 250630 주석처리
+                // $('#update_checkbox').prop("checked", false);
+            }
+
+            gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.revision.004') }}", "", confirmFn, cancelFn)
+        },
+
+        // 계약번호에 따른 계약변경id 가져오기
+        selectCntrctChg() {
+            $.ajax({
+                url: BASEPATH+'/select-contractChange/'+cntrctNo,
+                method: 'GET',
+                success(data){
+                    contractChange = data.details.contractChange;
+                    // 조회된 결과가 있는 경우
+                    if (data.details.contractChange !== null) {
+                        // 계약 변경 최종 회차
+
+                        if (!contractChange.cntrct_phase !== 0) {
+                            // 계약구분 - `장기계속계약_차수별' 인경우
+                            $("#cntChgNo").text(`${contractChange.cntrct_phase}차 - ${contractChange.cntrct_chg_no}`);
+                            contractChange.cntrctPhaseYn = 'Y';
+                        } else {
+                            // 계약구분 - 일반
+                            $("#cntChgNo").text(contractChange.cntrct_chg_no);
+                            contractChange.cntrctPhaseYn = 'N';
+                        }
+
+                        // 최신 revision 정보
+                        contractChange.revision_id === '' ? $('#r_id').val('') : $('#r_id').val(contractChange.revision_id);
+                    } else {
+                        $('#r_id').val('');
+                    }
+                }
+            })
+        },
+        // EPS셀렉트 변경 이벤트
+        changeEPS(EPS) {
+            //console.log(EPS);
+
+            let epsObjId = $('#eps_select option:selected').attr('data-objectId');
+            let params = {
+                'workType': 'GAPR0020',
+                'epsObjId': epsObjId
+            }
+            getPrimavera(params);
+
+            // if(EPS === '') {
+            //     p6grid.resetData([]);
+            // } else {
+            //     let sampleData = [
+            //                         {
+            //                             pjid: EPS+' GAIA_LV5-7',
+            //                             pjname: EPS+' 국제비지니스',
+            //                             date: '2024-09-24',
+            //                             update: '2024-09-24'
+            //                         }
+            //                     ]
+            //     p6grid.resetData(sampleData);
+            // }
+        },
+        // 새창보기
+        openPopup(){
+            window.open(`/progress/wbs/revision/create?type=p&cntrctNo=${cntrctNo}`, '_blank', 'width=1200, height=750');
+            // window.open(`/progress/wbs/revision/create-popup?cntrctNo=${cntrctNo}`, '_blank', 'width=1200, height=750');
+            window.history.back();
+        },
+        close(){
+            if(type === 'd') {
+                window.location.href = '/progress/wbs/revision'+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init&callbackCntrctNo=${contractChange.cntrct_no}`;
+                sessionStorage.setItem('cntrctNo', cntrctNo);
+            } else {
+                window.close();
+            }
+        }
+    }
+    // p6그리드 행 클릭이벤트
+    p6grid.on('click', (ev) => {
+        const rowKey = ev.rowKey;
+        const rowData = p6grid.getRow(rowKey); 
+
+        if (rowData) {
+            // 선택한 EPS, P6 정보 전역변수에 저장
+            selectedEpsP6 = {
+                epsId: $('#eps_select').val(),
+                epsNm: $('#eps_select option:selected').text(),
+                p6EpsObjId: $('#eps_select option:selected').data('objectid'),
+                p6ProjectId: rowData.pjid,
+                p6ProjectNm: rowData.pjname,
+                p6ProjectObjId: rowData.objectId
+            }
+
+            // console.log(selectedEpsP6);
+        }
+    
+    })
+
+    let getPrimavera = function(params) {
+        let workType = params.workType;
+        let errorCallbackFn = null;
+        gaiaCommon.LoadingOverlay('body', true);
+        /**
+         * workType
+         * GAPR0010: getEpsList()
+         * GAPR0020: getProjectList()
+         */
+
+        if (workType === 'GAPR0010') {
+            errorCallbackFn = function() {
+                setTimeout(() => {
+                    window.location.href = '/progress/wbs/revision'+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+                    sessionStorage.setItem('cntrctNo', cntrctNo);
+                }, 700);
+            }
+        }
+
+        let callback = function (response) {
+            gaiaCommon.LoadingOverlay('body', false);
+            if (response.details.success) {
+                // console.log(response);
+
+                if (workType === 'GAPR0010') callbackOfGAPR0010(response);
+                if (workType === 'GAPR0020') callbackOfGAPR0020(response);
+            } else {
+                // API 통신이 원활하지 않습니다. 관리자에게 문의하길 바랍니다.
+                let msg = "{{ message('msg.api.001') }}";
+                gaiaCommon.customAlert(msg);
+            }
+        };
+
+        gaiaCommon.post(BASEPATH + "/primavera/message", params, callback, errorCallbackFn);
+
+        let callbackOfGAPR0010 = function(response) {
+            // console.log("Primaver API EPS List(): ");
+            // 글로벌 변수 set
+            epsList = response.details.data.epsList;
+
+            $('#eps_select').empty();
+            let epsArr = response.details.data.epsList.sort((a, b) => a.objectId - b.objectId);
+
+            for (let elem of epsArr) {
+                let option = document.createElement('option');
+                option.setAttribute('data-objectId', elem.objectId);
+                option.setAttribute('data-id', elem.id);
+                option.setAttribute('data-parentObjectId', elem.parentObjectId);
+                option.textContent = elem.name;
+                $('#eps_select').append(option);
+            }
+
+            $('#eps_select').trigger('change');
+        }
+
+        let callbackOfGAPR0020 = function(response) {
+            // console.log("Primaver API Project List(): ");
+            // 글로벌 변수 set
+            projectList = response.details.data.projectList;
+
+            let list = response.details.data.projectList.map(project => {
+                let obj = {};
+                obj['pjid'] = project.id;
+                obj['pjname'] = project.name;
+                obj['date'] = project.createDate;
+                obj['update'] = project.lastUpdateDate;
+                obj['objectId'] = project.objectId
+
+                return obj;
+            });
+
+            p6grid.resetData(list);
+        }
+    }   // END getPrimavera()
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+		        gaiaPortal.navMenuInit("M020201", "{{ message('item.revision.010') }}");
+		        $('#menuDepth').append(`<li class="breadcrumb_item">{{ message('item.revision.010') }}</li>`);
+		        revision.init();
+		        getPrimavera({'workType': 'GAPR0010'});
+		        refreshGrid(p6grid);
+               
+                gaia.loaded = true;
+            }
+        });
+    });
+</script>
+{% endblock footer_script %}

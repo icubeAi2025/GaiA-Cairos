@@ -1,0 +1,84 @@
+{% block content %}
+<div class="modal open">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h3 class="pop_tit" id="action_cu_tit"></h3>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <div class="form_box" id="work-form">
+                <div class="container" style="display: flex; align-items: center;">
+                    <span class="caption">
+                        <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                    </span>
+                </div>
+                <form id="dept-form">
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.quality.050') }}</div> <!-- 조치 사항 -->
+                            <div class="form_data">
+                                <textarea id="actnDscrpt" name="actnDscrpt" class="maxlength"
+                                    maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+                <button type="button" class="btn _fill" id="addButton" onclick="popup.save()">{{ message('btn.006')
+                    }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}{% block footer_script %}
+<script src="/assets/js/validation.js"></script>
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo');
+
+    $(function () {
+        popup.init();
+    });
+
+    var popup = {
+        popupWindow: null,
+        init: function () {
+            $("#action_cu_tit").text("{{ message('item.quality.048') }}");  // 조치 사항 등록
+            const chklstId = $("#popup").data("chklstId"); // 모달 창에서 설정된 chklstId 값
+
+            // 해당 chklstId에 맞는 항목을 찾아 actnDscrpt 찾기
+            const item = window.checkList.checkListData.find((item) => item.chklstId == chklstId);
+            if (item && item.actnDscrpt) {
+                $("#actnDscrpt").val(gaiaCommon.decodeSafeText(item.actnDscrpt));
+            } else {
+                $("#actnDscrpt").val('');
+            }
+        },
+        close: function () {
+            $("#actnDscrpt").val('');
+            $("#popup").css("display", "none");
+        },
+        save: function () {
+            const actionText = $("#actnDscrpt").val();
+            const chklstId = $("#popup").data("chklstId");
+
+            const item = window.checkList.checkListData.find((item) => item.chklstId == chklstId);
+            item.actnDscrpt = actionText;
+
+            window.checkList.resultCheckList();
+
+            $("#popup").css({ "display": "none" });
+        }
+    };
+</script>
+{% endblock %}

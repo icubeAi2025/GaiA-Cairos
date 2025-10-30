@@ -1,0 +1,103 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+
+	<article class="conts g-row" id="container">
+		<div class="group">
+			<div class="conts_form">
+				<div class="btn_area s_default _outline">
+					<button type="button" class="btn" id="exportButton" style="display:none;">{{ message('btn.023')
+						}}</button>
+					<button type="button" class="btn" id="close">{{ message('btn.007') }}</button>
+				</div>
+			</div>
+			<!-- S: TAB ----------------------------------------------------------------------- -->
+			<!-- TAB NAV -->
+			<div class="">
+                <iframe id="ifrEureca" src="" style="display:none;height: 80vh;" frameborder="0"></iframe>
+			</div>
+			<!-- //E: TAB ----------------------------------------------------------------------- -->
+		</div>
+	</article>
+
+</section>
+{% endblock content %}
+{% block footer_script %}
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script>
+	const newModalRenderer = window.NewModalRenderer;
+	var urlParams = new URLSearchParams(location.search);
+	var initialCntrctNo = urlParams.get('cntrctNo')
+	let pjtNo;
+	var list = [];
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                console.log('$params', $params, gaiaCommon.me.info);
+               
+                init();
+            }
+        });
+    });
+
+    var loadEurecaView = function(cntrctNo) {
+        const eurecaDomain = '{{ eurecaDomain }}';
+        const eurecaView = '{{ eurecaContractListView }}';
+        const eurecaParams = `cntrctNo=${cntrctNo}&IDPLSSOID=383b4dbd1ed596c63f29155e008e3d54dacad733960bfeace51b21ab06492460`;
+
+        console.log('eurecaDomain', eurecaDomain)
+        const ifrEureca = $('#ifrEureca');
+        ifrEureca.hide();
+        const ifr = document.getElementById( 'ifrEureca' );
+
+        ifrEureca.css({
+            width: '100%',
+        }).attr('src', `${eurecaDomain}/${eurecaView}?${eurecaParams}`).on('load', function() {
+            console.log('eurecaDomain load')
+            setTimeout(function() {
+                ifr.contentWindow.postMessage({'eventType' : 'iframeHeight', 'sendData': ''}, eurecaDomain);
+                ifrEureca.show();
+            }, 200);
+        });
+    }
+
+	var init = function () {
+		pjtNo = pjtInfo.pjtNo;
+		
+		// 페이지 로딩 시
+		$(function () {
+			var title = "{{ message('btn.050') }}"
+			gaiaPortal.navMenuInit('M010201', title);
+			$("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+
+			if (isCAIROS()) {
+				const cntrctNo = pjtInfo.cntrctNo;
+                loadEurecaView(initialCntrctNo);
+			}
+
+            gaiaCommon.makeCntrctSelectBox(
+                    "#container",
+                    () => {
+                        $(".btn_area").hide();
+                        subGrid.init(null);
+                        changeGrid.init(null, null);
+                    },
+                    (cntrctNo) => {
+                        loadEurecaView(cntrctNo);
+                    },
+                    (cntrctNo) => {
+                        loadEurecaView(cntrctNo);
+                    }
+            );
+		});
+
+		// 닫기 버튼
+		$("#close").click(function () {
+			window.close();
+		});
+		$("#depth_txt").text("{{ message('item.projectcost.016') }}");
+	};
+</script>
+{% endblock footer_script %}

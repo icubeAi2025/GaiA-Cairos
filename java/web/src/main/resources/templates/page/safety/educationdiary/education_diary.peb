@@ -1,0 +1,406 @@
+{% extends 'layout/base_content' %} {% block head %}
+{% endblock %} {% block content %}
+<section class="contents_wrap">
+    <article class="conts" id="container">
+        <div class="group">
+            <h3 class="conts_tit">{{ message('item.education.002') }}</h3>
+
+            <div class="conts_grid">
+				<!--검색 Start-->
+				<div class="search_wrap">
+					<span class="selectbox">
+						<select name="searchYear" id="searchYear" onchange="page.search()">
+							<option value="">년</option>
+						</select>
+					</span>
+					<span class="selectbox">
+						<select name="searchMonth" id="searchMonth" onchange="page.search()">
+							<option value="">월</option>
+							<option value="01">1</option>
+							<option value="02">2</option>
+							<option value="03">3</option>
+							<option value="04">4</option>
+							<option value="05">5</option>
+							<option value="06">6</option>
+							<option value="07">7</option>
+							<option value="08">8</option>
+							<option value="09">9</option>
+							<option value="10">10</option>
+							<option value="11">11</option>
+							<option value="12">12</option>
+						</select>
+					</span>
+					<span class="selectbox" id="eduType_box"></span>
+					<!-- searchbox -->
+					<!-- <div class="searchbox_wrap" style="width: 300px;">
+						<input type="text" id="searchInput" placeholder="보고서 번호">
+						<button type="submit" class="icon_btn search">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+					</div> -->
+				</div>
+				<!--검색 Start-->
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">{{ btnHtml | raw }}</div>
+                    <div class="selectbox sort">
+                        <select name="items-per-page" id="items-per-page" onchange="page.changePerPage()">
+                            <option selected disabled value="">
+                                {{ message("item.com.004") }}
+                            </option>
+                            <option selected value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid" id="user-grid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+	const params = new URLSearchParams(window.location.search);
+
+	let cntrctNo;
+	let searchYear;
+	let searchMonth;
+	let searchEduType;
+
+	//엔터 검색
+	// $('#keyword').keyup(function(e) {
+   	// 	if (e.key == "Enter") {
+	// 		page.search();
+   	// 	}
+	// });
+
+    var page = {
+        async init() {
+			let now = new Date();	// 현재 날짜 및 시간
+			let year = now.getFullYear();	// 연도
+
+			let i = 7
+			do {
+				i -= 1;
+
+				let addOption = document.createElement('option');
+				addOption.setAttribute('value', year-i);				
+				addOption.innerHTML = year-i;
+				$("#searchYear").append(addOption);
+			} while (i > 0);
+
+
+			//교육구분 박스 만들기 호출
+			page.makeSelectBox(
+				"16dd335b-a54b-4aca-b5e8-f7df56e8d629",
+				"eduType",
+				"eduType_box"
+            );
+			
+			// 계약코드 셀렉트 박스 생성 공통 함수 호출
+			await page.initContractList();
+
+			if(!gaiaCommon.me.isAdmin() && isCAIROS()){
+				cntrctNo = pjtInfo.cntrctNo;
+			}
+			
+			let searchData = gaia.getSearchData(params);
+            if (searchData && Object.keys(searchData).length !== 0) {
+                Object.entries(searchData).forEach(([key, value]) => {
+					if(key === 'searchYear') {				
+						$("#searchYear").val(`${value}`).attr("selected", "selected");	
+					}	
+					if(key === 'searchMonth') {				
+						$("#searchMonth").val(`${value}`).attr("selected", "selected");	
+					}					
+					if(key === 'searchEduType') {
+						$("#eduType").val(`${value}`).attr("selected", "selected");	
+					}
+                });
+				page.search();
+            }           
+        },
+
+		// 계약 코드 리스트 공통 함수 호출
+		initContractList() {
+			return new Promise((resolve, reject) => {
+				gaiaCommon.makeCntrctSelectBox(
+						"#container",
+						() => {
+							console.log('계약이 없을때 콜백 함수 실행');
+							$(".btn_area").hide();
+							this.grid.init();
+							resolve();
+						},
+						() => {
+							console.log('초기 콜백 함수 실행');
+							cntrctNo = $("#cntrctNo").val();
+							console.log("cntrctNo ::::::::::::: ", cntrctNo);
+							this.grid.init();
+							resolve();
+						},
+						() => {
+							console.log('Change 이벤트 함수 실행');
+							cntrctNo = $("#cntrctNo").val();
+							page.search()
+							resolve();
+						}
+				);
+			});			
+		},
+
+		//교육구분 selectBox 만들기
+		makeSelectBox: function (cmnGrpCd, selectBoxId, elementId) {
+			
+            let initText = "{{ message('item.com.005') }}";
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+                ckeckedValue: "",
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "page.search",
+                funParam: "",
+                funtype: "onchange",
+            };
+            gaiaCommon.post("/api/util/make-selectBox",[requestData],
+                    function(result) {
+                        let returnMap = result.details.returnMap;
+                        let addAppLineContent = document.getElementById(elementId);
+                        addAppLineContent.innerHTML = returnMap[selectBoxId];
+                    },
+                    function (error){
+                        console.error("Error making select box:", error);
+                    }
+            );
+        },
+
+        grid: {
+            init() {
+                const Grid = tui.Grid;
+                let _this = this;
+                if (this.userGrid) {
+                    this.userGrid.destroy(); // 기존 인스턴스 제거
+                    this.userGrid = null;
+                }
+
+                const dataSource = createDataSource( {
+                    readData: {
+                        url: "/api/safety/educationdiary/eduDiaryList",
+                        method: "GET",
+                        initParams: {
+                            cntrctNo: cntrctNo,
+							searchYear: searchYear,
+							searchMonth: searchMonth,
+							searchEduType: searchEduType
+                        },
+                    }
+                })
+
+                if (!this.userGrid) {
+                    this.userGrid = new Grid({
+                        el: document.getElementById("user-grid"),
+                        data: dataSource,
+                        scrollX: false,
+                        scrollY: true,
+                        draggable: false,
+                        contextMenu: null,
+                        minBodyHeight: 682,
+                        bodyHeight: 682,
+                        pageOptions: {
+                            perPage: parseInt($('select[id="items-per-page"]').val(), 10),
+                        },
+                        rowHeaders: [
+                            {
+                                type: "checkbox",
+                                header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                                width: 100,
+                                renderer: {
+                                    type: window.IconRenderer,
+                                    options: [
+										{
+											type:"checkBox",
+										},
+										{
+											type:"trash",
+											url: "/api/safety/educationdiary/eduDiary-delete",
+											auth: `{{ isDelAuth | raw }}` == 'true',
+											idFields: "eduId,atchFileNo",
+											keyName: "eduIdList",
+											msgList: {
+												confirmMsg: "선택한 교육일지를 삭제합니다.",
+												confirmTit: "교육일지 삭제",
+												completeMsg: "{{ message('msg.009') }}"
+											}
+										}
+									],
+                                },
+                            },
+                        ],
+                        columns: [
+                            {
+                                header: "교육일자",
+								width: 150,
+                                name: "eduDt",
+								align:"center",
+                                renderer: {
+                                    type: window.IconRenderer,
+                                    options: [{
+										type:"newWindow",
+                                        idField: "eduId",
+										isHover:true,
+										align:"right",
+										absolute:true,
+                                        open:{
+											url:`/safety/educationdiary/read/{id}`
+										},
+                                    }],
+                                },
+                            },
+                            {
+                                header: "교육구분",
+                                name: "eduNm",
+                                align: "left",
+                            },
+                            {
+                                header: "교육 대상자 수",
+								width: 100,
+                                name: "eduSurv",
+                                align: "center",
+                            },
+                            {
+                                header: "교육 참가자 수 ",
+								width: 100,
+                                name: "eduCnt",
+                                align: "center",
+                            },
+                            {
+                                header: "수정일시",
+								width: 200,
+                                name: "chgDt",
+                                align: "center",
+                            },
+							{ name: 'atchFileNo', hidden: true },
+                        ],
+                    });
+                    this.userGrid.on("click", function (e) {
+                        const rowKey = e.rowKey;
+                        if (e.columnName == "_checked") {
+							if(e.nativeEvent.target.className == "checkGroup"){
+								let temp = page.grid.userGrid.getRow(rowKey);
+								temp._attributes.checked = page.grid.userGrid.getRow(rowKey)._attributes.checked ? false : true;
+								page.grid.userGrid.setRow(rowKey, temp);
+							}
+							return;
+                        }
+                    })
+                }
+            },
+        },
+		changePerPage() {
+			var size = $('select[id="items-per-page"]').val();
+			page.grid.limit = size;
+			page.grid.userGrid.setPerPage(page.grid.limit);
+
+			page.grid.pagination = page.grid.userGrid.paginationManager.getPagination();
+			page.grid.pagination.setItemsPerPage(page.grid.limit);
+			page.grid.pagination.reset();
+		},
+		search() {
+			let params = {
+				cntrctNo: cntrctNo,
+				searchYear: $("#searchYear").val(),
+				searchMonth: $("#searchMonth").val(),
+				searchEduType:  $("#eduType").val()
+			};
+
+			// 서버 전달용
+            searchYear = $("#searchYear").val();
+            searchMonth = $("#searchMonth").val();
+            searchEduType = $("#eduType").val();
+
+			console.log('params :: ', params);
+
+			gaia.setSearchData(params);
+
+			page.grid.init();
+
+			page.grid.pagination = page.grid.userGrid.paginationManager.getPagination();
+			page.grid.pagination.setItemsPerPage(page.grid.limit);
+			page.grid.pagination.reset();
+
+		},
+		create() {
+			window.location.href = `/safety/educationdiary/create_ready`;
+		},	
+		delete() {
+			let checked = [];
+
+			page.grid.userGrid.getCheckedRows().forEach((rowData) => {
+				const eduId = rowData.eduId;
+				const atchFileNo = rowData.atchFileNo;
+				checked.push({eduId: eduId, atchFileNo: atchFileNo});
+			});
+			
+			if (checked.length > 0) {
+				gaiaCommon.customConfirm("교육일지 삭제", "선택한 교육일지를 삭제합니다.", "{{ message('msg.009') }}", function () {
+					let data = 	{ 
+									eduIdList: checked 
+								};
+                    gaiaCommon.post('/api/safety/educationdiary/eduDiary-delete', data, (response)=>{
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+                        page.grid.userGrid.reloadData();
+                    }, (xhr)=>{
+                        console.error(
+                            "Error deleting data:",
+                            xhr.responseText
+                        );
+                    })
+				});
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}");
+			}
+		},
+		update() {
+			let checked = [];
+
+			page.grid.userGrid.getCheckedRows().forEach((rowData) => {
+				const eduId = rowData.eduId;
+				checked.push(eduId);
+			});
+
+			if (checked.length > 0) {
+				if(checked.length > 1) {
+					gaiaCommon.customAlert("{{ message('msg.020') }}");
+				}else {
+					window.location.href = `/safety/educationdiary/update_ready/`+checked[0];
+				}
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}");
+			}
+		},
+    };
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+                gaiaPortal.navMenuInit("M10_EDU", "{{ message('item.education.001') }}");
+
+                var userType = $("#userType").text().toLowerCase();
+                if (userType != "admin") {
+                    $(".selectboxContainer").hide()
+                }
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

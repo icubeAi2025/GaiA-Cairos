@@ -1,0 +1,874 @@
+    {% extends 'layout/base_content' %}
+        {% block content %}
+    <section class="contents_wrap g-row">
+        <article class="conts g-row">
+            <div class="group">
+                <div class="conts_grid">
+                    <div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+                        <button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity 목록 -->
+            <div class="group" id="inputChgTodayForm">
+                <div class="conts_grid">
+                    <h4 class="conts_s-tit">Activity {{ message("item.com.066") }}</h4>
+                    <div class="search_wrap">
+                        <!-- S: search wrap ---------------------------------------------- -->
+                        <input type="date" id="sDate" class="date w-md">
+                        <span class="_tilde">~</span>
+                        <input type="date" id="eDate" class="date w-md">
+
+                        <!-- searchbox -->
+                        <div class="searchbox_wrap">
+                            <input type="text" id="searchText" placeholder="검색어를 입력하세요">
+                            <button type="submit" class="icon_btn search">
+                                <i class="ic ic-search"></i>
+                                <span class="blind">검색</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- // E: search wrap ---------------------------------------------- -->
+                    <div class="grid" id="activityGrid"></div>
+                </div>
+            </div>
+
+            <!-- 금일 실적 -->
+            <div class="group">
+                <div class="s_conts">
+                    <span class="tree_route">{{ message("item.construction.056") }}</span>
+                    <div class="conts_grid">
+                        <h4 class="conts_s-tit">금일 실적</h4>
+                        <!-- 금일 액티비티 -->
+                        <div class="grid" id="todayGrid"></div>
+                    </div>
+
+                    <!-- 인력 -->
+                    <div class="conts_grid" style="padding-top: 10px">
+                        <span class="conts_s-tit" >* 인력</span>
+                        <div class="tagbar" id="laborTags"></div>
+                        <div class="searchbox_wrap" style="width: 300px;">
+                            <input type="text" id="laborSearchText" placeholder="검색어를 입력하세요">
+                            <button type="submit" class="icon_btn search">
+                                <i class="ic ic-search"></i>
+                                <span class="blind">검색</span>
+                            </button>
+                        </div>
+                        <div  class="conts_grid" style="display: flex; gap: 20px;">
+                            <div class="grid" id="leftLaborGrid" style="flex: 1;"></div>
+                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; getCheckedRows">
+                                <button style="display:none; id="btnAddLabor" type="button" class="btn btn-primary">⮕ </button>
+                                <button style="display:none; id="btnRemoveLabor" type="button" class="btn btn-secondary">⬅ </button>
+                            </div>
+                            <div class="grid" id="rightLaborGrid" style="flex: 1;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 자재 -->
+                    <div class="conts_grid" style="padding-top: 5px">
+                        <span class="conts_s-tit">* 자재</span>
+                        <div class="tagbar" id="materialTags"></div>
+                        <div class="search_wrap">
+                            <span class="selectbox">
+                                <select id="matSupply" >
+                                    <option>전체</option>
+                                    <option>관급</option>
+                                    <option>사급</option>
+                                </select>
+                            </span>
+                            <div class="searchbox_wrap" style="width: 300px;">
+                                <input type="text" id="materialSearchText" placeholder="검색어를 입력하세요">
+                                <button type="submit" class="icon_btn search">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">검색</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div  class="conts_grid" style="display: flex; gap: 20px;">
+                            <div class="grid" id="leftMaterialGrid" style="flex: 1;"></div>
+                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; getCheckedRows">
+                                <button style="display:none; id="btnAddMaterial" type="button" class="btn btn-primary">⮕ </button>
+                                <button style="display:none; id="btnRemoveMaterial" type="button" class="btn btn-secondary">⬅ </button>
+                            </div>
+                            <div class="grid" id="rightMaterialGrid" style="flex: 1;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 장비 -->
+                    <div class="conts_grid" style="padding-top: 5px">
+                        <span class="conts_s-tit">* 장비</span>
+                        <div class="tagbar" id="expensesTags"></div>
+                        <div class="searchbox_wrap" style="width: 300px;">
+                            <input type="text" id="expensesSearchText" placeholder="검색어를 입력하세요">
+                            <button type="submit" class="icon_btn search">
+                                <i class="ic ic-search"></i>
+                                <span class="blind">검색</span>
+                            </button>
+                        </div>
+                        <div  class="conts_grid" style="display: flex; gap: 20px;">
+                            <div class="grid" id="leftExpensesGrid" style="flex: 1;"></div>
+                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; getCheckedRows">
+                                <button style="display:none; id="btnAddExpenses" type="button" class="btn btn-primary">⮕ </button>
+                                <button style="display:none; id="btnRemoveExpenses" type="button" class="btn btn-secondary">⬅ </button>
+                            </div>
+                            <div class="grid" id="rightExpensesGrid" style="flex: 1;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </article>
+    </section>
+    {% include "page/construction/dailyreport/dailyreport_qdb" %}
+            {% include 'sub/grid' %}
+    <link rel="stylesheet" href="/assets/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/content.css" />
+{% endblock content %}
+    {% block footer_script %}
+    <script src="/assets/js/construction/construction.js"></script>
+    <style>
+        #activityGrid .tui-grid-cell[data-column-name="actions_add"]{
+          text-align:center;
+          overflow:visible;
+          padding:0;
+        }
+
+        /* 전역 float/right 무력화 + 가운데 배치용 inline-flex */
+        #activityGrid .tui-grid-cell[data-column-name="actions_add"] .icon_btn.more{
+          float:none !important;
+          transform:none !important;
+          position:static !important;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          margin:0;
+          cursor: pointer;
+        }
+        .more::after {
+            content: none;
+        }
+        .selectbox {
+            width:100px;
+            position:relative;
+            margin-right: 5px;
+        }
+    </style>
+    <script src="/assets/js/construction/construction.js"></script>
+    <script src="/assets/js/grid.js"></script>
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var cntrctNo = urlParams.get('cntrctNo');
+        var rId = urlParams.get('rId');
+        var drDt = urlParams.get('drDt');
+
+        // 순수 number 리턴
+        function N(v){ if(v==null||v==='') return 0; const n=Number(String(v).replace(/,/g,'')); return isFinite(n)?n:0; }
+
+
+        // ===== Activity Grid =====
+        const activityGrid = new tui.Grid({
+            el: document.getElementById('activityGrid'),
+            bodyHeight: 250,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [],
+            columnOptions: { resizable: true },
+            header: {
+                height: 80,
+                complexColumns: [
+                    {
+                        header: '계획',
+                        name: 'plan',
+                        childNames: ['plan_start', 'plan_finish']
+                    }
+                ],
+            },
+            columns: [
+                { header: 'WBS', name: 'path_nm', align:'center' },
+                { header: 'Activity ID', name: 'activity_id', width: 365, align:'center' },
+                { header: 'Activity 명', name: 'activity_nm', width: 365, align:'left' },
+                { header: '계획 금액', name: 'expt_cost', width: 365, align:'right' },
+                { header: '계획 시작일', name: 'plan_start', width: 180, align:'center' },
+                { header: '계획 종료일', name: 'plan_finish', width: 180, align:'center' },
+                { header: 'actual_bgn_date', name: 'actual_bgn_date', hidden: true },
+                { header: 'actual_end_date', name: 'actual_end_date', hidden: true },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true }
+            ],
+            data: []
+        });
+
+        // ===== Today Grid (complex header) =====
+        class StatusStarRenderer {
+            constructor(props) {
+                this.el = document.createElement('div');
+                this.el.style.fontSize = '20px';
+                this.el.style.textAlign = 'center';
+                this.el.style.userSelect = 'none';
+                this.el.style.pointerEvents = 'none'; // 클릭 차단
+
+                this.render(props);
+            }
+
+            getElement() {
+                return this.el;
+            }
+
+            render(props) {
+                const value = props.value === true;
+                this.el.style.color = value ? '#333' : '#ccc';
+                this.el.textContent = value ? '★' : '☆';
+            }
+        }
+
+        const todayGrid = new tui.Grid({
+            el: document.getElementById('todayGrid'),
+            bodyHeight: 250,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [],
+            columnOptions: { resizable: true },
+            rowHeaders: [],
+            header: {
+                height: 80,
+                complexColumns: [
+                    { header: '계획', name: 'plan', childNames: ['plan_start', 'plan_finish', 'plan_reqre_daynum'] },
+                    { header: '금일실행', name: 'actual', childNames: ['actual_bgn_date', 'actual_end_date', 'actual_reqre_daynum'] },
+                    { header: '상태', name: 'status', childNames: ['bgn', 'ing', 'end'] }
+                ],
+            },
+            columns: [
+                { header:'WBS', name:'path_nm' , width: 140,},
+                {
+                    header: 'Activity ID',
+                    name: 'activity_id',
+                    width: 120,
+                    align: 'center',
+                    renderer: {
+                        type: window.IconRenderer,
+                        options: [
+                            { type: 'eyes',   success: (rowData) => openQdbModal(rowData) }
+                        ]
+                    }
+                },
+                { header:'Activity 명', name:'activity_nm', width:200 },
+                { header:'시작일', name:'plan_start',align:'center', width: 100, },
+                { header:'종료일', name:'plan_finish',align:'center', width: 100, },
+                { header:'소요일수', name:'plan_reqre_daynum',align:'center', },
+                {
+                    header: '시작일',
+                    name: 'actual_bgn_date',
+                    align: 'center',
+                    width: 100,
+                    formatter: ({ row }) => {
+                        // bgn 또는 ing, end 중 하나라도 true면 날짜 표시
+                        if (row.bgn || row.ing || row.end) {
+                          return row.actual_bgn_date || drDt;
+                        }
+                        // 모든 상태 false면 빈값
+                        return '';
+                      }
+                },
+                { header:'종료일', name:'actual_end_date',align:'center', width: 100,},
+                { header:'소요일수', name:'actual_reqre_daynum',align:'center',  },
+                { header:'시작', name:'bgn', align:'center', renderer:{ type: StatusStarRenderer } },
+                { header:'진행', name:'ing', align:'center', renderer:{ type: StatusStarRenderer } },
+                { header:'종료', name:'end', align:'center', renderer:{ type: StatusStarRenderer } },
+                {
+                    header: '보할(%)',
+                    name: 'today_bohal',
+                    width: 150,
+                    align: 'center',
+                },
+                {
+                    header: '진행률(%)',
+                    name: 'total_progress',
+                    align: 'right',
+                    formatter: ({ row }) => {
+                        const todayBohal = parseFloat(row.today_bohal || 0);
+                        const totalProgress = parseFloat(row.total_progress || 0);
+                        const total = todayBohal + totalProgress;
+                        return total.toFixed(2);
+                    }
+                },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
+                { header: 'expt_cost', name: 'expt_cost', hidden: true }
+            ],
+            data: []
+        });
+
+        // 삭제 버튼
+        $('#deleteActivity').on('click', function () {
+            const checkedRows = todayGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert('삭제할 항목을 선택하세요.');
+                return;
+            }
+
+            checkedRows.forEach(row => {
+                const exists = activityGrid.getData().some(r => r.activity_id === row.activity_id);
+                if (!exists) {
+                    activityGrid.appendRow({
+                    path_nm: row.path_nm,
+                    activity_id: row.activity_id,
+                    activity_nm: row.activity_nm,
+                    expt_cost: row.expt_cost || 0,
+                    plan_start: row.plan_start,
+                    plan_finish: row.plan_finish,
+                    plan_reqre_daynum: row.plan_reqre_daynum,
+                    actual_bgn_date: row.actual_bgn_date,
+                    actual_end_date: row.actual_end_date,
+                    ori_total_progress: row.ori_total_progress || 0});
+                }
+
+                // todayGrid에서 삭제
+                todayGrid.removeRow(row.rowKey);
+            });
+
+            // 최신 todayGrid 기준 자원 재조회
+            const todayData = todayGrid.getData();
+            if (todayData && todayData.length > 0) {
+                initResourceData(todayData);
+            } else {
+                resetResourceList();
+            }
+
+            gaiaCommon.customAlert('선택된 항목이 삭제되었습니다.');
+        });
+
+        // 적용 버튼
+        $('#applyActivity').on('click', function () {
+            const applyType = $('#applyType').val(); // start or end
+            const checkedRows = todayGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert('적용할 항목을 선택하세요.');
+                return;
+            }
+
+            checkedRows.forEach(row => {
+                const rowKey = row.rowKey;
+                const data = todayGrid.getRow(rowKey);
+                if (!data) return;
+
+                // 기본 상태 초기화
+                todayGrid.setValue(rowKey, 'bgn', false, false);
+                todayGrid.setValue(rowKey, 'ing', false, false);
+                todayGrid.setValue(rowKey, 'end', false, false);
+
+                if (applyType === 'start') {
+                    // 금일 시작 처리
+                    todayGrid.setValue(rowKey, 'actual_bgn_date', drDt, false);
+                    todayGrid.setValue(rowKey, 'bgn', true, false);
+                    todayGrid.setValue(rowKey, 'actual_end_date', '', false);
+                } else if (applyType === 'end') {
+                    // 금일 종료 처리
+                    todayGrid.setValue(rowKey, 'actual_end_date', drDt, false);
+                    todayGrid.setValue(rowKey, 'end', true, false);
+
+                    // 시작일 없으면 자동으로 오늘로 세팅
+                    const hasBgn = !!data.actual_bgn_date;
+                    if (!hasBgn) {
+                        todayGrid.setValue(rowKey, 'actual_bgn_date', drDt, false);
+                    }
+                    todayGrid.setValue(rowKey, 'bgn', false, false);
+                }
+            });
+            todayGrid.refreshLayout();
+        });
+
+        // 초기 데이터 세팅 로직 예시
+        // 시작: 계획시작(plan) 존재, 금일시작(actual) 미존재
+        // 진행: 금일시작 존재, 금일종료 미존재
+        // 종료: 금일종료 존재
+        function setStatusStars(data) {
+            return data.map(row => {
+                const hasPlanStart = !!row.plan_start;
+                const hasActualBgn = !!row.actual_bgn_date;
+                const hasActualEnd = !!row.actual_end_date;
+
+                let bgn = false, ing = false, end = false;
+
+                // 계획만 있고, 아직 시작 안했을 때
+                if (hasPlanStart && !hasActualBgn) {
+                    bgn = true;
+                    ing = false;
+                    end = false;
+                }
+                // 진행: 시작일 있고, 종료일 없을 때
+                else if (hasActualBgn && !hasActualEnd) {
+                    bgn = false;
+                    ing = true;
+                    end = false;
+                }
+                // 종료: actual_end_date 가 있으면 무조건 종료
+                else if (hasActualEnd) {
+                    bgn = false;
+                    ing = false;
+                    end = true;
+                }
+                return { ...row, bgn, ing, end };
+            });
+        }
+
+        // QDB 조회 팝업 오픈
+        function openQdbModal(rowData) {
+            document.getElementById('qdbModal').style.display = 'block';
+
+            const activityId = rowData.activity_id;
+            const todayBohal = rowData.today_bohal ?? 0;
+            const wbs = rowData.path_nm ?? '';
+            const activityNm = rowData.activity_nm ?? '';
+
+            $('#wbs').text(wbs);
+            $('#activityNm').text(activityNm);
+            $('#bohal span, #bohal').text(todayBohal);
+
+            initQdbData({
+                cntrctNo: cntrctNo,
+                activityId: activityId,
+                todayBohal: todayBohal,
+                searchText: ''
+            });
+        }
+        // 보할 입력 팝업창 오픈
+        function openBohalModal(rowKey, pillEl) {
+            const currentVal = todayGrid.getValue(rowKey, 'bohalRate') ?? 0;
+
+            gaiaCommon.customBohalEditConfirm(
+                '보할률 수정',
+                '보할(%)',
+                function (val, isAll) {
+                    if (isAll) {
+                        const data = todayGrid.getData();
+                        data.forEach(row => todayGrid.setValue(row.rowKey, 'bohalRate', val));
+                    } else {
+                        todayGrid.setValue(rowKey, 'today_bohal', val);
+                    }
+                    if (pillEl) pillEl.textContent = val;
+
+                    // 변경 후 누적 진행률 다시 계산
+                    if (typeof callback === 'function') callback();
+                },
+                function () {
+                    console.log('보할률 입력 취소');
+                }
+            );
+            $('#bohalInput').val(currentVal);
+        }
+
+        // 보할 수정할 경우 진행률 갱신
+        function updateTotalProgress() {
+            const data = todayGrid.getData();
+
+            // 전체 누적 보할률 계산
+            let total = 0;
+            data.forEach(row => {
+                const val = parseFloat(row.today_bohal || 0);
+                total += isNaN(val) ? 0 : val;
+            });
+
+            // 전체 합계를 각 행의 total_progress에 표시
+            data.forEach(row => {
+                todayGrid.setValue(row.rowKey, 'total_progress', total.toFixed(2));
+            });
+        }
+
+        function resetResourceList() {
+            leftLaborGrid.resetData([]);
+            leftMaterialGrid.resetData([]);
+            leftExpensesGrid.resetData([]);
+
+            // 레이아웃 갱신
+            if (leftLaborGrid.refreshLayout) leftLaborGrid.refreshLayout();
+            if (leftMaterialGrid.refreshLayout) leftMaterialGrid.refreshLayout();
+            if (leftExpensesGrid.refreshLayout) leftExpensesGrid.refreshLayout();
+        }
+
+        // ===== Labor Grid =====
+        const laborColumns = [
+            { header: '노무코드', name: 'rsce_cd', align: 'center', width: 120 },
+            { header: '인력명', name: 'rsce_nm', align: 'left' },
+            { header: '단위', name: 'unit', align: 'center', width: 80 },
+            { header: '총수량', name: 'total_qty', align: 'right' },
+            { header: '금일수량', name: 'actual_qty', align: 'right' },
+            {
+                header: '금일누계',
+                name: 'acmtl_qty',
+                align: 'right',
+                formatter: ({ row }) =>
+                    (Number(row.ori_qty || 0) + Number(row.actual_qty || 0)).toFixed(2)
+            },
+            { header: '잔여', name: 'remndr_qty', align: 'right', },
+            { header: 'rsce_tp_cd', name: 'rsce_tp_cd', hidden: true },
+            { header: 'cntrct_chg_id', name: 'cntrct_chg_id', hidden: true },
+            { header: 'manual_yn', name: 'manual_yn', hidden: true },
+            { header: 'rsce_sno', name: 'rsce_sno', hidden: true },
+            { header: 'ori_qty', name: 'ori_qty', hidden: true }
+        ];
+
+        // 좌측(전체 리스트) 그리드
+        const leftLaborGrid = new tui.Grid({
+            el: document.getElementById('leftLaborGrid'),
+            bodyHeight: 250,
+            columns: laborColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+
+        // 우측(선택된 리스트) 그리드
+        const rightLaborColumns = makeEditableColumns(laborColumns);
+        const rightLaborGrid = new tui.Grid({
+            el: document.getElementById('rightLaborGrid'),
+            bodyHeight: 250,
+            columns: rightLaborColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+        bindQuantityChangeHandler(rightLaborGrid);
+
+
+        // ===== Material Grid =====
+        const materialColumns = [
+            {
+                header: '자재종류',
+                name: 'govsply_mtrl_yn',
+                align: 'center',
+                width: 120,
+                formatter: ({ row }) => {
+                    const val = row.govsply_mtrl_yn;
+                    if (val === 'Y') return '관급자재';
+                    if (val === 'N') return '사급자재';
+                    return '';
+                }
+
+            },
+            { header: '자재코드', name: 'rsce_cd', align: 'center' },
+            { header: '품명', name: 'rsce_nm', align: 'center', width: 80 },
+            { header: '규격', name: 'spec_nm', align: 'right' },
+            { header: '단위', name: 'unit', align: 'right' },
+            { header: '총수량', name: 'total_qty', align: 'right' },
+            { header: '금일수량', name: 'actual_qty', align: 'right' },
+            {
+                header: '금일누계',
+                name: 'acmtl_qty',
+                align: 'right',
+                formatter: ({ row }) =>
+                    (Number(row.ori_qty || 0) + Number(row.actual_qty || 0)).toFixed(2)
+            },
+            { header: '잔여', name: 'remndr_qty', align: 'right' },
+            { header: 'rsce_tp_cd', name: 'rsce_tp_cd', hidden: true },
+            { header: 'cntrct_chg_id', name: 'cntrct_chg_id', hidden: true },
+            { header: 'manual_yn', name: 'manual_yn', hidden: true },
+            { header: 'rsce_sno', name: 'rsce_sno', hidden: true },
+            { header: 'ori_qty', name: 'ori_qty', hidden: true }
+        ];
+
+        // 좌측(전체 리스트) 그리드
+        const leftMaterialGrid = new tui.Grid({
+            el: document.getElementById('leftMaterialGrid'),
+            bodyHeight: 250,
+            columns: materialColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+
+        // 우측(선택된 리스트) 그리드
+        const rightMaterialColumns = makeEditableColumns(materialColumns);
+        const rightMaterialGrid = new tui.Grid({
+            el: document.getElementById('rightMaterialGrid'),
+            bodyHeight: 250,
+            columns: rightMaterialColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+        bindQuantityChangeHandler(rightMaterialGrid);
+
+
+        // ===== Expenses Grid =====
+        const expensesColumns = [
+            { header: '장비코드', name: 'rsce_cd', align: 'center', width: 120},
+            { header: '장비명', name: 'rsce_nm', align: 'center', },
+            { header: '규격', name: 'spec_nm', align: 'right', width: 80 },
+            { header: '단위', name: 'unit', align: 'center',},
+            { header: '총수량', name: 'total_qty', align: 'right',},
+            { header: '금일수량', name: 'actual_qty', align: 'right',},
+            {
+                header: '금일누계',
+                name: 'acmtl_qty',
+                align: 'right',
+                width: 150,
+                formatter: ({ row }) =>
+                    (Number(row.ori_qty || 0) + Number(row.actual_qty || 0)).toFixed(2)
+            },
+            { header: '잔여', name: 'remndr_qty', align: 'right', },
+            { header: 'rsce_tp_cd', name: 'rsce_tp_cd', hidden: true },
+            { header: 'cntrct_chg_id', name: 'cntrct_chg_id', hidden: true },
+            { header: 'manual_yn', name: 'manual_yn', hidden: true },
+            { header: 'rsce_sno', name: 'rsce_sno', hidden: true },
+            { header: 'ori_qty', name: 'ori_qty', hidden: true }
+        ];
+
+        // 좌측(전체 리스트) 그리드
+        const leftExpensesGrid = new tui.Grid({
+            el: document.getElementById('leftExpensesGrid'),
+            bodyHeight: 250,
+            columns: expensesColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+
+        // 우측(선택된 리스트) 그리드
+        const rightExpensesColumns = makeEditableColumns(expensesColumns);
+        const rightExpensesGrid = new tui.Grid({
+            el: document.getElementById('rightExpensesGrid'),
+            bodyHeight: 250,
+            columns: rightExpensesColumns,
+            data: [],
+            scrollX: true,
+            scrollY: true,
+            columnOptions: { resizable: true },
+        });
+        bindQuantityChangeHandler(rightExpensesGrid);
+
+
+        /**
+         * editable 컬럼을 복제해 반환
+         * @param {Array} columns - 원본 컬럼 배열
+         * @param {string} editableName - 편집 가능한 컬럼명 (예: 'actual_qty')
+         */
+        function makeEditableColumns(columns, editableName = 'actual_qty') {
+          return columns.map(col => {
+            if (col.name === editableName) {
+              return {
+                ...col,
+                editor: {
+                  type: 'text',
+                  options: { inputType: 'number' }
+                },
+                validation: {
+                  dataType: 'number',
+                  required: true,
+                  validatorFn: (value) => !isNaN(value)
+                }
+              };
+            }
+            return { ...col, editable: false };
+          });
+        }
+
+        /**
+         * 숫자 변경 시 잔여(remndr_qty), 누계(acmtl_qty) 자동 계산
+         * @param {tui.Grid} grid - 대상 그리드 객체
+         */
+        function bindQuantityChangeHandler(grid) {
+          grid.on('afterChange', (ev) => {
+            ev.changes.forEach(change => {
+              const { rowKey, columnName, value } = change;
+              if (columnName === 'actual_qty') {
+                const row = grid.getRow(rowKey);
+                const oriQty = Number(row.ori_qty || 0);
+                const totalQty = Number(row.total_qty || 0);
+                const actualQty = Number(value || 0);
+
+                // 잔여(remndr_qty) = total_qty - (ori_qty + actual_qty)
+                const remndrQty = totalQty - (oriQty + actualQty);
+
+                grid.setValue(rowKey, 'remndr_qty', remndrQty.toFixed(2), false);
+              }
+            });
+          });
+        }
+
+
+
+        function initData() {
+            const param = {
+                cntrctNo: cntrctNo,
+                dailyReportId: rId,
+                workDtType: 'TD',
+                planStart: $("#sDate").val(),
+                planFinish: $("#eDate").val(),
+                searchText: $("#searchText").val()
+            }
+            gaiaCommon.post(
+                BASEPATH + 'dailyreport/dailyreport-chg',
+                param,
+                function (response) {
+                    const details = (response && response.details) || {};
+                    let activityData = details.prActivityList || [];
+                    let todayActivityData = details.todayDailyReportActivityList || [];
+
+                    // activityGrid 데이터 중 todayGrid에 없는 항목만 필터링
+                    const todayIds = new Set(todayActivityData.map(item => item.activity_id));
+                    const filteredActivityData = activityData.filter(
+                        item => !todayIds.has(item.activity_id)
+                    );
+
+                    // 액티비티 목록
+                    activityGrid.resetData(filteredActivityData);
+                    refreshGrid(activityGrid);
+
+                    // 금일 액티비티 목록
+                    // ★ 상태별 별 세팅
+                    const dataWithStars = setStatusStars(todayActivityData);
+                    todayGrid.resetData(dataWithStars);
+                    refreshGrid(todayGrid);
+
+                    initResourceData(todayActivityData);
+
+                },
+                function (error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+        }
+
+        // 자원 데이터 세팅
+        function initResourceData(todayActivityData) {
+            // activity_id & today_bohal 쌍만 추출해서 activityIdAndTodayBohal 배열 생성
+            const activityIdAndTodayBohal = (todayActivityData || []).map(item => ({
+                activityId: item.activity_id,
+                todayBohal: item.today_bohal
+            }));
+
+            const param = {
+                cntrctNo: cntrctNo,
+                dailyReportId: rId,
+                activityIdAndTodayBohal: activityIdAndTodayBohal
+            };
+            gaiaCommon.post(
+                BASEPATH + 'dailyreport/dailyreport-today-resource',
+                param,
+                function (response) {
+                    const details = (response && response.details) || {};
+                    let activityResData = details.todayResourceList || [];
+                    let todayResourceData = details.todayDailyReportResourceList || [];
+
+                    // rsce_tp_cd 앞글자 기준 분류
+                    const laborList = [];
+                    const materialList = [];
+                    const expensesList = [];
+                    const todayLaborList = [];
+                    const todayMaterialList = [];
+                    const todayExpensesList = [];
+
+                    // 오른쪽 그리드 자원 목록 분류 (기준)
+                    todayResourceData.forEach(item => {
+                        const type = (item.rsce_tp_cd || '').substring(0, 1);
+                        if (type === 'L') todayLaborList.push(item);
+                        else if (type === 'M') todayMaterialList.push(item);
+                        else if (type === 'E') todayExpensesList.push(item);
+                    });
+
+                    // 오른쪽 그리드 기준으로 중복 필터링용 Set 생성
+                    const todayLaborKeySet = new Set(todayLaborList.map(i => `${i.rsce_cd}_${i.govsply_mtrl_yn}`));
+                    const todayMaterialKeySet = new Set(todayMaterialList.map(i => `${i.rsce_cd}_${i.govsply_mtrl_yn}`));
+                    const todayExpensesKeySet = new Set(todayExpensesList.map(i => `${i.rsce_cd}_${i.govsply_mtrl_yn}`));
+
+                    // 왼쪽 그리드 자원 목록 분류 및 중복 제거
+                    activityResData.forEach(item => {
+                        const type = (item.rsce_tp_cd || '').substring(0, 1);
+                        const key = `${item.rsce_cd}_${item.govsply_mtrl_yn || ''}`;
+                        if (type === 'L' && !todayLaborKeySet.has(key)) {
+                            laborList.push(item);
+                        } else if (type === 'M' && !todayMaterialKeySet.has(key)) {
+                            materialList.push(item);
+                        } else if (type === 'E' && !todayExpensesKeySet.has(key)) {
+                            expensesList.push(item);
+                        }
+                    });
+
+                    // 인력
+                    leftLaborGrid.resetData(laborList);
+                    rightLaborGrid.resetData(todayLaborList);
+                    if (leftLaborGrid.refreshLayout) leftLaborGrid.refreshLayout();
+                    if (rightLaborGrid.refreshLayout) rightLaborGrid.refreshLayout();
+                    reportRefreshGrid(leftLaborGrid,);
+                    reportRefreshGrid(rightLaborGrid);
+
+                    // 자재
+                    leftMaterialGrid.resetData(materialList);
+                    rightMaterialGrid.resetData(todayMaterialList);
+                    if (leftMaterialGrid.refreshLayout) leftMaterialGrid.refreshLayout();
+                    if (rightMaterialGrid.refreshLayout) rightMaterialGrid.refreshLayout();
+                    reportRefreshGrid(leftMaterialGrid,);
+                    reportRefreshGrid(rightMaterialGrid);
+
+                    // 장비
+                    leftExpensesGrid.resetData(expensesList);
+                    rightExpensesGrid.resetData(todayExpensesList);
+                    if (leftExpensesGrid.refreshLayout) leftExpensesGrid.refreshLayout();
+                    if (rightExpensesGrid.refreshLayout) rightExpensesGrid.refreshLayout();
+                    reportRefreshGrid(leftExpensesGrid);
+                    reportRefreshGrid(rightExpensesGrid);
+                },
+                function (error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+        }
+
+        window.addEventListener('resize', () => {
+          activityGrid.refreshLayout();
+        });
+        $("#cancel").click(function () {
+            window.location.href = "/construction/dailyreport/detail"+`?rId=${rId}&pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+        });
+        $("#edit").click(function () {
+            window.location.href = "/construction/dailyreport-today-update?cntrctNo=" + cntrctNo + "&rId=" + rId+`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+        });
+        $(document).ready(()=>{
+            gaia.create({
+                $init: function ($params) {
+                    gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " 금일 액티비티 " + "{{ message('btn.003') }}");
+                    $("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }}  금일 액티비티 {{ message("btn.003") }}</li>');
+                }
+            });
+            initData();
+        });
+
+        let reportRefreshGrid = function (...grids) {
+            const _section = document.getElementById("content")
+
+            if (!_section) return;
+
+            let timer;
+            const resizeObserver = new ResizeObserver(() => {
+                clearTimeout(timer);
+
+                timer = setTimeout(() => {
+                    for (const grid of grids) {
+                        if (!grid || !(grid instanceof tui.Grid)) continue;
+
+                        const dataWidth = Number(elem.el.getAttribute("data-width"));
+
+                        grid.el.setAttribute("data-width", dataWidth);
+
+                        const newWidth = dataWidth;
+
+                        // 🔸 1. DOM width 직접 반영 (즉시 반응)
+                        grid.el.style.width = `${newWidth}px`;
+                        grid.refreshLayout()
+                    }
+                }, 10);
+            });
+
+            resizeObserver.observe(_section);
+        };
+    </script>
+{% endblock footer_script %}

@@ -1,0 +1,535 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+	<article class="conts_area">
+		<div class="conts g-row" id="cntrct_no_select">
+			<div class="conts_form">
+				<div class="btn_area s_default _outline">
+					{{ btnHtml | raw }}
+					<div class="btn_group _outline">
+						{{ chkBtnHtml | raw}}
+					</div>
+					<button type="button" class="btn" style="display:none;">Excel</button>
+				</div>
+				<div class="grid" id="paymentDataGrid" style="overflow: auto;">
+				</div>
+			</div>
+		</div>
+	</article>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+	.tui-grid-cell-header {
+		white-space: break-spaces;
+	}
+</style>
+<script src="/assets/js/projectcost/payment.js"></script>
+<script>
+	//콤보박스 렌더러, 에디터
+    var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo');
+	var cntrctChgNo = null; // 계약변경차수
+	var isDelAuth = "{{ isDelAuth }}"
+	const system = "{{ system }}";
+
+	tui.Grid.setLanguage('ko', {
+		display: {
+			noData: '데이터가 없습니다'
+		}
+	});
+
+	var init = function () {
+		gaiaCommon.LoadingOverlay('body', true);
+        gaiaCommon.makeCntrctSelectBox(
+            "#cntrct_no_select",
+            // 계약 없음 콜백
+            function() {
+                gaiaCommon.LoadingOverlay('body', false);
+            },
+            // initCb: 초기 세팅 후 호출
+            function(initialCntrctNo) {
+                cntrctNo = initialCntrctNo;
+                payment.init();
+            },
+            // chgCb: 값 변경 시 호출
+            function(newCntrctNo) {
+                cntrctNo = newCntrctNo;
+                payment.init();
+            }
+        );
+	}
+
+
+	let payment = {
+		init: function (type) {
+			let _this = this;
+
+			if (!_this.paymentGrid) {
+				_this.paymentGrid = new tui.Grid({
+					el: document.getElementById('paymentDataGrid'),
+					bodyHeight: 550,
+					scrollX: true,
+					scrollY: true,
+					contextMenu: null,
+					rowHeaders: [
+						{
+							type: 'checkbox',
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options:[
+									{
+										type:"checkBox"
+									},
+									{
+										type:"trash",
+										auth:isDelAuth == "Y",
+										success:(rowData)=>{
+											delPayment("r",rowData.payprce_sno, rowData.apprvl_stats,rowData.apprvl_stats_txt);
+										}
+									},
+									{
+										type:"note",
+										success:(rowData)=>{
+											goLink("history", rowData.payprce_sno, rowData.cntrct_chg_id, rowData.payprce_ym, rowData.payprce_tmnum);
+										}
+									}
+								]
+							}
+						},
+
+					],
+					header: {
+						height: 120,
+						complexColumns: [
+							{
+								header: '{{ message("item.projectcost.032") }}',
+								name: 'cntrctMtrlTotal',    // 기성 금액
+								childNames: ['thtm_acom_amt', 'ppaymny_caclt_amt', 'thtm_paymnt_amt', 'acmtl_acom_rate']
+							},
+							{
+								header: '{{ message("item.app.008") }}',
+								name: 'cntrctLbrTotal',     // 결재
+								childNames: ['apprvl_req_dt', 'apprvl_req_nm', 'apprvl_dt', 'apprvl_nm']
+							}
+						],
+					},
+					columns: [
+						{ name: 'apprvl_stats', hidden: true },
+						{ name: 'payprce_sno', hidden: true },
+						{ name: 'cntrct_chg_id', resizable: true, hidden: true },
+						{
+							// 기성회차
+							header: '{{ message("item.projectcost.033") }}', name: 'payprce_tmnum', allowMerging: true, align: 'center', resizable: true, width: 80,
+							renderer: {
+								type:window.IconRenderer,
+								options:[{
+									type:"newWindow",
+									align:"right",
+									absolute:true,
+									isHover:true,
+									success:(rowData)=>{
+										goLink("detail", rowData.payprce_sno);
+									}
+								}]
+							}
+						},
+						{
+							// 기성년월
+							header: '{{ message("item.projectcost.034") }}', name: 'payprce_ym', resizable: true, align: 'center', width: 80,
+							formatter: dateFormat
+						},
+						{
+							// 금회기성
+							header: '{{ message("item.projectcost.035") }}', name: 'thtm_acom_amt', resizable: true, align: 'right', width: 150,
+							formatter: numberFormat
+						},
+						{
+							// 선급금 공제금액
+							header: '{{ message("item.projectcost.036") }}\r\n{{ message("item.projectcost.037") }}', name: 'ppaymny_caclt_amt', width: 150, align: 'right',
+							class: "multi-line-css",
+							formatter: numberFormat
+						},
+						{
+							// 실 지급액
+							header: '{{ message("item.projectcost.038") }}', name: 'thtm_paymnt_amt', width: 150, align: 'right',
+							formatter: numberFormat
+						},
+						{
+							// 누계금액
+							header: '{{ message("item.projectcost.057") }}', name: 'prev_acmtl_amt', width: 150, align: 'right',
+							formatter: numberFormat
+						},
+						{
+							// 잔여
+							header: '{{ message("item.projectcost.039") }}', name: 'remndr_amt', width: 150, align: 'right',
+							formatter: numberFormat
+						},
+						{
+							// 기성신청일
+							header: '{{ message("item.projectcost.040") }}', name: 'pay_apprvl_date', width: 100, align: 'center',
+							formatter: dateFormat
+						},
+						{
+							// 검사일
+							header: '{{ message("item.projectcost.041") }}', name: 'inspct_date', width: 100, align: 'center',
+							formatter: dateFormat
+						},
+						{
+							// 대금지급일
+							header: '{{ message("item.projectcost.042") }}', name: 'paymnt_date', width: 100, align: 'center',
+							formatter: dateFormat
+						},
+						{ header: '{{ message("item.projectcost.043") }}', name: 'apprvl_req_dt', width: 100, align: 'center' },    // 요청일
+						{ header: '{{ message("item.projectcost.044") }}', name: 'apprvl_req_nm', width: 100, align: 'center' },    // 요청자
+						{ header: '{{ message("item.projectcost.045") }}', name: 'apprvl_dt', width: 100, align: 'center' },        // 최종승인일
+						{ header: '{{ message("item.projectcost.046") }}', name: 'apprvl_nm', width: 100, align: 'center' },        // 최종승인자
+						{ header: '{{ message("item.projectcost.047") }}', name: 'apprvl_stats_txt', width: 80, align: 'center' },  // 승인상태
+						{ header: '{{ message("item.com.022") }}', name: 'rmrk', align: 'left' },                                   // 비고
+					]
+				});
+
+				this.paymentGrid.on("click", (ev) => {
+					if (ev.columnName == "_checked") {
+						if (ev.nativeEvent.target.className == "checkGroup") {
+							let temp = this.paymentGrid.getRow(ev.rowKey);
+							temp._attributes.checked = this.paymentGrid.getRow(ev.rowKey)._attributes.checked ? false : true;
+							this.paymentGrid.setRow(ev.rowKey, temp);
+						}
+					}
+				});
+			}
+
+
+			let list = this.read();
+
+			if (list) {
+				this.paymentGrid.resetData(list);
+				refreshGrid(this.paymentGrid);
+			}
+		},
+		read: function () {
+			let _this = this;
+			let data;
+			let root;
+
+			var param = {
+				cntrctNo: cntrctNo
+			};
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-list',
+                param,
+                function (response) {
+                    cntrctChgNo = response.details.cntrctChgInfo.cntrct_chg_no; // 계약변경차수
+
+                    data = response.details.paymentList;
+                    if (data.length > 0) {
+                        _this.paymentGrid.resetData([]);
+                        _this.paymentGrid.resetData(data);
+                    } else {
+                        _this.paymentGrid.resetData([]);
+                    }
+
+                    _this.paymentGrid.findRows(gd => gd.rowtype === "ori")
+                        .forEach(row => _this.paymentGrid.addRowClassName(row.rowKey, "cell-BizON"));
+                },
+                function (error) {
+                    console.error(error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+			gaiaCommon.LoadingOverlay('body', false);
+			return data;
+		},
+
+	}
+
+	class PaymentColumnCheckbox {
+		constructor(props) {
+			const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+		}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			let chk = "";
+			if (Boolean(props.value)) {
+				chk = "checked";
+			}
+
+			const row = props.grid.getRow(props.rowKey);
+			let deleteIcon = "";
+			if (isDelAuth === "Y") {
+				deleteIcon = `<i class='ic ic-delete' style="margin:0 10px 0 0;"
+					onclick='delPayment("r", "${row.payprce_sno}", "${row.apprvl_stats}", "${row.apprvl_stats_txt}");'></i>`;
+			}
+
+			this.el.innerHTML = `<div style="display: flex;align-items: center;justify-content: center;">
+				<input class="checkGroup" style="margin:0 10px 0 0;" type="checkbox" ${chk}
+					name="chk"
+					sno="${row.payprce_sno}"
+					stats="${row.apprvl_stats}"
+					stats_txt="${row.apprvl_stats_txt}">
+				${deleteIcon}
+				<i class='ic ic-note' onclick='goLink("history", "${row.payprce_sno}", "${row.cntrct_chg_id}", "${row.payprce_ym}", "${row.payprce_tmnum}");'></i>
+			</div>`;
+		}
+	}
+
+
+	class CustomColumnLink {
+		constructor(props) {
+			const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+			this.addEventListeners(props);
+		}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.innerHTML = `<div>` + props.value + ` <i class='ic ic-sent-to-onoff' style='opacity:0;position:absolute;padding:0 15px;' onclick='goLink("detail", "` + props.grid.getRow(props.rowKey).payprce_sno + `");'>` + `</i></div>`;
+		}
+
+		addEventListeners(props) {
+
+			const rowSelector = `td[data-row-key="${props.rowKey}"]`; // 예시 CSS 선택자
+			const rowElements = document.querySelectorAll(rowSelector); // NodeList 반환
+			if (rowElements.length > 0) {
+				rowElements.forEach((rowElement) => {
+					rowElement.addEventListener("mouseenter", () => {
+						let icon = this.el.querySelector(".ic-sent-to-onoff");
+						if (icon)
+							icon.style.opacity = 1;
+					});
+					rowElement.addEventListener("mouseleave", () => {
+						let icon = this.el.querySelector(".ic-sent-to-onoff");
+						if (icon)
+							icon.style.opacity = 0;
+					});
+				});
+			} else {
+				// console.error("행 요소를 찾을 수 없습니다:", this.rowKey);
+			}
+
+		}
+	}
+
+	function goLink(type, sno, id, dt, tmnum) {
+		const checkedRows = payment.paymentGrid.getCheckedRows();
+		if (type == "del") {
+			if (checkedRows.length < 1) {
+				gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.002') }}"));
+				return false;
+			}
+			delPayment("b");
+		}
+
+		if (type == "edit") {
+			if (checkedRows.length < 1) {
+				gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.003') }}"));
+				return false;
+			}
+			if (checkedRows.length > 1) {
+				gaiaCommon.customAlert("{{ message('msg.036') }}".replace('{0}', "{{ message('btn.003') }}"));
+				return false;
+			}
+
+			if (checkedRows[0].apprvl_stats == "A" || checkedRows[0].apprvl_stats == "E") {
+				// 승인요청, 승인 상태 수정 불가
+				gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', checkedRows[0].apprvl_stats_txt).replace('{1}', "{{ message('btn.003') }}"));
+				return false;
+			} else {
+				window.location.href = "/projectcost/payment/detail?type=d&sType=e&cntrctNo=" + cntrctNo + "&sNo=" + checkedRows[0].payprce_sno + "&cntrctChgNo=" + cntrctChgNo + `&pjtNo=${pjtInfo.pjtNo}`;
+			}
+		}
+
+		if (type == "add") {
+			window.location.href = "/projectcost/payment/detail?type=d&sType=a&cntrctNo=" + cntrctNo + `&pjtNo=${pjtInfo.pjtNo}`;
+		}
+		if (type == "detail") {
+			window.location.href = "/projectcost/payment/detail?type=d&sType=d&cntrctNo=" + cntrctNo + "&sNo=" + sno + "&cntrctChgNo=" + cntrctChgNo + `&pjtNo=${pjtInfo.pjtNo}`;
+		}
+		if (type == "history") {
+			console.log("system: ", system);
+			let LINK_URL = "/projectcost/payment/history?cntrctNo="
+				+ cntrctNo
+				+ "&cntrctChgNo=" + cntrctChgNo
+				+ "&sNo=" + sno
+				+ "&id=" + id
+				+ "&dt=" + dt
+				+ "&tmnum=" + tmnum
+				+ `&pjtNo=${pjtInfo.pjtNo}`;
+
+			if (system === "P") {	// PGaiA일 시
+				window.location.href = LINK_URL;
+			}
+			if (system === "G") {
+				const width = 1200;
+				const height = 900;
+				const left = (screen.width - width) / 2;
+				const top = (screen.height - height) / 2;
+				window.open(LINK_URL, '_blank', `scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`);
+			}
+		}
+	}
+
+    // type: r(개별), b(다건)
+	function delPayment(type, sno, stats, stats_txt) {
+		gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('msg.009') }}", "{{ message('msg.009') }}", function () {
+			let formData = []; // 체크된 행의 id 정보 가져오기
+			if (type == "r") {
+				if (stats == "A" || stats == "E") {
+					// 승인요청, 승인 상태 삭제 불가
+					gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', stats_txt).replace('{1}', "{{ message('btn.002') }}"));
+					return false;
+				} else {
+					formData.push({ cntrctNo: cntrctNo, payprceSno: sno });
+				}
+			} else if (type == "b") {
+				payment.paymentGrid.getCheckedRows().forEach(rowData => {
+					const stats = rowData.apprvl_stats;
+					const statsTxt = rowData.apprvl_stats_txt;
+
+					if (stats == "A" || stats == "E") {
+						// 승인요청, 승인 상태 삭제 불가
+						gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', statsTxt).replace('{1}', "{{ message('btn.002') }}"));
+						return false;
+					} else {
+						formData.push({ cntrctNo: cntrctNo, payprceSno: $(this).attr("sno") });
+					}
+				});
+			}
+
+			if (formData.length < 1) {
+				return false;
+			}
+
+			const data = {};
+			data['paymentList'] = formData;
+
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/del-payment',
+                data,
+                function (result) {
+					gaiaCommon.customAlert("{{ message('msg.006') }}", function () {
+						location.reload();
+					});
+                },
+                function () {
+                    console.error(status, error);
+					gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+		});
+	}
+
+	function chkStatus(stats_type, txt) {
+		if (payment.paymentGrid.getCheckedRows().length < 1) {
+			gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', txt));
+			return false;
+		}
+
+		gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.037') }}".replace('{0}', txt), "", function () {
+			setStatus(stats_type, txt);
+		});
+
+		//JSON.parse(localStorage.getItem("pageCommonData"));
+	}
+	function setStatus(stats_type, txt) {
+		let formData = []; // 체크된 행의 id 정보 가져오기
+		let chk = 0;
+
+		payment.paymentGrid.getCheckedRows().forEach(function (v) {
+			//승인요청
+			if (stats_type == "E") {
+				if (v.apprvl_stats == "E" || v.apprvl_stats == "A") {
+					let temp_txt = "";
+					if (v.apprvl_stats == "E") {
+						temp_txt = "{{ message('btn.027') }}";
+					} else if (v.apprvl_stats == "A") {
+						temp_txt = "{{ message('btn.025') }}";
+					} else if (v.apprvl_stats == "R") {
+						temp_txt = "{{ message('btn.026') }}";
+					}
+					gaiaCommon.customAlert("{{ message('msg.projectcost.003') }} ".replace('{0}', temp_txt));
+					chk += 1;
+					return false;
+				}
+			}
+
+			//승인, 반려
+			if (stats_type == "A") {
+				if (v.apprvl_stats == null) {
+					gaiaCommon.customAlert("{{ message('msg.projectcost.004') }} ".replace('{0}', txt));
+					chk += 1;
+					return false;
+				}
+			}
+
+			if (chk == 0) {
+				formData.push({ cntrctNo: cntrctNo, payprceSno: v.payprce_sno, apprvlStats: stats_type });
+			}
+		});
+
+		if (chk < 1) {
+			const data = {};
+			data['paymentList'] = formData;
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/update-status-payment',
+                data,
+                function (result) {
+                    if (result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                            location.reload();
+                        });
+                    } else if (result.code === 1000) {
+                        gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+                    }
+                },
+                function () {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}", function () {
+                        window.location.reload();
+                    });
+                }
+            );
+		}
+
+		//JSON.parse(localStorage.getItem("pageCommonData"));
+	}
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				if (gaiaCommon.me.isAdmin() || isGAIA()) {
+					$("#conts_tit").show();
+					$("#cntrct_no_select").show();
+				}
+
+				gaiaPortal.navMenuInit('M0302', '{{ message("item.projectcost.903") }}');
+
+				cntrctNo = urlParams.get('cntrctNo');
+				init();
+
+				gaia.loaded = true
+			}
+		});
+	});
+
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

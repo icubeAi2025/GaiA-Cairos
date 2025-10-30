@@ -1,0 +1,227 @@
+<div class="modal open">
+	<div class="pop_box _sm">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="menu_grp_u_tit"></h5>
+			<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<div class="form_box">
+				<form id="menu-form">
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.authority.016') }}</div>
+						<div class="form_data">
+							<input type="text" id="pop-rghtGrpNm" name="rghtGrpNm" required readonly>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.authority.005') }}</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="pop-rghtGrpDscrpt" name="rghtGrpDscrpt" required readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.authority.006') }}</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="pop-rghtGrpTyNm" name="rghtGrpTyNm" required readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.authority.007') }}</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="pop-rghtGrpRoleNm" name="rghtGrpRoleNm" required readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.mauth.003') }}</div>
+						<div class="form_data" id="checkAuthority"></div>
+					</div>
+				</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="popup.save()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 토스트 메세지 : 활성화:'on'추가, 수초 후 'on'제거-->
+<div class="pop_box toast" style="display: none;">
+	<span class="toast_msg">
+	</span>
+	<button type="button" class="icon_btn pop_close">
+		<i class="ic ic-close"></i>
+		<span class="blind">창닫기</span>
+	</button>
+</div>
+<script>
+	var popup = {
+		mode: "",
+		data: {
+			details: {},
+		},
+
+		init: async function () { 
+			if (opener) {
+				page = opener.page;
+			}
+
+			this.data.details = page.authorityGroup.data.updateRghtGrpInfo;
+
+			this.setInput();
+
+			// 콤보박스 생성
+			this.makeAuthorityCheckBox(this.data.details.menuCd, this.data.details.rghtKind);
+
+			gaia.loaded = true;
+
+		},
+
+		// 선택메뉴의 설정 권한 목록 가져와서 권한 설정 화면 만들기
+        makeAuthorityCheckBox: function (menuCd, rghtKind) {
+            let requestData = {
+                menuCd: menuCd
+            };
+            gaiaCommon.get("/api/system/menu-authority-group/selectMenu-authorityList", requestData,
+				function(result) {
+					if (result.details?.authorityList) {
+						let setAuthorityItem = document.getElementById("checkAuthority");
+						let ulSet;
+						let liSet;
+						let labelSet;
+
+						//메뉴의 설정권한 가져와서 권한 설정 체크 상자 만들기
+						result.details?.authorityList.forEach((item, index) => {
+							if(index === 0 || index === 5 || index === 10){
+								ulSet = document.createElement('ul');
+								ulSet.setAttribute("class", "list_sty dropdown_list");
+
+								liSet = document.createElement('li');
+								liSet.setAttribute("class", "form_check");
+							}
+
+							labelSet = document.createElement("label");
+							labelSet.setAttribute("class", "form_check");
+							labelSet.innerHTML = `	<input class="check_mark" type="checkbox" id="${item.rght_kind}" name="rghtKind" value="">
+													<span class="check_label">${item.cmn_cd_nm_krn}</span>`;
+
+							liSet.append(labelSet);
+
+							if(index === 4 || index === 9 || index === (result.details?.authorityList.length-1)){
+								ulSet.append(liSet);
+								setAuthorityItem.appendChild(ulSet);
+							}
+						});
+
+						//기준권한 기준값으로 잘라 배열에 담기
+						let checkRghtKind = rghtKind.split(',');
+
+						//체크박스에 기존권한 체크하기
+						checkRghtKind.forEach((item, index) => {
+							let checkBox = document.getElementById(item);
+							if(checkBox) {
+								checkBox.checked = true;
+								checkBox.value = item;
+							}
+						});
+
+					}else {
+						console.log('해당 메뉴의 설정된 권한이 없습니다..');
+					}
+				},
+				function (error){
+					console.error("Error making select box:", error);
+				}
+            );
+        },
+
+		close() {
+			page.refresh(true, true, false);
+			page.popup.close();
+			if (opener) {
+				window.close();
+			}
+		},
+		setInput() {
+				$("#menu_grp_u_tit").text("{{ message('item.mauth.005') }}"); //메뉴 권한 수정
+
+				$("#pop-rghtGrpNm").val(this.data.details.rghtGrpNm);
+				$("#pop-rghtGrpDscrpt").val(this.data.details.rghtGrpDscrpt);
+				$("#pop-rghtGrpTyNm").val(this.data.details.rghtGrpTyNm);
+				$("#pop-rghtGrpRoleNm").val(this.data.details.rghtGrpRoleNm);
+		},
+		save() {
+
+			let checkedRghtKindAndActionType = [];
+
+			$("input[name='rghtKind']").each(function() {
+				if($(this).prop('checked') && !$(this).val()) {
+					checkedRghtKindAndActionType.push($(this).attr("id")+',I');
+				}else if(!$(this).prop('checked') && $(this).val()) {
+					checkedRghtKindAndActionType.push($(this).attr("id")+',D');
+				}
+			});			
+
+			let data = {
+				menuCd: this.data.details.menuCd,
+				rghtGrpCd: this.data.details.rghtGrpCd,
+				checkedRghtKindAndActionType: checkedRghtKindAndActionType
+			};
+			console.log(data);
+			if(checkedRghtKindAndActionType.length > 0) {
+				gaiaCommon.LoadingOverlay('body', true);
+				gaiaCommon.post("/api/system/menu-authority-group/update", data,
+					function (result) {
+						gaiaCommon.LoadingOverlay('body', false);
+						if(result.ok){
+                            gaiaCommon.customAlert("{{ message('msg.044') }}"); // 저장되었습니다.
+							popup.close();
+						}else{
+							console.error(result.message);
+						}
+					},
+					function (error){
+						gaiaCommon.LoadingOverlay('body', false);
+						gaiaCommon.customAlert("저장에 실패하였습니다."); // 저장에 실패하였습니다.
+						console.error(error);
+					}
+				);
+			}else {
+                gaiaCommon.customAlert("{{ message('msg.044') }}");
+				popup.close();
+			}            
+		},
+
+	};
+
+	$(function () {
+		popup.init();
+
+	});
+</script>

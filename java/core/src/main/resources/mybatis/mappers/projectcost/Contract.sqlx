@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract">
+
+    <select id="selectContractList" parameterType="paymentformTypeSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectContractList][mjkang]  */
+	   SELECT cc.*
+	        , scc.cmn_cd_nm_krn AS cmn_cd_nm_krn
+	     FROM cn_contract cc
+	LEFT JOIN sm_com_code scc ON cc.major_cnstty_cd = scc.cmn_cd
+	    WHERE 1 = 1
+		  AND cc.pjt_no = #{pjtNo}
+	      AND cc.dlt_yn = 'N'
+	      AND scc.cmn_grp_cd = '19a8bb53-74b4-405a-8d91-2b38555fc7d9'
+     ORDER BY cc.cntrct_no
+			;
+    </select>
+    
+    <select id="selectContractChangeList" parameterType="contractformTypetSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectContractChangeList][mjkang]  */
+		WITH cntrct_dt AS
+			( 
+				SELECT cntrct_chg_no
+					 , rgst_dt
+					 , last_chg_yn
+					 , cntrct_chg_id
+					 , cntrct_amt
+					 , cntrct_no
+					 , dlt_yn
+				  FROM cn_contract_change
+			  ORDER BY last_chg_yn desc, cntrct_chg_no desc
+			)
+				SELECT cntrct_chg_no
+					 , rgst_dt
+					 , last_chg_yn
+					 , CASE WHEN last_chg_yn='Y' THEN ' 최종' ELSE '' END AS txt
+					 , to_char(rgst_dt, 'YYYY-MM-DD') AS dt
+					 , cntrct_chg_id
+
+				  FROM cntrct_dt cdt
+				 WHERE 1 = 1
+				   AND cntrct_no = #{cntrctNo}
+				   AND dlt_yn = 'N'
+					 ;
+    </select>
+
+    <select id="selectCbsList" parameterType="contractformTypetSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectCbsList][mjkang]  */
+		WITH tree AS
+			( 
+				SELECT cntrct_chg_id
+					 , cnstty_cd
+					 , cnstty_sn
+					 , up_cnstty_cd
+					 , cnstty_lvl_num
+					 , unit_cnst_type
+					 , cnstty_nm
+				  FROM ct_cbs
+				 WHERE cntrct_chg_id = #{chgId}
+                 AND CNSTTY_SN != 0
+			)
+				SELECT cntrct_chg_id
+					 , cnstty_sn
+     				 , unit_cnst_type || cnstty_cd AS id
+     				 , CASE WHEN cnstty_lvl_num='1' THEN '#' ELSE unit_cnst_type || up_cnstty_cd END AS parent
+     				 , 'fa-solid fa-caret-right' AS icons
+     				 , cnstty_nm AS text
+  				  FROM tree  
+  			  ORDER BY cnstty_sn
+  					 ;
+    </select>
+
+    <select id="selectCbsDetailList" parameterType="contractformTypetSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectCbsDetailList][mjkang]  */
+        WITH chgData AS (
+			SELECT * 
+				, (mtrl_uprc * rsce_qty) AS mtrl_cost
+				, (lbr_uprc * rsce_qty) AS lbr_cost
+				, (gnrlexpns_uprc * rsce_qty) AS gnrlexpns_cost
+				, (mtrl_uprc + lbr_uprc + gnrlexpns_uprc) AS cntrct_total
+				, ((mtrl_uprc + lbr_uprc + gnrlexpns_uprc) * rsce_qty) AS cntrct_total_cost
+				, 9999 AS sp_cost
+			FROM ct_cbs_detail
+			WHERE 1 = 1
+			<if test="cnsttySnList!=null and cnsttySnList.size!=0"> 
+				AND cnstty_sn IN 
+					<foreach item="cnsttySn" collection="cnsttySnList" separator="," open="(" close=")">
+						#{cnsttySn}
+					</foreach>
+			</if>
+			AND cntrct_chg_id = #{chgId}
+			ORDER BY dsply_ordr
+		),
+		cntrctData AS (
+			SELECT * 
+				, (mtrl_uprc * rsce_qty) AS mtrl_cost
+				, (lbr_uprc * rsce_qty) AS lbr_cost
+				, (gnrlexpns_uprc * rsce_qty) AS gnrlexpns_cost
+				, (mtrl_uprc + lbr_uprc + gnrlexpns_uprc) AS cntrct_total
+				, ((mtrl_uprc + lbr_uprc + gnrlexpns_uprc) * rsce_qty) AS cntrct_total_cost
+				, 9999 AS sp_cost
+			FROM ct_cbs_detail
+			WHERE 1 = 1
+			<if test="cnsttySnList!=null and cnsttySnList.size!=0"> 
+				AND cnstty_sn IN 
+					<foreach item="cnsttySn" collection="cnsttySnList" separator="," open="(" close=")">
+						#{cnsttySn}
+					</foreach>
+			</if>
+			AND cntrct_chg_id = #{cntrctId}
+			ORDER BY dsply_ordr
+		)
+		SELECT chg.rsce_cd
+			, chg.dtl_cnstty_nm
+			, chg.spec_nm
+			, chg.unit
+			, chg.rsce_tp_cd
+			, ROUND(chg.rsce_qty, 2) AS chg_rsce_qty
+			, ROUND(COALESCE(cnt.rsce_qty, 0), 2) AS cnt_rsce_qty
+			, ROUND(CAST(chg.mtrl_uprc AS NUMERIC), 0) AS chg_mtrl_uprc /*반올림 후 정수로 변환*/
+			, ROUND(CAST(COALESCE(cnt.mtrl_uprc, 0) AS NUMERIC), 0) AS cnt_mtrl_uprc /*반올림 후 정수로 변환*/
+			, (ROUND(CAST(chg.mtrl_uprc AS NUMERIC), 0) * chg.rsce_qty) AS chg_mtrl_cost
+			, (ROUND(CAST(COALESCE(cnt.mtrl_uprc, 0) AS NUMERIC), 0) * COALESCE(cnt.rsce_qty, 0)) AS cnt_mtrl_cost
+			, ROUND(CAST(chg.lbr_uprc AS NUMERIC), 0) AS chg_lbr_uprc /*반올림 후 정수로 변환*/
+			, ROUND(CAST(COALESCE(cnt.lbr_uprc, 0) AS NUMERIC), 0) AS cnt_lbr_uprc /*반올림 후 정수로 변환*/
+			, (ROUND(CAST(chg.lbr_uprc AS NUMERIC), 0) * chg.rsce_qty) AS chg_lbr_cost
+			, (ROUND(CAST(COALESCE(cnt.lbr_uprc, 0) AS NUMERIC), 0) * COALESCE(cnt.rsce_qty, 0)) AS cnt_lbr_cost
+			, ROUND(CAST(chg.gnrlexpns_uprc AS NUMERIC), 0) AS chg_gnrlexpns_uprc /*반올림 후 정수로 변환*/
+			, ROUND(CAST(COALESCE(cnt.gnrlexpns_uprc, 0) AS NUMERIC), 0) AS cnt_gnrlexpns_uprc /*반올림 후 정수로 변환*/
+			, (trunc(CAST(chg.gnrlexpns_uprc AS NUMERIC), 0) * chg.rsce_qty) AS chg_gnrlexpns_cost
+			, (trunc(CAST(COALESCE(cnt.gnrlexpns_uprc, 0) AS NUMERIC), 0) * COALESCE(cnt.rsce_qty, 0)) AS cnt_gnrlexpns_cost
+			, trunc(CAST((chg.mtrl_uprc + chg.lbr_uprc + chg.gnrlexpns_uprc) AS NUMERIC), 0) AS chg_uprc_total /*버림 후 정수로 변환*/
+			, trunc(CAST((COALESCE(cnt.mtrl_uprc, 0) + COALESCE(cnt.lbr_uprc, 0) + COALESCE(cnt.gnrlexpns_uprc, 0)) AS NUMERIC), 0) AS cnt_uprc_total /*반올림 후 정수로 변환*/
+			, trunc(COALESCE(chg.mtrl_uprc,0) * chg.rsce_qty ) + trunc(COALESCE(chg.lbr_uprc,0) * chg.rsce_qty) + trunc(COALESCE(chg.gnrlexpns_uprc,0) * chg.rsce_qty)  AS chg_cost /*반올림 후 정수로 변환*/
+			, trunc(COALESCE(cnt.mtrl_uprc,0) * cnt.rsce_qty ) + trunc(COALESCE(cnt.lbr_uprc,0) * cnt.rsce_qty) + trunc(COALESCE(cnt.gnrlexpns_uprc,0) * cnt.rsce_qty)  AS cnt_cost /*반올림 후 정수로 변환*/
+			, trunc(COALESCE(chg.mtrl_uprc,0) * chg.rsce_qty ) + trunc(COALESCE(chg.lbr_uprc,0) * chg.rsce_qty) + trunc(COALESCE(chg.gnrlexpns_uprc,0) * chg.rsce_qty) - trunc(COALESCE(cnt.mtrl_uprc,0) * cnt.rsce_qty ) + trunc(COALESCE(cnt.lbr_uprc,0) * cnt.rsce_qty) + trunc(COALESCE(cnt.gnrlexpns_uprc,0) * cnt.rsce_qty)  AS sp_cost /*반올림 후 정수로 변환*/
+			, #{cntrctId} as cntrct_chg_id
+		FROM chgData chg
+		LEFT JOIN cntrctData cnt 
+			ON chg.dtl_cnstty_sn = cnt.dtl_cnstty_sn 
+		WHERE (chg.rsce_cd LIKE '%' || #{searchText} || '%') 
+		OR (chg.dtl_cnstty_nm LIKE '%' || #{searchText} || '%') 
+		OR (chg.spec_nm LIKE '%' || #{searchText} || '%')
+		ORDER BY chg.cnstty_sn, chg.dtl_cnstty_sn, chg.dsply_ordr, chg.rsce_cd;
+    </select>
+    
+    
+    <select id="selectCbsDetail" parameterType="contractformTypetSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectCbsDetail][mjkang]  */
+        select * from (
+        <choose>
+        	<when test='type == "M" || type == "L" || type == "E"'>
+        		SELECT *
+        		     , 'detail' as rowtype
+        			 , gnrlexpns_cd AS cd
+        			 , rsce_nm AS nm
+        		  FROM ct_resource
+				 WHERE 1 = 1 
+			       AND GNRLEXPNS_CD = #{cd}
+				   AND cntrct_chg_id = #{id}
+        	</when>
+			<otherwise>
+		       with chgData as (
+							SELECT * 
+								 , (mtrl_uprc * rsce_qty) AS mtrl_cost
+								 , (lbr_uprc * rsce_qty) AS lbr_cost
+								 , (gnrlexpns_uprc * rsce_qty) AS gnrlexpns_cost
+								 , (mtrl_uprc+lbr_uprc+gnrlexpns_uprc) AS cntrct_total
+								 , ((mtrl_uprc+lbr_uprc+gnrlexpns_uprc) * rsce_qty) AS cntrct_total_cost
+							     , 9999 AS sp_cost
+							  FROM ct_cbs_detail
+							 WHERE 1 = 1
+							   AND rsce_cd = #{cd}
+							   AND cntrct_chg_id = #{id}
+				),
+				detailData AS (
+							SELECT cuc.ucost_cd
+								 , COALESCE(cr.rsce_nm, cucnm.rsce_nm) AS rsce_nm
+							     , cuc.spec_nm
+							     , cuc.unit
+							     , cucd.rsce_qty
+							     , cucd.mtrl_uprc
+							     , cucd.lbr_uprc
+							     , cucd.gnrlexpns_uprc
+							     , cucd.rsce_cd
+							     , cucd.rsce_tp_cd
+							  FROM ct_unit_cost cuc
+		       			 LEFT JOIN ct_unit_cost_detail cucd 
+		       			        ON cuc.ucost_cd = cucd.ucost_cd 
+		       			       AND cuc.cntrct_chg_id = cucd.cntrct_chg_id
+		       			 LEFT JOIN ct_resource cr 
+		       			        ON cucd.rsce_cd = cr.gnrlexpns_cd
+		       			       AND cr.cntrct_chg_id = cucd.cntrct_chg_id
+		       			 LEFT JOIN ct_unit_cost cucnm
+		       			        ON cucd.rsce_cd = cucnm.ucost_cd
+		       			       AND cucnm.cntrct_chg_id = cucd.cntrct_chg_id
+		       				 WHERE 1 = 1
+		       				   AND cuc.ucost_cd = #{cd}
+		       				   AND cucd.cntrct_chg_id = #{id}
+		       		      ORDER BY cucd.dsply_ordr
+				)
+				select 'ori' as rowtype
+				     , rsce_cd as cd
+				     , dtl_cnstty_nm as nm
+				     , spec_nm
+				     , unit
+					 , rsce_qty
+					 , mtrl_uprc
+					 , (mtrl_uprc * rsce_qty) AS mtrl_cost
+					 , lbr_uprc
+					 , (lbr_uprc * rsce_qty) AS lbr_cost
+					 , gnrlexpns_uprc
+					 , (gnrlexpns_uprc * rsce_qty) AS gnrlexpns_cost
+					 , (mtrl_uprc+lbr_uprc+gnrlexpns_uprc) AS uprc_total
+					 , ((mtrl_uprc+lbr_uprc+gnrlexpns_uprc) * rsce_qty) AS cost
+				  FROM chgData
+			 UNION ALL
+				SELECT 'detail' as rowtype
+				     , rsce_cd
+				     , rsce_nm
+				     , spec_nm
+				     , unit
+				     , rsce_qty
+					 , mtrl_uprc
+					 , (mtrl_uprc * rsce_qty) AS mtrl_cost
+					 , lbr_uprc
+					 , (lbr_uprc * rsce_qty) AS lbr_cost
+					 , gnrlexpns_uprc
+					 , (gnrlexpns_uprc * rsce_qty) AS gnrlexpns_cost
+					 , (mtrl_uprc+lbr_uprc+gnrlexpns_uprc) AS uprc_total
+					 , ((mtrl_uprc+lbr_uprc+gnrlexpns_uprc) * rsce_qty) AS cost
+				  FROM detailData
+			</otherwise>
+        </choose>
+        ) as a
+    </select>
+    <select id="selectCostCalculatorList" parameterType="contractformTypetSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.contract.selectCostCalculatorList]  */
+	    WITH RECURSIVE CODE_LIST(cst_calc_it_cd, cst_calc_it_nm, up_cst_calc_it_cd, cst_calc_mthd_nm, DEPTH, PATH, CYCLE) as (
+			SELECT A.cst_calc_it_cd
+				 , A.cst_calc_it_nm
+				 , A.up_cst_calc_it_cd
+				 , A.cst_calc_mthd_nm
+				 , 1
+				 , ARRAY[A.cst_calc_it_cd::text]
+				 , false
+				 , A.dsply_ordr
+		     	 , A.ovrhdcst_pt
+		     	 , A.drcnstcost_cmpr_pt
+		     	 , A.cost_am
+				 , (select cost_am from ct_cost_calculator ori where ori.cntrct_chg_id = #{cntrctId} and ori.cst_calc_it_cd = A.cst_calc_it_cd) as ori_cost_am
+			  FROM ct_cost_calculator A
+		     WHERE A.up_cst_calc_it_cd ='' AND A.cntrct_chg_id = #{chgId}
+		 UNION ALL
+		    SELECT A.cst_calc_it_cd
+		         , A.cst_calc_it_nm
+		         , A.up_cst_calc_it_cd
+		         , A.cst_calc_mthd_nm
+		         , B.DEPTH+1
+		         , ARRAY_APPEND(B.PATH, A.cst_calc_it_cd::text)
+		         , A.cst_calc_it_cd = any(B.PATH)
+		         , A.dsply_ordr
+		     	 , A.ovrhdcst_pt
+		     	 , A.drcnstcost_cmpr_pt
+		     	 , A.cost_am
+				 , (select cost_am from ct_cost_calculator ori where A.up_cst_calc_it_cd = B.cst_calc_it_cd and ori.cntrct_chg_id = #{cntrctId} and ori.cst_calc_it_cd = A.cst_calc_it_cd) as ori_cost_am
+		      FROM ct_cost_calculator A, CODE_LIST B 
+		     WHERE A.up_cst_calc_it_cd = B.cst_calc_it_cd
+		       AND A.cntrct_chg_id = #{chgId}
+		       AND NOT cycle
+		)
+		SELECT cst_calc_it_cd
+		     , lpad('', DEPTH) || cst_calc_it_nm AS cst_calc_it_nm
+		     , up_cst_calc_it_cd
+		     , lpad('', DEPTH) || cst_calc_mthd_nm AS cst_calc_mthd_nm
+		     , DEPTH AS A_MENU_LEVEL
+		     , path
+		     , dsply_ordr
+		     , COALESCE(ovrhdcst_pt, 0) AS ovrhdcst_pt
+		     , COALESCE(drcnstcost_cmpr_pt, 0) AS drcnstcost_cmpr_pt
+		     , COALESCE(cost_am, 0) AS cost_am
+		     , COALESCE(ori_cost_am, 0) AS ori_cost_am
+		     , COALESCE(cost_am, 0) - COALESCE(ori_cost_am, 0) AS sp_cost
+		  FROM CODE_LIST
+		 ORDER BY dsply_ordr, path
+    </select>
+</mapper>

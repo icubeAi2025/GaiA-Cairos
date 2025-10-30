@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc">
+
+	<select id="selectDocTemplate" parameterType="Integer" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectDocTemplate][gwlee]  */
+		SELECT 	ORGNL_DOC_NM AS DOC_NM, 
+				ORGNL_DOC_DISK_NM AS DOC_DISK_NM, 
+				ORGNL_DOC_DISK_PATH AS DOC_DISK_PATH
+		FROM 	SM_CONSTRUCTION_BEGINS_DOC
+		WHERE 	DOC_YN = 'Y'
+		AND 	CBGN_NO = #{templateSeq}
+	</select>
+
+	<select id="selectDocTemplateToStorageMain" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectDocTemplateToStorageMain][thkim]  */
+        SELECT 	DOC_NM AS DOC_NM,
+                DOC_DISK_NM AS DOC_DISK_NM,
+                DOC_DISK_PATH AS DOC_DISK_PATH
+        FROM 	DC_STORAGE_MAIN
+        WHERE 	DLT_YN = 'N'
+        AND 	DOC_ID = #{docId}
+    </select>
+
+    <select id="selectMergeAttachmentList" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectMergeAttachmentList][thkim]  */
+            SELECT
+            	FILE_NO AS FILE_NO,
+            	FILE_NM AS DOC_NM,
+            	FILE_DISK_NM AS DOC_DISK_NM,
+            	FILE_DISK_PATH AS DOC_DISK_PATH
+            FROM DC_ATTACHMENTS DA
+            WHERE
+            FILE_NO NOT IN (
+        			    	SELECT
+        				     	CASE
+                                   WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                   WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                   ELSE B.ATTRBT_CNTNTS::INTEGER
+                                END FILE_NO
+        				    FROM DC_PROPERTY A
+        				    INNER JOIN DC_PROPERTY_DATA B
+        				    ON A.ATTRBT_CD = B.ATTRBT_CD
+        				    AND A.ATTRBT_TYPE = 'ATCH'
+        				    AND A.DLT_YN = 'N'
+        			    )
+            AND DA.DLT_YN = 'N'
+            AND DA.DOC_ID = #{docId};
+    </select>
+
+	<select id="selectFileInfo" parameterType="input" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectFileInfo][gwlee]  */
+		SELECT 	DOC_NM AS DOC_NM, 
+				SPLIT_PART(DOC_DISK_NM, '.', 1) AS DOC_DISK_NM, 
+				DOC_DISK_PATH AS DOC_DISK_PATH
+		FROM 	DC_STORAGE_MAIN 
+		WHERE 	NAVI_ID =#{naviId}
+		AND 	DOC_ID = #{docId}
+		AND 	DLT_YN = 'N' 
+		AND 	DOC_TYPE = 'FILE'
+	</select>
+
+	<update id="updateFileInfo" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.updateFileInfo][thkim]  */
+        UPDATE DC_STORAGE_MAIN
+        SET 
+            DOC_SIZE = #{docSize}
+        WHERE 
+            DOC_ID = #{docId}
+        AND DLT_YN = 'N';
+    </update>
+
+	<select id="selectDefaultData" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectDefaultData][thkim]  */
+        -- 착공계 기본 데이터 조회 쿼리
+        SELECT
+                -- 기본 계약 관련 정보
+                COALESCE(A.CNTRCT_NM, '') AS CNTRCT_NM,
+                COALESCE(D.CMN_CD_NM_KRN, '') AS CNTRCT_TYPE,
+                COALESCE(NUM_MONEY_TO_KOR_MONEY(A.CNTRCT_COST, '1'), '') AS CNTRCT_COST_KR,
+                TO_CHAR(COALESCE(A.CNTRCT_COST, 0), '999,999,999,999') AS CNTRCT_COST,
+                CASE
+                    WHEN A.CNTRCT_DIV_CD = '0104' THEN COALESCE(NUM_MONEY_TO_KOR_MONEY(A.THIS_CNTRCT_COST, '1'), '')
+                    ELSE ''
+                END AS THIS_CNTRCT_COST_KR,
+                CASE
+                    WHEN A.CNTRCT_DIV_CD = '0104' THEN TO_CHAR(COALESCE(A.THIS_CNTRCT_COST, 0), '999,999,999,999')
+                    ELSE ''
+                END AS THIS_CNTRCT_COST,
+                COALESCE(A.MNG_CNTRCT_NO, '') AS MNG_CNTRCT_NO,	-- 관리계약번호
+                COALESCE(SUBSTRING(A.CNTRCT_DATE, 0, 5), '') || '년 ' ||
+                COALESCE(SUBSTRING(A.CNTRCT_DATE, 5, 2), '') || '월 ' ||
+                COALESCE(SUBSTRING(A.CNTRCT_DATE, 7, 2), '') || '일' AS CNTRCT_DATE,
+                COALESCE(SUBSTRING(A.CBGN_DATE, 0, 5), '') || '년 ' ||
+                COALESCE(SUBSTRING(A.CBGN_DATE, 5, 2), '') || '월 ' ||
+                COALESCE(SUBSTRING(A.CBGN_DATE, 7, 2), '') || '일' AS CBGN_DATE,
+                COALESCE(SUBSTRING(A.CCMPLT_DATE, 0, 5), '') || '년 ' ||
+                COALESCE(SUBSTRING(A.CCMPLT_DATE, 5, 2), '') || '월 ' ||
+                COALESCE(SUBSTRING(A.CCMPLT_DATE, 7, 2), '') || '일' AS CCMPLT_DATE,
+                CASE
+                    WHEN A.CNTRCT_DIV_CD = '0104' THEN
+                        COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 0, 5), '') || '년 ' ||
+                        COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 5, 2), '') || '월 ' ||
+                        COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 7, 2), '') || '일'
+                    ELSE ''
+                END AS THIS_CCMPLT_DATE,
+                -- 대표 계약자 정보
+                COALESCE(A.BSNSMN_NO, '') AS BSNSMN_NO, -- 사업자등록번호
+                COALESCE(A.CORP_ADRS, '') AS CORP_ADRS, -- 업체 주소
+                COALESCE(A.CORP_NM, '') AS CORP_NM,		-- 업체 명
+                COALESCE(A.CORP_CEO, '') AS CORP_CEO,	-- 업체 대표자 명
+                COALESCE(A.TEL_NO, '') AS TEL_NO,		-- 전화번호
+                COALESCE(A.FAX_NO, '') AS FAX_NO,		-- 전화번호
+                COALESCE(A.OFCL_NM, '') AS OFCL_NM,		-- 계약 담당자 명
+                --기본 프로젝트 정보
+                COALESCE(SUBSTRING(B.PJT_BGN_DATE, 1, 4) || '.' ||
+                         SUBSTRING(B.PJT_BGN_DATE, 5, 2) || '.' ||
+                         SUBSTRING(B.PJT_BGN_DATE, 7, 2), '') AS PJT_BGN_DATE,
+                COALESCE(SUBSTRING(B.PJT_END_DATE, 1, 4) || '.' ||
+                         SUBSTRING(B.PJT_END_DATE, 5, 2) || '.' ||
+                         SUBSTRING(B.PJT_END_DATE, 7, 2), '') AS PJT_END_DATE,
+                COALESCE(B.PLC_LCT_ADRS, '') AS PLC_LCT_ADRS,
+                COALESCE(B.DMINSTT_NM, '') AS DMINSTT_NM,
+                COALESCE(C.CMN_CD_NM_KRN, '') AS CNSTWK_TYPE
+        FROM CN_CONTRACT A
+        INNER JOIN CN_PROJECT B
+                ON A.PJT_NO = B.PJT_NO
+                AND B.DLT_YN = 'N'
+        LEFT JOIN SM_COM_CODE C
+                ON C.CMN_GRP_CD = 'ce229e27-98c6-8c89-7be7-cbc27b0b1fc8'
+                AND C.CMN_CD = B.CNSTWK_TYPE
+                AND C.DLT_YN = 'N'
+        LEFT JOIN SM_COM_CODE D
+                ON D.CMN_GRP_CD = '1ddbdcc2-5e0c-8961-e8b5-c7adec96eb29'
+                AND D.CMN_CD = A.CNTRCT_TYPE
+                AND D.DLT_YN = 'N'
+        WHERE A.DLT_YN = 'N'
+        AND B.USE_YN = 'Y'
+        AND A.CNTRCT_NO = #{cntrctNo};
+	</select>
+
+	<select id="selectDefault0001Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectDefault0001Data][gwlee]  */
+		SELECT
+			COALESCE(A.CNTRCT_NM, '') AS CNTRCT_NM,
+			COALESCE(NUM_MONEY_TO_KOR_MONEY(A.CNTRCT_COST, '1'), '') AS CNTRCT_COST_KR,
+			TO_CHAR(COALESCE(A.CNTRCT_COST, 0), '999,999,999,999') AS CNTRCT_COST,
+
+			CASE
+				WHEN A.CNTRCT_DIV_CD = '0104' THEN COALESCE(NUM_MONEY_TO_KOR_MONEY(A.THIS_CNTRCT_COST, '1'), '')
+				ELSE ''
+			END AS THIS_CNTRCT_COST_KR,
+
+			CASE
+				WHEN A.CNTRCT_DIV_CD = '0104' THEN TO_CHAR(COALESCE(A.THIS_CNTRCT_COST, 0), '999,999,999,999')
+				ELSE ''
+			END AS THIS_CNTRCT_COST,
+
+			COALESCE(A.MNG_CNTRCT_NO, '') AS MNG_CNTRCT_NO,
+
+			COALESCE(SUBSTRING(A.CNTRCT_DATE, 0, 5), '') || '년 ' ||
+			COALESCE(SUBSTRING(A.CNTRCT_DATE, 5, 2), '') || '월 ' ||
+			COALESCE(SUBSTRING(A.CNTRCT_DATE, 7, 2), '') || '일' AS CNTRCT_DATE,
+
+			COALESCE(SUBSTRING(A.CBGN_DATE, 0, 5), '') || '년 ' ||
+			COALESCE(SUBSTRING(A.CBGN_DATE, 5, 2), '') || '월 ' ||
+			COALESCE(SUBSTRING(A.CBGN_DATE, 7, 2), '') || '일' AS CBGN_DATE,
+
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 0, 5), '') || '년 ' ||
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 5, 2), '') || '월 ' ||
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 7, 2), '') || '일' AS CCMPLT_DATE,
+
+			CASE
+				WHEN A.CNTRCT_DIV_CD = '0104' THEN
+					COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 0, 5), '') || '년 ' ||
+					COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 5, 2), '') || '월 ' ||
+					COALESCE(SUBSTRING(A.THIS_CCMPLT_DATE, 7, 2), '') || '일'
+				ELSE ''
+			END AS THIS_CCMPLT_DATE,
+
+			COALESCE(A.CORP_ADRS, '') AS CORP_ADRS,
+			COALESCE(A.CORP_NM, '') AS CORP_NM,
+			COALESCE(A.CORP_CEO, '') AS CORP_CEO,
+			COALESCE(B.DMINSTT_NM, '') AS DMINSTT_NM
+		FROM CN_CONTRACT A
+		JOIN CN_PROJECT B ON A.PJT_NO = B.PJT_NO
+		WHERE A.DLT_YN = 'N'
+		AND B.USE_YN = 'Y'
+		AND B.DLT_YN = 'N'
+		AND A.CNTRCT_NO = #{cntrctNo}
+	</select>
+
+	<select id="selectDefault0002Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectD000201DefaultData][gwlee]  */
+		SELECT 		A.CNTRCT_NM AS CNTRCT_NM,
+					A.CORP_NM AS CORP_NM,
+					B.FILE_NM AS FILE_NM,
+					B.FILE_DISK_NM AS FILE_DISK_NM,
+					B.FILE_DISK_PATH AS FILE_DISK_PATH
+		FROM 		CN_CONTRACT A
+		LEFT JOIN 	CN_ATTACHMENTS B 
+					ON 	A.ORGCHRT_ATCH_FILE_NO = CAST(B.FILE_NO AS TEXT) 
+					AND	B.DLT_YN = 'N'
+		WHERE 		A.CNTRCT_NO = #{cntrctNo}
+		AND 		A.DLT_YN = 'N'		
+	</select>
+
+	<select id="selectDefault0003Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectD001201DefaultData][thkim]  */
+		SELECT 	
+			COALESCE(A.CNTRCT_NM, '') AS CNTRCT_NM,
+			COALESCE(B.PLC_LCT_ADRS, '') AS PLC_LCT_ADRS,
+			COALESCE(B.DMINSTT_NM, '') AS DMINSTT_NM,
+			
+			COALESCE(SUBSTRING(B.PJT_BGN_DATE, 1, 4) || '.' || 
+			         SUBSTRING(B.PJT_BGN_DATE, 5, 2) || '.' || 
+			         SUBSTRING(B.PJT_BGN_DATE, 7, 2), '') AS PJT_BGN_DATE,
+			         
+			COALESCE(SUBSTRING(B.PJT_END_DATE, 1, 4) || '.' || 
+			         SUBSTRING(B.PJT_END_DATE, 5, 2) || '.' || 
+			         SUBSTRING(B.PJT_END_DATE, 7, 2), '') AS PJT_END_DATE,
+			
+			COALESCE(A.CORP_NM, '') AS CORP_NM,
+			COALESCE(A.CORP_CEO, '') AS CORP_CEO,
+
+			TO_CHAR(COALESCE(A.CNTRCT_COST, 0), '999,999,999,999') AS CNTRCT_COST,
+			
+			COALESCE(SUBSTRING(A.CBGN_DATE, 0, 5), '') || '년 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 5, 2), '') || '월 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 7, 2), '') || '일' AS CBGN_DATE
+
+		FROM CN_CONTRACT A
+		JOIN CN_PROJECT B ON A.PJT_NO = B.PJT_NO
+		WHERE A.DLT_YN = 'N'
+		AND B.USE_YN = 'Y'
+		AND B.DLT_YN = 'N'
+		AND A.CNTRCT_NO = #{cntrctNo}		
+	</select>
+
+	<select id="selectDefault0004Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectD001601DefaultData][thkim]  */
+		SELECT 	
+			COALESCE(A.CNTRCT_NM, '') AS CNTRCT_NM,
+			COALESCE(SUBSTRING(B.PJT_BGN_DATE, 1, 4) || '.' || 
+			         SUBSTRING(B.PJT_BGN_DATE, 5, 2) || '.' || 
+			         SUBSTRING(B.PJT_BGN_DATE, 7, 2), '') AS PJT_BGN_DATE,
+			COALESCE(SUBSTRING(B.PJT_END_DATE, 1, 4) || '.' || 
+			         SUBSTRING(B.PJT_END_DATE, 5, 2) || '.' || 
+			         SUBSTRING(B.PJT_END_DATE, 7, 2), '') AS PJT_END_DATE,
+			TO_CHAR(COALESCE(A.CNTRCT_COST, 0), '999,999,999,999') AS CNTRCT_COST,
+			COALESCE(A.OFCL_NM, '') AS OFCL_NM,
+			COALESCE(B.PLC_LCT_ADRS, '') AS PLC_LCT_ADRS,
+			
+			
+			COALESCE(A.CORP_NM, '') AS CORP_NM,
+			COALESCE(A.CORP_CEO, '') AS CORP_CEO,
+			COALESCE(A.BSNSMN_NO, '') AS BSNSMN_NO,
+			COALESCE(A.CORP_ADRS, '') AS CORP_ADRS,
+			COALESCE(A.TEL_NO, '') AS TEL_NO,
+			
+			COALESCE(SUBSTRING(A.CBGN_DATE, 0, 5), '') || '년 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 5, 2), '') || '월 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 7, 2), '') || '일' AS CBGN_DATE
+		FROM CN_CONTRACT A
+		JOIN CN_PROJECT B ON A.PJT_NO = B.PJT_NO
+		WHERE A.DLT_YN = 'N'
+		AND B.USE_YN = 'Y'
+		AND B.DLT_YN = 'N'
+		AND A.CNTRCT_NO = #{cntrctNo}		
+	</select>
+
+	<select id="selectDefault0005Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectD001701DefaultData][thkim]  */
+		SELECT 	
+			COALESCE(C.CMN_CD_NM_KRN, '') AS CNSTWK_TYPE,
+			COALESCE(A.CNTRCT_NM, '') AS CNTRCT_NM,
+			COALESCE(B.DMINSTT_NM, '') AS DMINSTT_NM,
+			TO_CHAR(COALESCE(A.CNTRCT_COST, 0), '999,999,999,999') AS CNTRCT_COST,
+			COALESCE(SUBSTRING(A.CBGN_DATE, 0, 5), '') || '년 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 5, 2), '') || '월 ' || 
+			COALESCE(SUBSTRING(A.CBGN_DATE, 7, 2), '') || '일' AS CBGN_DATE,
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 0, 5), '') || '년 ' || 
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 5, 2), '') || '월 ' || 
+			COALESCE(SUBSTRING(A.CCMPLT_DATE, 7, 2), '') || '일' AS CCMPLT_DATE,
+			COALESCE(B.MAIN_FCLTY_CNTNTS, '') AS MAIN_FCLTY_CNTNTS,
+			COALESCE(A.CORP_ADRS, '') AS CORP_ADRS,
+			COALESCE(A.CORP_CEO, '') AS CORP_CEO
+		FROM CN_CONTRACT A
+		JOIN CN_PROJECT B ON A.PJT_NO = B.PJT_NO
+		LEFT JOIN SM_COM_CODE C 
+		    ON C.CMN_GRP_CD = 'ce229e27-98c6-8c89-7be7-cbc27b0b1fc8'
+		    AND C.CMN_CD = B.CNSTWK_TYPE
+		    AND C.DLT_YN = 'N'
+		WHERE A.DLT_YN = 'N'
+		AND B.USE_YN = 'Y'
+		AND B.DLT_YN = 'N'
+		AND A.CNTRCT_NO = #{cntrctNo}
+	</select>
+
+	<select id="selectDefault0006Data" parameterType="String" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectD002301DefaultData][thkim]  */
+		SELECT 	
+			COALESCE(A.CORP_NM, '') AS CORP_NM,
+			COALESCE(A.CORP_CEO, '') AS CORP_CEO,
+			COALESCE(A.CORP_ADRS, '') AS CORP_ADRS,
+			COALESCE(B.PLC_LCT_ADRS, '') AS PLC_LCT_ADRS,
+			COALESCE(A.TEL_NO, '') AS TEL_NO
+		FROM CN_CONTRACT A
+		JOIN CN_PROJECT B ON A.PJT_NO = B.PJT_NO
+		WHERE A.DLT_YN = 'N'
+		AND B.USE_YN = 'Y'
+		AND B.DLT_YN = 'N'
+		AND A.CNTRCT_NO = #{cntrctNo}
+	</select>
+
+	<select id="selectAddData" parameterType="input" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.selectAddData][gwlee]  */
+		SELECT 	A.ATTRBT_TYPE AS ATTRBT_TYPE,
+				A.ATTRBT_CNTNTS AS ATTRBT_CNTNTS,
+				A.ATTRBT_CD AS ATTRBT_CD,
+				B.COUNT AS COUNT
+		FROM 	( 	SELECT 	A.ATTRBT_TYPE AS ATTRBT_TYPE, 
+							B.ATTRBT_CNTNTS AS ATTRBT_CNTNTS, 
+							B.ATTRBT_CD AS ATTRBT_CD,
+							A.NAVI_ID AS NAVI_ID,
+							B.DOC_ID AS DOC_ID
+					FROM 	DC_PROPERTY A,
+							DC_PROPERTY_DATA B
+					WHERE 	A.ATTRBT_CD = B.ATTRBT_CD
+					AND 	A.ATTRBT_TYPE != 'ATCH'
+					AND 	A.ATTRBT_CHG_YN = 'Y'
+					AND 	A.DLT_YN = 'N'
+					UNION ALL
+					SELECT 	A.ATTRBT_TYPE AS ATTRBT_TYPE, 
+							C.FILE_DISK_PATH || '_' || C.FILE_DISK_NM AS ATTRBT_CNTNTS, 
+							B.ATTRBT_CD AS ATTRBT_CD,
+							A.NAVI_ID AS NAVI_ID,
+							B.DOC_ID AS DOC_ID
+					FROM 	DC_PROPERTY A,
+							DC_PROPERTY_DATA B,
+							DC_ATTACHMENTS C
+					WHERE 	A.ATTRBT_CD = B.ATTRBT_CD
+					AND 	A.ATTRBT_TYPE = 'ATCH'
+					AND 	B.ATTRBT_CNTNTS = CAST(C.FILE_NO AS TEXT)
+					AND 	A.ATTRBT_CHG_YN = 'Y'
+					AND 	A.DLT_YN = 'N' 
+					AND 	C.DLT_YN = 'N' 
+				) AS A,
+				( 	SELECT 	B.ATTRBT_CD,
+							COUNT(A.ATTRBT_TYPE) AS COUNT
+					FROM 	DC_PROPERTY A,
+							DC_PROPERTY_DATA B
+					WHERE 	A.ATTRBT_CD = B.ATTRBT_CD
+					AND 	B.DOC_ID = #{docId}
+					AND 	A.NAVI_ID = #{naviId}
+					AND 	A.ATTRBT_CHG_YN = 'Y'
+					AND 	A.DLT_YN = 'N'
+					GROUP BY B.ATTRBT_CD
+				) AS B
+		WHERE 	A.DOC_ID = #{docId}
+		AND 	A.NAVI_ID = #{naviId}
+		AND 	A.ATTRBT_CD = B.ATTRBT_CD
+		ORDER BY A.ATTRBT_CD DESC
+	</select>
+
+	<insert id="insertchagGongGyeDocFile" parameterType="input">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.chaggonggye.chaggonggyeDoc.insertchagGongGyeDocFile][gwlee]  */
+		INSERT INTO DC_STORAGE_MAIN (	DOC_NO, 
+										DOC_ID, 
+										NAVI_NO, 
+										NAVI_ID, 
+										UP_DOC_NO, 
+										UP_DOC_ID, 
+										DOC_TYPE, 
+										DOC_PATH, 
+										DOC_NM, 
+										DOC_DISK_NM, 
+										DOC_DISK_PATH, 
+										DOC_URL_PATH, 
+										DOC_SIZE,
+										DOC_HIT_NUM, 
+										DOC_TRASH_YN, 
+										DLT_YN, 
+										RGSTR_ID, 
+										RGST_DT, 
+										CHG_ID, 
+										CHG_DT)
+		VALUES 	(	NEXTVAL('GAIA_CMIS.DC_STORAGE_MAIN_DOC_NO_SEQ'::REGCLASS),
+					#{docId}, 
+					SELECT NAVI_NO FROM DC_NAVIGATION WHERE NAVI_ID = #{naviId},
+					#{naviId}, 
+					0, 
+					'#', 
+					'FILE', 
+					#{docNm}, 
+					#{docNm}, 
+					#{docDiskNm}, 
+					#{docDiskPath}, 
+					'', 
+					#{docSize}, 
+					0, 
+					'N', 
+					'N', 
+					'SYSTEM', 
+					NOW(), 
+					'SYSTEM', 
+					NOW()
+				)
+    </insert>
+</mapper>

@@ -1,0 +1,280 @@
+{% block content %}
+<div class="modal open">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h3 class="pop_tit" id="photo_cu_tit"></h3>
+            <button type="button" class="icon_btn pop_close" onclick="dwgPopup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <div class="conts_form">
+                <div class="form_box" id="photo-form">
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.067') }}</div>
+                            <div class="form_data">
+                                <textarea id="dscrpt" name="dscrpt" class="maxlength" maxlength="2000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.construction.054") }}</div>
+                            <div class="form_data" id="tab-clipboard" style="position: relative;height: 340px;">
+                                <div style="top: 0;position: absolute;" id="photoDiv">
+                                    <button type="button" class="btn icon_btn" onclick="dwgPopup.addPhoto()">
+                                        <i class="ic ic-picture-one"></i>
+                                        <span class="blind">추가</span>
+                                    </button>
+                                    <!-- <button type="button" class="btn icon_btn _outline" id="imgPaste" onclick="dwgPopup.loadRvwPhoto()" style="display: none;">
+                                        <span>검토 도서 불러오기</span>
+                                    </button> -->
+                                </div>
+                                <div style="margin-top: 15px; height: 300px">
+                                    <img id="uploadImg"
+                                        style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="dwgPopup.close()">{{ message('btn.007') }}</button>
+                <button type="button" class="btn _fill" id="addButton" onclick="dwgPopup.save()">{{ message('btn.006') }}</button>
+            </div>
+            <div id="hiddenSector" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}{% block footer_script %}
+<script>
+    // var urlParams = new URLSearchParams(location.search);
+    // var cntrctNo = urlParams.get('cntrctNo');
+    var dwgPopup = {
+        dwgPopupWindow: null,
+        selectedFile: null,
+        isUploaded: false, // 이미지 등록 여부 (등록되어 있으면 메시지 알림 후 교체)
+        isChaged: false,
+        dwgCd: null,
+        parent: null,
+        init: function () {
+            const mode = "{{ mode }}";
+
+            if (typeof dsgnInput !== "undefined" && dsgnInput) {
+                this.parent = dsgnInput;
+            } else if (typeof dsgnInputPop !== "undefined" && dsgnInputPop) {
+                this.parent = dsgnInputPop;
+            } else {
+                console.error("부모 객체가 없습니다.");
+                this.close();
+            }
+
+            console.log('this.parent.photo.rvwPhotoDat', this.parent.photo.rvwPhotoData)
+            console.log('this.parent.photo.chgPhotoData', this.parent.photo.chgPhotoData)
+
+            let text;
+            if (mode === 'rvw') {
+                text = "검토 도서 사진 추가";
+                this.dwgCd = "0501";
+                if (this.parent.photo.rvwPhotoData && this.parent.photo.rvwPhotoData.fileSize) {
+                    this.isUploaded = true;
+                    $('#dscrpt').val(this.parent.photo.rvwPhotoData.dscrpt);
+                }
+
+                this.loadRvwPhoto();
+            } else if (mode === 'chg') {
+                text = "변경 요청 사진 추가";
+                this.dwgCd = "0502";
+
+                $("#imgPaste").show();
+
+                if (this.parent.photo.chgPhotoData && this.parent.photo.chgPhotoData.fileSize) {
+                    this.isUploaded = true;
+                }
+
+                this.loadChgPhoto();
+            }
+
+            $("#photo_cu_tit").text(text);
+        },
+        close: function () {
+            $(".form_box modal_content input[type='text']").val(''); // 모든 text input 초기화
+            $("#dwg_popup").css("display", "none");
+            this.isUploaded = false;
+
+            $("#uploadImg").attr("src", "");
+            $("#dscrpt").val("");
+
+            if (this.dwgPopupWindow) {
+                this.dwgPopupWindow.close();
+                this.dwgPopupWindow = null;
+            }
+        },
+        addPhoto: function () {
+            if ( $('#hiddenSector input').length == 0) {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+
+                // 파일 선택 이벤트 처리
+                fileInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        tware.utils.resizeImage(document.getElementById('uploadImg'), file, (resData) => {
+                            dwgPopup.isChaged = true;
+                            dwgPopup.selectedFile = resData.file;
+                        });
+                    }
+                });
+
+                $('#hiddenSector').append(fileInput);
+            }
+
+            fileInput = $('#hiddenSector input');
+
+            if (this.isUploaded) {
+                gaiaCommon.customConfirm("알림", "도면 사진 변경", "기존 도면 사진을 삭제하고 교체하시겠습니까?", function () {
+                    fileInput.click();
+                });
+            } else {
+                fileInput.click();
+            }
+        },
+
+        save: function () {
+            const dscrpt = $("#dscrpt").val(); // 설명
+            const dwgCd = this.dwgCd; // 도서 구분 코드
+
+            // 필수 입력값 체크
+            if (!dwgCd) {
+                gaiaCommon.customAlert("도서 구분 코드가 없습니다."); // 도서 구분 코드가 없습니다.
+                return;
+            }
+
+            // 업로드된 이미지가 없으면 경고
+            var imgSrc = $("#uploadImg").attr("src");
+
+            if (!imgSrc) {
+                gaiaCommon.customAlert("{{ message( 'msg.quality.014') }}");
+                return;
+            }
+
+            const photoData = {
+                dwgCd: this.dwgCd,
+                dscrpt: dscrpt,
+                src: imgSrc
+            };
+
+            // 기존 이미지가 있으면 교체 여부 확인
+            if (!this.selectedFile) {
+                dwgPopup.parent.photo.setPhoto(photoData, dwgCd); // 부모 창의 메서드 호출
+                dwgPopup.close();
+            } else {
+                photoData.src = URL.createObjectURL(this.selectedFile);
+
+                this.doUpload(photoData);
+            }
+        },
+        doUpload(photoData) {
+            const formData = new FormData();
+            formData.append('files', dwgPopup.selectedFile);
+
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.postForm('/resource/upload', formData, function (response) {
+                console.log('response', response);
+                if (response.details.result) {
+                    gaiaCommon.customAlert('{{ message("msg.044") }}', function () { // 저장되었습니다
+                        gaiaCommon.LoadingOverlay('body', false);
+
+                        if (response.details.metas) {
+                            photoData.meta = response.details.metas[0];
+                        }
+
+                        dwgPopup.parent.photo.setPhoto(photoData); // 부모 창의 메서드 호출
+                        dwgPopup.close();
+                    });
+                }else{
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                }
+            },function (error) {
+                console.log('error', error);
+                gaiaCommon.LoadingOverlay('body', false);
+                gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+            })
+        },
+        
+        //검토 도서 불러오기: rvw_dwg_photo에 있는 이미지를 가져와 uploadImg에 표시
+        loadRvwPhoto: function () {
+            const img = $("#rvw_dwg_photo img").attr("src");
+
+            // 가져온 이미지를 uploadImg에 붙여넣기
+            $("#uploadImg").attr("src", img);
+            $("#uploadImg").css({ "width": "100%", "height": "auto", "object-fit": "contain" });
+
+            if (img) {
+                $('#dscrpt').val($('#rvw_dwg_photo .desc').text());
+            }
+        }
+        , loadChgPhoto: function () {
+            const img = $("#chg_dwg_photo img").attr("src");
+
+            // 가져온 이미지를 uploadImg에 붙여넣기
+            $("#uploadImg").attr("src", img);
+            $("#uploadImg").css({ "width": "100%", "height": "auto", "object-fit": "contain" });
+
+            if (img) {
+                $('#dscrpt').val($('#chg_dwg_photo .desc').text());
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        // 페이지 로드 시 초기화
+        dwgPopup.init();
+        
+        document.onpaste = function(pasteEvent) {
+            // 첫 번째 항목을 고려 (여러 항목에 대해 쉽게 확장 가능)
+            var item = pasteEvent.clipboardData.items[0];
+            console.log(pasteEvent.clipboardData);
+    
+            if (item.type.indexOf("image") === 0){
+                // 이미지의 blob 가져오기
+                var blob = item.getAsFile();
+    
+                // 파일 리더 생성
+                var reader = new FileReader();
+    
+                // onload 이벤트 핸들러 설정
+                reader.onload = function(event) {
+                    // 이미지의 데이터 URL 가져오기
+                    let dataURL = event.target.result;
+    
+                    // img 컨테이너 id 가져오기
+                    let img = document.getElementById("uploadImg");
+    
+                    // 이미지 요소의 src 속성 설정
+                    img.src = dataURL;
+                };
+    
+                // blob을 데이터 URL로 읽기
+                reader.readAsDataURL(blob);
+    
+                // 선택된 파일 설정
+                dwgPopup.selectedFile = blob;
+            }
+    
+        }
+    });
+</script>
+{% endblock %}

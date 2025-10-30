@@ -1,0 +1,577 @@
+{% extends 'layout/base_content' %} {% block head %}
+<!-- css -->
+<style>
+    .disabled {
+        opacity: .4;
+        pointer-events: none;
+    }
+
+    .readonly .check_mark,
+    .readonly .check_mark:not(:checked)+.check_label {
+        display: block;
+    }
+
+    .readonly .form_check {
+        padding-left: 0;
+    }
+
+    .readonly input[type="radio"]:not(:checked) {
+        border-color: var(--component-bd);
+    }
+
+    .readonly input[type="radio"] {
+        pointer-events: none;
+        /* 클릭 차단 */
+    }
+
+    .readonly label {
+        pointer-events: none;
+        /* 라벨 클릭 차단 */
+    }
+</style>
+{% endblock %} {% block content %}
+<article class="conts_area">
+    <div class="conts">
+        <div class="conts_form">
+            <div class="btn_area s_default">
+                <button type="button" class="btn _outline" id="action-button" onclick=" page.save()">수정 </button>
+                <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">
+                    {{ message("btn.007") }}
+                </button>
+            </div>
+            <div class="form_box">
+                <div class="group">
+                    <!-- row -->
+                    <div class="row" id="shareYnContainer">
+                        <div class="col merge3">
+                            <div class="form_label requiredCheck">{{ message('item.com.060') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="boardTitle" name="boardTitle" maxlength="100" class="maxlength"
+                                    placeholder="{{ message('msg.054') }}" />
+                            </div>
+                        </div>
+                        <div class="col merge1" id="shareYnRow" style="display: none;">
+                            <div class="form_label">{{ message('item.board.009') }}</div>
+                            <div class="form_data">
+                                <input class="check_mark " type="checkbox" id="shareYn" style="display: block;">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row" id="receptionRow" style="display: none;">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.board.010') }}</div>
+                            <div class="form_data">
+                                <div class="item_group" id="radioContainer"
+                                    style="padding: 0.5em 0.75em; display: none;">
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" name="radio" value="1" id="systemRadio"
+                                            onchange="page.toggleBoardDiv(false)">
+                                        <span class="check_label">{{ message('item.board.011') }}</span>
+                                    </label>
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" name="radio" value="2"
+                                            onchange="page.toggleBoardDiv(false)">
+                                        <span class="check_label">{{ message('item.revision.002') }}</span>
+                                    </label>
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" name="radio" value="3" id="cntrctRadio"
+                                            onchange="page.toggleBoardDiv(false)">
+                                        <span class="check_label">{{ message('item.com.038') }}</span>
+                                    </label>
+                                    <!-- <label class="form_check">
+                                            <input class="check_mark" type="radio" name="radio" value="4"
+                                                onchange="page.toggleBoardDiv()">
+                                            <span class="check_label">부서</span>
+                                        </label> -->
+                                </div>
+
+                                <div class="search_wrap" style="width: 100%;  display: none;">
+                                    <span class="selectbox has_clear disabled" id="pjtNoContainer" style="width: 50%;">
+                                        <span class="sty_ip" onclick="$('#pjtNoContainer .dropdown').toggleClass('on')"
+                                            id="pjtNoSelect">프로젝트 선택</span>
+                                        <button class="icon_btn _clear" type="button"
+                                            onclick="page.selectClear('pjt','pjtNoAllCheck');  " style="display: none;">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">{{ message('item.com.085') }}</span>
+                                        </button>
+
+                                        <div class="dropdown">
+                                            <ul class="list_sty dropdown_list" id="projectList">
+                                            </ul>
+                                        </div>
+                                    </span>
+                                    <span class="selectbox has_clear disabled" id="cntrctContainer" style="width: 50%;">
+                                        <span class="sty_ip" onclick="$('#cntrctContainer .dropdown').toggleClass('on')"
+                                            id="cntrctSelect">계약 선택</span>
+                                        <button class="icon_btn _clear" type="button"
+                                            onclick="page.selectClear('cntrct','cntrctAllCheck');  "
+                                            style="display: none;">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">{{ message('item.com.085') }}</span>
+                                        </button>
+
+                                        <div class="dropdown">
+                                            <ul class="list_sty dropdown_list" id="cntrctList">
+                                            </ul>
+                                        </div>
+                                    </span>
+                                    <span class="selectbox" style="display: none;">
+                                        <select id="toDept">
+                                            <option>
+                                                부서 선택
+                                            </option>
+                                        </select>
+                                    </span>
+                                </div>
+                                <div style="width: 100%; ">
+                                    <div style="padding: .5em .75em; line-height: 1.45;" id="boardReceptionList"
+                                        readonly> </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.061') }}</div>
+                            <div class="form_data">
+                                <textarea class="maxlength"
+                                    style="height: calc(100dvh - 560px); overflow-y: auto; overflow-x: hidden; pointer-events: auto;"
+                                    id="boardTxt" name="boardTxt" maxlength="5000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.062') }}</div> <!-- 첨부파일 -->
+                            <div class="form_data">
+
+                                <div class="attach_wrap">
+                                    <div class="attach_area" id="attach_area">
+                                        <!-- 첨부파일 미등록 시 -->
+                                        <p class="data_info" id="data_info">
+                                            {{ message('msg.029') }}
+                                        </p>
+                                        <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                        <div class="attach_list hide" id="attach_list">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <div class="icon_btn">
+                                                        <i class="ic ic-close" id="fileIcon"></i>
+                                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                                        <!-- 파일명 -->
+                                                    </div>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list" id="fileList"> </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+{% endblock content %} {% block footer_script %}
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const boardCategory = params.get("boardCategory");
+    const boardType = params.get("boardType");
+    const boardNo = params.get("boardNo");
+    let pjtNo = params.get("pjtNo");
+    let cntrctNo = params.get("cntrctNo");
+
+    var page = {
+        data: {
+            init: "={{ message('item.com.005') }}="
+        },
+        init: function () {
+
+            this.readLoadData();
+            this.read();
+
+            if (boardType == "1") {
+                $("#receptionRow").show();
+                $("#shareYnRow").show();
+                $("#shareYnContainer").addClass("cols4");
+            }
+            if (gaiaCommon.me.isAdmin()) {
+                $("#radioContainer").show();
+                $("#systemRadio").prop("checked", true);
+            } else if (isGAIA()) {
+                $("#radioContainer").show();
+                $("#systemRadio").hide();
+                $("#projectRadio").prop("checked", true);
+            } else if (isCAIROS()) {
+                var pjtNo = $("#pjtNoContainer");
+                var cntrctNo = $("#cntrctContainer");
+                $("#cntrctRadio").prop("checked", true);
+                pjtNo.removeClass("disabled");
+                cntrctNo.removeClass("disabled");
+                page.makePjtNoSelect();
+                page.makeCntrctSelect();
+            }
+
+            const title = boardType == "1" ? "공지사항 조회" : "FAQ 조회";
+            const menuCd = boardType == "1" ? "M070306" : "M0739";
+            gaiaPortal.navMenuInit(menuCd, title);
+            $("#menuDepth").append(`<li class="breadcrumb_item">${title}</li>`);
+        },
+
+        save: function () {
+            this.setupReadMode();
+        },
+
+        close: function () {
+            if (boardType == "1") {
+                window.location.replace(`/system/board/noticeboard?boardType=${boardType}&boardCategory=${boardCategory}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`);
+            } else if (boardType == "2") {
+                window.location.replace(`/system/board/faqboard?boardType=${boardType}&boardCategory=${boardCategory}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`);
+            }
+        },
+
+        setupReadMode: function () {
+            window.location.href = `/system/board/update?boardType=${boardType}&boardNo=${boardNo}&boardCategory=${boardCategory}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+        },
+
+        readLoadData: function () {
+            $.ajax({
+                url: `/api/system/board/updateData/${boardNo}`,
+                method: "GET",
+                dataType: "json",
+                success: (data) => {
+                    const { board, attachments } = data.details.updateBoardData;
+                    this.data.receptionList = data.details.receptionList;
+
+                    $("#boardTitle").val(gaiaCommon.decodeSafeText(board.boardTitle));
+                    $("#shareYn").prop("checked", board.shareYn === "Y");
+                    $("input[name='radio'][value='" + board.boardDiv + "']").prop("checked", true);
+                    $("#boardTxt").val(gaiaCommon.decodeSafeText(board.boardTxt));
+                    $("#boardView").val(board.boardView);
+                    this.updateFileList(attachments);
+
+                    page.toggleBoardDiv(true);
+                    this.setCheckBox(this.data.receptionList);
+                    if (board.boardDiv == "2") {
+                        const checkedCheckboxes = $("#projectList")
+                            .find("input.check_mark:not(#pjtNoAllCheck):checked")
+                            .closest("label")
+                            .find(".check_label")
+                            .map(function () {
+                                return $(this).text().trim();
+                            })
+                            .get()
+                            .join("<br />");
+
+                        $("#boardReceptionList").html(checkedCheckboxes);
+                    } else if (board.boardDiv == "3") {
+                        const checkedCheckboxes = $("#cntrctList")
+                            .find("input.check_mark:not(#cntrctAllCheck):checked")
+                            .closest("label")
+                            .find(".check_label")
+                            .map(function () {
+                                return $(this).text().trim();
+                            })
+                            .get()
+                            .join("<br />");
+
+                        $("#boardReceptionList").html(checkedCheckboxes);
+                    }
+
+
+                },
+                error: (error) => console.error(error),
+            });
+        },
+
+        read: function () {
+            $(".form_box").addClass("readonly");
+            attachList.classList.remove("hide");
+            dataInfo.classList.add("hide");
+            $("#boardTxt").attr("readonly", true);
+            $("#fileIcon").removeClass("ic-close").addClass("ic-folder-open");
+        },
+
+        getCheckedValues: function (selector, valueAttr) {
+            return $(selector).find("input.check_mark:checked").not("#pjtNoAllCheck, #cntrctAllCheck").map(function () {
+                return valueAttr === "value" ? $(this).val().trim() : $(this).data("cntrct");
+            }).get().filter(Boolean);
+        },
+
+        updateFileList: function (attachments) {
+            const fileList = document.getElementById("fileList");
+            const fileInput = document.getElementById("fileInput");
+            let virtualFiles = [];
+            fileList.innerHTML = "";
+
+            const getWebPath = (diskPath, fileName) => {
+                let normalized = diskPath.replace(/\\/g, '/');
+                let trimmed = normalized.replace(/^.*\/upload/, '/upload');
+                return `${trimmed}/${fileName}`;
+            };
+
+            if (attachments.length === 0) {
+                attachList.classList.add("hide");
+                dataInfo.classList.remove("hide");
+            } else {
+                attachList.classList.remove("hide");
+                dataInfo.classList.add("hide");
+                attachments.forEach((attachment, index) => {
+                    const url = getWebPath(attachment.fileDiskPath, attachment.fileDiskNm);
+                    const listItem = `
+                <li class="list_item readList" style="display:grid;">
+                    <a class="icon_btn" href="${url}"  download="${attachment.fileOrgNm}">
+                        <i class="ic ic-folder-open"></i>
+                        <span class="blind">${attachment.fileOrgNm}</span>
+                    </a>
+                    <a class="f_name" href="${url}"  download="${attachment.fileOrgNm}">${attachment.fileOrgNm}</a>
+                </li>`;
+                    fileList.insertAdjacentHTML('beforeend', listItem);
+                });
+            }
+
+        },
+
+        setCheckBox: function (receptionList) {
+            if (Array.isArray(receptionList)) {
+                // pjtNo 값들만 배열로 추출
+                let pjtNoValues = receptionList.map(obj => obj.pjtNo);
+                $("#projectList")
+                    .find("input.check_mark")
+                    .not("#pjtNoAllCheck")
+                    .each(function () {
+                        let checkboxValue = $(this).val().trim();
+                        if (pjtNoValues.includes(checkboxValue)) {
+                            $(this).prop("checked", true);
+                        }
+                    });
+                page.makeCntrctSelect();
+
+            }
+
+            if (Array.isArray(receptionList)) {
+                // pjtNo 값들만 배열로 추출
+                let cntrctNoValues = receptionList.map(obj => obj.cntrctNo);
+                $("#cntrctList")
+                    .find("input.check_mark")
+                    .not("#cntrctAllCheck")
+                    .each(function () {
+                        let checkboxValue = $(this).data("cntrct");
+                        if (cntrctNoValues.includes(checkboxValue)) {
+                            $(this).prop("checked", true);
+                        }
+                    });
+            }
+            page.updateSelectBoxText("#pjtNoContainer", "pjtNoAllCheck");
+            page.updateSelectBoxText("#cntrctContainer", "cntrctAllCheck");
+        },
+
+        toggleBoardDiv: function (isInitialLoad) {
+            var boardDiv = $("input[name='radio']:checked").val();
+            var pjtNo = $("#pjtNoContainer");
+            var cntrctNo = $("#cntrctContainer");
+            // var toDept = $("#toDept").parent();
+
+            if (!isInitialLoad) {
+                page.selectClear("pjt", "pjtNoAllCheck");
+                page.selectClear("cntrct", "cntrctAllCheck");
+            }
+
+            // 선택된 값에 따라 표시할 요소 결정
+            if (boardDiv === "1") {
+                pjtNo.addClass("disabled");
+                cntrctNo.addClass("disabled");
+            } else if (boardDiv === "2") { // 프로젝트 선택 시
+                pjtNo.removeClass("disabled");
+                cntrctNo.addClass("disabled");
+                page.makePjtNoSelect();
+            } else if (boardDiv === "3") { // 계약 선택 시
+                pjtNo.removeClass("disabled");
+                cntrctNo.removeClass("disabled");
+                page.makePjtNoSelect();
+                page.makeCntrctSelect();
+            }
+        },
+
+        makeSelect: function (url, containerId, allCheckId, pjtNoList) {
+            $.ajax({
+                url: `${url}`,
+                method: 'POST',
+                dataType: 'json',
+                async: false,
+                traditional: true,
+                data: { pjtNoList: pjtNoList },
+                success: function (data) {
+                    const listId = containerId == "#pjtNoContainer" ? "projectList" : "cntrctList"
+                    const items = data.details[listId];
+
+                    $('#' + listId).empty();
+
+                    if (items && items.length > 0) {
+                        $('#' + listId).append(`
+                        <li class="list_item">
+                            <label class="form_check">
+                                <input class="check_mark" id="${allCheckId}" type="checkbox" name="check">
+                                <span class="check_label">{{ message('item.com.059') }}</span>
+                            </label>
+                        </li>
+                    `);
+                    }
+
+                    items.forEach(({ pjt_no, pjt_nm, cntrct_no }) => {
+                        $('#' + listId).append(`
+                            <li class="list_item">
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="check" data-cntrct = ${cntrct_no} value="${pjt_no}">
+                                    <span class="check_label">${pjt_nm}</span>
+                                </label>
+                            </li>
+                        `);
+                    });
+
+                    // 전체 체크박스 클릭 이벤트
+                    $(containerId).on('change', `#${allCheckId}`, function () {
+                        const isChecked = $(this).is(':checked');
+                        $(containerId + " .check_mark").prop('checked', isChecked);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                        if (containerId == "#pjtNoContainer") {
+                            page.makeCntrctSelect();
+                            page.updateSelectBoxText("#cntrctContainer", "cntrctAllCheck");
+                        }
+                    });
+
+                    // 개별 체크박스 상태 변경 시 전체 체크박스 상태 업데이트
+                    $(containerId).on('change', 'input.check_mark:not(#' + allCheckId + ')', function () {
+                        const totalCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + ")").length;
+                        const checkedCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + "):checked").length;
+                        $(containerId + " #" + allCheckId).prop('checked', totalCheckboxes === checkedCheckboxes);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                        if (containerId == "#pjtNoContainer") {
+                            page.makeCntrctSelect();
+                            page.updateSelectBoxText("#cntrctContainer", "cntrctAllCheck");
+                        }
+
+                    });
+
+                    $(document).off("click").on("click", function (event) {
+                        if (!$(event.target).closest(".selectbox.has_clear").length) {
+                            $(".dropdown").removeClass("on");
+                        }
+                    });
+
+                    $(document).on("click", "#cntrctContainer .sty_ip", function () {
+                        if ($("#cntrctList").children().length === 0) {
+                            gaiaCommon.customAlert("{{ message('msg.board.001') }}");
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    console.error("Error fetching data:", xhr.responseText);
+                }
+            });
+        },
+
+        updateSelectBoxText: function (containerId, allCheckId) {
+            const allChecked = $(containerId + " #" + allCheckId).is(":checked");
+            const selectedGroups = $(containerId + " .check_mark:checked:not(#" + allCheckId + ")")
+                .map((_, el) => $(el).siblings(".check_label").text())
+                .get();
+            const count = selectedGroups.length;
+
+            let displayText;
+
+            if (allChecked) {
+                displayText = "{{ message('item.com.059') }}"; // 전체 선택된 경우
+            } else if (count === 0) {
+                displayText = containerId === "#pjtNoContainer" ? "{{ message('item.board.012') }}" : "{{ message('item.board.013') }}"; // 아무것도 선택되지 않은 경우
+            } else if (count === 1) {
+                displayText = selectedGroups[0]; // 하나 선택된 경우
+            } else {
+                displayText = `${selectedGroups[0]} 외 ${count - 1}건`; // 여러 개 선택된 경우
+            }
+
+            // Select 박스의 텍스트 업데이트
+            $(containerId === "#pjtNoContainer" ? "#pjtNoSelect" : "#cntrctSelect").text(displayText);
+
+            // Clear 버튼 표시 여부 업데이트
+            $(containerId + " .icon_btn._clear").toggle(allChecked || count > 0);
+        },
+
+
+        selectClear: function (selectType, allCheckId) {
+            const containerId = selectType === 'pjt' ? "#pjtNoContainer" : "#cntrctContainer";
+            $(containerId + " .check_mark").prop("checked", false);
+            page.updateSelectBoxText(containerId, allCheckId);
+            if (containerId == "#pjtNoContainer") {
+                page.makeCntrctSelect();
+                page.selectClear('cntrct', 'cntrctAllCheck')
+            }
+        },
+
+        //프로젝트 selectBox
+        makePjtNoSelect: function () {
+            let pjtNoList = [];
+            this.makeSelect('/api/system/board/projectList', "#pjtNoContainer", "pjtNoAllCheck", pjtNoList);
+        },
+
+        // 계약 selectBox
+        makeCntrctSelect: function () {
+            let pjtNoList = [];
+            $("#projectList").find("input.check_mark:checked").each(function () {
+                if ($(this).attr("id") !== "pjtNoAllCheck") {
+                    const pjtNo = $(this).val().trim();
+                    if (pjtNo) {
+                        pjtNoList.push(pjtNo);
+                    }
+                }
+            });
+            this.makeSelect('/api/system/board/cntrctList', "#cntrctContainer", "cntrctAllCheck", pjtNoList);
+        },
+
+    };
+
+
+
+    //파일인풋
+    const fileInput = document.getElementById("fileInput");
+    //첨부파일 목록
+    const fileList = document.getElementById("fileList");
+    //파일여부에따른영역
+    const dataInfo = document.getElementById("data_info");
+    const attachList = document.getElementById("attach_list");
+
+    document.querySelectorAll(".readonly input[type='radio']").forEach(radio => {
+        radio.addEventListener("click", function (event) {
+            event.stopPropagation();
+            event.preventDefault();
+            return false;
+        });
+
+        radio.addEventListener("mousedown", function (event) {
+            event.preventDefault();
+        });
+
+        const label = radio.closest("label");
+        if (label) {
+            label.style.pointerEvents = "none";
+        }
+    });
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

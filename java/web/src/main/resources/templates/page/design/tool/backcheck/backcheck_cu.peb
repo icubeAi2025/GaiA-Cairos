@@ -1,0 +1,542 @@
+<style>
+    #attach_save {
+        display: flex;
+        margin-bottom: 10px
+    }
+    .cfrm_his {
+        position: absolute;
+        right: 20px;
+        color: #e35c4d;
+    }
+
+    .cfrm_his span {
+        cursor: pointer;
+    }
+
+    .file_header .header_item, .file_list .list_item {
+        grid-template-columns: min-content auto 50px 80px;
+    }
+
+    #detail {
+        display: block;
+        padding: 10px;
+    }
+
+    .cfrm_list {
+        padding-top: 15px;
+        margin-bottom: 20px;
+    }
+
+    .cfrm_list p {
+        margin: 0;
+    }
+    .cfrm_rgst_div {
+        display: flex;
+    }
+    .cfrm_opnin {
+        margin: 10px 0;
+    }
+    .cfrm_opnin pre{
+        font-family: 'Pretendard';
+        white-space: pre-wrap;
+        margin: 0;
+    }
+    .cfrm_attach_list ul {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+    }
+
+    .cfrm_attach_list li {
+        padding-bottom: 5px;
+        gap:0.5rem;
+    }
+    .cfrm_attach_list.detail .list_item .thumbnail{
+        width: 40px;
+    }
+
+    .cfrm_his button {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        color: #e35c4d;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .text_center {
+        text-align: center;
+    }
+
+    .info {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+
+<div id="input" style=" position: sticky; top: 20px;">
+    <div class="group">
+        <h4 class="conts_s-tit collapse_head">
+            {{ message('item.com.087') }}
+            <div class="btn_group iconbtns" style="margin-right: 7px;" id="backchkDate">
+                <div id="dateStatus"></div>
+            </div>
+            <button type="button" class="icon_btn collapse_btn">
+                <i class="ic ic-arrow"></i>
+                <span class="blind">영역접기</span>
+            </button>
+        </h4>
+        <div class="collapse collapse_body" style="max-height: 600px; overflow-y: auto;">
+            <div class="btn_area" id="attach_save">
+                {{ saveBtnHtml | raw }}
+<!--                                                            <button type="button" class="btn _fill" onclick="backCheck.save()">{{ message('btn.006') }}</button>-->
+            </div>
+            <div class="form_box">
+                <div class="group">
+                    <!-- detail -->
+                    <div class="row" id="detail" style="display: none;"></div>
+
+                    <!-- input -->
+                    <div id="inputForm" hidden>
+                        <div class="row" id="">
+                            <div class="col">
+                                <div class="form_label">{{ message('item.dsgn.042') }}</div>
+                                <div class="form_data" style="display: flex;justify-content: right;">
+                                    <textarea id="bckchkOpnin" maxlength="1024"></textarea>
+                                    <div class="char-counter" style="display:flex; justify-content: end; padding: 3px; font-size: var(--font-xs); color: var(--color-gray);">
+                                        <span class="current-count">0</span>/<span class="max-count">1024</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row" id="backchkAttach">
+                            <div class="col">
+                                <div class="form_label">{{ message('item.com.062') }}</div> <!-- 첨부파일 -->
+                                <div class="form_data">
+                                    <div class="attach-component" id="designBackcheck-fileAttach"></div>
+                                    {% include 'sub/file_attach_component' %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- backcheck -->
+                    <div class="row">
+                        <div class="col" id="backchk_check">
+                            <div class="form_label">{{ message('item.dsgn.006') }}</div>
+                            <div class="form_data" id="backchk_cd_result">
+                                <label class="form_check">
+                                    <input class="check_mark" type="radio" name="backchk_cd" value="0401">
+                                    <span class="check_label">{{ message('item.dfccy.012') }}</span>
+                                </label>
+                                <label class="form_check">
+                                    <input class="check_mark" type="radio" name="backchk_cd" value="0402">
+                                    <span class="check_label">{{ message('item.dfccy.015') }}</span>
+                                </label>
+                                <div class="cfrm_his">
+                                    {{ bhkBtnHtml | raw }}
+<!--                                    <button onclick="backCheck.saveBackchk();" id="backchk_save" data-backchk-result="">{{ message('btn.006') }}</button>-->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+    var USER_ID = '{{USER_ID}}';
+    var backchkCd;
+    var currentBackchkList = [];
+    var currentBackSeq = null;
+    var currentBackChk = null;
+    var fileAttachComponent;
+
+    var backCheck = {
+        init: function () {
+            backCheck.read();
+            if(fileAttachComponent){
+                fileAttachComponent.destroy();
+            }
+            fileAttachComponent = FileAttachComponent.init({
+                id:'designBackcheck-fileAttach',
+                maxUploadFileSize:100,
+                failCount:false
+            })
+            gaia.loaded = true;
+        },
+        read() {
+            let params = {
+                dsgnNo: currentDsgnNo,
+                dsgnPhaseNo: dsgnPhaseNo
+            }
+            gaiaCommon.post('/api/design/backCheck/detail',params,function(data) {
+                let backchkList = data.details.backchkList;
+
+                currentBackChk = backchkList[0].backchk_cd;
+                if(isEnd) {
+                    $('#backchk_save').hide();
+                    $('#backchk_check').find('input[name="backchk_cd"]').prop('disabled', true);
+                }
+
+                let bgnDate = backchkList[0].bgn_date;
+                let endDate = backchkList[0].end_date;
+                let today = new Date().toISOString().slice(0, 10);
+                let dateStatus = isEnd ? "{{ message('item.dfccy.004') }}" : bgnDate > today ? "대기중" : "{{ message('item.com.041') }}";
+
+                $('#backchkDate').html(`${bgnDate} ~ ${endDate} <div style='color: red; padding:.35em;'> [ ${dateStatus} ] </div>`);
+
+                let backchkCd = backchkList[0].backchk_cd;
+                let isEnded = endDate < today;
+                let isTermination = backchkCd === "0402";
+
+                // 진행중이고 미결이거나 값이 없을때 버튼 생성.
+                $(".form_check").toggleClass("form_check", !isEnded && !isTermination);
+
+                if (backchkCd) {
+                    $(`input[name="backchk_cd"][value="${backchkCd}"]`).prop('checked', true);
+                    $('#backchk_save').data('backchk-result', backchkCd);
+
+                    if(isTermination){
+                        $("#backchk_cd_result").toggleClass("readonly", true);
+                        $('#backchk_save').hide();
+                    }
+                }
+
+                // 내 평가 여부
+                let myBackchk = backchkList.some(backchk => backchk.rgstr_id === USER_ID);
+
+                if(backchkList[0].back_seq) {
+                    // 등록된 평가 있을 때
+                    $('#detail').show().children().empty();
+                    if(!isEnd && !myBackchk && !isTermination) {
+                        $('#inputForm').show();
+                    }
+                    $('#detail').append(backCheck.makeBackchkHtml(backchkList));
+                } else {
+                    // 없을 때
+                    if(isEnd) {
+                        // 입력기간 종료 시
+                        $('#inputForm').hide();
+                        // let msg = isEnd ? "{{ message('msg.dfccy.004') }}" : "{{ message('msg.dfccy.010') }}";
+                        $('#detail').show().append(`<div class="info">
+                                                        <p class="data_info">
+                                                            {{ message('msg.dfccy.004') }}
+                                                        </p>
+                                                    </div>`);
+                    } else if(!isEnd && !myBackchk) {
+                        // 입력기간 진행 + 내 의견 없을 시 + 미결
+                        $('#inputForm').show();
+                        $('#detail').hide();
+                    }
+                }
+                gaiaCommon.LoadingOverlay('#input', false);
+            },function(error) {
+                gaiaCommon.LoadingOverlay('#input', false);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+                console.error(`설계 검토 툴 백체크의 상세 조회 실패, /api/design/backCheck/detail, PARAMS : ${params}`,error);
+            })
+        },
+        save() {
+            let goSave = backCheck.validate();
+            if(!goSave) {
+                return
+            }
+
+            if(currentBackSeq) {
+                backCheck.modify();
+                return
+            }
+
+            if(!$('#bckchkOpnin').val()) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.046') }}");
+                return
+            }
+
+            var formData = new FormData();
+
+            let data = {
+                dmBackcheck: {
+                    dsgnNo: currentDsgnNo,
+                    cntrctNo: cntrctNo,
+                    bckchkOpnin: $('#bckchkOpnin').val()
+                },
+            }
+
+            formData.delete('files');
+            fileAttachComponent.state.uploadedFiles.forEach(file => {
+                if(file.realFile){
+                    formData.append('files', file.realFile);
+                }
+            })
+
+            formData.append('saveData', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+
+
+            gaiaCommon.customConfirm("{{ message('item.dfccy.059') }}", "{{ message('msg.dfccy.019') }}", "", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.postForm('/api/design/backCheck/create',formData,function(result) {
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.044') }}", function(){
+                            gaiaCommon.checkAuth("DM_BHK_C_01", () => {
+                                $("#popup").load(`/design/backcheckForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            });
+                        });
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+
+                },function(error) {
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    console.error(`설계 검토 툴 백체크의 추가 실패, /api/design/backCheck/create, PARAMS : ${data},${fileList}`,error);
+                },function(){
+                    gaiaCommon.LoadingOverlay('body', false);
+                })
+            })
+        },
+        saveBackchk() {
+            let goSave = backCheck.validate();
+
+            if(!goSave) {
+                return
+            }
+
+            let backchkCd = $(`input[name='backchk_cd']:checked`).val();
+            if(!backchkCd) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.020') }}");
+                return;
+            }
+
+            if(currentBackChk === '0402') {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.010') }}");
+                return;
+            }
+
+            let resultCd = $('#result_backchk_cd').val();
+            if($('#backchk_save').data('backchk-result') === backchkCd) {
+                gaiaCommon.customAlert("{{ message('msg.dsgn.007') }}");
+                return;
+            }
+
+            // let msg = backchkCd === '0402' ? "종결 처리 시 수정, 삭제가 불가능합니다." : "";
+
+            let data = {
+                dsgnNo: currentDsgnNo,
+                cntrctNo: $('#cntrctNo').val(),
+                backchkCd: backchkCd
+            }
+
+            gaiaCommon.customConfirm("{{ message('item.dfccy.060') }}", "{{ message('msg.dsgn.008') }}", "", function(){
+                gaiaCommon.post('/api/design/backCheck/update-backchkCd',data,function(result) {
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.044') }}", function(){
+                            // $("#popup").load(`/design/backcheckForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+
+                            // page.init();
+
+                            dsgnPhase.tree.init(currentPage, currentDsgnNo);
+                        });
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+
+                },function(error) {
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    console.error(`설계 검토 툴 백체크 결과 수정 실패, /api/design/backCheck/update-backchkCd, PARAMS : ${data}`,error);
+                })
+            })
+        },
+        delete(backSeq){
+            let goDelete = backCheck.validate();
+
+            if(!goDelete) {
+                return
+            }
+
+            gaiaCommon.customConfirm("{{message('item.dfccy.052')}}", "{{message('msg.dfccy.012')}}", "{{message('msg.dfccy.013')}}", function(){
+                gaiaCommon.get('/api/design/backCheck/delete/'+backSeq,{}, function(result) {
+                    gaiaCommon.customAlert("{{ message('msg.006') }}", function(){
+                        gaiaCommon.checkAuth("DM_BHK_D_01", () => {
+                            $("#popup").load(`/design/backcheckForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        });
+                    });
+                },function(error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    console.error(`설계 검토 툴 백체크 삭제 실패, /api/design/backCheck/delete/${backSeq}, PARAMS : {}`,error);
+                })
+            })
+        },
+        modify(){
+            if(!$('#bckchkOpnin').val()) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.046') }}");
+                return
+            }
+
+            var formData = new FormData();
+
+            let data = {
+                dmBackcheck: {
+                    backSeq: currentBackSeq,
+                    bckchkOpnin: $('#bckchkOpnin').val()
+                },
+                delFileList: fileAttachComponent.state.deletedFiles
+            }
+            formData.delete("files");
+            fileAttachComponent.state.uploadedFiles.forEach(file => {
+                if(file.realFile){
+                    formData.append('files', file.realFile);
+                }
+            })
+
+            formData.append('saveData', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+
+            gaiaCommon.customConfirm("{{message('item.dsgn.043')}}", "{{ message('msg.dsgn.009') }}", "", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.postForm('/api/design/backCheck/update',formData,function(result) {
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.007') }}", function(){
+                            gaiaCommon.checkAuth("DM_BHK_U_01", () => {
+                                $("#popup").load(`/design/backcheckForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            });
+
+                            // page.init();
+                        });
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+
+                },function(error) {
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    console.error(`설계 검토 툴 백체크 수정 실패, /api/design/backCheck/update, PARAMS : ${data}, ${fileAttachComponent.state.uploadedFiles}`,error);
+                },function(xhr){
+                    gaiaCommon.LoadingOverlay('body', false);
+                })
+            })
+        },
+        setModify(backSeq){
+            let goModify = backCheck.validate();
+
+            if(!goModify) {
+                return
+            }
+
+            currentBackSeq = backSeq;
+            let targetData = currentBackchkList.find(backchk => backchk.back_seq === backSeq);
+
+            // 의견 조회 숨기기
+            $(`#backchk_${backSeq}`).hide();
+            if($('#detail .cfrm_list:visible').length === 0) {
+                $('#detail').hide();
+            }
+
+            // 입력창 오픈
+            fileAttachComponent.destroy();
+            fileAttachComponent = FileAttachComponent.init({
+                id:'designBackcheck-fileAttach',
+                maxUploadFileSize:100,
+                failCount:false
+            })
+
+            $('#inputForm').show();
+            $('#backchkAttach').show();
+
+            $('#bckchkOpnin').val(targetData.bckchk_opnin);
+            $('.current-count').text(targetData.bckchk_opnin.length);
+
+            // 기존 첨부파일 표시
+            if(targetData.backchkFiles && targetData.backchkFiles.length > 0) {
+                fileAttachComponent.setOrgFiles(targetData.backchkFiles);
+            }
+            fileAttachComponent.render();
+        },
+        validate(){
+            if(currentBackChk === '0402') {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.010') }}");
+                return false;
+            }
+
+            if(isEnd) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.004') }}");
+                return false;
+            }
+            return true;
+        },
+        makeBackchkHtml(backchkList) {
+            currentBackchkList = backchkList;
+            let isMe = false;
+            let isBhkDelAuth = '{{ bhkDelBtnHtml | raw }}' !== '';
+            let isBhkModAuth = '{{ bhkModBtnHtml | raw }}' !== '';
+            let slash = isBhkDelAuth && isBhkModAuth;
+            let html = backchkList.map(backchk => {
+                isMe = USER_ID === backchk.rgstr_id ? true : false;
+                let attachHtml = '';
+                // 첨부파일 리스트 생성
+                if(backchk.atch_file_no) {
+                    attachHtml = page.createAttachArea(backchk.backchkFiles);
+                }
+                return `
+                    <div class="cfrm_list" id="backchk_${backchk.back_seq}">
+                        <div class="cfrm_rgst_div">
+                            <div>
+                                <span class="name_color">${backchk.rgstr_nm}</span>
+                                <span>${backchk.rgst_dt}</span>
+                            </div>
+                            ${!isMe || currentBackChk === '0402' ? '' :
+                    `<div class="cfrm_his">`
+                    +(isBhkDelAuth ?
+                    `<span onclick="backCheck.delete('${backchk.back_seq}')">{{ message('btn.002') }}</span>` : ``)
+                    +(slash? `<span> / </span>`:``)
+                    +(isBhkModAuth ?
+                    `<span onclick="backCheck.setModify('${backchk.back_seq}')">{{ message('btn.003') }}</span>` : ``)
+                    +`</div>` }
+                        </div>
+                        <div class="cfrm_opnin">
+                            <pre>${backchk.bckchk_opnin ? backchk.bckchk_opnin : ''}</pre>
+                        </div>
+                        <div class="cfrm_attach_list detail">
+                            <ul>
+                                ${attachHtml}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }).join(''); // 배열을 문자열로 변환
+
+            return html;
+        }
+    }
+
+    $(document).on('input', '#bckchkOpnin', function(){
+        let maxLength = $(this).attr('maxlength');
+        let inputLength = $(this).val().length;
+        let msg = "{{ message('msg.app.045') }}".replace("{0}", maxLength);
+
+        $('.max-count').text(maxLength);
+
+        if(inputLength >= maxLength) {
+            gaiaCommon.customAlert(`글자수는 최대 ${maxLength}자까지 입력 가능합니다.`);
+        }
+
+        $('.current-count').text(inputLength);
+    })
+
+    $(`input[name="backchk_cd"]`).on('click', function() {
+        $(`input[name="backchk_cd"]`).not(this).prop('checked', false);
+    });
+
+
+    var cTargetBtn = $(".collapse_btn");
+    var cTargetArea = $(".collapse_body");
+    $(cTargetBtn).click(function () {
+        $(this).toggleClass('collapsed');
+        $(this).parent().next(cTargetArea).slideToggle();
+    });
+
+    $(function(){
+        backCheck.init();
+    })
+</script>

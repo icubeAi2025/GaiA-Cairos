@@ -1,0 +1,643 @@
+{% extends 'layout/base_popup' %}
+{% block head %}
+<style>
+
+    .tui-pagination {
+        flex-grow: 1; /* 가운데 정렬을 위한 유동적인 공간 차지 */
+        display: flex;
+        justify-content: center; /* 페이징 요소 중앙 정렬 */
+        align-items: center !important;
+    }
+
+    #detail-close-popup {
+        margin-left: auto; /* 오른쪽 끝으로 이동 */
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+<article class="conts_area defect_conts">
+    <div class="conts" style="height: 100%;">
+        <div class="conts_detail" style="height: 100%;">
+            <div class="toolbar">
+                <div class="btn_area s_default" id="dfccy_detail_btn_area" style="justify-content: stretch;">
+                    <!-- 페이징 기능 -->
+                    <div class="tui-pagination tui-grid-pagination">
+                        <span class="tui-page-btn tui-first" id="firstPage">
+                            <span class="tui-ico-first">first</span>
+                        </span>
+                        <span class="tui-page-btn tui-prev" id="prevPage">
+                            <span class="tui-ico-prev">prev</span>
+                        </span>
+                        <span style="width: max-content; padding-left: 10px; padding-right: 10px; font-size: large;" id="dfccyNo"></span>
+                        <span class="tui-page-btn tui-next" id="nextPage">
+                            <span class="tui-ico-next">next</span>
+                        </span>
+                        <span class="tui-page-btn tui-last" id="lastPage">
+                            <span class="tui-ico-last">last</span>
+                        </span>
+                    </div>
+                    <button type="button" class="btn _outline" id="detail-close-popup" onclick="dfccyDetail.close()">{{ message('btn.007') }}</button>
+                </div>
+            </div>
+
+            <div class="ty_list" id="dfccy_detail_list_tb">
+                <tr class="more_info">
+                    <td class="ta_l" style="position: relative;">
+                        <!-- 결함 사항-->
+                        <dl class="more_data">
+                            <h2>{{ message('item.dfccy.005') }}</h2> <!--결함사항-->
+                            <hr class="header_line"/> <!-- 구분 밑줄-->
+                            <dt>{{ message('item.com.060') }}</dt> <!--제목-->
+                            <dd id="dfccyTitle"></dd>
+                            <dt>{{ message('item.dfccy.017') }}</dt> <!--결함 분류-->
+                            <dd id="dfccyCdNm"></dd>
+                            <dt>{{ message('item.dfccy.083') }}</dt> <!--중요 -->
+                            <dd> <input class="check_mark" type="checkbox" name="" id="detail_priorityCheck" disabled>
+                            </dd>
+                            <dt>{{ message('item.dfccy.026') }}</dt> <!--생명/보건/안전 관련-->
+                            <dd> <input class="check_mark" type="checkbox" name="checkboxgroup" id="dfccyCrtcIsueYn" disabled>
+                            </dd>
+                            <dt>{{ message('item.dfccy.034') }}</dt> <!--결함 위치-->
+                            <dd id="dfccyLct"></dd>
+                            <dt>{{ message('item.construction.052') }}</dt> <!--Activty 명-->
+                            <dd id="dfccyActivityNm"></dd>
+                            <dt>{{ message('item.dfccy.035') }}</dt> <!--결함 내용-->
+                            <dd><pre id="dfccyCntnts"></pre></dd>
+                            <dt>{{ message('item.com.064') }}</dt> <!--작성자-->
+                            <dd id="dfccyRgstNm">${rgstNm}</dd>
+                            <dt>{{ message('item.com.063') }}</dt> <!--작성일-->
+                            <dd id="dfccyRgstDt"></dd>
+                        </dl>
+                        <dl class="more_data">
+                            <dt>{{ message('item.com.062') }}</dt> <!--첨부파일-->
+                            <dd>
+                                <div class="attach_area" id="dfccy_attach_area" style="overflow-y: scroll;">
+                                    <!-- 첨부파일 미등록 시 -->
+                                    <p class="data_info" id="dfccy_data_info">
+                                        {{ message('msg.029') }} </p>
+                                    <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                    <div class="attach_list hide" id="dfccy_attach_list">
+                                        <ul class="file_header">
+                                            <li class="header_item">
+                                                <div class="icon_btn">
+                                                    <i class="ic ic-folder-open" id="dfccy_fileIcon"></i>
+                                                    <span class="blind">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </div>
+                                                <span class="f_name">{{ message('item.com.020') }}</span>
+                                                <!-- 파일명 -->
+                                            </li>
+                                        </ul>
+                                        <ul class="file_list" id="dfccyFileList"></ul>
+                                    </div>
+                                </div>
+                            </dd>
+                        </dl>
+
+                        <!-- 답변 관리-->
+                        <dl class="more_data">
+                            <h2>{{ message('item.dfccy.008') }}</h2>   <!--답변-->
+                            <hr class="header_line"/> <!-- 구분 밑줄-->
+                        </dl>
+                        <div id="dfccy_rply_data_container">
+                            <dl class="more_data">
+                                <dt>{{ message('item.dfccy.039') }}</dt>    <!--답변 분류-->
+                                <dd id="rplyCdNm"></dd>
+                                <dt>{{ message('item.dfccy.040') }}</dt>    <!--답변 및 조치-->
+                                <dd id="rplyCntnts"></dd>
+                                <dt>{{ message('item.com.062') }}</dt>
+                                <dd>
+                                    <div class="attach_area" id="rply_attach_area">
+                                        <!-- 첨부파일 미등록 시 -->
+                                        <p class="data_info" id="rply_data_info">
+                                            {{ message('msg.029') }}</p>
+                                        <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                        <div class="attach_list hide" id="rply_attach_list">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <div class="icon_btn">
+                                                        <i class="ic ic-folder-open" id="rply_fileIcon"></i>
+                                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                                        <!-- 파일명 -->
+                                                    </div>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list" id="rplyFileList"></ul>
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                        <dl class="more_result_data">
+                            <hr class="" />
+                            <div class="author-date">
+                                <dt>{{ message('item.dfccy.041') }}</dt>    <!--답변확인-->
+                                <dd id="rplyStatus"> <input class="check_mark " type="checkbox" name="checkboxgroup" id="rplyYn" disabled style="margin-left: 10px;"> </dd>
+                                <dt>{{ message('item.com.064') }}</dt>
+                                <dd class="sub_name_color" id="rplyOkNm"></dd>
+                                <dt>{{ message('item.dfccy.073') }}</dt>
+                                <dd id="rplyOkDt"></dd>
+                            </div>
+                        </dl>
+
+                        <!-- 확인 관리 -->
+                        <dl class="more_data">
+                            <h2>{{ message('item.dfccy.064') }}</h2>
+                            <hr class="header_line"/> <!-- 구분 밑줄-->
+                        </dl>
+                        <div id="dfccy_cnfrm_data_container">
+                            <dl class="more_data">
+                                <div>
+                                    <span class="name_color"></span>
+                                    <span></span>
+                                </div>
+                            </dl>
+                            <dl class="more_data" id="dfccy_cnfrm_data">
+                                <dt>{{ message('item.dfccy.058') }}</dt>   <!-- 확인 의견-->
+                                <dd></dd>
+                                <dt>{{ message('item.com.062') }}</dt>
+                                <dd>
+                                    <div class="attach_area" id="attach_area">
+                                        <!-- 첨부파일 미등록 시 -->
+                                        <p class="data_info" id="data_info">
+                                            {{ message('msg.029') }} </p>
+                                        <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                        <div class="attach_list hide" id="attach_list">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <div class="icon_btn">
+                                                        <i class="ic ic-folder-open" id="fileIcon"></i>
+                                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                                        <!-- 파일명 -->
+                                                    </div>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list" id="fileList"></ul>
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>
+                            <dl class="more_data">
+                                <div>
+                                    <span class="name_color"></span>
+                                    <span></span>
+                                </div>
+                            </dl>
+                            <dl class="more_data" id="dfccy_cnfrm_data">
+                                <dt>{{ message('item.dfccy.058') }}</dt>
+                                <dd></dd>
+                                <dt>{{ message('item.com.062') }}</dt>
+                                <dd>
+                                    <div class="attach_area" id="attach_area">
+                                        <!-- 첨부파일 미등록 시 -->
+                                        <p class="data_info" id="data_info">
+                                            {{ message('msg.029') }} </p>
+                                        <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                        <div class="attach_list hide" id="attach_list">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <div class="icon_btn">
+                                                        <i class="ic ic-folder-open" id="fileIcon"></i>
+                                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                                        <!-- 파일명 -->
+                                                    </div>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list" id="fileList"></ul>
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                        <dl class="more_result_data">
+                            <hr class="" />
+                            <div class="response-meta">
+                                <div class="author-date">
+                                    <dt>{{ message('item.dfccy.065') }}</dt>
+                                    <dd id="qaCdNm"></dd>
+                                    <dt>{{ message('item.com.064') }}</dt>  <!--작성자-->
+                                    <dd class="sub_name_color" id="qaRgstrNm"></dd>
+                                    <dt>{{ message('item.dfccy.073') }}</dt>
+                                    <dd id="qaRgstDt"></dd>                <!--완료일-->
+                                </div>
+                                <div class="author-date">
+                                    <dt>{{ message('item.dfccy.071') }}</dt>  <!--관리관-->
+                                    <dd id="spvsCdNm"></dd>
+                                    <dt>{{ message('item.com.064') }}</dt>
+                                    <dd class="sub_name_color" id="spvsRgstrNm"></dd>
+                                    <dt>{{ message('item.dfccy.073') }}</dt>
+                                    <dd id="spvsRgstDt"></dd>
+                                </div>
+                            </div>
+                        </dl>
+
+                        <!-- 종결 관리 -->
+                        <dl class="more_data">
+                            <h2>{{ message('item.dfccy.015') }}</h2>
+                            <hr class="header_line"/> <!-- 구분 밑줄-->
+                        </dl>
+                        <dl class="more_result_data">
+                            <div class="author-date">
+                                <dt>{{ message('item.dfccy.074') }}</dt> <!--종결 확인-->
+                                <dd id="edCdNm"></dd>
+                                <dt>{{ message('item.com.064') }}</dt>
+                                <dd class="sub_name_color" id="edRgstrNm"></dd>
+                                <dt>{{ message('item.dfccy.073') }}</dt>
+                                <dd id="edRgstrDt"></dd>
+                            </div>
+                        </dl>
+                    </td>
+                </tr>
+            </div>
+        </div>
+    </div>
+</article>
+
+<script>
+    // 새창 모드일 경우,
+    if(opener){
+        opener.document.onkeydown = fkey;
+        opener.document.onkeypress = fkey;
+        opener.document.onkeyup = fkey;
+
+        // 부모창의 f5 새로고침 누를때 열려있는 팝업 창 닫기
+        function fkey(e){
+            if (window.event.keyCode == 116) {
+                window.close();
+            }
+        };
+
+        window.opener.onbeforeunload = function () {
+            // 부모창이 새로고침되거나 페이지 이동할 때 실행
+            if (window) {
+                // 자식 창 닫기
+                window.close();
+            }
+        };
+
+    }
+
+    const urlParam = new URLSearchParams(window.location.search);
+    const pjtNo = commonJs.getSessionStorage("pageCommonData").pjtNo;
+    let cntrctNo = urlParam.get("cntrctNo");
+    let dfccyNo = urlParam.get("dfccyNo");
+    let rowKey = parseInt(urlParam.get("rowKey")) || 0;
+
+    var dfccyDetail = {
+        init(){
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+                url: `/api/defecttracking/defectReport/detail`,
+                method: 'POST',
+                contentType: "application/json",
+                data: JSON.stringify({
+                    dfccyNo: dfccyNo,
+                    cntrctNo: cntrctNo
+                }),
+                success: function (data) {
+                    var detail = data.details.reportDetail
+                    if(detail) {
+                        dfccyDetail.setDfccy(detail);
+                        dfccyDetail.pageSet();
+                    }
+                },
+                error: function(){
+                    gaiaCommon.customAlert("{{message('msg.060')}}");
+                },
+                complete: function(){
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            });
+
+            gaia.loaded = true;
+        },
+        //결함 사항 매핑
+        setDfccy(rowData){
+            // 결함 Id
+            $("#dfccyNo").text(rowData.dfccy_no);
+
+            /* 결함 사항 매핑 */
+            if(rowData.priority_check === 'Y') {
+                $("#dfccyTitle").addClass("dfccy_priority");
+                $("#detail_priorityCheck").prop("checked", true);
+            }
+            $("#dfccyTitle").text(gaiaCommon.decodeSafeText(rowData.title));
+            $("#dfccyCdNm").text(rowData.dfccy_cd_nm);
+            $("#dfccyCrtcIsueYn").prop("checked", rowData.crtc_isue_yn === 'Y');
+            $("#dfccyLct").text(gaiaCommon.decodeSafeText(rowData.dfccy_lct));
+            $("#dfccyCntnts").text(gaiaCommon.decodeSafeText(rowData.dfccy_cntnts));
+            $("#dfccyRgstNm").text(rowData.rgstr_nm);
+            $("#dfccyRgstDt").text(rowData.rgst_dt);
+            $("#dfccyActivityNm").html(`${rowData.activity_ids == null || rowData.activity_ids === "null" ? "-" : rowData.activity_ids}  <i class="ic ic-sent-to-back" onclick="dfccyDetail.activityOpen()" style="cursor: pointer; margin-left: 10px; position: absolute;"></i>`);
+
+            // 첨부파일 리스트
+            const fileList = rowData.dfccyFiles;
+            if (fileList && fileList.length > 0) {
+                const fileListContainer = $(`#dfccyFileList`);
+                const dataInfo = $(`#dfccy_data_info`);
+                const attachList = $(`#dfccy_attach_list`);
+
+                dataInfo.addClass("hide");
+                attachList.removeClass("hide");
+
+                fileList.forEach((file) => {
+                const fileUrl = `/api/defecttraking/tool/defectTracking/${file.fileNo}/${file.sno}/file-download`;
+                const listItem = `<li class="list_item">
+                                    <a class="icon_btn" href='javascript:dfccyDetail.download("${fileUrl}");'>
+                                        <i class="ic ic-folder-open"></i>
+                                        <span class="blind">${file.fileNm}</span>
+                                    </a>
+                                    <a class="f_name" href='javascript:dfccyDetail.download("${fileUrl}");'>
+                                        ${file.fileNm}
+                                    </a>
+                                </li>`;
+
+                    fileListContainer.append(listItem);
+                });
+            }
+            /* 답변 사항 매핑 */
+            this.setDfccyRply(rowData);
+
+            /* 확인 사항 매핑 */
+            $("#qaCdNm").text(rowData.qa_cd_nm);
+            $("#qaRgstrNm").text(rowData.qa_rgstr_nm);
+            $("#qaRgstDt").text(rowData.qa_rgst_dt);
+
+            $("#spvsCdNm").text(rowData.spvs_cd_nm);
+            $("#spvsRgstrNm").text(rowData.spvs_rgstr_nm);
+            $("#spvsRgstDt").text(rowData.spvs_rgst_dt);
+
+            this.setDfccyCnfrm(rowData.dfccy_no);
+
+            /* 종결 사항 매핑 */
+            $("#edCdNm").text(rowData.ed_cd === '0502' ? "{{ message('item.dfccy.015') }}" : "{{ message('item.dfccy.012') }}");
+            $("#edRgstrNm").text(rowData.ed_rgstr_nm);
+            $("#edRgstrDt").text(rowData.ed_rgst_dt);
+        },
+        setDfccyCnfrm(dfccyNo){
+            $.ajax({
+                url: `/api/defecttraking/tool/defectTracking/confirm-list?dfccyNo=${dfccyNo}`,
+                method: "GET",
+                dataType: "json",
+                xhrFields: { withCredentials: true },
+                contentType: "application/json; charset=UTF-8",
+                traditional: true,
+                success: function (data) {
+                    let dtConfirm = data.details.dtConfirm;
+
+                    const confirmContainer = $("#dfccy_cnfrm_data_container");
+                    confirmContainer.empty(); // 기존 데이터 초기화
+
+                    if (dtConfirm.length === 0) {
+                        confirmContainer.append(`<dl class="more_data" style="justify-content: center;"><p class="data_info">{{ message('msg.dfccy.031') }}</p></dl>`);
+                        return;
+                    }
+
+                    dtConfirm.forEach((item) => {
+                        const confirmHtml = `
+                            <dl class="more_data">
+                                <div>
+                                    <span class="name_color">${item.cnfrmRgstrNm}</span>
+                                    <span>${item.cnfrmDt}</span>
+                                </div>
+                            </dl>
+                            <dl class="more_data">
+                                <dt>{{ message('item.dfccy.058') }}</dt>
+                                <dd><pre>${gaiaCommon.safeText(gaiaCommon.decodeSafeText(item.cnfrmOpnin))}</pre></dd>
+                                <dt>{{ message('item.com.062') }}</dt>
+                                <dd>
+                                    <div class="attach_area">
+                                        <p class="data_info" id="cfrm_data_info_${item.atchFileNo}">{{ message('msg.029') }}</p>
+                                        <div class="attach_list hide" id="cfrm_attach_list_${item.atchFileNo}">
+                                            <ul class="file_header">
+                                                <li class="header_item">
+                                                    <div class="icon_btn">
+                                                        <i class="ic ic-folder-open"></i>
+                                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                                    </div>
+                                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                                                </li>
+                                            </ul>
+                                            <ul class="file_list" id="cfrmFileList_${item.atchFileNo}"></ul>
+                                        </div>
+                                    </div>
+                                </dd>
+                            </dl>`;
+
+                        confirmContainer.append(confirmHtml);
+
+                        // 첨부파일 추가
+                        dfccyDetail.setDfccyFiles(item.confirmFiles, "cfrm", item.atchFileNo);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    // console.error("Error Confirm data:", status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                },
+            });
+        },
+        setDfccyRply(rowData) {
+            const replyContainer = $("#dfccy_rply_data_container");
+            replyContainer.empty(); // 기존 데이터 초기화
+
+            if (!rowData || !rowData.rply_cd) {
+                replyContainer.append(`<dl class="more_data" style="justify-content: center;"><p class="data_info">{{ message('msg.dfccy.032') }}</p></dl>`);
+            } else{
+                const rplyHtml = `
+                    <dl class="more_data">
+                        <div>
+                            <span class="name_color">${rowData.rply_rgstr_nm}</span>
+                            <span>${rowData.rply_rgst_dt}</span>
+                        </div>
+                    </dl>
+                    <dl class="more_data">
+                        <dt>{{ message('item.dfccy.039') }}</dt>
+                        <dd>${rowData.rply_cd_nm}</dd>
+                        <dt>{{ message('item.dfccy.040') }}</dt>
+                        <dd><pre>${gaiaCommon.safeText(gaiaCommon.decodeSafeText(rowData.rply_cntnts))}</pre></dd>
+                        <dt>{{ message('item.com.062') }}</dt>
+                        <dd>
+                            <div class="attach_area">
+                                <p class="data_info" id="rply_data_info">{{ message('msg.029') }}</p>
+                                <div class="attach_list hide" id="rply_attach_list">
+                                    <ul class="file_header">
+                                        <li class="header_item">
+                                            <div class="icon_btn">
+                                                <i class="ic ic-folder-open"></i>
+                                                <span class="blind">{{ message('item.com.020') }}</span>
+                                            </div>
+                                            <span class="f_name">{{ message('item.com.020') }}</span>
+                                        </li>
+                                    </ul>
+                                    <ul class="file_list" id="rplyFileList"></ul>
+                                </div>
+                            </div>
+                        </dd>
+                    </dl>
+                    `;
+
+                replyContainer.append(rplyHtml);
+            }
+
+            // 체크박스 설정
+            $("#rplyStatus").html(`${this.convert(rowData.rply_status)} <input class="check_mark" type="checkbox" name="checkboxgroup" id="rplyYn" disabled>`);
+
+            $("#rplyYn").prop("checked", rowData.rply_yn === 'Y');
+            $("#rplyOkNm").text(rowData.rply_ok_nm);
+            $("#rplyOkDt").text(rowData.rply_ok_dt);
+
+            // 첨부파일 추가
+            this.setDfccyFiles(rowData.replyFiles, "rply");
+        },
+        setDfccyFiles(files, fileType, fileNo) {
+            const fileListContainer = fileType === 'rply' ? $("#rplyFileList") : $(`#cfrmFileList_${fileNo}`);
+            const dataInfo = fileType === 'rply' ? $("#rply_data_info") : $(`#cfrm_data_info_${fileNo}`);
+            const attachList = fileType === 'rply' ? $("#rply_attach_list") : $(`#cfrm_attach_list_${fileNo}`);
+
+            fileListContainer.empty(); // 기존 리스트 초기화
+
+            if (!files || files.length === 0) {
+                dataInfo.removeClass("hide").text("{{ message('msg.029') }}"); //등록된 첨부파일이 없습니다.
+                attachList.addClass("hide");
+                return;
+            }
+
+            dataInfo.addClass("hide");
+            attachList.removeClass("hide");
+
+            files.forEach((file) => {
+                const fileUrl = `/api/defecttraking/tool/defectTracking/${file.fileNo}/${file.sno}/file-download`;
+                const listItem = `<li class="list_item">
+                                    <a class="icon_btn" href='javascript:dfccyDetail.download("${fileUrl}");'>
+                                        <i class="ic ic-folder-open"></i>
+                                        <span class="blind">${file.fileNm}</span>
+                                    </a>
+                                    <a class="f_name" href='javascript:dfccyDetail.download("${fileUrl}");'>
+                                        ${file.fileNm}
+                                    </a>
+                                </li>`;
+
+                fileListContainer.append(listItem);
+            });
+        },
+        close(){
+            window.close();
+        },
+        activityOpen: function () {
+            const dfccyNo = $("#dfccyNo").text();
+            if(!dfccyNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.029') }}"); // 결함 번호 정보가 없습니다.
+                return;
+            }
+
+            const width = 1000;
+            const height = 450;
+            let left = Math.ceil((window.screen.width - width) / 2);
+            left += window.screenLeft; // 듀얼 모니터일 때
+            const top = Math.ceil((window.screen.height - height) / 2);
+            let cntrctNo = $("#cntrctNo").val()
+
+            window.open(
+                `/defectTracking/activity?cntrctNo=${cntrctNo}&dfccyNo=${dfccyNo}`,
+                "activityDetailPopup",
+                `width=${width},height=${height},left=${left},top=${top}`
+            );
+
+            return false;
+        },
+        convert(string, type){
+            switch(string) {
+                case 'ing': return "{{ message('item.com.041') }}";
+                case 'end': return "{{ message('item.dfccy.004') }}";
+                case 'ok': return "{{ message('btn.004') }}";
+                case '': return '-';
+            }
+        },
+        // 첨부파일 다운로드
+        download(url){
+            if(url) {
+                gaiaCommon.download(url, function(error){
+                    if (error.status === 404) {
+                        gaiaCommon.customAlert("{{ message('msg.doc.128') }}");
+                    } else if (error.status === 400) {
+                        gaiaCommon.customAlert("{{ message('msg.059') }}");
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.doc.129') }}");
+                    }
+                })
+            }
+        },
+        // 페이징 관련 함수
+        pageSet() {
+            const data = window.opener.reportGrid.reportGrid.getData();
+            $("#firstPage, #prevPage").off("click").toggleClass("tui-is-disabled", rowKey == 0);
+            if (rowKey != 0) {
+                $("#firstPage").on("click", dfccyDetail.firstPage);
+                $("#prevPage").on("click", dfccyDetail.prevPage);
+            }
+
+            $("#lastPage, #nextPage").off("click").toggleClass("tui-is-disabled", rowKey == data.length - 1);
+            if (rowKey != data.length - 1) {
+                $("#lastPage").on("click", dfccyDetail.lastPage);
+                $("#nextPage").on("click", dfccyDetail.nextPage);
+            }
+
+        },
+        firstPage() {
+            rowKey = 0;
+            const data = window.opener.reportGrid.reportGrid.getData();
+            const row = data[rowKey];
+            dfccyNo = row.dfccyNo;
+            const newUrl = `${window.location.pathname}?dfccyNo=${dfccyNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&rowKey=${rowKey}`;
+            window.location.href = newUrl;
+        },
+        lastPage() {
+            const data = window.opener.reportGrid.reportGrid.getData();
+            rowKey = data.length - 1;
+            const row = data[rowKey];
+            dfccyNo = row.dfccyNo;
+            const newUrl = `${window.location.pathname}?dfccyNo=${dfccyNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&rowKey=${rowKey}`;
+            window.location.href = newUrl;
+        },
+        prevPage() {
+            const data = window.opener.reportGrid.reportGrid.getData();
+            rowKey -= 1;
+            if (rowKey <= 0) return;
+            const prevRow = data[rowKey];
+            if (!prevRow) return;
+            dfccyNo = prevRow.dfccyNo;
+            const newUrl = `${window.location.pathname}?dfccyNo=${dfccyNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&rowKey=${rowKey}`;
+            window.location.href = newUrl;
+        },
+        nextPage() {
+            const data = window.opener.reportGrid.reportGrid.getData();
+            rowKey = rowKey + 1;
+            if (rowKey >= data.length) return;
+            const nextRow = data[rowKey];
+            if (!nextRow) return;
+            dfccyNo = nextRow.dfccyNo;
+            const newUrl = `${window.location.pathname}?dfccyNo=${dfccyNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&rowKey=${rowKey}`;
+            window.location.href = newUrl;
+        },
+        getWebPath(diskPath, fileName) {
+            let normalized = diskPath.replace(/\\/g, '/');
+            let trimmed = normalized.replace(/^.*\/upload/, '/upload');
+            return `${trimmed}/${fileName}`;
+        }
+    };
+
+    $(function () {
+        gaiaPortal.navMenuInit("M090202", "{{ message('item.dfccy.080') }} {{ message('item.com.080') }}");
+        $('#menuDepth').append(`<li class="breadcrumb_item">{{ message('item.dfccy.080') }} {{ message('item.com.080') }}</li>`);
+        dfccyDetail.init();
+	})
+
+</script>
+{% endblock content %}

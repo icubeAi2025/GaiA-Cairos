@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board">
+    <sql id="columns">
+        board_no
+        , board_cd
+        , board_type
+        , board_category
+        , board_title
+        , board_txt
+        , share_yn
+        , dlt_yn
+        , rgstr_id
+        , rgst_dt
+        , chg_id
+        , chg_dt
+        , dlt_id
+        , dlt_dt
+    </sql>
+
+    <select id="getBoardList" parameterType="boardListInput" resultType="boardOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.getBoardList][jhkim]  */
+        SELECT
+            A.BOARD_NO,
+            A.BOARD_CD,
+            (ROW_NUMBER() OVER(ORDER BY A.RGST_DT)) AS ROWNUM,
+            A.BOARD_TITLE,
+            A.BOARD_TYPE,
+            A.BOARD_CATEGORY,
+            TO_CHAR(A.RGST_DT, 'FMYYYY-MM-DD') AS RGST_DT,
+            (	SELECT
+                    B.USR_NM
+                FROM
+                    SM_USER_INFO B
+                WHERE
+                    B.USR_ID = A.RGSTR_ID	),
+            (	SELECT
+                    B.USR_ID
+                FROM
+                    SM_USER_INFO B
+                WHERE
+                    B.USR_ID = A.RGSTR_ID	),
+            (	SELECT
+                    COUNT(DISTINCT A.BOARD_NO)
+                FROM
+                    SM_BOARD A
+                LEFT JOIN 
+                        SM_BOARD_RECEPTION SBR 
+                ON      A.BOARD_CD = SBR.BOARD_CD AND SBR.DLT_YN = 'N'
+                WHERE 
+                    A.DLT_YN = 'N'
+                    <if test='boardType == "2"'>
+                    AND A.BOARD_CATEGORY =  #{boardCategory}
+                    </if>
+                    AND A.BOARD_TYPE =  #{boardType}
+                    <choose>
+                        <when test="searchType=='' or searchType == null ">
+                            AND (
+                                A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                                OR A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                            )
+                        </when>
+                        <when test="searchType == 'boardTitle'">
+                            AND A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                        </when>
+                        <when test="searchType == 'boardTxt'">
+                            AND A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                        </when>
+                    </choose>
+                    <if test='pjtNoList != null and pjtNoList.size() > 0 and boardType == "1"'>
+                            <choose>
+                                <when test="userType == 'ADMIN'">
+                                    AND (SBR.PJT_NO IN
+                                        <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                            #{item}
+                                        </foreach>
+                                    OR SBR.PJT_NO ISNULL)
+                                </when>
+                                <when test="systemType == 'GAIA' or systemType == 'PGAIA'">
+                                    AND     (       SBR.PJT_NO IN
+                                    <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                            #{item}
+                                    </foreach>
+                                            OR      SBR.BOARD_DIV = '1')   
+                                </when>
+                                <when test="systemType == 'CAIROS'">
+                                    AND     ((   SBR.PJT_NO IN
+                                    <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                            #{item}
+                                    </foreach> 
+                                            AND     SBR.BOARD_DIV = '2')
+                                    OR     (SBR.CNTRCT_NO IN 
+                                    <foreach item="item" collection="cntrctNoList" open="(" separator="," close=")">
+                                            #{item}
+                                    </foreach>
+                                            AND     SBR.BOARD_DIV = '3')
+                                    OR      SBR.BOARD_DIV = '1')
+                                </when>
+                            </choose>
+                        </if>
+                        AND ( #{systemType} = SBR.PJT_TYPE OR ( #{systemType} != SBR.PJT_TYPE AND A.SHARE_YN = 'Y') ) 
+                        <if test="pjtNoList == null or pjtNoList.size() == 0">
+                                AND 1=0
+                        </if>
+             ) AS TOTAL_NUM
+        FROM
+            SM_BOARD A 
+        LEFT JOIN 
+                SM_BOARD_RECEPTION SBR 
+        ON      A.BOARD_CD = SBR.BOARD_CD AND SBR.DLT_YN = 'N'
+        WHERE 
+            A.DLT_YN = 'N'
+            <if test='boardType == "2"'>
+            AND A.BOARD_CATEGORY =  #{boardCategory}
+            </if>
+            AND A.BOARD_TYPE =  #{boardType}
+            <choose>
+                <when test="searchType=='' or searchType == null ">
+                     AND (
+                        A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                        OR A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                    )
+                </when>
+                <when test="searchType == 'boardTitle'">
+                    AND A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                </when>
+                <when test="searchType == 'boardTxt'">
+                    AND A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                </when>
+            </choose>
+            <if test='pjtNoList != null and pjtNoList.size() > 0 and boardType == "1"'>
+                    <choose>
+                        <when test="userType == 'ADMIN'">
+                            AND (SBR.PJT_NO IN
+                                <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                                </foreach>
+                            OR SBR.PJT_NO ISNULL)
+                        </when>
+                        <when test="systemType == 'GAIA' or systemType == 'PGAIA'">
+                            AND     (       SBR.PJT_NO IN
+                            <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach>
+                                    OR      SBR.BOARD_DIV = '1')   
+                        </when>
+                        <when test="systemType == 'CAIROS'">
+                            AND     ((   SBR.PJT_NO IN
+                            <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach> 
+                                    AND     SBR.BOARD_DIV = '2')
+                            OR     (SBR.CNTRCT_NO IN 
+                            <foreach item="item" collection="cntrctNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach>
+                                    AND     SBR.BOARD_DIV = '3')
+                            OR      SBR.BOARD_DIV = '1')
+                        </when>
+                    </choose>
+                </if>
+                AND ( #{systemType} = SBR.PJT_TYPE OR ( #{systemType} != SBR.PJT_TYPE AND A.SHARE_YN = 'Y') ) 
+                <if test="pjtNoList == null or pjtNoList.size() == 0">
+                        AND 1=0
+                </if>
+            GROUP BY
+                    A.BOARD_NO
+        <if test="pageable.sort.isEmpty()">
+            ORDER BY A.RGST_DT DESC
+        </if>
+    <include refid="sqlx.commonPageable"></include>
+    </select>
+
+    <select id="getMainBoardList" parameterType="boardListInput" resultType="boardOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.getMainBoardList][jhkim]  */
+            SELECT
+                A.BOARD_NO,
+                (ROW_NUMBER() OVER(ORDER BY A.RGST_DT)) AS ROWNUM,
+                A.BOARD_TITLE,
+                A.BOARD_TYPE,
+                A.BOARD_CATEGORY,
+                A.BOARD_CD,
+                (	SELECT
+                    B.USR_NM
+                FROM
+                    SM_USER_INFO B
+                WHERE
+                    B.USR_ID = A.RGSTR_ID	),
+                TO_CHAR(A.RGST_DT, 'FMYYYY-MM-DD') AS RGST_DT
+            FROM
+                SM_BOARD A 
+            LEFT JOIN 
+                    SM_BOARD_RECEPTION SBR 
+            ON      A.BOARD_CD = SBR.BOARD_CD AND SBR.DLT_YN = 'N'
+            WHERE 
+                A.DLT_YN = 'N'
+                <choose>
+                    <when test="searchType=='' or searchType == null ">
+                        AND (
+                            A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                            OR A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                        )
+                    </when>
+                    <when test="searchType == 'boardTitle'">
+                        AND A.BOARD_TITLE ILIKE CONCAT('%', #{searchText}, '%') 
+                    </when>
+                    <when test="searchType == 'boardTxt'">
+                        AND A.BOARD_TXT ILIKE CONCAT('%', #{searchText}, '%') 
+                    </when>
+                </choose>
+                <if test='pjtNoList != null and pjtNoList.size() > 0 and boardType == "1"'>
+                    <choose>
+                        <when test="userType == 'ADMIN'">
+                            AND (SBR.PJT_NO IN
+                                <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                                </foreach>
+                            OR SBR.PJT_NO ISNULL)
+                        </when>
+                        <when test="systemType == 'GAIA' or systemType == 'PGAIA'">
+                            AND     (       SBR.PJT_NO IN
+                            <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach>
+                                    OR      SBR.BOARD_DIV = '1')   
+                        </when>
+                        <when test="systemType == 'CAIROS'">
+                            AND     ((   SBR.PJT_NO IN
+                            <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach> 
+                                    AND     SBR.BOARD_DIV = '2')
+                            OR     (SBR.CNTRCT_NO IN 
+                            <foreach item="item" collection="cntrctNoList" open="(" separator="," close=")">
+                                    #{item}
+                            </foreach>
+                                    AND     SBR.BOARD_DIV = '3')
+                            OR      SBR.BOARD_DIV = '1')
+                        </when>
+                    </choose>
+                    <if test="pjtNoList == null or pjtNoList.size() == 0">
+                            AND 1=0
+                    </if>
+                </if>
+            <choose>
+                <when test="pageType == 'list'">
+                    <if test='boardType == "2"'>
+                        AND     A.BOARD_TYPE =  #{boardType}
+                        AND     A.BOARD_CATEGORY =  #{boardCategory}
+                        GROUP BY A.BOARD_NO
+                        <if test="pageable.sort.isEmpty()">
+                            ORDER BY A.RGST_DT DESC
+                        </if>
+                    </if>
+                    <if test='boardType == "1"'>
+                        AND     A.BOARD_TYPE =  #{boardType}
+                        AND ( #{systemType} = SBR.PJT_TYPE OR ( #{systemType} != SBR.PJT_TYPE AND A.SHARE_YN = 'Y') ) 
+                        GROUP BY A.BOARD_NO
+                        <if test="pageable.sort.isEmpty()">
+                            ORDER BY A.RGST_DT DESC
+                        </if>
+                    </if>
+                    <include refid="sqlx.commonPageable"></include>
+                </when>
+                <otherwise>
+                    <if test='boardType == "2"'>
+                        AND     A.BOARD_TYPE =  #{boardType}
+                        AND     A.BOARD_CATEGORY =  #{boardCategory}
+                        GROUP BY A.BOARD_NO
+                        ORDER BY A.RGST_DT DESC
+                        LIMIT 6
+                    </if>
+                    <if test='boardType == "1"'>
+                        AND     A.BOARD_TYPE =  #{boardType}
+                        AND ( #{systemType} = SBR.PJT_TYPE OR ( #{systemType} != SBR.PJT_TYPE AND A.SHARE_YN = 'Y') ) 
+                        GROUP BY A.BOARD_NO
+                        ORDER BY A.RGST_DT DESC
+                        LIMIT 4
+                    </if>
+                </otherwise>
+            </choose>
+    </select>
+
+    <select id="getUpdateData" parameterType="Integer" resultType="boardOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.getUpdateData][jhkim]  */
+        SELECT  A.BOARD_NO,
+                A.BOARD_Cd,
+                A.BOARD_TITLE,
+                A.SHARE_YN,
+                A.BOARD_TXT,
+                TO_CHAR(A.RGST_DT, 'FMYYYY-MM-DD') AS RGST_DT,
+                (	SELECT
+                        B.USR_ID
+                    FROM
+                        SM_USER_INFO B
+                    WHERE
+                        B.USR_ID = A.RGSTR_ID	),
+                (	SELECT
+                    B.USR_NM
+                FROM
+                    SM_USER_INFO B
+                WHERE
+                    B.USR_ID = A.RGSTR_ID	),
+                SBR.BOARD_DIV,
+                CASE 
+                    WHEN SPM.POP_MSG_CD IS NOT NULL THEN 'Y'
+                    ELSE 'N'
+                END AS POPUP_YN,
+                SPM.POP_START_DT,
+                SPM.POP_END_DT
+        FROM    SM_BOARD A 
+        LEFT JOIN 
+                SM_BOARD_RECEPTION SBR 
+        ON	    A.BOARD_CD = SBR.BOARD_CD AND SBR.DLT_YN = 'N'
+        LEFT JOIN 
+                SM_POPUP_MSG SPM 
+        ON	    A.BOARD_CD = SPM.POP_MSG_CD AND SPM.DLT_YN = 'N'
+        WHERE 
+            A.BOARD_NO = #{boardNo}
+        GROUP BY 
+            A.BOARD_NO,
+            A.BOARD_CD,
+            A.BOARD_TITLE,
+            A.SHARE_YN,
+            A.BOARD_TXT,
+            A.RGST_DT,
+            SBR.BOARD_DIV,
+            SPM.POP_MSG_CD,
+            SPM.POP_START_DT,
+            SPM.POP_END_DT;
+    </select>
+
+    <select id="selectAdminGAIAProjectList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.selectAdminProjectList][jhkim]  */
+        SELECT  CP.PJT_NO AS PJT_NO, 
+                CP.PJT_NM AS PJT_NM
+        FROM    CN_PROJECT CP
+        WHERE   CON_PSTATS IN ('0602', '0603', '0604')
+        AND     CP.DLT_YN = 'N'
+        ORDER BY CP.PJT_NM ASC
+    </select>
+
+    <select id="selectGAIAUserProjectList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.selectGAIAUserProjectList][jhkim]  */
+        SELECT  A.PJT_NO AS PJT_NO,
+                A.PJT_NM AS PJT_NM
+        FROM    (   SELECT  DISTINCT(C.PJT_NO) AS PJT_NO,
+                            C.PJT_NM AS PJT_NM,
+                            C.RGST_DT AS RGST_DT
+                    FROM    SM_DEPARTMENT A,
+                            SM_ORGANIZATION B,
+                            CN_PROJECT C
+                    WHERE   A.DEPT_NO = B.DEPT_NO
+                    AND     A.PJT_NO = C.PJT_NO
+                    AND     B.USR_ID = #{userId}
+                    AND     A.PJT_TYPE = 'PGAIA'
+                    AND     A.DLT_YN = 'N'
+                    AND     A.USE_YN = 'Y'
+                    AND     B.DLT_YN = 'N'
+                    AND     C.DLT_YN = 'N'
+                    AND     C.USE_YN = 'Y'
+                    AND     C.CON_PSTATS IN ('0602', '0603', '0604')
+                ) AS A
+        ORDER BY A.PJT_NM ASC
+    </select>
+
+    <select id="selectCMISUserProjectList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.selectCMISUserProjectList][jhkim]  */
+        SELECT  A.PJT_NO AS PJT_NO,
+                A.PJT_NM AS PJT_NM
+        FROM    (   SELECT  DISTINCT(D.CNTRCT_NO) AS CNTRCT_NO, 
+                            D.CNTRCT_NM AS CNTRCT_NM, 
+                            C.PJT_NO AS PJT_NO, 
+                            C.PJT_NM AS PJT_NM,
+                            C.RGST_DT AS RGST_DT 
+                    FROM    SM_DEPARTMENT A,
+                            SM_ORGANIZATION B, 
+                            CN_PROJECT C, 
+                            CN_CONTRACT D
+                    WHERE   A.DEPT_NO = B.DEPT_NO
+                    AND     A.PJT_NO = C.PJT_NO
+                    AND     A.CNTRCT_NO = D.CNTRCT_NO
+                    AND     B.USR_ID = #{userId}
+                    AND     A.PJT_TYPE = 'CAIROS'
+                    AND     A.DLT_YN = 'N'
+                    AND     A.USE_YN = 'Y'
+                    AND     B.DLT_YN = 'N'
+                    AND     C.DLT_YN = 'N'
+                    AND     C.USE_YN = 'Y'
+                    AND     B.DLT_YN = 'N'
+                    AND     C.CON_PSTATS IN ('0602', '0603', '0604')
+                ) AS A
+        ORDER BY A.PJT_NM ASC
+    </select>
+
+    <select id="selectGaiaUserCntrctList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.getCntrctList][jhkim]  */
+        SELECT
+            CP.PJT_NO AS PJT_NO,
+             <![CDATA[
+            '[ ' || CP.PJT_NM || ' ] ' ||  CC.CNTRCT_NM AS PJT_NM,
+            ]]>
+            CC.CNTRCT_NO
+        FROM
+            CN_PROJECT CP
+        LEFT JOIN CN_CONTRACT CC ON
+            CC.PJT_NO = CP.PJT_NO
+            AND CC.DLT_YN = 'N'
+        WHERE
+            CON_PSTATS IN ('0602', '0603', '0604')
+            AND CP.DLT_YN = 'N'
+            <if test="pjtNoList != null and pjtNoList.size() > 0">
+                AND CP.PJT_NO IN
+                <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="pjtNoList == null or pjtNoList.size() == 0">
+                AND 1=0
+            </if>
+        ORDER BY
+            CP.PJT_NM ASC;    
+    </select>
+
+    <select id="selectCMISUserCntrctList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.selectCMISUserCntrctList][jhkim]  */
+        SELECT  A.PJT_NO AS PJT_NO,
+                 <![CDATA[
+                '[ ' || A.PJT_NM || ' ] ' || A.CNTRCT_NM AS PJT_NM,
+                ]]>
+                A.CNTRCT_NO,
+                A.CNTRCT_NM
+        FROM    (   SELECT  DISTINCT(D.CNTRCT_NO) AS CNTRCT_NO, 
+                            D.CNTRCT_NM AS CNTRCT_NM, 
+                            C.PJT_NO AS PJT_NO, 
+                            C.PJT_NM AS PJT_NM,
+                            C.RGST_DT AS RGST_DT 
+                    FROM    SM_DEPARTMENT A,
+                            SM_ORGANIZATION B, 
+                            CN_PROJECT C, 
+                            CN_CONTRACT D
+                    WHERE   A.DEPT_NO = B.DEPT_NO
+                    AND     A.PJT_NO = C.PJT_NO
+                    <if test="pjtNoList != null and pjtNoList.size() > 0">
+                        AND A.PJT_NO IN
+                        <foreach item="item" collection="pjtNoList" open="(" separator="," close=")">
+                            #{item}
+                        </foreach>
+                    </if>
+                    <if test="pjtNoList == null or pjtNoList.size() == 0">
+                        AND 1=0
+                    </if>
+                    AND     A.CNTRCT_NO = D.CNTRCT_NO
+                    AND     B.USR_ID = #{userId}
+                    AND     A.PJT_TYPE = 'CAIROS'
+                    AND     A.DLT_YN = 'N'
+                    AND     A.USE_YN = 'Y'
+                    AND     B.DLT_YN = 'N'
+                    AND     C.DLT_YN = 'N'
+                    AND     C.USE_YN = 'Y'
+                    AND     B.DLT_YN = 'N'
+                    AND     C.CON_PSTATS IN ('0602', '0603', '0604')
+                ) AS A
+        ORDER BY A.PJT_NM ASC
+    </select>
+
+    <select id="selectBoard" resultType="smBoard">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.insertBoard][jhkim]  */
+        SELECT
+            <include refid="columns" />
+        FROM SM_BOARD
+        <where>
+            AND board_cd = #{boardCd}
+        </where>
+    </select>
+
+    <insert id="insertBoard">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.insertBoard][jhkim]  */
+        INSERT INTO sm_board (
+            board_cd
+            , board_type
+            , board_category
+            , board_title
+            , board_txt
+            , share_yn
+            , dlt_yn
+            , rgstr_id
+            , rgst_dt
+            , chg_id
+            , chg_dt
+        ) VALUES (
+            #{boardCd}
+            , #{boardType}
+            , #{boardCategory}
+            , #{boardTitle}
+            , #{boardTxt}
+            , #{shareYn}
+            , 'N'
+            , #{rgstrId}
+            , NOW()
+            , #{chgId}
+            , #{chgDt}
+        )
+    </insert>
+
+    <update id="updateBoard">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.board.updateBoard][jhkim]  */
+        UPDATE SM_BOARD
+        <set>
+            , board_type = #{boardType}
+            , board_category = #{boardCategory}
+            , board_title = #{boardTitle}
+            , board_txt = #{boardTxt}
+            , share_yn = #{shareYn}
+            <if test=' dltYn != "" and !"".equals(dltYn) '>
+            , dlt_yn = #{dltYn}
+            </if>
+            , chg_id = #{chgId}
+            , chg_dt = NOW()
+        </set>
+        <where>
+            AND board_cd = #{boardCd}
+        </where>
+    </update>
+
+    <update id="updateBoardView" parameterType="boardViewInput">
+		UPDATE 	SM_BOARD_RECEPTION
+		SET		BOARD_VIEW = BOARD_VIEW + 1
+		WHERE 	BOARD_CD = #{boardCd}
+        AND     PJT_TYPE = #{pjtType}
+        AND     BOARD_DIV = #{boardDiv}
+        <if test='boardDiv == "1"'>
+        AND     PJT_NO ISNULL
+        AND     CNTRCT_NO ISNULL
+        </if>
+        <if test='boardDiv == "2"'>
+        AND     PJT_NO = #{pjtNo}
+        AND     CNTRCT_NO ISNULL
+        </if>
+        <if test='boardDiv == "3"'>
+        AND     PJT_NO = #{pjtNo}
+        AND     CNTRCT_NO = #{cntrctNo}
+        </if>
+        AND     DLT_YN = 'N'
+	</update>
+    <update id="deleteSmBoardReception">
+        update sm_board_reception
+        set dlt_yn = 'Y', dlt_dt = now(), dlt_id = #{dltId}
+        where rece_seq = #{receSeq}
+    </update>
+    <update id="deleteSmBoard">
+        update sm_board
+        set dlt_yn = 'Y', dlt_dt = now(), dlt_id = #{dltId}
+        where board_cd = #{boardCd}
+    </update>
+</mapper>

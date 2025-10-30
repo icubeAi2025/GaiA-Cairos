@@ -1,0 +1,2892 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r">
+
+
+    <!-- C3R 오류정보 테이블 삭제 -->
+    <sql id="sql_deleteC3rErrInfo">
+        DELETE FROM CT_CNSTWK_TMP_DTA_ERR
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        ;
+    </sql>
+
+    <!-- 공통코드 조건 조회 조각 -->
+    <sql id="sql_selectComCode">
+        SELECT CMN_CD FROM SM_COM_CODE
+        WHERE CMN_GRP_CD = (SELECT CMN_GRP_CD FROM SM_COM_CODE_GROUP WHERE CMN_CD = ${cmnCd})
+        AND USE_YN = 'Y' AND DLT_YN = 'N'
+    </sql>
+
+    <!-- C3R 테이블 정보 조회 SQL -->
+    <sql id="sql_selectC3rTblInfo">
+    SELECT
+        TBL_NM, CNSTWK_DTA_SN, CNSTTY_CD, TMP_RSCE_UNTY_CD, TMP_RSCE_UNTY_CD AS RESC_CODE, 'Y' AS IS_LEAF_YN,
+        ATTRBT1_NM, (CASE WHEN ATTRBT2_NM = '계산값' THEN NULL ELSE RSCE_SPEC_NM END) AS RSCE_SPEC_NM,
+        RSCE_QTY, RSCE_TP_VAL, MLG_VAL,
+        LOSSCST_CD_LIST, CALC_MLG_VAL, RSLT_MLG_VAL, LOSSCST_APLY_PT, DPRCTNCST, STEP2_QTY,
+        CASE WHEN UPPER(TMP_RSCE_UNTY_CD) = LAG(UPPER(TMP_RSCE_UNTY_CD)) OVER(ORDER BY CNTRCT_CHG_ID, TBL_NM, CNSTWK_DTA_SN) THEN 'ERR'
+             ELSE NULL
+            END AS ERR
+    FROM CT_CNSTWK_TMP_DTA
+    WHERE 1=1
+        AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND TBL_NM = #{TBL_NM}
+    </sql>
+
+    <!-- 공통코드, 계약 ~ 주공종 데이터 목록 조회 -->
+    <select id="getMajorCnsttyCdList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getMajorCnsttyCdList][choisr]  */
+        SELECT
+            CNTRCT_NO,
+            CNTRCT_CHG_ID,
+            LPAD(CNTRCT_CHG_NO,2,'0') AS CNTRCT_CHG_ORD,
+            CMN_CD CNTRCT_CNST_TYPE,
+            CMN_CD_NM_KRN AS UNIT_CNSTWK_NM
+        FROM CN_CONTRACT_CHANGE A, SM_COM_CODE B
+        WHERE 1=1
+            AND A.CNTRCT_NO = #{CNTRCT_NO}
+            AND A.DLT_YN = 'N'
+            AND A.LAST_CHG_YN = 'Y'
+            AND B.CMN_GRP_CD = (
+                SELECT CMN_GRP_CD
+                FROM SM_COM_CODE_GROUP
+                WHERE CMN_CD = 'CONS'
+            )
+            AND B.USE_YN = 'Y'
+            AND B.DLT_YN = 'N'
+    </select>
+
+    <!-- 계약내역서 & 설계내역서 초기화/삭제 deleteUnitCnstwk  -->
+    <delete id="XXXdeleteUnitC3R" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deleteUnitC3R][choisr]  */
+
+        /* 계약내역서 초기화 */
+        /* [확인필요 - 계약단위공사 미사용으로 인한 호출 x]
+        UPDATE CN_CONTRACT_BID SET
+            CST_CNSTTY_SNO = NULL,
+            CST_DCNSTTY_SNO = NULL,
+            CHG_DT = CURRENT_TIMESTAMP,
+            CHG_ID = #{USER_ID}
+        WHERE 1=1
+            AND CNTRCT_NO = #{CNTRCT_NO} */
+
+        /* [확인필요] 원가_기계경비산출정보 삭제 */
+        /* [확인필요] DELETE FROM CST_MCHNE_CALC_INFO WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [확인필요] 원가_중기단가산출전역변수 삭제 */
+        /* [확인필요] DELETE FROM CST_HMUPC_VAR WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [미사용] 원가_단위공사환율 삭제 */
+        /* [미사용] DELETE FROM CST_UNIT_UPJT_EXCRT WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+
+        /* 원가_C3R오류목록 삭제 */
+        /* [미사용-호출부 없음] DELETE FROM CST_C3R_ERR_DTL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};*/
+        /* 원가_C3R오류정보 삭제 */
+        /* [미사용-호출부 없음] DELETE FROM CST_C3R_ERR WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};*/
+
+        /* [확인필요] 원가_QDB 삭제*/
+        DELETE FROM CT_QDB WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+
+        /* 원가_WBS 삭제 */
+        DELETE FROM CT_WBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+        /* 원가_WBS작업분류 삭제 */
+        DELETE FROM CT_WBS_OPER_CLSS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+        /* 원가_WBS정보 삭제 */
+        DELETE FROM CT_WBS_INFO WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+
+        /* [미사용] 원가_세부공종소요자원집계 삭제 */
+        /* [미사용] DELETE FROM CST_DTL_CNSTTY_REQRE_RSCE WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [미사용] 원가_세부공종손료 삭제 */
+        /* [미사용] DELETE FROM CST_DTL_CNSTTY_LOSSCST WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* 원가_세부공종 삭제 */
+        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+        /* 원가_공종 삭제 */
+        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+
+        /* 원가_자재 삭제 */
+        /* 원가_노무 삭제 */
+        /* 원가_경비 삭제 */
+        /* [미사용] DELETE FROM CST_MTRL WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [미사용] DELETE FROM CST_LBR WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [미사용] DELETE FROM CST_GNRLEXPNS WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        DELETE FROM CT_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND RSCE_TP_CD IN ('M', 'L', 'E') AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+
+        /* [미사용] 원가_일위대가소요자원집계 삭제 */
+        /* [미사용] DELETE FROM CST_UCOST_REQRE_RSCE WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [미사용] 원가_일위대가손료 삭제 */
+        /* [미사용] DELETE FROM CST_UCOST_LOSSCST WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+
+        /* 원가_일위대가상세 삭제 */
+        DELETE FROM CT_UNIT_COST_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+        /* 원가_일위대가 삭제 */
+        DELETE FROM CT_UNIT_COST WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD};
+
+        /* [대체-일위대가] 원가_중기단가산출중간코드 삭제 */
+        /* [대체-일위대가] DELETE FROM CST_HMUPC_MID_CD WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [대체-일위대가] 원가_중기단가산출 삭제 */
+        /* [대체-일위대가] DELETE FROM CST_HMUPC WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+
+        /* [미사용] 원가_기계경비손료 (x) 삭제 */
+        /* [미사용] DELETE FROM CST_MCHNE_LOSSCST WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO}; */
+        /* [대체-일위대가] 원가_기계경비상세 - 일위대가상세 삭제 */
+        /* [대체-일위대가] DELETE FROM CST_MCHNE_DTL WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+        /* [대체-일위대가] 원가_기계경비 - 일위대가 삭제 */
+        /* [대체-일위대가] DELETE FROM CST_MCHNE WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO};*/
+
+        /* [확인필요] 원가_단위공사집계금액 */
+        /* [확인필요] DELETE FROM CST_UNIT_CNSTWK_AM WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO}; */
+
+
+        /* [미사용] 원가_단위공사정보 삭제 */
+        /* [미사용] DELETE FROM CST_UNIT_CNSTWK WHERE UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO}; */
+
+        /* 원가_임시공사자료 오류 */
+        DELETE FROM CT_CNSTWK_TMP_DTA_ERR WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+        /* 원가_임시공사자료 */
+        DELETE FROM CT_CNSTWK_TMP_DTA WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+
+    </delete>
+
+    <!-- 계약내역서 & 설계내역서 초기화/삭제 deleteUnitCnstwk  -->
+    <delete id="deleteUnitC3R" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deleteUnitC3R][choisr]  */
+
+        /* 원가_공종자원 삭제 20250206 추가 */
+        DELETE FROM CT_CBS_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+
+        /* 원가_세부공종 삭제 */
+        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+        /* 원가_공종 삭제 */
+        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+
+        /* 원가_자재 삭제 */
+        /* 원가_노무 삭제 */
+        /* 원가_경비 삭제 */
+        DELETE FROM CT_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+
+        /* 원가_일위대가상세 삭제 */
+        DELETE FROM CT_UNIT_COST_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+        /* 원가_일위대가 삭제 */
+        DELETE FROM CT_UNIT_COST WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+
+        /* 원가_QDB 삭제*/
+        DELETE FROM CT_QDB WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+
+        /* 원가_WBS 삭제 */
+        DELETE FROM CT_WBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+        /* 원가_WBS작업분류 삭제 */
+        DELETE FROM CT_WBS_OPER_CLSS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+        /* 원가_WBS정보 삭제 */
+        DELETE FROM CT_WBS_INFO WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%') ;
+
+        /* 원가_임시공사자료 오류 */
+        DELETE FROM CT_CNSTWK_TMP_DTA_ERR WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+        /* 원가_임시공사자료 */
+        DELETE FROM CT_CNSTWK_TMP_DTA WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+
+    </delete>
+
+    <!-- 임시자료 삭제 deleteUnitCnstwkTmpDta -->
+    <delete id="deleteUnitC3RTmpDta" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deleteUnitC3RTmpDta][choisr]  */
+        DELETE FROM CT_CNSTWK_TMP_DTA_ERR WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
+        DELETE FROM CT_CNSTWK_TMP_DTA WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </delete>
+
+    <select id="getCstCnstwkTmpDta" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getCstCnstwkTmpDta][choisr]  */
+        SELECT * FROM CT_CNSTWK_TMP_DTA
+    </select>
+
+    <!-- 임시자료 등록 전 해당 단위공사구분에따른 자료가있는지 검사 -->
+    <select id="checkExistUnitCnstType" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.checkExistUnitCnstType][choisr]  */
+        <choose>
+            <when test='TBL_NM == "CT_RESOURCE"'>
+                /* 원가_자원 단위공사 조회 */
+                SELECT CNTRCT_CHG_ID, UNIT_CNST_TYPE, COUNT(UNIT_CNST_TYPE) CNT FROM (
+                    SELECT CNTRCT_CHG_ID, LEFT(UNIT_CNST_TYPE, 1) UNIT_CNST_TYPE
+                    FROM CT_RESOURCE
+                    WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                        AND UNIT_CNST_TYPE IS NOT NULL
+                        AND UNIT_CNST_TYPE != 'null'
+                        AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%')
+                    GROUP BY (CNTRCT_CHG_ID, UNIT_CNST_TYPE)
+                ) T1 GROUP BY (CNTRCT_CHG_ID, UNIT_CNST_TYPE)
+            </when>
+            <when test='TBL_NM == "CT_UNIT_COST"'>
+                /* 원가_자원 일위대가 조회 */
+                SELECT CNTRCT_CHG_ID, UNIT_CNST_TYPE, COUNT(UNIT_CNST_TYPE) CNT FROM (
+                    SELECT CNTRCT_CHG_ID, LEFT(UNIT_CNST_TYPE, 1) UNIT_CNST_TYPE
+                    FROM CT_UNIT_COST
+                    WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                        AND UNIT_CNST_TYPE IS NOT NULL
+                        AND UNIT_CNST_TYPE != 'null'
+                        AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%')
+                    GROUP BY (CNTRCT_CHG_ID, UNIT_CNST_TYPE)
+                ) T1 GROUP BY (CNTRCT_CHG_ID, UNIT_CNST_TYPE)
+            </when>
+        </choose>
+    </select>
+
+
+    <!-- 원가 임시공사자료 등록 (AS-IS)  -->
+    <!--
+    <insert id="ASISinsertCstCnstwkTmpDta" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCstCnstwkTmpDta][choisr]  */
+        INSERT INTO CT_CNSTWK_TMP_DTA (
+            CNTRCT_CHG_ID,
+            TBL_NM,
+            CNSTWK_DTA_SN,
+            ATTRBT1_NM,
+            ATTRBT2_NM,
+            CNSTTY_CD,
+            TMP_RSCE_UNTY_CD,
+            CALC_EXCP_YN_VAL,
+            RSCE_SN_VAL,
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            FRGNCRNCY_GNRLEXPNS_UPRC,
+            RSCE_TP_VAL,
+            MLG_VAL,
+            GOVSPLY_MTRL_YN_VAL,
+            LOSSCST_CD_LIST,
+            CALC_MLG_VAL,
+            RSLT_MLG_VAL,
+            RMRK_CNTNTS,
+            HMUP_CALCFRMLA_CNTNTS,
+            LOSSCST_APLY_PT,
+            MNGCST,
+            DPRCTNCST,
+            RPRCST,
+            ERR_CNTNTS,
+            ETC_CNTNTS,
+            STEP1_ORDR_VAL,
+            STEP2_ORDR_VAL,
+            STEP3_ORDR_VAL,
+            STEP4_ORDR_VAL,
+            STEP5_ORDR_VAL,
+            STEP6_ORDR_VAL,
+            STEP7_ORDR_VAL,
+            STEP8_ORDR_VAL,
+            STEP9_ORDR_VAL,
+            STEP10_ORDR_VAL,
+            MTRL_QTY,
+            LBR_QTY,
+            GNRLEXPNS_QTY,
+            STEP2_QTY,
+            STEP3_QTY,
+            STEP4_QTY,
+            STEP5_QTY,
+            STEP6_QTY,
+            STEP7_QTY,
+            STEP8_QTY,
+            STEP9_QTY,
+            STEP10_QTY,
+            RGSTR_ID
+        ) VALUES (
+            #{CNTRCT_CHG_ID},
+            #{TBL_NM},
+            NEXTVAL('CT_C3R_TMP_DTA_SN'),
+            #{ATTRBT1_NM},
+            #{ATTRBT2_NM},
+            #{CNSTTY_CD},
+            #{TMP_RSCE_UNTY_CD},
+            #{CALC_EXCP_YN_VAL},
+            #{RSCE_SN_VAL},
+            #{RSCE_NM},
+            #{RSCE_SPEC_NM},
+            #{UNIT},
+            CAST(NULLIF(#{RSCE_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{MTRL_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{LBR_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{GNRLEXPNS_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{FRGNCRNCY_GNRLEXPNS_UPRC},'') AS NUMERIC),
+            #{RSCE_TP_VAL},
+            #{MLG_VAL},
+            #{GOVSPLY_MTRL_YN_VAL},
+            #{LOSSCST_CD_LIST},
+            #{CALC_MLG_VAL},
+            #{RSLT_MLG_VAL},
+            #{RMRK_CNTNTS},
+            CAST(NULLIF(#{HMUP_CALCFRMLA_CNTNTS},'') AS TEXT),
+            CAST(NULLIF(#{LOSSCST_APLY_PT},'') AS NUMERIC),
+            CAST(NULLIF(#{MNGCST},'') AS NUMERIC),
+            CAST(NULLIF(#{DPRCTNCST},'') AS NUMERIC),
+            CAST(NULLIF(#{RPRCST},'') AS NUMERIC),
+            #{ERR_CNTNTS},
+            #{ETC_CNTNTS},
+            CAST(NULLIF(#{STEP1_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP2_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP3_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP4_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP5_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP6_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP7_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP8_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP9_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP10_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{MTRL_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{LBR_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{GNRLEXPNS_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP2_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP3_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP4_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP5_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP6_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP7_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP8_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP9_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{STEP10_QTY},'') AS NUMERIC),
+            #{RGSTR_ID}
+        )
+    </insert>
+    -->
+
+    <!-- 원가 임시공사자료 등록 (TO-BE)  -->
+    <insert id="insertCstCnstwkTmpDta" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCstCnstwkTmpDta][choisr]  */
+        INSERT INTO CT_CNSTWK_TMP_DTA (
+            CNTRCT_CHG_ID,
+            TBL_NM,
+            CNSTWK_DTA_SN,
+            ATTRBT1_NM,
+            ATTRBT2_NM,
+            CNSTTY_CD,
+            TMP_RSCE_UNTY_CD,
+            CALC_EXCP_YN_VAL,
+            RSCE_SN_VAL,
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            FRGNCRNCY_GNRLEXPNS_UPRC,
+            RSCE_TP_VAL,
+            MLG_VAL,
+            GOVSPLY_MTRL_YN_VAL,
+            LOSSCST_CD_LIST,
+            CALC_MLG_VAL,
+            RSLT_MLG_VAL,
+            RMRK_CNTNTS,
+            HMUP_CALCFRMLA_CNTNTS,
+            LOSSCST_APLY_PT,
+            MNGCST,
+            DPRCTNCST,
+            RPRCST,
+            ERR_CNTNTS,
+            ETC_CNTNTS,
+            STEP1_ORDR_VAL,
+            STEP2_ORDR_VAL,
+            STEP3_ORDR_VAL,
+            STEP4_ORDR_VAL,
+            STEP5_ORDR_VAL,
+            STEP6_ORDR_VAL,
+            STEP7_ORDR_VAL,
+            STEP8_ORDR_VAL,
+            STEP9_ORDR_VAL,
+            STEP10_ORDR_VAL,
+            MTRL_QTY,
+            LBR_QTY,
+            GNRLEXPNS_QTY,
+            STEP2_QTY,
+            STEP3_QTY,
+            STEP4_QTY,
+            STEP5_QTY,
+            STEP6_QTY,
+            STEP7_QTY,
+            STEP8_QTY,
+            STEP9_QTY,
+            STEP10_QTY,
+            RGSTR_ID
+        ) VALUES
+        <foreach collection="regList" item="it" separator=",">
+        (
+            #{it.CNTRCT_CHG_ID},
+            #{it.TBL_NM},
+            NEXTVAL('CT_C3R_TMP_DTA_SN'),
+            #{it.ATTRBT1_NM},
+            #{it.ATTRBT2_NM},
+            #{it.CNSTTY_CD},
+            #{it.TMP_RSCE_UNTY_CD},
+            #{it.CALC_EXCP_YN_VAL},
+            #{it.RSCE_SN_VAL},
+            #{it.RSCE_NM},
+            #{it.RSCE_SPEC_NM},
+            #{it.UNIT},
+            CAST(NULLIF(#{it.RSCE_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.MTRL_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{it.LBR_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{it.GNRLEXPNS_UPRC},'') AS NUMERIC),
+            CAST(NULLIF(#{it.FRGNCRNCY_GNRLEXPNS_UPRC},'') AS NUMERIC),
+            #{it.RSCE_TP_VAL},
+            #{it.MLG_VAL},
+            #{it.GOVSPLY_MTRL_YN_VAL},
+            #{it.LOSSCST_CD_LIST},
+            #{it.CALC_MLG_VAL},
+            #{it.RSLT_MLG_VAL},
+            #{it.RMRK_CNTNTS},
+            CAST(NULLIF(#{it.HMUP_CALCFRMLA_CNTNTS},'') AS TEXT),
+            CAST(NULLIF(#{it.LOSSCST_APLY_PT},'') AS NUMERIC),
+            CAST(NULLIF(#{it.MNGCST},'') AS NUMERIC),
+            CAST(NULLIF(#{it.DPRCTNCST},'') AS NUMERIC),
+            CAST(NULLIF(#{it.RPRCST},'') AS NUMERIC),
+            #{it.ERR_CNTNTS},
+            #{it.ETC_CNTNTS},
+            CAST(NULLIF(#{it.STEP1_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP2_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP3_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP4_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP5_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP6_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP7_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP8_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP9_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP10_ORDR_VAL},'') AS NUMERIC),
+            CAST(NULLIF(#{it.MTRL_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.LBR_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.GNRLEXPNS_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP2_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP3_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP4_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP5_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP6_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP7_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP8_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP9_QTY},'') AS NUMERIC),
+            CAST(NULLIF(#{it.STEP10_QTY},'') AS NUMERIC),
+            #{it.RGSTR_ID}
+        )
+        </foreach>
+    </insert>
+
+
+    <!--
+        20250210 공사구분 중복에따른 UPSERT 추가 -> 공사구분 채번 신규로 변경처리
+
+        참고를위한 UPSERT 구문
+            ON CONFLICT (CNTRCT_CHG_ID, UNIT_CNST_TYPE, GNRLEXPNS_CD, RSCE_TP_CD)
+            DO UPDATE SET
+            CNTRCT_CHG_ID = EXCLUDED.CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE = EXCLUDED.UNIT_CNST_TYPE,
+            GNRLEXPNS_CD = EXCLUDED.GNRLEXPNS_CD,
+            RSCE_TP_CD = EXCLUDED.RSCE_TP_CD,
+            RSCE_NM = EXCLUDED.RSCE_NM,
+            SPEC_NM = EXCLUDED.SPEC_NM,
+            UNIT = EXCLUDED.UNIT,
+            MTRL_UPRC = EXCLUDED.MTRL_UPRC,
+            RMRK_CNTNTS = EXCLUDED.RMRK_CNTNTS,
+            ETC_CNTNTS = EXCLUDED.ETC_CNTNTS,
+            DLVY_CNDT_CD = EXCLUDED.DLVY_CNDT_CD,
+            RGSTR_ID = EXCLUDED.RGSTR_ID,
+            CHG_ID = EXCLUDED.CHG_ID
+    -->
+    <!-- 임시자원 TO 자원 (자재, 노무, 장비) -->
+    <insert id="insertTmpDtaToResourceMaterial" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToResourceMaterial][choisr]  */
+        /* 자원-자재 */
+        INSERT INTO CT_RESOURCE (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            GNRLEXPNS_CD,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            DLVY_CNDT_CD,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            'M',
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            COALESCE(MTRL_UPRC, 0),
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            CASE
+                WHEN STRPOS('일반|대농민농협공급도|종합농협구매도|공급자 창고 문전상차도', ATTRBT1_NM) <![CDATA[>]]> 0 THEN NULL
+                ELSE
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EUDEV'" />
+                    </include>
+                    AND CMN_CD_NM_KRN = ATTRBT1_NM)
+                END,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_MTRL';
+    </insert>
+
+    <!-- 임시자원 TO 자원 (자재, 노무, 장비) -->
+    <insert id="insertTmpDtaToResourceLabor" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToResourceLabor][choisr]  */
+        /* 자원-노무 */
+        INSERT INTO CT_RESOURCE (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            GNRLEXPNS_CD,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            LBR_UPRC,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            BSC_LBR_UPRC,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            'L',
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            COALESCE(LBR_UPRC, 0),
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            LBR_UPRC,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_LBR';
+    </insert>
+
+    <!-- 임시자원 TO 자원 (자재, 노무, 장비) -->
+    <insert id="insertTmpDtaToResourceEquip" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToResourceEquip][choisr]  */
+        /* 자원-경비항목 */
+        INSERT INTO CT_RESOURCE (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            GNRLEXPNS_CD,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            FRGNCRNCY_GNRLEXPNS_UPRC,
+            MNGCST_CFCNT,
+            DPRCTNCST_CFCNT,
+            RPRCST_CFCNT,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            CUR_CD,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            (<include refid="sql_selectComCode">
+                <property name="cmnCd" value="'EUETY'" />
+            </include>
+            AND CMN_CD_NM_KRN = ATTRBT2_NM),
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            CASE WHEN ATTRBT1_NM = '건설기계' THEN 0 ELSE COALESCE(MTRL_UPRC, 0) END AS MTRL_UPRC,
+            CASE WHEN ATTRBT1_NM = '건설기계' THEN 0 ELSE COALESCE(LBR_UPRC, 0) END AS LBR_UPRC,
+            COALESCE(GNRLEXPNS_UPRC, 0) AS GNRLEXPNS_UPRC,
+            CASE WHEN ATTRBT1_NM = '건설기계' THEN 0 ELSE COALESCE(FRGNCRNCY_GNRLEXPNS_UPRC, 0) END AS FRGNCRNCY_GNRLEXPNS_UPRC,
+            MNGCST,
+            DPRCTNCST,
+            RPRCST,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            (<include refid="sql_selectComCode">
+                <property name="cmnCd" value="'CMCUR'" />
+            </include>
+            AND CMN_CD_DSCRPT = ATTRBT1_NM),
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_GNRLEXPNS';
+    </insert>
+
+
+    <!--
+        변경사항
+        20241226 일위대가상세(CT_UNIT_COST_DETAIL) RSCE_NM, UNIT, SPEC_NM 추가
+        20250313 일위대가상세(자원유형코드) CASE WHEN 조건 일위대가 추가
+    -->
+    <!-- 임시자원 TO 일위대가 -->
+    <insert id="insertTmpDtaToUnitCost" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitCost][choisr]  */
+        /* 일위대가 */
+        INSERT INTO CT_UNIT_COST (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            UCOST_CD,
+            DSPLY_ORDR,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            MLG_CD,
+            RSCE_TP_CD,
+            APLY_CNDTN_CNTNTS,
+            RSCE_ERR_TP_CD,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            CASE WHEN ATTRBT1_NM = '일위대가' THEN NULLIF(RSCE_SN_VAL, '')::NUMERIC ELSE NULL END AS DSPLY_ORDR,
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            (<include refid="sql_selectComCode">
+                <property name="cmnCd" value="'CMITT'" />
+            </include>
+            AND CMN_CD_DSCRPT = MLG_VAL),
+            CASE
+                WHEN ATTRBT1_NM = '실적공사비' THEN 'K'
+                ELSE
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EUCOS'" />
+                    </include>
+                    AND CMN_CD_NM_KRN = ATTRBT1_NM)
+            END,
+            CASE WHEN ATTRBT1_NM = '일위대가' THEN NULL ELSE RMRK_CNTNTS END AS APLY_CNDTN_CNTNTS,
+            '0001',
+            CASE WHEN ATTRBT1_NM = '일위대가' THEN RMRK_CNTNTS ELSE NULL END AS RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_UCOST';
+
+        /* 일위대가상세 */
+        INSERT INTO CT_UNIT_COST_DETAIL (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            UCOST_CD,
+            DTL_SN,
+            DSPLY_ORDR,
+            RSCE_CD,
+            RSCE_NM,
+            RSCE_QTY,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            RSCE_TP_CD,
+            CALC_EXCP_YN,
+            GOVSPLY_MTRL_YN,
+            LOSSCST_CD_LIST,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            CNSTTY_CD,
+            CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC),
+            FRGNCRNCY_GNRLEXPNS_UPRC,
+            TMP_RSCE_UNTY_CD,
+            RSCE_NM,
+            RSCE_QTY,
+            UNIT,
+            RSCE_SPEC_NM,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            CASE
+                WHEN RSCE_TP_VAL = '실적공사비'
+                THEN
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_NM_KRN = '표준시장단가')
+                WHEN RSCE_TP_VAL = '일위대가' THEN 'I'
+                WHEN RSCE_TP_VAL = '중기단가산출' THEN 'J'
+                ELSE
+                    (<include refid="sql_selectComCode">
+                            <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_DSCRPT = RSCE_TP_VAL)
+            END,
+            CASE
+                WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                ELSE NULL
+            END AS CALC_EXCP_YN,
+            CASE
+                WHEN COALESCE(UPPER(GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                ELSE NULL
+            END AS GOVSPLY_MTRL_YN,
+            CASE
+                WHEN LOSSCST_CD_LIST IS NULL THEN ''
+                ELSE CONCAT(',', REPLACE(TRIM(REPLACE(REPLACE(LOSSCST_CD_LIST, ',,', ','), ',' ,' ')), ' ', ',,'), ',')
+            END,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_UCOST_DTL';
+    </insert>
+
+    <!--
+        변경사항
+        20250313 RSCE_TP_CD 'G(기계경비)' 추가 / 상세 '' 경우 DEFAULT - 기계경비로 검색
+    -->
+    <!-- 임시자원 TO 기계경비 -->
+    <insert id="insertTmpDtaToMchne" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToMchne][choisr]  */
+        /* 일위대가-기계경비 */
+        INSERT INTO CT_UNIT_COST (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            UCOST_CD,
+            DSPLY_ORDR,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            OPER_TM_DIV_CD,
+            OPER_PLC_DIV_CD,
+            RSCE_ERR_TP_CD,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC),
+            'G',
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            COALESCE(ATTRBT1_NM, 'E0'),
+            COALESCE(ATTRBT2_NM, 'H0'),
+            '0001',
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_MCHNE';
+
+        /* 일위대가-기계경비상세 */
+        INSERT INTO CT_UNIT_COST_DETAIL (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            UCOST_CD,
+            DTL_SN,
+            DSPLY_ORDR,
+            RSCE_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            RSCE_TP_CD,
+            CALC_EXCP_YN,
+            GOVSPLY_MTRL_YN,
+            MNGCST_WGHT_PT,
+            DPRCTNCST_WGHT_PT,
+            RPRCST_WGHT_PT,
+            LOSSCST_CD_LIST,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            CNSTTY_CD,
+            CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC),
+            FRGNCRNCY_GNRLEXPNS_UPRC,
+            TMP_RSCE_UNTY_CD,
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            CASE
+                WHEN RSCE_TP_VAL = '실적공사비'
+                THEN
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_NM_KRN = '표준시장단가')
+                WHEN RSCE_TP_VAL = ''
+                THEN
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_NM_KRN = '기계경비')
+                ELSE
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_DSCRPT = RSCE_TP_VAL)
+            END AS RSCE_TP_CD,
+            CASE
+                WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                ELSE NULL
+            END AS CALC_EXCP_YN,
+            CASE
+                WHEN COALESCE(UPPER(GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                ELSE NULL
+            END AS GOVSPLY_MTRL_YN,
+            COALESCE(MNGCST, 0),
+            COALESCE(DPRCTNCST, 0),
+            COALESCE(RPRCST, 0),
+            CASE
+                WHEN LOSSCST_CD_LIST IS NULL THEN ''
+                ELSE CONCAT(',', REPLACE(TRIM(REPLACE(REPLACE(LOSSCST_CD_LIST, ',,', ','), ',', ' ')), ' ', ',,'), ',')
+            END,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_MCHNE_DTL';
+    </insert>
+
+    <!--
+        변경사항
+        20250313 RSCE_TP_CD 'J(중기단가산출)'  추가
+    -->
+    <!-- 임시자원 TO 중기단가산출 -->
+    <insert id="insertTmpDtaToHmupc" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToHmupc][choisr]  */
+        /* 일위대가-중기단가산출 */
+        INSERT INTO CT_UNIT_COST (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            UCOST_CD,
+            DSPLY_ORDR,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            MLG_CD,
+            HMUP_CALCFRMLA_CNTNTS,
+            RSCE_ERR_TP_CD,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            TMP_RSCE_UNTY_CD,
+            CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC),
+            'J',
+            RSCE_NM,
+            RSCE_SPEC_NM,
+            UNIT,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            (<include refid="sql_selectComCode">
+                <property name="cmnCd" value="'CMITT'" />
+            </include>
+            AND CMN_CD_NM_KRN = MLG_VAL),
+            HMUP_CALCFRMLA_CNTNTS,
+            '0001',
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_HMUPC';
+
+        /* 일위대가-중기단가산출 중간코드 */
+
+        INSERT INTO CT_HMUPC_MID_CD (
+            CNTRCT_CHG_ID,
+            HMUPC_CD,
+            HMUPC_MID_CD_SN,
+            STEP1_ORDR_VAL,
+            STEP2_ORDR_VAL,
+            STEP3_ORDR_VAL,
+            STEP4_ORDR_VAL,
+            STEP5_ORDR_VAL,
+            STEP6_ORDR_VAL,
+            STEP7_ORDR_VAL,
+            STEP8_ORDR_VAL,
+            STEP9_ORDR_VAL,
+            STEP10_ORDR_VAL,
+            CALCFRMLA_LVL_NUM,
+            RSCE_CD,
+            MLG_CD,
+            MTRL_QTY,
+            LBR_QTY,
+            GNRLEXPNS_QTY,
+            STEP2_QTY,
+            STEP3_QTY,
+            STEP4_QTY,
+            STEP5_QTY,
+            STEP6_QTY,
+            STEP7_QTY,
+            STEP8_QTY,
+            STEP9_QTY,
+            STEP10_QTY,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            CNSTTY_CD,
+            NEXTVAL('CT_C3R_HMUPC_MID_CD_SN'),
+            STEP1_ORDR_VAL,
+            STEP2_ORDR_VAL,
+            STEP3_ORDR_VAL,
+            STEP4_ORDR_VAL,
+            STEP5_ORDR_VAL,
+            STEP6_ORDR_VAL,
+            STEP7_ORDR_VAL,
+            STEP8_ORDR_VAL,
+            STEP9_ORDR_VAL,
+            STEP10_ORDR_VAL,
+            COALESCE(CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC), 0),
+            TMP_RSCE_UNTY_CD,
+            MLG_VAL,
+            MTRL_QTY,
+            LBR_QTY,
+            GNRLEXPNS_QTY,
+            STEP2_QTY,
+            STEP3_QTY,
+            STEP4_QTY,
+            STEP5_QTY,
+            STEP6_QTY,
+            STEP7_QTY,
+            STEP8_QTY,
+            STEP9_QTY,
+            STEP10_QTY,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_HMUPC_MID_CD';
+    </insert>
+
+    <select id="selectTmpDtaToUnitCbs" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.selectTmpDtaToUnitCbs][choisr]  */
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+                    'CT_C3R_CNSTTY_SN',
+                    CNSTTY_CD,
+                    SUBSTRING(CNSTTY_CD FROM 1 FOR LENGTH(CNSTTY_CD) - 2),
+                    COALESCE(NULLIF(RSCE_SN_VAL, ''), NULL),
+                    LENGTH(CNSTTY_CD) / 2,
+                    RSCE_NM,
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EUWOK'" />
+                    </include>
+                    AND CMN_CD_DSCRPT = (CASE WHEN ATTRBT1_NM = '관급자재공종' THEN '관급자재공종(도급)' ELSE ATTRBT1_NM END)),
+                    CASE
+                        WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                        WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+        END AS CALC_EXCP_YN,
+                    MTRL_UPRC,
+                    LBR_UPRC,
+                    GNRLEXPNS_UPRC,
+                    RMRK_CNTNTS,
+                    ETC_CNTNTS,
+                    'N',
+                    RGSTR_ID,
+                    RGSTR_ID
+                FROM CT_CNSTWK_TMP_DTA
+                WHERE 1=1
+                    AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                    AND TBL_NM = 'CST_CNSTTY';
+    </select>
+    <select id="selectTmpDtaToUnitCbsDetail" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.selectTmpDtaToUnitCbsDetail][choisr]  */
+        SELECT
+            A.CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            B.CNSTTY_SN,
+            'CT_C3R_DTL_CNSTTY_SN',
+            A.FRGNCRNCY_GNRLEXPNS_UPRC,
+            CASE
+                WHEN A.RSCE_TP_VAL = '실적공사비'
+                    THEN
+                        (<include refid="sql_selectComCode">
+                            <property name="cmnCd" value="'EURES'" />
+                        </include>
+                        AND CMN_CD_NM_KRN = '표준시장단가')
+                ELSE
+                    (<include refid="sql_selectComCode">
+                        <property name="cmnCd" value="'EURES'" />
+                    </include>
+                    AND CMN_CD_DSCRPT = RSCE_TP_VAL)
+            END,
+            A.TMP_RSCE_UNTY_CD,
+            COALESCE(NULLIF(RSCE_SN_VAL, ''), NULL) AS RSCE_SN_VAL,
+            A.RSCE_NM,
+            A.RSCE_SPEC_NM,
+            A.UNIT,
+            A.RSCE_QTY,
+            A.MTRL_UPRC,
+            A.LBR_UPRC,
+            A.GNRLEXPNS_UPRC,
+            CASE
+                WHEN COALESCE(UPPER(A.CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(A.CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+            END AS CALC_EXCP_YN,
+            CASE
+                WHEN COALESCE(UPPER(A.GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                WHEN COALESCE(UPPER(A.GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+            END AS GOVSPLY_MTRL_YN,
+            (<include refid="sql_selectComCode">
+                <property name="cmnCd" value="'EUITM'" />
+                </include>
+                AND CMN_CD_DSCRPT = A.ATTRBT2_NM),
+            '0001',
+            CASE
+                WHEN NULLIF(A.LOSSCST_CD_LIST, '') IS NULL THEN ''
+                ELSE CONCAT(',', REPLACE(TRIM(REPLACE(REPLACE(A.LOSSCST_CD_LIST, ',,', ','), ',', ' ')), ' ', ',,'), ',')
+            END,
+            A.RMRK_CNTNTS,
+            A.ETC_CNTNTS,
+            A.RGSTR_ID,
+            A.RGSTR_ID
+        FROM
+            CT_CNSTWK_TMP_DTA A,
+            CT_CBS B
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.TBL_NM = 'CST_DTL_CNSTTY'
+            AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+            AND A.CNSTTY_CD = B.CNSTTY_CD;
+    </select>
+
+    <!--
+        변경사항
+          241212 NEXTVAL('CT_C3R_CNSTTY_SN') 시퀀스에서 max(CNSTTY_SN) 값으로 변경
+    -->
+    <!-- 임시자원 TO 공종 -->
+    <insert id="insertTmpDtaToUnitCbs" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitCbs][choisr]  */
+        /* 공종 */
+        INSERT INTO CT_CBS (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            CNSTTY_CD,
+            UP_CNSTTY_CD,
+            CNSTTY_SN_VAL,
+            CNSTTY_LVL_NUM,
+            CNSTTY_NM,
+            CNSTTY_CST_DIV_CD,
+            CALC_EXCP_YN,
+            MTRL_AM,
+            LBR_AM,
+            GNRLEXPNS_AM,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            CMPRSNTBL_PRNT_OBJT_YN,
+            RGSTR_ID,
+            CHG_ID
+        )
+        WITH PARAMS AS(
+            SELECT COALESCE(MAX(CNSTTY_SN), 0) AS START_NUMBER
+            FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        ),
+        TMP_CT_CBS AS(
+            SELECT
+                CNTRCT_CHG_ID,
+                #{MAJOR_CNSTTY_CD} AS UNIT_CNST_TYPE,
+                ROW_NUMBER() OVER (ORDER BY CNSTWK_DTA_SN) AS ROWNUM,
+                CNSTTY_CD,
+                SUBSTRING(CNSTTY_CD FROM 1 FOR LENGTH(CNSTTY_CD) - 2) AS UP_CNSTTY_CD,
+                COALESCE(NULLIF(RSCE_SN_VAL, ''), NULL) AS CNSTTY_SN_VAL,
+                LENGTH(CNSTTY_CD) / 2 AS CNSTTY_LVL_NUM,
+                RSCE_NM AS CNSTTY_NM,
+                (<include refid="sql_selectComCode">
+                    <property name="cmnCd" value="'EUWOK'" />
+                </include>
+                AND CMN_CD_DSCRPT = (CASE WHEN ATTRBT1_NM = '관급자재공종' THEN '관급자재공종(도급)' ELSE ATTRBT1_NM END)) AS CNSTTY_CST_DIV_CD,
+                CASE
+                    WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                    WHEN COALESCE(UPPER(CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                END AS CALC_EXCP_YN,
+                MTRL_UPRC AS MTRL_AM,
+                LBR_UPRC AS LBR_AM,
+                GNRLEXPNS_UPRC AS GNRLEXPNS_AM,
+                RMRK_CNTNTS,
+                ETC_CNTNTS,
+                'N' AS CMPRSNTBL_PRNT_OBJT_YN,
+                RGSTR_ID,
+                RGSTR_ID AS CHG_ID
+            FROM CT_CNSTWK_TMP_DTA
+            WHERE 1=1
+                AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                AND TBL_NM = 'CST_CNSTTY'
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            ROWNUM + (SELECT START_NUMBER FROM PARAMS) AS CNSTTY_SN,
+            CNSTTY_CD,
+            UP_CNSTTY_CD,
+            CNSTTY_SN_VAL,
+            CNSTTY_LVL_NUM,
+            CNSTTY_NM,
+            CNSTTY_CST_DIV_CD,
+            CALC_EXCP_YN,
+            MTRL_AM,
+            LBR_AM,
+            GNRLEXPNS_AM,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            CMPRSNTBL_PRNT_OBJT_YN,
+            RGSTR_ID,
+            CHG_ID
+        FROM TMP_CT_CBS
+    </insert>
+
+    <!--
+        변경사항
+        241212 NEXTVAL('CT_C3R_DTL_CNSTTY_SN') 시퀀스에서 max(CNSTTY_SN) 값으로 변경
+        240207 WHERE 절 공사구분코드(UNIT_CNST_TYPE) 조건추가
+    -->
+    <!-- 임시자원 TO 세부공종 -->
+    <insert id="insertTmpDtaToUnitCbsDetail" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitCbsDetail][choisr]  */
+        /* 세부공종 */
+        INSERT INTO CT_CBS_DETAIL (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            DTL_CNSTTY_SN,
+            DSPLY_ORDR,
+            RSCE_TP_CD,
+            RSCE_CD,
+            DTL_CNSTTY_SN_VAL,
+            DTL_CNSTTY_NM,
+            SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            CALC_EXCP_YN,
+            GOVSPLY_MTRL_YN,
+            DTL_CNSTTY_TP_CD,
+            RSCE_ERR_TP_CD,
+            LOSSCST_CD_LIST,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        )
+        WITH PARAMS AS(
+            SELECT COALESCE(MAX(DTL_CNSTTY_SN), 0) AS START_NUMBER
+            FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        ),
+        TMP_CT_CBS_DETAIL AS (
+            SELECT
+                A.CNTRCT_CHG_ID,
+                #{MAJOR_CNSTTY_CD} AS UNIT_CNST_TYPE,
+                B.CNSTTY_SN,
+                ROW_NUMBER() OVER (ORDER BY CNSTWK_DTA_SN) AS ROWNUM,
+                A.FRGNCRNCY_GNRLEXPNS_UPRC AS DSPLY_ORDR,
+                CASE
+                    WHEN A.RSCE_TP_VAL = '실적공사비'
+                        THEN
+                            (<include refid="sql_selectComCode">
+                                <property name="cmnCd" value="'EURES'" />
+                            </include>
+                            AND CMN_CD_NM_KRN = '표준시장단가')
+                    ELSE
+                        (<include refid="sql_selectComCode">
+                            <property name="cmnCd" value="'EURES'" />
+                        </include>
+                        AND CMN_CD_DSCRPT = RSCE_TP_VAL)
+                END AS RSCE_TP_CD,
+                A.TMP_RSCE_UNTY_CD AS RSCE_CD,
+                COALESCE(NULLIF(RSCE_SN_VAL, ''), NULL) AS DTL_CNSTTY_SN_VAL,
+                A.RSCE_NM AS DTL_CNSTTY_NM,
+                A.RSCE_SPEC_NM AS SPEC_NM,
+                A.UNIT,
+                A.RSCE_QTY,
+                A.MTRL_UPRC,
+                A.LBR_UPRC,
+                A.GNRLEXPNS_UPRC,
+                CASE
+                    WHEN COALESCE(UPPER(A.CALC_EXCP_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                    WHEN COALESCE(UPPER(A.CALC_EXCP_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                END AS CALC_EXCP_YN,
+                CASE
+                    WHEN COALESCE(UPPER(A.GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'FALSE' THEN 'N'
+                    WHEN COALESCE(UPPER(A.GOVSPLY_MTRL_YN_VAL), 'FALSE') = 'TRUE' THEN 'Y'
+                END AS GOVSPLY_MTRL_YN,
+                (<include refid="sql_selectComCode">
+                    <property name="cmnCd" value="'EUITM'" />
+                    </include>
+                    AND CMN_CD_DSCRPT = A.ATTRBT2_NM) AS DTL_CNSTTY_TP_CD,
+                '0001' AS RSCE_ERR_TP_CD,
+                CASE
+                    WHEN NULLIF(A.LOSSCST_CD_LIST, '') IS NULL THEN ''
+                    ELSE CONCAT(',', REPLACE(TRIM(REPLACE(REPLACE(A.LOSSCST_CD_LIST, ',,', ','), ',', ' ')), ' ', ',,'), ',')
+                END AS LOSSCST_CD_LIST,
+                A.RMRK_CNTNTS,
+                A.ETC_CNTNTS,
+                A.RGSTR_ID,
+                A.RGSTR_ID AS CHG_ID
+            FROM
+                CT_CNSTWK_TMP_DTA A,
+                CT_CBS B
+            WHERE 1=1
+                AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                AND A.TBL_NM = 'CST_DTL_CNSTTY'
+                AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                AND A.CNSTTY_CD = B.CNSTTY_CD
+                AND B.UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            ROWNUM + (SELECT START_NUMBER FROM PARAMS) AS DTL_CNSTTY_SN,
+            DSPLY_ORDR,
+            RSCE_TP_CD,
+            RSCE_CD,
+            DTL_CNSTTY_SN_VAL,
+            DTL_CNSTTY_NM,
+            SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            CALC_EXCP_YN,
+            GOVSPLY_MTRL_YN,
+            DTL_CNSTTY_TP_CD,
+            RSCE_ERR_TP_CD,
+            LOSSCST_CD_LIST,
+            RMRK_CNTNTS,
+            ETC_CNTNTS,
+            RGSTR_ID,
+            CHG_ID
+        FROM TMP_CT_CBS_DETAIL
+    </insert>
+
+    <!-- 임시자원 TO 원가 WBS 정보 -->
+    <insert id="insertTmpDtaToUnitWbsInfo" parameterType="hashMap">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitWbsInfo][choisr]  */
+    INSERT INTO CT_WBS_INFO (
+        CNTRCT_CHG_ID,
+        UNIT_CNST_TYPE,
+        WBS_NM,
+        FCLTS_CLSS_CD,
+        WBS_TP_VRSN,
+        RGSTR_ID,
+        CHG_ID
+    )
+    SELECT
+        CNTRCT_CHG_ID,
+        #{MAJOR_CNSTTY_CD},
+        ATTRBT1_NM,
+        (<include refid="sql_selectComCode">
+            <property name="cmnCd" value="'FCLTS'" />
+        </include>
+        AND CMN_CD_NM_KRN = A.CNSTTY_CD),
+        CALC_MLG_VAL,
+        RGSTR_ID,
+        RGSTR_ID
+    FROM CT_CNSTWK_TMP_DTA A
+    WHERE 1=1
+        AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND TBL_NM = 'CST_WBS_INFO';
+    </insert>
+
+    <!-- 임시자원 TO 원가 WBS 작업분류 -->
+    <insert id="insertTmpDtaToUnitWbsOperClss" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitWbsOperClss][choisr]  */
+        INSERT INTO CT_WBS_OPER_CLSS (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            WBS_OPER_CLSS_LVL_NUM,
+            WBS_OPER_CLSS_NM,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            RSCE_QTY,
+            ATTRBT1_NM,
+            RGSTR_ID,
+            RGSTR_ID
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_WBS_OPER_CLSS';
+    </insert>
+
+    <!-- 임시자원 TO 원가 WBS -->
+    <insert id="insertTmpDtaToUnitWbs" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToUnitWbs][choisr]  */
+        /* 원가 WBS */
+        INSERT INTO CT_WBS (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            OPER_GRP_SN,
+            WBS_IT_1_LVL_CD,
+            WBS_IT_2_LVL_CD,
+            WBS_IT_3_LVL_CD,
+            WBS_IT_4_LVL_CD,
+            WBS_IT_5_LVL_CD,
+            WBS_IT_6_LVL_CD,
+            WBS_IT_7_LVL_CD,
+            WBS_IT_8_LVL_CD,
+            WBS_IT_9_LVL_CD,
+            WBS_IT_10_LVL_CD,
+            WBS_IT_1_LVL_NM,
+            WBS_IT_2_LVL_NM,
+            WBS_IT_3_LVL_NM,
+            WBS_IT_4_LVL_NM,
+            WBS_IT_5_LVL_NM,
+            WBS_IT_6_LVL_NM,
+            WBS_IT_7_LVL_NM,
+            WBS_IT_8_LVL_NM,
+            WBS_IT_9_LVL_NM,
+            WBS_IT_10_LVL_NM,
+            PAGMT_OPER_DDNUM,
+            PAGMT_OPER_SRT_YMD,
+            PAGMT_OPER_END_YMD,
+            RGSTR_ID,
+            CHG_ID,
+            LVL_NUM
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            #{MAJOR_CNSTTY_CD},
+            MIN(COALESCE(CAST(NULLIF(RSCE_SN_VAL, '') AS NUMERIC), 0)) AS OPER_GRP_SN,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 1)) AS WBS_IT_1_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 2)) AS WBS_IT_2_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 3)) AS WBS_IT_3_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 4)) AS WBS_IT_4_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 5)) AS WBS_IT_5_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 6)) AS WBS_IT_6_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 7)) AS WBS_IT_7_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 8)) AS WBS_IT_8_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 9)) AS WBS_IT_9_LVL_CD,
+            TRIM(SPLIT_PART(ERR_CNTNTS, '|', 10)) AS WBS_IT_10_LVL_CD,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 1)) AS WBS_IT_1_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 2)) AS WBS_IT_2_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 3)) AS WBS_IT_3_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 4)) AS WBS_IT_4_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 5)) AS WBS_IT_5_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 6)) AS WBS_IT_6_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 7)) AS WBS_IT_7_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 8)) AS WBS_IT_8_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 9)) AS WBS_IT_9_LVL_NM,
+            TRIM(SPLIT_PART(ETC_CNTNTS, '|', 10)) AS WBS_IT_10_LVL_NM,
+            MAX(LOSSCST_APLY_PT) AS PAGMT_OPER_DDNUM,
+            MAX(CALC_EXCP_YN_VAL) AS PAGMT_OPER_SRT_YMD,
+            MAX(GOVSPLY_MTRL_YN_VAL) AS PAGMT_OPER_END_YMD,
+            MAX(RGSTR_ID),
+            MAX(RGSTR_ID) AS CHG_ID,
+            MAX(STEP1_ORDR_VAL) AS LVL_NUM
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND TBL_NM = 'CST_WBS'
+        GROUP BY CNTRCT_CHG_ID, RSCE_SN_VAL, ERR_CNTNTS, ETC_CNTNTS;
+    </insert>
+    <!-- 디버깅 / 원가_WBS 조회 -->
+    <select id="getCtWbs" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_WBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 / 원가_WBS 정보 조회 -->
+    <select id="getCtWbsInfo" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_WBS_INFO WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 / 원가_WBS 작업분류 조회 -->
+    <select id="getCtWbsOperClss" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_WBS_OPER_CLSS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 / 원가_QDB 조회 -->
+    <select id="getCtQdb" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_QDB WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 for 경비항목 자원구분코드 업데이트. 원가_일위대가 상세 조회 -->
+    <select id="getCtUnitCostDetail" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_UNIT_COST_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND RSCE_TP_CD IS NULL
+    </select>
+
+    <!-- 디버깅 for 경비항목 자원구분코드 업데이트. 원가_세부공종 조회 -->
+    <select id="getCtCbsDetail" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 for 경비항목 자원구분코드 업데이트. 원가_자원 조회 -->
+    <select id="getCtResource" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 for 원가_QDB. 원가_공종 조회 -->
+    <select id="getCtCbs" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <!-- 디버깅 for 원가_QDB. 임시테이블_공종, 세부공종 조회 -->
+    <select id="getTmpCtCbsDetail" parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_CNSTWK_TMP_DTA
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND TBL_NM in ('CST_CNSTTY', 'CST_DTL_CNSTTY', 'CST_QDB') ;
+    </select>
+
+    <!-- 디버깅 for 일위대가 조회 -->
+    <select id="getCtUnitCost"  parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_UNIT_COST WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+    </select>
+
+    <!-- 디버깅 for 일위대가 상세 조회 -->
+    <select id="getCtUnitCostDetail2"  parameterType="hashMap" resultType="hashMap">
+        SELECT * FROM CT_UNIT_COST_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+    </select>
+
+
+
+    <!-- subquery TO UPDATE JOIN 변경 -->
+    <!--
+      /*UPDATE CT_UNIT_COST_DETAIL A SET
+             RSCE_TP_CD = (SELECT RSCE_TP_CD FROM CT_RESOURCE WHERE CNTRCT_CHG_ID = A.CNTRCT_CHG_ID AND RSCE_CD = A.RSCE_CD)
+         WHERE 1=1 AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND RSCE_TP_CD IS NULL;*/
+    -->
+    <!-- 경비항목 자원구분코드 업데이트 -->
+    <update id="updateTmpDtaToUnit1" parameterType="hashmap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateTmpDtaToUnit1][choisr]  */
+        /** 경비항목 자원구분코드 업데이트 **/
+
+        /* 기계경비, 일위대가 */
+
+        UPDATE CT_UNIT_COST_DETAIL A SET
+            RSCE_TP_CD = B.RSCE_TP_CD
+        FROM CT_RESOURCE B
+        WHERE A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND A.UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+        AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+        AND A.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+        AND A.RSCE_CD = B.GNRLEXPNS_CD
+        AND A.RSCE_TP_CD IS NULL
+    </update>
+
+    <!--
+      /*UPDATE CT_CBS_DETAIL A SET
+         RSCE_TP_CD = (SELECT RSCE_TP_CD FROM CT_RESOURCE WHERE CNTRCT_CHG_ID = A.CNTRCT_CHG_ID AND RSCE_CD = A.RSCE_CD)
+     WHERE 1=1 AND RSCE_TP_CD IS NULL AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}*/
+    -->
+    <update id="updateTmpDtaToUnit2" parameterType="hashmap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateTmpDtaToUnit2][choisr]  */
+        /** 경비항목 자원구분코드 업데이트 **/
+
+        /* 세부공종 */
+        UPDATE CT_CBS_DETAIL A SET
+            RSCE_TP_CD = B.RSCE_TP_CD
+        FROM CT_RESOURCE B
+        WHERE A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND A.UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+        AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+        AND A.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+        AND A.RSCE_CD = B.GNRLEXPNS_CD
+        AND A.RSCE_TP_CD IS NULL
+    </update>
+
+
+    <!--
+        CT_CNSTWK_TMP_DTA.TBL_NM = 'CST_QDB'
+                  TMP_RSCE_UNTY_CD - 세부공종코드
+    -->
+    <!-- [WBS-확인필요] 동일공종/동일내역 오류 항목 QDB 조회 -->
+    <select id="getSameQdbCnsttyList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getSameQdbCnsttyList][choisr]  */
+        SELECT
+            A.CNTRCT_CHG_ID, B.CNSTTY_SN, B.DTL_CNSTTY_SN, A.rsce_sn_val, count(*) as dup_cnt,
+            c.CNSTTY_NM, A.TMP_RSCE_UNTY_CD, B.DTL_CNSTTY_NM,
+            (SELECT WBS_IT_1_LVL_NM || '>' || WBS_IT_2_LVL_NM || '>' || WBS_IT_3_LVL_NM || '>' || WBS_IT_4_LVL_NM || '>' || WBS_IT_5_LVL_NM || '>' || WBS_IT_6_LVL_NM || '>' || WBS_IT_7_LVL_NM || '>' || WBS_IT_8_LVL_NM || '>' || WBS_IT_9_LVL_NM || '>' || COALESCE(WBS_IT_10_LVL_NM, '') AS WBS_PATH
+            FROM   CT_WBS WHERE CNTRCT_CHG_ID = A.CNTRCT_CHG_ID AND OPER_GRP_SN = A.RSCE_SN_VAL::NUMERIC) AS WBS_PATH
+        FROM
+            CT_CNSTWK_TMP_DTA A,
+            CT_CBS_DETAIL B,
+            CT_CBS C
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.TBL_NM = 'CST_QDB'
+            AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+            AND A.CNTRCT_CHG_ID = C.CNTRCT_CHG_ID
+            AND A.TMP_RSCE_UNTY_CD = B.RSCE_CD
+            AND A.CNSTTY_CD = C.CNSTTY_CD
+            AND B.CNSTTY_SN = C.CNSTTY_SN
+        GROUP BY A.CNTRCT_CHG_ID, B.CNSTTY_SN, B.DTL_CNSTTY_SN, A.rsce_sn_val, A.TMP_RSCE_UNTY_CD, B.DTL_CNSTTY_NM, C.CNSTTY_NM
+        having count(*) > 1
+    </select>
+
+    <!-- 임시자료 to Qdb 자료 등록 -->
+    <!--
+        미사용 컬럼 관련 로직 삭제
+        UPDATE CT_CBS_DETAIL SET
+            WBS1_NO = ''
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                    AND WBS1_NO IS NOT NULL
+        20241213 조건 추가
+        AND A.FRGNCRNCY_GNRLEXPNS_UPRC = B.DSPLY_ORDR
+    -->
+    <insert id="insertTmpDtaToQdbDta" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertTmpDtaToQdbDta][choisr]  */
+        /* 원가 WBS QDB */
+        INSERT INTO CT_QDB (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            DTL_CNSTTY_SN,
+            OPER_GRP_SN,
+            RSCE_QTY,
+            PAGMT_OPER_DDNUM,
+            PAGMT_OPER_SRT_YMD,
+            PAGMT_OPER_END_YMD,
+            RGSTR_ID,
+            CHG_ID
+        )
+        SELECT
+            B.CNTRCT_CHG_ID,
+            B.UNIT_CNST_TYPE,
+            B.CNSTTY_SN,
+            B.DTL_CNSTTY_SN,
+            /* [기존주석] MIN(B.DTL_CNSTTY_SN) OVER(PARTITION BY B.RSCE_CD, B.SPEC_NM, B.UNIT, B.CNSTTY_SN) AS DTL_CNSTTY_SN, -- 키중복에러 발생(동일공종/동일내역건 있는 경우) */
+            CAST(NULLIF(A.RSCE_SN_VAL, '') AS NUMERIC) AS RSCE_SN_VAL,
+            A.RSCE_QTY,
+            A.LOSSCST_APLY_PT,
+            A.CALC_EXCP_YN_VAL,
+            A.GOVSPLY_MTRL_YN_VAL,
+            A.RGSTR_ID,
+            A.RGSTR_ID
+        FROM
+            CT_CNSTWK_TMP_DTA A,
+            CT_CBS_DETAIL B,
+            CT_CBS C
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.TBL_NM = 'CST_QDB'
+            AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+            AND A.CNTRCT_CHG_ID = C.CNTRCT_CHG_ID
+            AND A.TMP_RSCE_UNTY_CD = B.RSCE_CD
+            AND A.FRGNCRNCY_GNRLEXPNS_UPRC = B.DSPLY_ORDR
+            AND A.CNSTTY_CD = C.CNSTTY_CD
+            AND B.CNSTTY_SN = C.CNSTTY_SN
+            AND B.UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+            AND B.UNIT_CNST_TYPE = C.UNIT_CNST_TYPE
+
+    </insert>
+
+    <!-- [미사용] 원가 일위대가 손료 수정 -->
+    <update id="updateCstUcostLosscst" parameterType="hashMap"></update>
+
+    <!-- [미사용] 원가 기계경비 손료 수정 -->
+    <update id="updateCstMchneLosscst" parameterType="hashMap"></update>
+
+    <!-- [미사용] 원가 세부공종 손료 수정 -->
+    <update id="updateCstDtlCnsttyLosscst" parameterType="hashMap"></update>
+
+    <!-- [확인필요] 중기단가산출중간코드 자원 수정 -->
+    <insert id="updateHmupcMidCdRsce" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateHmupcMidCdRsce][choisr]  */
+        UPDATE CT_HMUPC_MID_CD A SET
+            RSCE_TP_CD = B.RSCE_TP_CD,
+            MTRL_UPRC = COALESCE(B.MTRL_UPRC, 0),
+            LBR_UPRC = COALESCE(B.LBR_UPRC, 0),
+            GNRLEXPNS_UPRC = COALESCE(B.GNRLEXPNS_UPRC, 0)
+        FROM (
+            SELECT
+                A.CNTRCT_CHG_ID,
+                A.RSCE_CD,
+                CASE
+                    WHEN B.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN 'J'
+                    WHEN C.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN C.RSCE_TP_CD
+                    WHEN D.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN 'G'
+                    WHEN E.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN 'M'
+                    WHEN F.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN 'L'
+                    WHEN G.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN G.RSCE_TP_CD
+                END AS RSCE_TP_CD,
+                CASE
+                    WHEN B.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN B.MTRL_UPRC
+                    WHEN C.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN C.MTRL_UPRC
+                    WHEN D.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN D.MTRL_UPRC
+                    WHEN E.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN E.MTRL_UPRC
+                    WHEN F.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN F.MTRL_UPRC
+                    WHEN G.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN G.MTRL_UPRC
+                END AS MTRL_UPRC,
+                CASE
+                    WHEN B.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN B.LBR_UPRC
+                    WHEN C.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN C.LBR_UPRC
+                    WHEN D.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN D.LBR_UPRC
+                    WHEN E.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN E.LBR_UPRC
+                    WHEN F.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN F.LBR_UPRC
+                    WHEN G.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN G.LBR_UPRC
+                END AS LBR_UPRC,
+                CASE
+                    WHEN B.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN B.GNRLEXPNS_UPRC
+                    WHEN C.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN C.GNRLEXPNS_UPRC
+                    WHEN D.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN D.GNRLEXPNS_UPRC
+                    WHEN E.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN E.GNRLEXPNS_UPRC
+                    WHEN F.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN F.GNRLEXPNS_UPRC
+                    WHEN G.CNTRCT_CHG_ID <![CDATA[>]]> ' ' THEN G.GNRLEXPNS_UPRC
+                END AS GNRLEXPNS_UPRC
+            FROM
+            (
+                SELECT CNTRCT_CHG_ID, RSCE_CD
+                FROM CT_HMUPC_MID_CD
+                WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                GROUP BY CNTRCT_CHG_ID, RSCE_CD
+            ) A
+            LEFT JOIN CT_UNIT_COST B ON A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID AND A.RSCE_CD = B.UCOST_CD AND B.RSCE_TP_CD = 'J'
+            LEFT JOIN CT_UNIT_COST C ON A.CNTRCT_CHG_ID = C.CNTRCT_CHG_ID AND A.RSCE_CD = C.UCOST_CD AND B.RSCE_TP_CD = 'I'
+            LEFT JOIN CT_UNIT_COST D ON A.CNTRCT_CHG_ID = D.CNTRCT_CHG_ID AND A.RSCE_CD = D.UCOST_CD AND B.RSCE_TP_CD = 'G'
+            LEFT JOIN CT_RESOURCE E ON A.CNTRCT_CHG_ID = E.CNTRCT_CHG_ID AND A.RSCE_CD = E.RSCE_CD AND E.GNRLEXPNS_CD = 'M'
+            LEFT JOIN CT_RESOURCE F ON A.CNTRCT_CHG_ID = F.CNTRCT_CHG_ID AND A.RSCE_CD = F.RSCE_CD AND E.GNRLEXPNS_CD = 'L'
+            LEFT JOIN CT_RESOURCE G ON A.CNTRCT_CHG_ID = G.CNTRCT_CHG_ID AND A.RSCE_CD = G.RSCE_CD AND E.GNRLEXPNS_CD = 'E'
+            /*
+            LEFT JOIN CST_HMUPC B ON A.UNIT_CNSTWK_NO = B.UNIT_CNSTWK_NO AND A.RSCE_CD = B.HMUPC_CD
+            LEFT JOIN CT_UNIT_COST C ON A.UNIT_CNSTWK_NO = C.UNIT_CNSTWK_NO AND A.RSCE_CD = C.UCOST_CD
+            LEFT JOIN CST_MCHNE D ON A.UNIT_CNSTWK_NO = D.UNIT_CNSTWK_NO AND A.RSCE_CD = D.MCHNE_CD
+            LEFT JOIN CST_MTRL E ON A.UNIT_CNSTWK_NO = E.UNIT_CNSTWK_NO AND A.RSCE_CD = E.MTRL_CD
+            LEFT JOIN CST_LBR F ON A.UNIT_CNSTWK_NO = F.UNIT_CNSTWK_NO AND A.RSCE_CD = F.LBR_CD
+            LEFT JOIN CST_GNRLEXPNS G ON A.UNIT_CNSTWK_NO = G.UNIT_CNSTWK_NO AND A.RSCE_CD = G.GNRLEXPNS_CD
+             */
+        ) AS B
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+            AND A.RSCE_CD = B.RSCE_CD
+    </insert>
+
+    <!-- C3R 오류정보 복사 등록 -->
+    <insert id="insertC3rCopyErrInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertC3rCopyErrInfo][choisr]  */
+        <include refid="sql_deleteC3rErrInfo" />
+
+        INSERT INTO CT_CNSTWK_TMP_DTA_ERR (
+            CNTRCT_CHG_ID, TBL_NM, CNSTWK_DTA_SN, ERR_CD, ERR_CNTNTS, RGST_DT, RGSTR_ID
+        )
+        SELECT CNTRCT_CHG_ID, TBL_NM, CNSTWK_DTA_SN, CONCAT('03', TMP_RSCE_UNTY_CD), ERR_CNTNTS, CURRENT_TIMESTAMP, 'SYSTEM'
+        FROM CT_CNSTWK_TMP_DTA
+        WHERE 1=1
+            AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND ATTRBT1_NM = 'PARSER ERROR';
+    </insert>
+
+    <!-- C3R 테이블정보 목록 조회 -->
+    <select id="getC3rTblInfoList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getC3rTblInfoList][choisr]  */
+        <include refid="sql_selectC3rTblInfo" />
+        <if test='searchErrYn == "Y"'>
+            AND (NULLIF(ATTRBT1_NM, '') IS NULL OR ATTRBT1_NM <![CDATA[<>]]> 'PARSER ERROR')
+        </if>
+        <choose>
+            <when test='tbl_nm == "cst_cnstty"'>
+                ORDER BY CNSTTY_CD
+            </when>
+            <otherwise>
+                ORDER BY TBL_NM, CNSTWK_DTA_SN
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- C3R 자원정보 목록 조회-->
+    <select id="getC3rRsceInfoList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getC3rRsceInfoList][choisr]  */
+        SELECT
+            TBL_NM, CNSTWK_DTA_SN, TMP_RSCE_UNTY_CD AS RESC_CODE, ATTRBT1_NM, ATTRBT2_NM
+        FROM CT_CNSTWK_TMP_DTA A
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.TBL_NM IN ('CST_LBR', 'CST_UCOST')
+            AND (NULLIF(A.ATTRBT1_NM, '') IS NULL OR A.ATTRBT1_NM IN ('표준시장단가', '시장시공가격'))
+        ORDER BY TBL_NM, TMP_RSCE_UNTY_CD
+    </select>
+
+    <!-- C3R 표준 자원정보 목록 조회 -->
+    <select id="getC3rStdRsceInfoList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getC3rStdRsceInfoList][choisr]  */
+        SELECT
+            TBL_NM, CNSTWK_DTA_SN, TMP_RSCE_UNTY_CD AS RESC_CODE, ATTRBT1_NM, ATTRBT2_NM,
+            CASE WHEN TBL_NM IN ('CST_HMUPC', 'CST_MTRL', 'CST_GNRLEXPNS') THEN '1'
+                 WHEN COALESCE(MTRL_UPRC, 0) + COALESCE(LBR_UPRC, 0) + COALESCE(GNRLEXPNS_UPRC, 0) <![CDATA[<>]]> 0 THEN '0'
+                 ELSE '1'
+                END AS STD_RESC_CODE
+        FROM CT_CNSTWK_TMP_DTA A
+        WHERE 1=1
+            AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.TBL_NM IN ('CST_UCOST', 'CST_HMUPC', 'CST_MCHNE', 'CST_MTRL', 'CST_GNRLEXPNS')
+            AND (NULLIF(A.ATTRBT1_NM, '') IS NULL OR A.ATTRBT1_NM NOT IN ('표준시장단가', '시장시공가격'))
+        ORDER BY TBL_NM, TMP_RSCE_UNTY_CD
+    </select>
+
+    <!-- C3R 순환참조 목록 조회 -->
+    <select id="getC3rCycleRsceList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getC3rCycleRsceList][choisr]  */
+        WITH RECURSIVE CYCLE_INFO (CNTRCT_CHG_ID, CNSTTY_CD, TMP_RSCE_UNTY_CD, CD_LIST, ISCYCLE) AS (
+            WITH MST_INFO AS (
+                SELECT
+                    DISTINCT CNTRCT_CHG_ID, CNSTTY_CD, TMP_RSCE_UNTY_CD
+                FROM CT_CNSTWK_TMP_DTA
+                WHERE 1=1
+                    AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                    AND TMP_RSCE_UNTY_CD NOT LIKE 'RENT%'
+                    AND TBL_NM IN ('CST_UCOST_DTL', 'CST_MCHNE_DTL', 'CST_HMUPC_MID_CD')
+            )
+            SELECT
+                CNTRCT_CHG_ID, CNSTTY_CD, TMP_RSCE_UNTY_CD,
+                ARRAY[CAST(TMP_RSCE_UNTY_CD AS VARCHAR)], FALSE
+            FROM MST_INFO
+            UNION ALL
+            SELECT
+                T1.CNTRCT_CHG_ID, T1.CNSTTY_CD, T1.TMP_RSCE_UNTY_CD,
+                T2.CD_LIST || CAST(T1.TMP_RSCE_UNTY_CD AS VARCHAR), CAST(T1.TMP_RSCE_UNTY_CD AS VARCHAR) = ANY(T2.CD_LIST)
+            FROM
+                MST_INFO T1,
+                CYCLE_INFO T2
+            WHERE 1=1
+                AND T2.CNSTTY_CD = T1.TMP_RSCE_UNTY_CD
+                AND NOT ISCYCLE
+        )
+        SELECT
+            DISTINCT CNTRCT_CHG_ID, CNSTTY_CD, TMP_RSCE_UNTY_CD
+        FROM CYCLE_INFO
+        WHERE ISCYCLE
+    </select>
+
+    <!-- C3R 오류정보 등록 -->
+    <insert id="insertC3rErrInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertC3rErrInfo][choisr]  */
+        INSERT INTO CT_CNSTWK_TMP_DTA_ERR (
+            CNTRCT_CHG_ID,
+            TBL_NM,
+            CNSTWK_DTA_SN,
+            ERR_CD,
+            ERR_CNTNTS,
+            RGST_DT,
+            RGSTR_ID
+        ) VALUES
+        <foreach collection="regList" item="it" separator=",">
+            (
+            #{CNTRCT_CHG_ID},
+            #{it.TBL_NM},
+            CAST(#{it.CNSTWK_DTA_SN} AS NUMERIC),
+            #{it.ERR_CD},
+            #{it.ERR_CNTNTS},
+            CURRENT_TIMESTAMP,
+            'SYSTEM'
+            )
+        </foreach>
+    </insert>
+
+    <!-- FIXME 계약/원가 세부공종 비교 목록 조회 -->
+    <select id="getCtrCstDtlCnsttyCmprList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getCtrCstDtlCnsttyCmprList][choisr]  */
+         WITH CT_UNIT_CNSTWK AS (
+             SELECT
+                 CNTRCT_NO,
+                 CNTRCT_CHG_ID,
+                 LPAD(CNTRCT_CHG_NO,2,'0') AS CNTRCT_CHG_ORD,
+                 CMN_CD CNTRCT_CNST_TYPE,
+                 CMN_CD_NM_KRN AS UNIT_CNSTWK_NM
+             FROM CN_CONTRACT_CHANGE A, SM_COM_CODE B
+             WHERE 1=1
+                 AND A.CNTRCT_NO = #{CNTRCT_NO}
+                 AND A.DLT_YN = 'N'
+                 AND A.LAST_CHG_YN = 'Y'
+                 AND B.CMN_GRP_CD = (
+                     SELECT CMN_GRP_CD
+                     FROM SM_COM_CODE_GROUP
+                     WHERE CMN_CD = 'CONS'
+                 )
+                 AND B.USE_YN = 'Y'
+                 AND B.DLT_YN = 'N'
+        )
+        SELECT
+            T1.CNTRCT_NO, T1.CNTRCT_CNST_TYPE, T1.CBS_SNO, T2.CNTRCT_CHG_ORD, T2.CNTRCT_CHG_ID,
+            CAST(T2.CNSTTY_SN AS VARCHAR) AS CNSTTY_SN, CAST(T2.DTL_CNSTTY_SN AS VARCHAR) AS DTL_CNSTTY_SN,
+            (CASE WHEN NULLIF(T2.CNTRCT_CHG_ID, '') IS NULL THEN 'Y' ELSE 'N' END) AS ERR_YN,
+            COUNT(CASE WHEN NULLIF(T2.CNTRCT_CHG_ID, '') IS NULL THEN 'Y' END) OVER() AS ERR_CNT,
+            T1.DSPLY_ORDR, T1.PRDNM, T3.RSCE_NM
+        FROM
+            (SELECT
+                 CNTRCT_NO, CNTRCT_CNST_TYPE, CBS_SNO, CNSTTY_DTLS_DIV_CD, PRDNM, SPEC, UNIT
+                  , DENSE_RANK() OVER (ORDER BY CBS_SNO) AS DSPLY_ORDR
+            FROM CN_CONTRACT_BID
+            WHERE 1=1
+                AND CNTRCT_NO = #{CNTRCT_NO}
+                AND CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+            ) T1 LEFT OUTER JOIN
+            (
+                SELECT
+                    X.CNTRCT_NO, X.CNTRCT_CHG_ORD, X.CNTRCT_CNST_TYPE, X.CNTRCT_CHG_ID, X.CNSTTY_SN, X.DTL_CNSTTY_SN,
+                    X.CNSTTY_CD, X.UP_CNSTTY_CD, X.RSCE_TP_CD, X.RSCE_CD, X.RSCE_NM, X.SPEC_NM, X.UNIT, X.RSCE_QTY,
+                    DENSE_RANK() OVER (ORDER BY CASE WHEN ROW_TP = 'C' THEN X.SORT_CD ELSE X.UP_SORT_CD END, X.ROW_TP, X.DSPLY_ORDR) AS DSPLY_ORDR
+                FROM (
+                     SELECT
+                         'C' AS ROW_TP, CNTRCT_NO, CNTRCT_CHG_ORD, CNTRCT_CNST_TYPE,
+                         SORT_CD, UP_SORT_CD, CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN,
+                         CNSTTY_CD, UP_CNSTTY_CD, RSCE_TP_CD, RSCE_CD, CAST(NULL AS NUMERIC) AS DSPLY_ORDR,
+                         RSCE_NM, SPEC_NM, UNIT, RSCE_QTY
+                     FROM (
+                          SELECT
+                              A.CNTRCT_NO, A.CNTRCT_CHG_ORD, A.CNTRCT_CNST_TYPE,
+                              B.CNSTTY_CD AS SORT_CD, B.UP_CNSTTY_CD AS UP_SORT_CD, B.CNTRCT_CHG_ID,
+                              B.CNSTTY_SN, CAST(NULL AS NUMERIC) AS DTL_CNSTTY_SN, B.CNSTTY_CD, B.UP_CNSTTY_CD, 'C' AS RSCE_TP_CD, NULL AS RSCE_CD,
+                              B.CNSTTY_NM AS RSCE_NM, NULL AS SPEC_NM, NULL AS UNIT, CAST(NULL AS NUMERIC) AS RSCE_QTY
+                          FROM
+                              CT_UNIT_CNSTWK A,
+                              CT_CBS B
+                          WHERE 1=1
+                              AND A.CNTRCT_NO = #{CNTRCT_NO}
+                              AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                              AND A.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                              AND B.UNIT_CNST_TYPE = A.CNTRCT_CNST_TYPE
+                     ) S
+                     UNION ALL
+                     SELECT
+                         'D' AS ROW_TP, T.CNTRCT_NO, T.CNTRCT_CHG_ORD, T.CNTRCT_CNST_TYPE,
+                         CAST(A.DTL_CNSTTY_SN AS VARCHAR) AS SORT_CD, B.CNSTTY_CD AS UP_SORT_CD, A.CNTRCT_CHG_ID, B.CNSTTY_SN, A.DTL_CNSTTY_SN,
+                         B.CNSTTY_CD, B.UP_CNSTTY_CD, A.RSCE_TP_CD, A.RSCE_CD, A.DSPLY_ORDR,
+                         A.DTL_CNSTTY_NM AS RSCE_NM, A.SPEC_NM AS SPEC_NM, A.UNIT AS UNIT, CASE WHEN A.RSCE_TP_CD = 'T' THEN NULL ELSE COALESCE(A.RSCE_QTY, 0) END AS RSCE_QTY
+                     FROM
+                         CT_UNIT_CNSTWK T,
+                         CT_CBS_DETAIL A,
+                         CT_CBS B
+                     WHERE 1=1
+                         AND T.CNTRCT_NO = #{CNTRCT_NO}
+                         AND T.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                         AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                         AND T.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                         AND B.UNIT_CNST_TYPE = T.CNTRCT_CNST_TYPE
+                         AND A.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+                         AND A.CNSTTY_SN = B.CNSTTY_SN
+                ) X
+            ) T2
+            ON (
+                T1.CNTRCT_NO = T2.CNTRCT_NO AND T1.DSPLY_ORDR = T2.DSPLY_ORDR AND T1.CNTRCT_CNST_TYPE = T2.CNTRCT_CNST_TYPE
+                    AND (
+                    (T1.CNSTTY_DTLS_DIV_CD != 'S' AND COALESCE(T1.PRDNM, '') = COALESCE(T2.RSCE_NM, ''))
+                        OR (
+                        T1.CNSTTY_DTLS_DIV_CD = 'S'
+                            AND COALESCE(T1.PRDNM, '') = COALESCE(T2.RSCE_NM, '')
+                            AND COALESCE(T1.SPEC, '') = COALESCE(T2.SPEC_NM, '')
+                            AND COALESCE(T1.UNIT, '') = COALESCE(T2.UNIT, '')
+                        )
+                    )
+                ) LEFT OUTER JOIN (
+                SELECT
+                    X.CNTRCT_NO, X.CNTRCT_CHG_ORD, X.CNTRCT_CNST_TYPE, X.CNTRCT_CHG_ID, X.CNSTTY_SN, X.DTL_CNSTTY_SN,
+                    X.CNSTTY_CD, X.UP_CNSTTY_CD, X.RSCE_TP_CD, X.RSCE_CD, X.RSCE_NM, X.SPEC_NM, X.UNIT, X.RSCE_QTY,
+                    DENSE_RANK() OVER (ORDER BY CASE WHEN ROW_TP = 'C' THEN X.SORT_CD ELSE X.UP_SORT_CD END, X.ROW_TP, X.DSPLY_ORDR) AS DSPLY_ORDR
+                FROM (
+                     SELECT
+                         'C' AS ROW_TP, CNTRCT_NO, CNTRCT_CHG_ORD, CNTRCT_CNST_TYPE,
+                         SORT_CD, UP_SORT_CD, CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN,
+                         CNSTTY_CD, UP_CNSTTY_CD, RSCE_TP_CD, RSCE_CD, CAST(NULL AS NUMERIC) AS DSPLY_ORDR,
+                         RSCE_NM, SPEC_NM, UNIT, RSCE_QTY
+                     FROM (
+                          SELECT
+                              A.CNTRCT_NO, A.CNTRCT_CHG_ORD, A.CNTRCT_CNST_TYPE,
+                              B.CNSTTY_CD AS SORT_CD, B.UP_CNSTTY_CD AS UP_SORT_CD, B.CNTRCT_CHG_ID,
+                              B.CNSTTY_SN, CAST(NULL AS NUMERIC) AS DTL_CNSTTY_SN, B.CNSTTY_CD, B.UP_CNSTTY_CD, 'C' AS RSCE_TP_CD, NULL AS RSCE_CD,
+                              B.CNSTTY_NM AS RSCE_NM, NULL AS SPEC_NM, NULL AS UNIT, CAST(NULL AS NUMERIC) AS RSCE_QTY
+                          FROM
+                              CT_UNIT_CNSTWK A,
+                              CT_CBS B
+                          WHERE 1=1
+                              AND A.CNTRCT_NO = #{CNTRCT_NO}
+                              AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                              AND A.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                              AND B.UNIT_CNST_TYPE = A.CNTRCT_CNST_TYPE
+                     ) S
+                     UNION ALL
+                     SELECT
+                         'D' AS ROW_TP, T.CNTRCT_NO, T.CNTRCT_CHG_ORD, T.CNTRCT_CNST_TYPE,
+                         CAST(A.DTL_CNSTTY_SN AS VARCHAR) AS SORT_CD, B.CNSTTY_CD AS UP_SORT_CD, A.CNTRCT_CHG_ID, B.CNSTTY_SN, A.DTL_CNSTTY_SN,
+                         B.CNSTTY_CD, B.UP_CNSTTY_CD, A.RSCE_TP_CD, A.RSCE_CD, A.DSPLY_ORDR,
+                         A.DTL_CNSTTY_NM AS RSCE_NM, A.SPEC_NM AS SPEC_NM, A.UNIT AS UNIT, CASE WHEN A.RSCE_TP_CD = 'T' THEN NULL ELSE COALESCE(A.RSCE_QTY, 0) END AS RSCE_QTY
+                     FROM
+                         CT_UNIT_CNSTWK T,
+                         CT_CBS_DETAIL A,
+                         CT_CBS B
+                     WHERE 1=1
+                        AND T.CNTRCT_NO = #{CNTRCT_NO}
+                        AND T.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                        AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                        AND T.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                        AND B.UNIT_CNST_TYPE = T.CNTRCT_CNST_TYPE
+                        AND A.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+                        AND A.CNSTTY_SN = B.CNSTTY_SN
+                ) X
+            )T3 ON (T1.DSPLY_ORDR = T3.DSPLY_ORDR)
+        ORDER BY T1.DSPLY_ORDR
+    </select>
+
+    <!-- 디버깅 / 계약/원가 세부공종 비교 목록 조회 (1) -->
+    <select id="getDebugCmprList1" parameterType="hashMap" resultType="hashMap">
+         WITH CT_UNIT_CNSTWK AS (
+             SELECT
+             CNTRCT_NO,
+             CNTRCT_CHG_ID,
+             LPAD(CNTRCT_CHG_NO,2,'0') AS CNTRCT_CHG_ORD,
+             CMN_CD CNTRCT_CNST_TYPE,
+             CMN_CD_NM_KRN AS UNIT_CNSTWK_NM
+             FROM CN_CONTRACT_CHANGE A, SM_COM_CODE B
+             WHERE 1=1
+             AND A.CNTRCT_NO = #{CNTRCT_NO}
+             AND A.DLT_YN = 'N'
+             AND A.LAST_CHG_YN = 'Y'
+             AND B.CMN_GRP_CD = (
+             SELECT CMN_GRP_CD
+             FROM SM_COM_CODE_GROUP
+             WHERE CMN_CD = 'CONS'
+             )
+             AND B.USE_YN = 'Y'
+             AND B.DLT_YN = 'N'
+         )
+        SELECT
+             CNTRCT_NO, CNTRCT_CNST_TYPE, CBS_SNO, CNSTTY_DTLS_DIV_CD, PRDNM, SPEC, UNIT
+              , DENSE_RANK() OVER (ORDER BY CBS_SNO) AS DSPLY_ORDR
+            FROM CN_CONTRACT_BID
+            WHERE 1=1
+            AND CNTRCT_NO = #{CNTRCT_NO}
+            AND CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+    </select>
+
+    <!-- 디버깅 / 계약/원가 세부공종 비교 목록 조회 (2) -->
+    <select id = "getDebugCmprList2" parameterType="hashMap" resultType="hashMap">
+        WITH CT_UNIT_CNSTWK AS (
+            SELECT
+            CNTRCT_NO, CNTRCT_CHG_ID, LPAD(CNTRCT_CHG_NO, 2, '0') AS CNTRCT_CHG_ORD, CMN_CD CNTRCT_CNST_TYPE, CMN_CD_NM_KRN AS UNIT_CNSTWK_NM
+            FROM CN_CONTRACT_CHANGE A, SM_COM_CODE B
+            WHERE 1=1
+            AND A.CNTRCT_NO = #{CNTRCT_NO}
+            AND A.DLT_YN = 'N'
+            AND A.LAST_CHG_YN = 'Y'
+            AND B.CMN_GRP_CD = (
+            SELECT CMN_GRP_CD
+            FROM SM_COM_CODE_GROUP
+            WHERE CMN_CD = 'CONS'
+            )
+            AND B.USE_YN = 'Y'
+            AND B.DLT_YN = 'N'
+            )
+            SELECT
+                X.CNTRCT_NO, X.CNTRCT_CHG_ORD, X.CNTRCT_CNST_TYPE, X.CNTRCT_CHG_ID, X.CNSTTY_SN, X.DTL_CNSTTY_SN,
+                X.CNSTTY_CD, X.UP_CNSTTY_CD, X.RSCE_TP_CD, X.RSCE_CD, X.RSCE_NM, X.SPEC_NM, X.UNIT, X.RSCE_QTY,
+                DENSE_RANK() OVER (ORDER BY CASE WHEN ROW_TP = 'C' THEN X.SORT_CD ELSE X.UP_SORT_CD END, X.ROW_TP, X.DSPLY_ORDR) AS DSPLY_ORDR
+            FROM (
+                     SELECT
+                         'C' AS ROW_TP, CNTRCT_NO, CNTRCT_CHG_ORD, CNTRCT_CNST_TYPE,
+                         SORT_CD, UP_SORT_CD, CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN,
+                         CNSTTY_CD, UP_CNSTTY_CD, RSCE_TP_CD, RSCE_CD, CAST(NULL AS NUMERIC) AS DSPLY_ORDR,
+                         RSCE_NM, SPEC_NM, UNIT, RSCE_QTY
+                     FROM (
+                              SELECT
+                                  A.CNTRCT_NO, A.CNTRCT_CHG_ORD, A.CNTRCT_CNST_TYPE,
+                                  B.CNSTTY_CD AS SORT_CD, B.UP_CNSTTY_CD AS UP_SORT_CD, B.CNTRCT_CHG_ID,
+                                  B.CNSTTY_SN, CAST(NULL AS NUMERIC) AS DTL_CNSTTY_SN, B.CNSTTY_CD, B.UP_CNSTTY_CD, 'C' AS RSCE_TP_CD, NULL AS RSCE_CD,
+                                  B.CNSTTY_NM AS RSCE_NM, NULL AS SPEC_NM, NULL AS UNIT, CAST(NULL AS NUMERIC) AS RSCE_QTY
+                              FROM
+                                  CT_UNIT_CNSTWK A,
+                                  CT_CBS B
+                              WHERE 1=1
+                                  AND A.CNTRCT_NO = #{CNTRCT_NO}
+                                  AND A.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                                  AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                                  AND B.UNIT_CNST_TYPE = A.CNTRCT_CNST_TYPE
+                          ) S
+                     UNION ALL
+                     SELECT
+                         'D' AS ROW_TP, T.CNTRCT_NO, T.CNTRCT_CHG_ORD, T.CNTRCT_CNST_TYPE,
+                         CAST(A.DTL_CNSTTY_SN AS VARCHAR) AS SORT_CD, B.CNSTTY_CD AS UP_SORT_CD, A.CNTRCT_CHG_ID, B.CNSTTY_SN, A.DTL_CNSTTY_SN,
+                         B.CNSTTY_CD, B.UP_CNSTTY_CD, A.RSCE_TP_CD, A.RSCE_CD, A.DSPLY_ORDR,
+                         A.DTL_CNSTTY_NM AS RSCE_NM, A.SPEC_NM AS SPEC_NM, A.UNIT AS UNIT, CASE WHEN A.RSCE_TP_CD = 'T' THEN NULL ELSE COALESCE(A.RSCE_QTY, 0) END AS RSCE_QTY
+                     FROM
+                         CT_UNIT_CNSTWK T,
+                         CT_CBS_DETAIL A,
+                         CT_CBS B
+                     WHERE 1=1
+                       AND T.CNTRCT_NO = #{CNTRCT_NO}
+                                     AND T.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                                     AND T.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                                     AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                                     AND B.UNIT_CNST_TYPE = T.CNTRCT_CNST_TYPE
+                                     AND B.UNIT_CNST_TYPE = A.UNIT_CNST_TYPE
+                                     AND A.CNSTTY_SN = B.CNSTTY_SN
+                 ) X
+
+    </select>
+
+    <!-- 디버깅 / 계약/원가 세부공종 비교 목록 조회 (3) -->
+    <select id = "getDebugCmprList3" parameterType="hashMap" resultType="hashMap">
+       WITH CT_UNIT_CNSTWK AS (
+           SELECT
+           CNTRCT_NO, CNTRCT_CHG_ID, LPAD(CNTRCT_CHG_NO, 2, '0') AS CNTRCT_CHG_ORD, CMN_CD CNTRCT_CNST_TYPE, CMN_CD_NM_KRN AS UNIT_CNSTWK_NM
+           FROM CN_CONTRACT_CHANGE A, SM_COM_CODE B
+           WHERE 1=1
+           AND A.CNTRCT_NO = #{CNTRCT_NO}
+           AND A.DLT_YN = 'N'
+           AND A.LAST_CHG_YN = 'Y'
+           AND B.CMN_GRP_CD = (
+           SELECT CMN_GRP_CD
+           FROM SM_COM_CODE_GROUP
+           WHERE CMN_CD = 'CONS'
+           )
+           AND B.USE_YN = 'Y'
+           AND B.DLT_YN = 'N'
+           )
+            SELECT
+                X.CNTRCT_NO, X.CNTRCT_CHG_ORD, X.CNTRCT_CNST_TYPE, X.CNTRCT_CHG_ID, X.CNSTTY_SN, X.DTL_CNSTTY_SN,
+                X.CNSTTY_CD, X.UP_CNSTTY_CD, X.RSCE_TP_CD, X.RSCE_CD, X.RSCE_NM, X.SPEC_NM, X.UNIT, X.RSCE_QTY,
+                DENSE_RANK() OVER (ORDER BY CASE WHEN ROW_TP = 'C' THEN X.SORT_CD ELSE X.UP_SORT_CD END, X.ROW_TP, X.DSPLY_ORDR) AS DSPLY_ORDR
+            FROM (
+                     SELECT
+                         'C' AS ROW_TP, CNTRCT_NO, CNTRCT_CHG_ORD, CNTRCT_CNST_TYPE,
+                         SORT_CD, UP_SORT_CD, CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN,
+                         CNSTTY_CD, UP_CNSTTY_CD, RSCE_TP_CD, RSCE_CD, CAST(NULL AS NUMERIC) AS DSPLY_ORDR,
+                         RSCE_NM, SPEC_NM, UNIT, RSCE_QTY
+                     FROM (
+                              SELECT
+                                  A.CNTRCT_NO, A.CNTRCT_CHG_ORD, A.CNTRCT_CNST_TYPE,
+                                  B.CNSTTY_CD AS SORT_CD, B.UP_CNSTTY_CD AS UP_SORT_CD, B.CNTRCT_CHG_ID,
+                                  B.CNSTTY_SN, CAST(NULL AS NUMERIC) AS DTL_CNSTTY_SN, B.CNSTTY_CD, B.UP_CNSTTY_CD, 'C' AS RSCE_TP_CD, NULL AS RSCE_CD,
+                                  B.CNSTTY_NM AS RSCE_NM, NULL AS SPEC_NM, NULL AS UNIT, CAST(NULL AS NUMERIC) AS RSCE_QTY
+                              FROM
+                                  CT_UNIT_CNSTWK A,
+                                  CT_CBS B
+                              WHERE 1=1
+                                AND A.CNTRCT_NO = #{CNTRCT_NO}
+                                  AND A.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                                  AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                                  AND B.UNIT_CNST_TYPE = A.CNTRCT_CNST_TYPE
+                          ) S
+                     UNION ALL
+                     SELECT
+                         'D' AS ROW_TP, T.CNTRCT_NO, T.CNTRCT_CHG_ORD, T.CNTRCT_CNST_TYPE,
+                         CAST(A.DTL_CNSTTY_SN AS VARCHAR) AS SORT_CD, B.CNSTTY_CD AS UP_SORT_CD, A.CNTRCT_CHG_ID, B.CNSTTY_SN, A.DTL_CNSTTY_SN,
+                         B.CNSTTY_CD, B.UP_CNSTTY_CD, A.RSCE_TP_CD, A.RSCE_CD, A.DSPLY_ORDR,
+                         A.DTL_CNSTTY_NM AS RSCE_NM, A.SPEC_NM AS SPEC_NM, A.UNIT AS UNIT, CASE WHEN A.RSCE_TP_CD = 'T' THEN NULL ELSE COALESCE(A.RSCE_QTY, 0) END AS RSCE_QTY
+                     FROM
+                         CT_UNIT_CNSTWK T,
+                         CT_CBS_DETAIL A,
+                         CT_CBS B
+                     WHERE 1=1
+                       AND T.CNTRCT_NO = #{CNTRCT_NO}
+                         AND T.CNTRCT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+                         AND T.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                         AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                         AND B.UNIT_CNST_TYPE = T.CNTRCT_CNST_TYPE
+                         AND A.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+                         AND A.CNSTTY_SN = B.CNSTTY_SN
+                 ) X
+
+    </select>
+    <!-- 계약내역서 세부공종 원가정보 수정 -->
+    <!--
+        변경사항
+        CST_UNIT_CNSTWK_NO = #{UNIT_CNSTWK_NO}, 제거
+    -->
+    <update id="updateCtrDtlsttCstInfo" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateCtrDtlsttCstInfo][choisr]  */
+        UPDATE CN_CONTRACT_BID SET
+            CST_CNSTTY_SNO = CAST(NULLIF(#{CNSTTY_SN}, '') AS NUMERIC),
+            CST_DCNSTTY_SNO = CAST(NULLIF(#{DTL_CNSTTY_SN}, '') AS NUMERIC),
+            CHG_DT = CURRENT_TIMESTAMP,
+            CHG_ID = #{USER_ID}
+        WHERE 1=1
+            AND CNTRCT_NO = #{CNTRCT_NO}
+            AND CBS_SNO = CAST(#{CBS_SNO} AS NUMERIC)
+            AND CNTRCT_CNST_TYPE = #{CNTRCT_CNST_TYPE}
+    </update>
+
+
+    <!-- C3R 데이터 오류 목록 조회 -->
+    <select id="getC3rDtaErrList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getC3rDtaErrList][choisr]  */
+        SELECT
+            ERR_CD, MAX(ERR_CNTNTS) AS ERR_CNTNTS,
+            STRING_AGG(UNIN_RSCE_CD, '|') AS UNIN_RSCE_CD_LIST, STRING_AGG(RSCE_CD, '|') AS RSCE_CD_LIST, STRING_AGG(RSCE_NM, '|') AS RSCE_NM_NM_LIST,
+            STRING_AGG(UNIN_RSCE_TP_NM, '|') AS UNIN_RSCE_TP_NM_LIST, STRING_AGG(RSCE_TP_NM, '|') AS RSCE_TP_NM_LIST
+        FROM (
+             SELECT
+                 A.CNTRCT_CHG_ID, A.TBL_NM, A.CNSTWK_DTA_SN, A.CNSTTY_CD AS UNIN_RSCE_CD, A.TMP_RSCE_UNTY_CD AS RSCE_CD,
+                 A.RSCE_NM AS RSCE_NM, A.RSCE_SPEC_NM, A.UNIT, A.RSCE_TP_VAL AS RSCE_TP_NM,
+                 B.ERR_CD, B.ERR_CNTNTS,
+                 (
+                     CASE WHEN A.TBL_NM = 'CST_DTL_CNSTTY' THEN '세부공종'
+                          WHEN A.TBL_NM IN ('CST_UCOST', 'CST_UCOST_DTL') THEN '일위대가'
+                          WHEN A.TBL_NM IN ('CST_HMUPC', 'CST_HMUPC_VAR', 'CST_HMUPC_MID_CD') THEN '중기단가산출'
+                          WHEN A.TBL_NM IN ('CST_MCHNE', 'CST_MCHNE_DTL') THEN '기계경비'
+                          WHEN A.TBL_NM = 'CST_MTRL' THEN '자재'
+                          WHEN A.TBL_NM = 'CST_LBR' THEN '노무'
+                          WHEN A.TBL_NM = 'CST_GNRLEXPNS' THEN '경비항목'
+                         END
+                     ) AS UNIN_RSCE_TP_NM
+             FROM
+                 CT_CNSTWK_TMP_DTA A,
+                 CT_CNSTWK_TMP_DTA_ERR B
+             WHERE 1=1
+                 AND A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                 AND B.ERR_CD IN ('020204', '020301', '020402', '020403', '020404', '020501', '020502', '020503', '020504', '020505', '020507', '020508', '020509')
+                 AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                 AND A.TBL_NM = B.TBL_NM
+                 AND A.CNSTWK_DTA_SN = B.CNSTWK_DTA_SN
+        ) S
+        GROUP BY ERR_CD
+    </select>
+
+    <select id="getCtWbsOperClssMaxLvl" parameterType="hashMap" resultType="Integer">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getCtWbsOperClssMaxLvl][srchoi] */
+        SELECT MAX(WBS_OPER_CLSS_LVL_NUM) AS LVL FROM CT_WBS_OPER_CLSS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+    </select>
+
+    <select id="getPrRevisionId" parameterType="hashMap" resultType="Integer">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getPrRevisionId][choisr]  */
+        SELECT REVISION_ID
+        FROM PR_REVISION
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND LAST_REVISION_YN = 'Y' AND DLT_YN = 'N'
+    </select>
+
+    <!-- 공정_QDB 삭제 -->
+    <delete id="deleteC3rToPrQDB" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deleteC3rToPrQDB][choisr]  */
+        DELETE FROM PR_QDB
+        WHERE REVISION_ID = #{REVISION_ID}
+        AND CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        <if test="MAJOR_CNSTTY_CD != null and MAJOR_CNSTTY_CD != ''">
+        AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%')
+        </if>
+    </delete>
+
+    <!-- 공정_QDB 생성 -->
+    <insert id="moveC3rToPrQDB" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.moveC3rToPrQDB][srchoi] */
+        INSERT INTO PR_QDB (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            REVISION_ID,
+            ACTIVITY_ID,
+            CNSTTY_CD,
+            DTL_CNSTTY_SN,
+            RSCE_TP_CD,
+            RSCE_CD,
+            RSCE_QTY,
+            ORGNL_RSCE_CD,
+            RMRK,
+            RGST_DT,
+            RGSTR_ID
+        )
+        WITH C3R_QDB AS (
+            SELECT Q.CNTRCT_CHG_ID, Q.UNIT_CNST_TYPE, Q.CNSTTY_SN, Q.DTL_CNSTTY_SN,
+                   D.RSCE_TP_CD, D.RSCE_CD, D.RMRK_CNTNTS AS RMRK,
+                   Q.OPER_GRP_SN,
+                   CASE WHEN B.LVL_NUM = 1 THEN B.WBS_IT_1_LVL_CD
+                        WHEN B.LVL_NUM = 2 THEN B.WBS_IT_2_LVL_CD
+                        WHEN B.LVL_NUM = 3 THEN B.WBS_IT_3_LVL_CD
+                        WHEN B.LVL_NUM = 4 THEN B.WBS_IT_4_LVL_CD
+                        WHEN B.LVL_NUM = 5 THEN B.WBS_IT_5_LVL_CD
+                        WHEN B.LVL_NUM = 6 THEN B.WBS_IT_6_LVL_CD
+                        WHEN B.LVL_NUM = 7 THEN B.WBS_IT_7_LVL_CD
+                        WHEN B.LVL_NUM = 8 THEN B.WBS_IT_8_LVL_CD
+                        WHEN B.LVL_NUM = 9 THEN B.WBS_IT_9_LVL_CD
+                        WHEN B.LVL_NUM = 10 THEN B.WBS_IT_10_LVL_CD
+                   END ACTIVITY_ID,
+                   Q.RSCE_QTY, Q.PAGMT_OPER_DDNUM, Q.PAGMT_OPER_SRT_YMD, Q.PAGMT_OPER_END_YMD,
+                   Q.RGST_DT, Q.RGSTR_ID, Q.CHG_DT, Q.CHG_ID
+            FROM CT_QDB Q JOIN CT_WBS B
+                ON Q.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+                AND Q.UNIT_CNST_TYPE = B.UNIT_CNST_TYPE
+                AND Q.OPER_GRP_SN = B.OPER_GRP_SN
+            JOIN CT_CBS_DETAIL D
+                ON Q.CNTRCT_CHG_ID = D.CNTRCT_CHG_ID
+                AND Q.UNIT_CNST_TYPE = D.UNIT_CNST_TYPE
+                AND Q.CNSTTY_SN = D.CNSTTY_SN
+                AND Q.DTL_CNSTTY_SN = D.DTL_CNSTTY_SN
+            WHERE Q.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                AND Q.UNIT_CNST_TYPE = #{MAJOR_CNSTTY_CD}
+        )
+        SELECT CNTRCT_CHG_ID, UNIT_CNST_TYPE, #{REVISION_ID}, ACTIVITY_ID, CNSTTY_SN, DTL_CNSTTY_SN,
+               RSCE_TP_CD, RSCE_CD, RSCE_QTY, RSCE_CD AS ORGNL_RSCE_CD, RMRK, NOW(), 'C3R'
+        FROM C3R_QDB;
+
+    </insert>
+
+    <!-- 공정_ACTIVITY 예상비용 업데이트  -->
+    <update id="updateActivityExptCost" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateActivityExptCost][srchoi] */
+        UPDATE PR_ACTIVITY PA
+        SET EXPT_COST = CST.COST,
+            CHG_ID = #{USR_ID},
+            CHG_DT = NOW()
+        FROM (SELECT PQ.CNTRCT_CHG_ID,
+                     PQ.REVISION_ID,
+                     PQ.ACTIVITY_ID,
+                     SUM(PQ.RSCE_QTY * (CCD.MTRL_UPRC + CCD.LBR_UPRC + CCD.GNRLEXPNS_UPRC)) AS COST
+              FROM PR_QDB PQ
+              LEFT JOIN CT_CBS_DETAIL CCD
+              ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+              GROUP BY PQ.CNTRCT_CHG_ID, PQ.REVISION_ID, PQ.ACTIVITY_ID) CST
+        WHERE 1=1
+          AND PA.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+          AND PA.REVISION_ID = #{REVISION_ID}
+          AND PA.CNTRCT_CHG_ID = CST.CNTRCT_CHG_ID
+          AND PA.REVISION_ID = CST.REVISION_ID
+          AND PA.ACTIVITY_ID = CST.ACTIVITY_ID
+    </update>
+
+    <!-- 기간 조회 FOR INSERT 공정_ACTIVITY_PLAN -->
+    <select id="getActivityPlanPeriod" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getActivityPlanPeriod][srchoi] */
+        WITH INVENTORY AS (
+            <![CDATA[
+            SELECT
+                MIN(PLAN_START) AS PLAN_START,
+                MAX(PLAN_FINISH) AS PLAN_FINISH
+            FROM PR_ACTIVITY
+            WHERE
+            CNTRCT_CHG_ID  = #{CNTRCT_CHG_ID}
+            AND REVISION_ID = #{REVISION_ID}
+            AND PLAN_START <> ''
+            AND DLT_YN ='N'
+            ]]>
+        ),
+        ACTIVITY_PERIOD AS (
+            SELECT
+                #{CNTRCT_CHG_ID} AS CNTRCT_CHG_ID,
+                #{REVISION_ID} AS REVISION_ID,
+                #{USR_ID} AS USER_ID,
+                TO_CHAR(GENERATE_SERIES(PLAN_START::DATE, PLAN_FINISH::DATE, INTERVAL '1 DAY'), 'YYYY-MM-DD') AS ACT_PLAN_DT
+            FROM INVENTORY
+        )
+        SELECT
+            CNTRCT_CHG_ID,
+            REVISION_ID,
+            USER_ID,
+            ROW_NUMBER() OVER (ORDER BY CNTRCT_CHG_ID) AS ACT_PLAN_IDX,
+            ACT_PLAN_DT
+        FROM ACTIVITY_PERIOD
+
+    </select>
+
+    <!-- DELETE 공정_ACTIVITY_PLAN -->
+    <delete id="deleteActivityPlan" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deleteActivityPlan][srchoi] */
+        DELETE FROM PR_ACTIVITY_PLAN
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND REVISION_ID = #{REVISION_ID}
+    </delete>
+
+    <!-- 계약 총 금액 조회 -->
+    <select id="getCntrctTotalAmt" parameterType="hashMap" resultType="Double">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.getCntrctTotalAmt][srchoi] */
+        SELECT CNTRCT_AMT FROM CN_CONTRACT_CHANGE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND LAST_CHG_YN = 'Y' AND DLT_YN = 'N'
+    </select>
+
+    <!-- INSERT 공정_ACTIVITY_PLAN -->
+    <insert id="insertActivityPlan" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertActivityPlan][srchoi] */
+        <![CDATA[
+        INSERT INTO PR_ACTIVITY_PLAN
+        (CNTRCT_CHG_ID, REVISION_ID, PLAN_CST_ID, PLAN_DT, PLAN_CST, CST_CUM, PLAN_PERCENT, RGST_DT, RGSTR_ID)
+        SELECT
+            PA.CNTRCT_CHG_ID,
+            PA.REVISION_ID,
+            #{ACT_PLAN_IDX},
+            #{ACT_PLAN_DT},
+            PA.PLAN_COST,
+            COALESCE(PAP.CST_CUM, 0) + PA.PLAN_COST,
+            (COALESCE(PAP.CST_CUM, 0) + PA.PLAN_COST) / PA.CNTRCT_AMT * 100,
+            NOW(),
+            #{USER_ID}
+        FROM (
+            SELECT
+                CNTRCT_CHG_ID,
+                REVISION_ID,
+                SUM(EXPT_COST / (TO_DATE(PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE(PLAN_START, 'YYYY-MM-DD')::DATE + 1)) AS PLAN_COST,
+                (SELECT CNTRCT_AMT FROM CN_CONTRACT_CHANGE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND LAST_CHG_YN = 'Y' AND DLT_YN = 'N') AS CNTRCT_AMT
+            FROM PR_ACTIVITY
+            WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND REVISION_ID = #{REVISION_ID}
+            AND EXPT_COST <> 0
+            AND #{ACT_PLAN_DT}::DATE BETWEEN TO_DATE(PLAN_START, 'YYYY-MM-DD') AND TO_DATE(PLAN_FINISH, 'YYYY-MM-DD')
+            GROUP BY CNTRCT_CHG_ID, REVISION_ID) AS PA
+            LEFT JOIN (
+                SELECT CNTRCT_CHG_ID, REVISION_ID, CST_CUM
+                FROM PR_ACTIVITY_PLAN
+                WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+                AND REVISION_ID = #{REVISION_ID}
+                AND TO_DATE(PLAN_DT, 'YYYY-MM-DD') = TO_DATE(#{ACT_PLAN_DT}, 'YYYY-MM-DD')::DATE - 1
+            ) AS PAP
+            ON PA.CNTRCT_CHG_ID = PAP.CNTRCT_CHG_ID AND PA.REVISION_ID = PAP.REVISION_ID;
+        ]]>
+    </insert>
+
+    <!-- 공정_QDB_RESOURCE DELETE -->
+    <delete id="deletePrQdbResource" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.deletePrQdbResource][srchoi] */
+        DELETE FROM PR_QDB_RESOURCE
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND REVISION_ID = #{REVISION_ID}
+        AND CNSTTY_CD IN (
+            SELECT CNSTTY_CD
+            FROM PR_QDB
+            WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND REVISION_ID = #{REVISION_ID}
+            <if test="MAJOR_CNSTTY_CD != null and MAJOR_CNSTTY_CD != ''">
+            AND UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%')
+            </if>
+        )
+    </delete>
+
+    <!--
+        변경사항
+        20241227 수량은 자원수량 * 단위수량 값
+        20250206 단위공사구분(UNIT_CNST_TYPE)
+
+        20250716 유레카 연계로인한 직접업로드 사용 X
+        유레카 연계시 자원이 자원수량 * 단위수량 으로 수신받는 상황으로 수량 로직 변경
+        Revision 등록시 QDB 복사에 활용
+    -->
+    <!-- 공정_QDB_RESOURCE INSERT -->
+    <insert id="insertPrQdbResource" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertPrQdbResource][srchoi] */
+        INSERT INTO PR_QDB_RESOURCE(
+            CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN,
+            GNRLEXPNS_CD, RSCE_TP_CD, RSCE_NM, SPEC_NM, UNIT, QTY,
+            DLT_YN, RGST_DT, RGSTR_ID
+        )
+        SELECT PQ.CNTRCT_CHG_ID, PQ.REVISION_ID, PQ.ACTIVITY_ID, PQ.CNSTTY_CD, PQ.DTL_CNSTTY_SN,
+               CCR.GNRLEXPNS_CD, CCR.RSCE_TP_CD, CCR.RSCE_NM, CCR.SPEC_NM, CCR.UNIT, SUM(PQ.RSCE_QTY * CCR.UNIT_QTY)
+                ,'N', NOW(), #{USR_ID}
+        FROM PR_QDB PQ
+        INNER JOIN CT_CBS_RESOURCE CCR
+            ON PQ.CNTRCT_CHG_ID = CCR.CNTRCT_CHG_ID
+            AND PQ.DTL_CNSTTY_SN = CCR.DTL_CNSTTY_SN
+            AND PQ.UNIT_CNST_TYPE = CCR.UNIT_CNST_TYPE
+        WHERE PQ.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND PQ.REVISION_ID = #{REVISION_ID}
+        <if test="MAJOR_CNSTTY_CD != null and MAJOR_CNSTTY_CD != ''">
+        AND PQ.UNIT_CNST_TYPE LIKE CONCAT(#{MAJOR_CNSTTY_CD}, '%')
+        </if>
+        GROUP BY (PQ.CNTRCT_CHG_ID, PQ.REVISION_ID, PQ.ACTIVITY_ID, PQ.CNSTTY_CD, PQ.DTL_CNSTTY_SN, PQ.RSCE_CD,
+                  CCR.GNRLEXPNS_CD, CCR.RSCE_TP_CD, CCR.RSCE_NM, CCR.SPEC_NM, CCR.UNIT)
+        ORDER BY CNSTTY_CD, DTL_CNSTTY_SN, GNRLEXPNS_CD
+    </insert>
+
+    <!--
+        변경 - 최초의 계약변경 정보 가져오기 에서 최종 계약변경정보 가져오기로 수정
+    -->
+    <select id="getLastCntrctChgId" parameterType="hashMap" resultType="string">
+        SELECT B.CNTRCT_CHG_ID
+        FROM CN_CONTRACT A, CN_CONTRACT_CHANGE B
+        WHERE A.CNTRCT_NO = B.CNTRCT_NO
+        AND A.CNTRCT_NO LIKE #{CNTRCT_NO}
+        AND B.LAST_CHG_YN = 'Y'
+    </select>
+
+
+    <!-- 내역서 연동 수행 전 초기화 -->
+    <delete id="clearCostDataBeforeSync" parameterType="hashMap">
+        <if test="IS_RSCE_EXISTS">
+            /* 원가_공종자원 삭제 20250206 추가 */
+            DELETE FROM CT_CBS_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND CNSTTY_SN != 0 AND DTL_CNSTTY_SN != 0;
+        </if>
+        /* 원가_세부공종 삭제 */
+        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND DTL_CNSTTY_SN != 0;
+        /* 원가_공종 삭제 */
+        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND CNSTTY_SN != 0;
+
+        /* 계약내역서(BID) 삭제 */
+        DELETE FROM CN_CONTRACT_BID WHERE CNTRCT_NO = #{CNTRCT_NO};
+        /* 원가계산서 */
+        DELETE FROM CN_CONTRACT_CALCULATOR WHERE CNTRCT_NO = #{CNTRCT_NO};
+    </delete>
+
+    <!-- BID (설계내역서) 입력 FR. EURECA -->
+    <insert id="insertCnContractBidFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCnContractBidFromEureca][srchoi] */
+        INSERT INTO CN_CONTRACT_BID (
+            CNTRCT_NO,
+            CBS_SNO,
+            CNTRCT_CNST_TYPE,
+            CNTRCT_UNIT_CNSTWK_SNO,
+            CNTRCT_DCNSTTY_SNO,
+            CNSTTY_DTLS_DIV_CD,
+            PRDNM,
+            SPEC,
+            UNIT,
+            QTY,
+            MTRLCST_UPRC,
+            LBRCST_UPRC,
+            GNRLEXPNS_UPRC,
+            SUM_UPRC,
+            MTRLCST_AMT,
+            LBRCST_AMT,
+            GNRLEXPNS_AMT,
+            SUM_AMT,
+            RGSTR_ID,
+            RGST_DT
+        ) VALUES
+        <foreach collection="list" item="it" separator =",">
+        (
+            #{it.cntrctNo},
+            #{it.cbsSno},
+            #{it.cntrctCnstType},
+            #{it.cntrctUnitCnstwkSno},
+            #{it.cntrctDcnsttySno},
+            #{it.cnsttyDtlsDivCd},
+            #{it.prdnm},
+            #{it.spec},
+            #{it.unit},
+            #{it.qty},
+            #{it.mtrlcstUprc},
+            #{it.lbrcstUprc},
+            #{it.gnrlexpnsUprc},
+            (#{it.mtrlcstUprc} + #{it.lbrcstUprc} + #{it.gnrlexpnsUprc}),
+            #{it.mtrlcstAmt},
+            #{it.lbrcstAmt},
+            #{it.gnrlexpnsAmt},
+            (#{it.mtrlcstAmt} + #{it.lbrcstAmt} + #{it.gnrlexpnsAmt}),
+            #{it.rgstrId},
+            NOW()
+        )
+        </foreach>
+
+    </insert>
+
+    <!-- 원가계산서 입력 FR. EURECA -->
+    <insert id="insertCnContractCalculatorFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCnContractCalculatorFromEureca][srchoi] */
+        INSERT INTO CN_CONTRACT_CALCULATOR (
+            CNTRCT_NO,
+            CST_CALC_IT_CD,
+            UP_CST_CALC_IT_CD,
+            DSPLY_ORDR,
+            CST_CALC_MTHD_NM,
+            CST_CALC_MTHD_NOMFRM_CNTNTS,
+            CST_CALCBLL_DSPLY_VAL,
+            COST_AM,
+            RGSTR_ID,
+            RGST_DT
+        ) VALUES
+        <foreach collection="list" item="it" separator =",">
+        (
+            #{it.cntrctNo},
+            #{it.cstCalcItCd},
+            #{it.upCstCalcItCd},
+            #{it.dsplyOrdr},
+            #{it.cstCalcMthdNm},
+            #{it.cstCalcMthdNomfrmCntnts},
+            #{it.cstCalcbllDsplyVal},
+            #{it.costAm},
+            #{it.rgstrId},
+            NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 공종 입력 FR. EURECA -->
+    <insert id="insertCtCbsFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCtCbsFromEureca][srchoi] */
+        INSERT INTO CT_CBS (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            CNSTTY_NM,
+            CNSTTY_CD,
+            UP_CNSTTY_CD,
+            CALC_EXCP_YN,
+            MTRL_AM,
+            LBR_AM,
+            GNRLEXPNS_AM,
+            CNSTTY_LVL_NUM,
+            RGSTR_ID,
+            RGST_DT
+        ) VALUES
+        <foreach collection="list" item="it" separator =",">
+        (
+            #{it.cntrctChgId},
+            #{it.unitCnstType},
+            #{it.cnsttySn},
+            #{it.cnsttyNm},
+            #{it.cnsttyCd},
+            #{it.upCnsttyCd},
+            #{it.calcExcpYn},
+            #{it.mtrlAm},
+            #{it.lbrAm},
+            #{it.gnrlexpnsAm},
+            #{it.cnsttyLvlNum},
+            #{it.rgstrId},
+            NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 세부공종 입력 (총차) FR. EURECA -->
+    <insert id="insertCtCbsDetailFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCtCbsDetailFromEureca][srchoi] */
+        INSERT INTO CT_CBS_DETAIL (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            CNSTTY_SN,
+            DTL_CNSTTY_SN,
+            MTRL_UPRC,
+            LBR_UPRC,
+            GNRLEXPNS_UPRC,
+            RSCE_TP_CD,
+            RSCE_CD,
+            DTL_CNSTTY_NM,
+            SPEC_NM,
+            UNIT,
+            RSCE_QTY,
+            GOVSPLY_MTRL_YN,
+            RGSTR_ID,
+            RGST_DT
+        ) VALUES
+        <foreach collection="list" item="it" separator =",">
+        (
+            #{it.cntrctChgId},
+            #{it.unitCnstType},
+            #{it.cnsttySn},
+            #{it.dtlCnsttySn},
+            #{it.mtrlUprc},
+            #{it.lbrUprc},
+            #{it.gnrlexpnsUprc},
+            #{it.rsceTpCd},
+            #{it.rsceCd},
+            #{it.dtlCnsttyNm},
+            #{it.specNm},
+            #{it.unit},
+            #{it.rsceQty},
+            #{it.govsplyMtrlYn},
+            #{it.rgstrId},
+            NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 세부공종 입력 (총차) FR. EURECA -->
+    <update id="updateCtCbsDetailFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.updateCtCbsDetailFromEureca][srchoi] */
+        UPDATE CT_CBS_DETAIL
+        SET
+            THIS_RSCE_QTY = CASE
+                <foreach collection="list" item="it">
+                    WHEN CNTRCT_CHG_ID = #{it.cntrctChgId} AND CNSTTY_SN = #{it.cnsttySn} AND DTL_CNSTTY_SN = #{it.dtlCnsttySn}
+                    THEN #{it.thisRsceQty}
+                </foreach>
+            ELSE THIS_RSCE_QTY
+            END
+
+            WHERE (CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN) IN
+            <foreach collection="list" item="it" open="(" separator="," close=")">
+                (#{it.cntrctChgId}, #{it.cnsttySn}, #{it.dtlCnsttySn})
+            </foreach>
+    </update>
+
+    <!-- TODO UNIT_CNST_TYPE -->
+    <!-- 공종자원 입력 FR. EURECA -->
+    <insert id="insertCtCbsResourceFromEureca" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.insertCtCbsResourceFromEureca][srchoi] */
+        INSERT INTO CT_CBS_RESOURCE (
+            CNTRCT_CHG_ID,
+            CNSTTY_SN,
+            DTL_CNSTTY_SN,
+            GNRLEXPNS_CD,
+            RSCE_TP_CD,
+            RSCE_NM,
+            SPEC_NM,
+            UNIT,
+            TOTAL_QTY,
+            DTL_SN,
+            GOVSPLY_MTRL_YN,
+            RGSTR_ID,
+            RGST_DT
+        ) VALUES
+        <foreach collection="list" item="it" separator =",">
+        (
+            #{it.cntrctChgId},
+            #{it.cnsttySn},
+            #{it.dtlCnsttySn},
+            #{it.gnrlexpnsCd},
+            #{it.rsceTpCd},
+            #{it.rsceNm},
+            #{it.specNm},
+            #{it.unit},
+            #{it.totalQty},
+            0,
+            #{it.govsplyMtrlYn},
+            #{it.rgstrId},
+            NOW()
+        )
+        </foreach>
+    </insert>
+
+      <!-- 공종자원 업데이트 / 단위수량 FR. EURECA -->
+    <update id="updateCtCbsResourceQtyFromEureca" parameterType="hashMap">
+        UPDATE CT_CBS_RESOURCE AS CCR
+        SET UNIT_QTY = COALESCE(CCR.TOTAL_QTY / NULLIF(CCD.RSCE_QTY, 0), 0)
+        FROM CT_CBS_DETAIL AS CCD
+        WHERE CCR.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID
+        AND CCR.CNSTTY_SN  = CCD.CNSTTY_SN
+        AND CCR.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+        AND CCR.CNTRCT_CHG_ID = #{cntrctChgId};
+    </update>
+
+    <!-- 공정관리 - Revision 생성 / QDB 존재 여부 체크 -->
+    <select id="checkQdbExists" parameterType="hashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.checkQdbExists][srchoi] */
+        SELECT EXISTS (
+            SELECT 1
+            FROM PR_QDB
+            WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+            AND REVISION_ID = #{revisionId}
+        )
+    </select>
+
+    <!-- 공정관리 - Revision 생성 / 직전 QDB 로부터 복사 -->
+    <insert id="copyQdbFromBeforeRevision" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.copyQdbFromBeforeRevision][srchoi] */
+        INSERT INTO PR_QDB (
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            REVISION_ID,
+            ACTIVITY_ID,
+            CNSTTY_CD,
+            DTL_CNSTTY_SN,
+            RSCE_TP_CD,
+            RSCE_CD,
+            RSCE_QTY,
+            ORGNL_RSCE_CD,
+            RMRK,
+            RGST_DT,
+            RGSTR_ID
+        )
+        SELECT #{CNTRCT_CHG_ID}, UNIT_CNST_TYPE, #{REVISION_ID}, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN,
+               RSCE_TP_CD, RSCE_CD, RSCE_QTY, ORGNL_RSCE_CD, RMRK, NOW(), #{USR_ID}
+        FROM PR_QDB
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND REVISION_ID = #{PREV_REVISION_ID}
+	</insert>
+
+    <!-- 검토 필요 -->
+    <update id="initCostAndProcessFromContract" parameterType="hashMap">
+        UPDATE CT_CBS SET DLT_YN = 'Y' WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+        UPDATE CT_CBS_DETAIL SET DLT_YN = 'Y' WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+        UPDATE CT_CBS_RESOURCE SET DLT_YN = 'Y' WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+    </update>
+
+    <!-- 계약관리 - 계약 추가시 복사 / 공종, 공정 데이터 존재여부 조회 -->
+    <select id="checkCostProgressExists" parameterType="hashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.copyCostDataFromContract][srchoi] */
+        SELECT CASE
+            WHEN EXISTS (SELECT 1 FROM CT_CBS WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID})
+                AND EXISTS (SELECT 1 FROM PR_REVISION WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID})
+                THEN TRUE
+            ELSE FALSE
+        END AS HAVE_DATA
+    </select>
+
+    <!-- 계약관리 - 계약 추가시 복사 / 공종, 공정 데이터 존재여부 조회 -->
+    <select id="checkCostDataExists" parameterType="hashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.checkCostDataExists][srchoi] */
+        SELECT CASE
+            WHEN EXISTS (SELECT 1 FROM CT_CBS WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID}) THEN TRUE
+            ELSE FALSE
+        END AS HAVE_DATA
+    </select>
+
+    <!-- 계약관리 - 계약 추가시 복사 / 공종, 공정 데이터 존재여부 조회 -->
+    <select id="checkProcessDataExists" parameterType="hashMap" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.checkProcessDataExists][srchoi] */
+        SELECT CASE
+            WHEN EXISTS (SELECT 1 FROM PR_REVISION WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID}) THEN TRUE
+            ELSE FALSE
+        END AS HAVE_DATA
+    </select>
+
+    <!-- 계약관리 - 계약 추가시 복사 / 원가 데이터-->
+    <insert id="copyCostDataFromContract" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.copyCostDataFromContract][srchoi] */
+        /* 1. 원가_공종 */
+        INSERT INTO CT_CBS(
+            CNTRCT_CHG_ID, CNSTTY_SN, UNIT_CNST_TYPE, CNSTTY_CD, UP_CNSTTY_CD, CNSTTY_SN_VAL, CNSTTY_LVL_NUM,
+            CNSTTY_NM, CNSTTY_CST_DIV_CD, CALC_EXCP_YN, MTRL_AM, LBR_AM, GNRLEXPNS_AM, RMRK_CNTNTS, ETC_CNTNTS,
+            CMPRSNTBL_PRNT_OBJT_YN, DSGN_AM, FTAX_MTRL_AM, FTAX_LBR_AM, FTAX_GNRLEXPNS_AM, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, CNSTTY_SN, UNIT_CNST_TYPE, CNSTTY_CD, UP_CNSTTY_CD, CNSTTY_SN_VAL, CNSTTY_LVL_NUM,
+            CNSTTY_NM, CNSTTY_CST_DIV_CD, CALC_EXCP_YN, MTRL_AM, LBR_AM, GNRLEXPNS_AM, RMRK_CNTNTS, ETC_CNTNTS,
+            CMPRSNTBL_PRNT_OBJT_YN, DSGN_AM, FTAX_MTRL_AM, FTAX_LBR_AM, FTAX_GNRLEXPNS_AM, 'N', #{USR_ID}, NOW()
+        FROM CT_CBS WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+
+        /* 2. 원가_세부공종 */
+        INSERT INTO CT_CBS_DETAIL(
+            CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN, DSPLY_ORDR, RSCE_TP_CD, RSCE_CD, DTL_CNSTTY_SN_VAL, DTL_CNSTTY_NM,
+            SPEC_NM, UNIT, UNIT_CNST_TYPE, RSCE_QTY, MTRL_UPRC, LBR_UPRC, GNRLEXPNS_UPRC, CALC_EXCP_YN, GOVSPLY_MTRL_YN,
+            ECO_FRIENDLY_YN, DTL_CNSTTY_TP_CD, RSCE_ERR_TP_CD, LOSSCST_CD_LIST, ORGNL_RSCE_CD, RMRK_CNTNTS, ETC_CNTNTS,
+            DTL_CNSTTY_LVL_NUM, TMP_YN, FTAX_DTL_CNSTTY_YN, STD_DTL_CNSTTY_YN, THIS_RSCE_QTY, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, CNSTTY_SN, DTL_CNSTTY_SN, DSPLY_ORDR, RSCE_TP_CD, RSCE_CD, DTL_CNSTTY_SN_VAL, DTL_CNSTTY_NM,
+            SPEC_NM, UNIT, UNIT_CNST_TYPE, RSCE_QTY, MTRL_UPRC, LBR_UPRC, GNRLEXPNS_UPRC, CALC_EXCP_YN, GOVSPLY_MTRL_YN,
+            ECO_FRIENDLY_YN, DTL_CNSTTY_TP_CD, RSCE_ERR_TP_CD, LOSSCST_CD_LIST, ORGNL_RSCE_CD, RMRK_CNTNTS, ETC_CNTNTS,
+            DTL_CNSTTY_LVL_NUM, TMP_YN, FTAX_DTL_CNSTTY_YN, STD_DTL_CNSTTY_YN, THIS_RSCE_QTY, 'N', #{USR_ID}, NOW()
+        FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+
+        /* 3. 원가_공종자원 */
+        INSERT INTO CT_CBS_RESOURCE (
+            CNTRCT_CHG_ID, CNSTTY_SN, DTL_CNSTTY_SN, GNRLEXPNS_CD, RSCE_TP_CD, DTL_SN, RSCE_NM, SPEC_NM, UNIT, UNIT_CNST_TYPE,
+            UNIT_QTY, DLT_YN, RGSTR_ID, RGST_DT)
+        SELECT
+            #{CNTRCT_CHG_ID}, CNSTTY_SN, DTL_CNSTTY_SN, GNRLEXPNS_CD, RSCE_TP_CD, DTL_SN, RSCE_NM, SPEC_NM, UNIT, UNIT_CNST_TYPE,
+            UNIT_QTY, 'N', #{USR_ID}, NOW()
+        FROM CT_CBS_RESOURCE WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID};
+    </insert>
+
+    <!-- 계약관리 - 계약 추가시 복사 / 공정 데이터-->
+    <insert id="copyProcessDataFromContract" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.projectcost.c3r.copyProcessDataFromContract][srchoi] */
+        /* 1. 공정_리비젼 */
+        INSERT INTO PR_REVISION (
+            CNTRCT_CHG_ID, REVISION_ID, EPS_ID, EPS_NM, P6_PROJECT_ID, P6_PROJECT_NM, P6_EPS_OBJ_ID, P6_PROJECT_OBJ_ID,
+            LAST_REVISION_YN, RMRK, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, EPS_ID, EPS_NM, P6_PROJECT_ID, P6_PROJECT_NM, P6_EPS_OBJ_ID, P6_PROJECT_OBJ_ID,
+            LAST_REVISION_YN, '계약 변경 추가', 'N', #{USR_ID}, NOW()
+        FROM PR_REVISION WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+
+        /* 2. 공정_WBS */
+        INSERT INTO PR_WBS (
+            CNTRCT_CHG_ID, REVISION_ID, P6_WBS_OBJ_ID, P6_UP_WBS_OBJ_ID, WBS_CD, WBS_PATH, WBS_NM, UP_WBS_CD, WBS_LEVEL,
+            EARLY_START, EARLY_FINISH, ACTUAL_START, ACTUAL_FINISH, OBJECT_ID, PARENT_OBJECT_ID, RMRK, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, P6_WBS_OBJ_ID, P6_UP_WBS_OBJ_ID, WBS_CD, WBS_PATH, WBS_NM, UP_WBS_CD, WBS_LEVEL,
+            EARLY_START, EARLY_FINISH, ACTUAL_START, ACTUAL_FINISH, OBJECT_ID, PARENT_OBJECT_ID, RMRK, 'N', #{USR_ID}, NOW()
+        FROM PR_WBS WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+
+        /* 3. 공정_ACTIVITY */
+        INSERT INTO PR_ACTIVITY(
+            CNTRCT_CHG_ID, REVISION_ID, WBS_CD, P6_WBS_OBJ_ID, P6_ACTIVITY_OBJ_ID, ACTIVITY_ID, ACTIVITY_NM, ACTIVITY_KIND,
+            EARLY_START, EARLY_FINISH, LATE_START, LATE_FINISH, PLAN_START, PLAN_FINISH, ACTUAL_START, ACTUAL_FINISH,
+            CURRENT_START, CURRENT_FINISH, INTL_DURATION, REMNDR_DURATION, TOTAL_FLOAT, EXPT_COST, REMNDR_COST, PREDECESSORS,
+            SUCCESSORS, CMPLT_PERCENT, RMRK, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, WBS_CD, P6_WBS_OBJ_ID, P6_ACTIVITY_OBJ_ID, ACTIVITY_ID, ACTIVITY_NM, ACTIVITY_KIND,
+            EARLY_START, EARLY_FINISH, LATE_START, LATE_FINISH, PLAN_START, PLAN_FINISH, ACTUAL_START, ACTUAL_FINISH,
+            CURRENT_START, CURRENT_FINISH, INTL_DURATION, REMNDR_DURATION, TOTAL_FLOAT, EXPT_COST, REMNDR_COST, PREDECESSORS,
+            SUCCESSORS, CMPLT_PERCENT, RMRK, 'N', #{USR_ID}, NOW()
+        FROM PR_ACTIVITY WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+
+        /* 4. 공정_ACTIVITY_PLAN */
+        INSERT INTO PR_ACTIVITY_PLAN (
+            CNTRCT_CHG_ID, REVISION_ID, PLAN_CST_ID, PLAN_DT, PLAN_CST, CST_CUM, PLAN_PERCENT, ACTUAL_CST, ACTUAL_CUM, ACTUAL_PERCENT,
+            DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, PLAN_CST_ID, PLAN_DT, PLAN_CST, CST_CUM, PLAN_PERCENT, ACTUAL_CST, ACTUAL_CUM, ACTUAL_PERCENT,
+            'N', #{USR_ID}, NOW()
+        FROM PR_ACTIVITY_PLAN WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+
+        /* 5. 공정_QDB */
+        INSERT INTO PR_QDB(
+            CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, RSCE_TP_CD, RSCE_CD, RSCE_QTY, ORGNL_RSCE_CD,
+            UNIT_CNST_TYPE, RMRK, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, RSCE_TP_CD, RSCE_CD, RSCE_QTY, ORGNL_RSCE_CD,
+            UNIT_CNST_TYPE, RMRK, 'N', #{USR_ID}, NOW()
+        FROM PR_QDB WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+
+        /* 6. 공정_QDB_RESOURCE */
+        INSERT INTO PR_QDB_RESOURCE (
+            CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, GNRLEXPNS_CD, RSCE_TP_CD, RSCE_NM, SPEC_NM,
+            UNIT, QTY, DLT_YN, RGSTR_ID, RGST_DT
+        )
+        SELECT
+            #{CNTRCT_CHG_ID}, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, GNRLEXPNS_CD, RSCE_TP_CD, RSCE_NM, SPEC_NM,
+            UNIT, QTY, 'N', #{USR_ID}, NOW()
+        FROM PR_QDB_RESOURCE WHERE CNTRCT_CHG_ID = #{PREV_CNTRCT_CHG_ID} AND REVISION_ID = #{REVISION_ID};
+    </insert>
+</mapper>

@@ -1,0 +1,584 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+    <section class="contents_wrap g-row">
+        <article class="conts g-row">
+            <div class="group">
+                <div class="conts_grid">
+                    <div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+                        <button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity 목록 -->
+            <div class="group" id="inputChgTomorrowForm">
+                <div class="conts_grid">
+                    <h4 class="conts_s-tit">Activity {{ message("item.com.066") }}</h4>
+                    <div class="search_wrap">
+                        <!-- S: search wrap ---------------------------------------------- -->
+                        <input type="date" id="sDate" class="date w-md">
+                        <span class="_tilde">~</span>
+                        <input type="date" id="eDate" class="date w-md">
+
+                        <!-- searchbox -->
+                        <div class="searchbox_wrap">
+                            <input type="text" id="searchText" placeholder="검색어를 입력하세요">
+                            <button type="submit" class="icon_btn search">
+                                <i class="ic ic-search"></i>
+                                <span class="blind">검색</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- // E: search wrap ---------------------------------------------- -->
+                    <div class="grid" id="activityGrid"></div>
+                </div>
+            </div>
+
+            <!-- 명일 계획 -->
+            <div class="group">
+                <div class="s_conts">
+                    <span class="tree_route">명일 계획 Activity</span>
+                    <div class="conts_grid">
+                        <h4 class="conts_s-tit">명일 계획 Activity</h4>
+                        <!-- 명일 액티비티 -->
+                        <div class="btn_area s_default">
+                            <button type="button" class="btn _outline" id="deleteActivity">삭제</button>
+                        </div>
+                        <div class="grid" id="tomorrowGrid"></div>
+                    </div>
+=
+                </div>
+            </div>
+
+        </article>
+    </section>
+{% include "page/construction/dailyreport/dailyreport_qdb" %}
+{% include 'sub/grid' %}
+    <link rel="stylesheet" href="/assets/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/content.css" />
+{% endblock content %}
+{% block footer_script %}
+    <script src="/assets/js/construction/construction.js"></script>
+    <style>
+        #activityGrid .tui-grid-cell[data-column-name="actions_add"]{
+          text-align:center;
+          overflow:visible;
+          padding:0;
+        }
+
+        /* 전역 float/right 무력화 + 가운데 배치용 inline-flex */
+        #activityGrid .tui-grid-cell[data-column-name="actions_add"] .icon_btn.more{
+          float:none !important;
+          transform:none !important;
+          position:static !important;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          margin:0;
+          cursor: pointer;
+        }
+        .more::after {
+            content: none;
+        }
+        .selectbox {
+            width:100px;
+            position:relative;
+            margin-right: 5px;
+        }
+    </style>
+    <script src="/assets/js/construction/construction.js"></script>
+    <script src="/assets/js/grid.js"></script>
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var cntrctNo = urlParams.get('cntrctNo');
+        var rId = urlParams.get('rId');
+        var drDt = urlParams.get('drDt');
+
+        // 순수 number 리턴
+        function N(v){ if(v==null||v==='') return 0; const n=Number(String(v).replace(/,/g,'')); return isFinite(n)?n:0; }
+
+
+        // ===== Activity Grid =====
+        const activityGrid = new tui.Grid({
+            el: document.getElementById('activityGrid'),
+            bodyHeight: 250,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [],
+            columnOptions: { resizable: true },
+            header: {
+                height: 80,
+                complexColumns: [
+                    {
+                        header: '계획',
+                        name: 'plan',
+                        childNames: ['plan_start', 'plan_finish']
+                    }
+                ],
+            },
+            columns: [
+                 {
+                    header: ' ',
+                    name: 'actions_add',
+                    width: 70,
+                    align: 'center',
+                    renderer: {
+                        type: window.IconRenderer,
+                        options: [
+                            {
+                                type: 'plus',
+                                success: (rowData) => {
+                                    const rowKey = rowData?.rowKey;
+                                    const row = activityGrid.getRow(rowKey);
+                                    if (!row) return;
+
+                                    // plan_reqre_daynum 계산 (종료일 - 시작일 + 1)
+                                    const planStart = new Date(row.plan_start);
+                                    const planFinish = new Date(row.plan_finish);
+                                    const planReqreDaynum = !isNaN(planStart) && !isNaN(planFinish)
+                                        ? Math.floor((planFinish - planStart) / (1000 * 60 * 60 * 24)) + 1
+                                        : 0;
+
+                                    // actual_reqre_daynum
+                                    let actualReqreDaynum = 0;
+                                    if (row.actual_bgn_date && row.actual_end_date) {
+                                        const diff = Math.floor(
+                                            (new Date(row.actual_end_date) - new Date(row.actual_bgn_date)) / (1000 * 60 * 60 * 24)
+                                        ) + 1;
+                                        actualReqreDaynum = diff > 0 ? diff : 0;
+                                    }
+
+                                    // today_bohal 계산 (100 / (plan_finish - actual_bgn_date || plan_start))
+                                    const actualStart = row.actual_bgn_date || row.plan_start;
+                                    const dateDiff = (d1, d2) =>
+                                        Math.max(Math.floor((new Date(d2) - new Date(d1)) / (1000 * 60 * 60 * 24)), 0) + 1;
+                                    const todayBohal =
+                                        planFinish && actualStart
+                                        ? (100 / dateDiff(actualStart, planFinish)).toFixed(2)
+                                        : 0;
+
+                                    // tomorrowGrid에 Activity 추가
+                                    const newRow = {
+                                        path_nm: row.path_nm,
+                                        activity_id: row.activity_id,
+                                        activity_nm: row.activity_nm,
+                                        plan_start: row.plan_start,
+                                        plan_finish: row.plan_finish,
+                                        plan_reqre_daynum: planReqreDaynum,
+                                        actual_bgn_date: row.actual_bgn_date,
+                                        actual_end_date: row.actual_end_date,
+                                        actual_reqre_daynum: actualReqreDaynum,
+                                        today_bohal: Number(todayBohal),
+                                        total_progress: row.ori_total_progress || 0,
+                                        ori_total_progress: row.ori_total_progress || 0,
+                                        expt_cost: row.expt_cost || 0
+                                    };
+
+                                    // ★ 상태 자동 세팅
+                                    const [rowWithStars] = setStatusStars([newRow]);
+                                    tomorrowGrid.appendRow(rowWithStars);
+
+                                    // activityGrid에서 삭제
+                                    activityGrid.removeRow(rowKey);
+
+                                    // 최신 tomorrowGrid 데이터 기준으로 자원 조회
+                                    const tomorrowData = tomorrowGrid.getData();
+                                    if (tomorrowData && tomorrowData.length > 0) {
+                                        initResourceData(tomorrowData);
+                                    } else {
+                                        // 자원 목록 초기화
+                                        resetResourceList();
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                { header: 'WBS', name: 'path_nm', align:'center' },
+                { header: 'Activity ID', name: 'activity_id', width: 365, align:'center' },
+                { header: 'Activity 명', name: 'activity_nm', width: 365, align:'left' },
+                { header: '계획 금액', name: 'expt_cost', width: 365, align:'right' },
+                { header: '계획 시작일', name: 'plan_start', width: 180, align:'center' },
+                { header: '계획 종료일', name: 'plan_finish', width: 180, align:'center' },
+                { header: 'actual_bgn_date', name: 'actual_bgn_date', hidden: true },
+                { header: 'actual_end_date', name: 'actual_end_date', hidden: true },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true }
+            ],
+            data: []
+        });
+
+        // ===== Tomorrow Grid (complex header) =====
+        class StatusStarRenderer {
+            constructor(props) {
+                this.el = document.createElement('div');
+                this.el.style.cursor = 'pointer';
+                this.el.style.fontSize = '20px';
+                this.el.style.textAlign = 'center';
+                this.el.style.userSelect = 'none';
+
+                this.render(props);
+
+                this.el.addEventListener('click', () => {
+                    const grid = props.grid;
+                    const rowKey = props.rowKey;
+                    const name = props.columnInfo.name;
+                    const currentVal = grid.getValue(rowKey, name);
+                    const nextVal = !currentVal;
+                    const row = grid.getRow(rowKey);
+                    if (!row) return;
+
+                    let newBgn = row.actual_bgn_date || '';
+                    let newEnd = row.actual_end_date || '';
+
+                    // 모든 상태 초기화
+                    ['bgn', 'ing', 'end'].forEach(col => grid.setValue(rowKey, col, false, false));
+
+                    if (nextVal) {
+                        // 클릭한 상태만 true
+                        grid.setValue(rowKey, name, true, false);
+
+                        if (name === 'bgn') {
+                            // 시작
+                            newBgn = drDt;
+                            newEnd = '';
+                        }
+                        else if (name === 'ing') {
+                            // 진행중: 시작일 없으면 drDt 세팅
+                            if (!newBgn) newBgn = drDt;
+                            newEnd = '';
+                        }
+                        else if (name === 'end') {
+                            // 종료: 시작일 없으면 drDt, 종료일은 무조건 drDt
+                            if (!newBgn) newBgn = drDt;
+                            newEnd = drDt;
+                        }
+                    } else {
+                        // 해제 로직
+                        if (name === 'bgn') {
+                            newBgn = '';
+                        }
+                        if (name === 'end') {
+                            newEnd = '';
+                        }
+                    }
+
+                    // 날짜 동기화
+                    grid.setValue(rowKey, 'actual_bgn_date', newBgn, false);
+                    grid.setValue(rowKey, 'actual_end_date', newEnd, false);
+
+                    // 내부 데이터에도 반영
+                    row.actual_bgn_date = newBgn;
+                    row.actual_end_date = newEnd;
+                    row.bgn = grid.getValue(rowKey, 'bgn');
+                    row.ing = grid.getValue(rowKey, 'ing');
+                    row.end = grid.getValue(rowKey, 'end');
+
+                    grid.refreshLayout();
+                });
+            }
+
+            getElement() {
+                return this.el;
+            }
+
+            render(props) {
+                const value = props.value === true;
+                this.el.style.color = value ? '#333' : '#ccc';
+                this.el.textContent = value ? '★' : '☆';
+            }
+        }
+
+        const tomorrowGrid = new tui.Grid({
+            el: document.getElementById('tomorrowGrid'),
+            bodyHeight: 250,
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [],
+            columnOptions: { resizable: true },
+            rowHeaders: [
+                {
+                    type: 'checkbox',
+                    width: 70,
+                    renderer: {
+                        type: window.IconRenderer,
+                        options: [
+                            { type: 'checkBox' },
+                            {
+                                type: 'trash',
+                                success: (rowData) => {
+                                    const rowKey = rowData?.rowKey;
+                                    if (rowKey == null) return;
+
+                                    const row = tomorrowGrid.getRow(rowKey);
+                                    if (!row) return;
+
+                                    // activityGrid에 복귀
+                                    const exists = activityGrid.getData().some(r => r.activity_id === row.activity_id);
+                                    if (!exists) {
+                                        activityGrid.appendRow({
+                                            path_nm: row.path_nm,
+                                            activity_id: row.activity_id,
+                                            activity_nm: row.activity_nm,
+                                            expt_cost: row.expt_cost || 0,
+                                            plan_start: row.plan_start,
+                                            plan_finish: row.plan_finish,
+                                            plan_reqre_daynum: row.plan_reqre_daynum,
+                                            actual_bgn_date: row.actual_bgn_date,
+                                            actual_end_date: row.actual_end_date,
+                                            ori_total_progress: row.ori_total_progress
+                                        });
+                                    }
+
+                                    tomorrowGrid.removeRow(rowKey);
+
+                                    // 최신 tomorrowGrid 기준 자원 재조회
+                                    const tomorrowData = tomorrowGrid.getData();
+                                    if (tomorrowData && tomorrowData.length > 0) {
+                                        initResourceData(tomorrowData);
+                                    } else {
+                                        // 자원 목록 초기화
+                                        resetResourceList();
+                                    }
+                                }
+                            }
+                        ]
+                      }
+                },
+            ],
+            header: {
+                height: 80,
+                complexColumns: [
+                    { header: '계획', name: 'plan', childNames: ['plan_start', 'plan_finish', 'plan_reqre_daynum'] },
+                    { header: '금일실행', name: 'actual', childNames: ['actual_bgn_date', 'actual_end_date', 'actual_reqre_daynum'] },
+                    { header: '상태', name: 'status', childNames: ['bgn', 'ing', 'end'] }
+                ],
+            },
+            columns: [
+                { header:'WBS', name:'path_nm' , width: 140,},
+                {
+                    header: 'Activity ID',
+                    name: 'activity_id',
+                    width: 120,
+                    align: 'center',
+                    renderer: {
+                        type: window.IconRenderer,
+                        options: [
+                            { type: 'eyes',   success: (rowData) => openQdbModal(rowData) }
+                        ]
+                    }
+                },
+                { header:'Activity 명', name:'activity_nm', width:200 },
+                { header:'시작일', name:'plan_start',align:'center', width: 100, },
+                { header:'종료일', name:'plan_finish',align:'center', width: 100, },
+                { header:'소요일수', name:'plan_reqre_daynum',align:'center', },
+                {
+                    header: '시작일',
+                    name: 'actual_bgn_date',
+                    align: 'center',
+                    width: 100,
+                    formatter: ({ row }) => {
+                        // bgn 또는 ing, end 중 하나라도 true면 날짜 표시
+                        if (row.bgn || row.ing || row.end) {
+                          return row.actual_bgn_date || drDt;
+                        }
+                        // 모든 상태 false면 빈값
+                        return '';
+                      }
+                },
+                { header:'종료일', name:'actual_end_date',align:'center', width: 100,},
+                { header:'소요일수', name:'actual_reqre_daynum',align:'center',  },
+                { header:'시작', name:'bgn', align:'center', renderer:{ type: StatusStarRenderer } },
+                { header:'진행', name:'ing', align:'center', renderer:{ type: StatusStarRenderer } },
+                { header:'종료', name:'end', align:'center', renderer:{ type: StatusStarRenderer } },
+                {
+                    header: '보할(%)',
+                    name: 'today_bohal',
+                    width: 150,
+                    align: 'center'
+                },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
+                { header: 'expt_cost', name: 'expt_cost', hidden: true }
+            ],
+            data: []
+        });
+
+        // 삭제 버튼
+        $('#deleteActivity').on('click', function () {
+            const checkedRows = tomorrowGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert('삭제할 항목을 선택하세요.');
+                return;
+            }
+
+            checkedRows.forEach(row => {
+                const exists = activityGrid.getData().some(r => r.activity_id === row.activity_id);
+                if (!exists) {
+                    activityGrid.appendRow({
+                    path_nm: row.path_nm,
+                    activity_id: row.activity_id,
+                    activity_nm: row.activity_nm,
+                    expt_cost: row.expt_cost || 0,
+                    plan_start: row.plan_start,
+                    plan_finish: row.plan_finish,
+                    plan_reqre_daynum: row.plan_reqre_daynum,
+                    actual_bgn_date: row.actual_bgn_date,
+                    actual_end_date: row.actual_end_date,
+                    ori_total_progress: row.ori_total_progress || 0});
+                }
+
+                // tomorrowGrid에서 삭제
+                tomorrowGrid.removeRow(row.rowKey);
+            });
+
+            gaiaCommon.customAlert('선택된 항목이 삭제되었습니다.');
+        });
+
+        // 초기 데이터 세팅 로직 예시
+        // 시작: 계획시작(plan) 존재, 금일시작(actual) 미존재
+        // 진행: 금일시작 존재, 금일종료 미존재
+        // 종료: 금일종료 존재
+        function setStatusStars(data) {
+            return data.map(row => {
+                const hasPlanStart = !!row.plan_start;
+                const hasActualBgn = !!row.actual_bgn_date;
+                const hasActualEnd = !!row.actual_end_date;
+
+                let bgn = false, ing = false, end = false;
+
+                // 계획만 있고, 아직 시작 안했을 때
+                if (hasPlanStart && !hasActualBgn) {
+                    bgn = true;
+                    ing = false;
+                    end = false;
+                }
+                // 진행: 시작일 있고, 종료일 없을 때
+                else if (hasActualBgn && !hasActualEnd) {
+                    bgn = false;
+                    ing = true;
+                    end = false;
+                }
+                // 종료: actual_end_date 가 있으면 무조건 종료
+                else if (hasActualEnd) {
+                    bgn = false;
+                    ing = false;
+                    end = true;
+                }
+                return { ...row, bgn, ing, end };
+            });
+        }
+
+        // QDB 조회 팝업 오픈
+        function openQdbModal(rowData) {
+            document.getElementById('qdbModal').style.display = 'block';
+
+            const activityId = rowData.activity_id;
+            const todayBohal = rowData.today_bohal ?? 0;
+            const wbs = rowData.path_nm ?? '';
+            const activityNm = rowData.activity_nm ?? '';
+
+            $('#wbs').text(wbs);
+            $('#activityNm').text(activityNm);
+            $('#bohal span, #bohal').text(todayBohal);
+
+            initQdbData({
+                cntrctNo: cntrctNo,
+                activityId: activityId,
+                todayBohal: todayBohal,
+                searchText: ''
+            });
+        }
+
+        function initData() {
+            const param = {
+                cntrctNo: cntrctNo,
+                dailyReportId: rId,
+                workDtType: 'TM',
+                planStart: $("#sDate").val(),
+                planFinish: $("#eDate").val(),
+                searchText: $("#searchText").val()
+            }
+            gaiaCommon.post(
+                BASEPATH + 'dailyreport/dailyreport-chg',
+                param,
+                function (response) {
+                    const details = (response && response.details) || {};
+                    let activityData = details.prActivityList || [];
+                    let tomorrowActivityData = details.tomorrowDailyReportActivityList || [];
+
+                    // activityGrid 데이터 중 tomorrowGrid에 없는 항목만 필터링
+                    const tomorrowIds = new Set(tomorrowActivityData.map(item => item.activity_id));
+                    const filteredActivityData = activityData.filter(
+                        item => !tomorrowIds.has(item.activity_id)
+                    );
+
+                    // 액티비티 목록
+                    activityGrid.resetData(filteredActivityData);
+                    refreshGrid(activityGrid);
+
+                    // 금일 액티비티 목록
+                    // ★ 상태별 별 세팅
+                    const dataWithStars = setStatusStars(tomorrowActivityData);
+                    tomorrowGrid.resetData(dataWithStars);
+                    refreshGrid(tomorrowGrid);
+
+                },
+                function (error) {
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+        }
+
+
+        window.addEventListener('resize', () => {
+          activityGrid.refreshLayout();
+        });
+        $("#cancel").click(function () {
+            window.location.href = "/construction/dailyreport/update"+`?rId=${rId}&pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+        });
+        $("#save").click(function () {
+            window.location.href = "/construction/dailyreport-tomorrow-detail?cntrctNo=" + cntrctNo + "&rId=" + rId+`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+        });
+        $(document).ready(()=>{
+            gaia.create({
+                $init: function ($params) {
+                    gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " 명일 액티비티 " + "{{ message('btn.003') }}");
+                    $("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }}  명일 액티비티 {{ message("btn.003") }}</li>');
+                }
+            });
+            initData();
+        });
+
+        let reportRefreshGrid = function (...grids) {
+            const _section = document.getElementById("content")
+
+            if (!_section) return;
+
+            let timer;
+            const resizeObserver = new ResizeObserver(() => {
+                clearTimeout(timer);
+
+                timer = setTimeout(() => {
+                    for (const grid of grids) {
+                        if (!grid || !(grid instanceof tui.Grid)) continue;
+
+                        const dataWidth = Number(elem.el.getAttribute("data-width"));
+
+                        grid.el.setAttribute("data-width", dataWidth);
+
+                        const newWidth = dataWidth;
+
+                        // 🔸 1. DOM width 직접 반영 (즉시 반응)
+                        grid.el.style.width = `${newWidth}px`;
+                        grid.refreshLayout()
+                    }
+                }, 10);
+            });
+
+            resizeObserver.observe(_section);
+        };
+    </script>
+{% endblock footer_script %}

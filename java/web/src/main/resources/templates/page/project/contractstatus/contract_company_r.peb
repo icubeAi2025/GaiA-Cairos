@@ -1,0 +1,180 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<section class="contents_wrap g-row">
+
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_form">
+                <div class="btn_area s_default _outline">
+                    {{ btnHtml | raw}}
+                    <button type="button" class="btn" onclick="page.close()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 -->
+                </div>
+
+                <div class="form_box" id="company-form">
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.009') }}</div> <!-- 공사계약명 -->
+                            <div class="form_data">
+                                <span id="cntrctNm"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.004') }}</div> <!-- 공종 구분 -->
+                            <div class="form_data">
+                                <span id="cnsttyCd"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.010') }}</div> <!-- 사업자등록번호 -->
+                            <div class="form_data">
+                                <span id="bsnsmnNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.016') }}</div> <!-- 대표계약 회사명 -->
+                            <div class="form_data">
+                                <span id="corpNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.020') }}</div> <!-- 업체주소 -->
+                            <div class="form_data">
+                                <span id="corpAdrs"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.018') }}</div> <!-- 사무실번호 -->
+                            <div class="form_data">
+                                <span id="telNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.019') }}</div> <!-- 팩스번호 -->
+                            <div class="form_data">
+                                <span id="faxNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.017') }}</div> <!-- 업체 대표자 -->
+                            <div class="form_data">
+                                <span id="corpCeo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.005') }}</div> <!-- 담당자명 -->
+                            <div class="form_data">
+                                <span id="ofclNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.022') }}</div> <!-- 지분율 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _per" id="shreRate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.023') }}</div> <!-- 대표 여부 -->
+                            <div class="form_data">
+                                <div class="item_group" role="group" aria-label="Basic radio group">
+                                    <label class="form_check">
+                                        <input type="checkbox" id="representativeCheck" name="useYn"
+                                            class="check_mark" disabled />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+{% endblock content %}
+{% block footer_script %}
+<style>
+    .item_wrap.put_txt {
+        color: #494853;
+    }
+</style>
+<script src="/assets/js/validation.js"></script>
+<script>
+    var selectedItems = [];
+    const params = new URLSearchParams(window.location.search);
+    let cntrctId = params.get('cntrctId');
+    let cntrctNo = params.get('cntrctNo');
+    const pjtNo = params.get('pjtNo');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+            }
+        });
+    });
+
+    var page = {
+        mode: "",
+        data: {},
+
+        init: function () {
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaPortal.navMenuInit('M010201', "{{ message('item.contract.029') }}");
+            $("#menuDepth").append(`<li class=\"breadcrumb_item\" name=\"new_item\">{{ message('item.contract.029') }}</li>`);
+
+            page.loadCompanyData(cntrctId, cntrctNo);
+        },
+
+        update: function () {
+            window.location.href = `/project/contractstatus/updateCompany?cntrctId=${cntrctId}&cntrctNo=${cntrctNo}`;
+        },
+
+        // 데이터 출력
+        loadCompanyData: function (cntrctId, cntrctNo) {
+            gaiaCommon.get("/api/project/contractstatus/company/get/" + cntrctId + "/" + cntrctNo, {}, function (result) {
+                let data = result.details.company;
+
+                $('#cntrctNm').text(gaiaCommon.decodeSafeText(data.cntrctNm));
+                $('#cnsttyCd').text(gaiaCommon.decodeSafeText(data.workTypeNmKrn));
+                $('#bsnsmnNo').text(gaiaCommon.decodeSafeText(data.bsnsmnNo));
+                $('#corpNm').text(gaiaCommon.decodeSafeText(data.corpNm));
+                $('#corpAdrs').text(gaiaCommon.decodeSafeText(data.corpAdrs));
+                $('#telNo').text(gaiaCommon.decodeSafeText(data.telNo));
+                $('#faxNo').text(gaiaCommon.decodeSafeText(data.faxNo));
+                $('#corpCeo').text(gaiaCommon.decodeSafeText(data.corpCeo));
+                $('#ofclNm').text(gaiaCommon.decodeSafeText(data.ofclNm));
+                $('#shreRate').text(gaiaCommon.decodeSafeText(data.shreRate));
+
+                // 체크박스 상태 설정
+                const representativeCheck = $('#representativeCheck');
+                if (data.rprsYn === 'Y') {
+                    representativeCheck.prop('checked', true);
+                    
+                } else {
+                    representativeCheck.prop('checked', false);
+                }
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        },
+
+        close: function () {
+            window.location.replace(`/project/contractstatus?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+        }
+    };
+</script>
+{% endblock footer_script %}
