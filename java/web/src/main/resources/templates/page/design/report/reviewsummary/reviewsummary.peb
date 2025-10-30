@@ -1,0 +1,556 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+    .ris_dt {
+        width: 100px;
+    }
+
+    .ris_dd {
+        width: calc(100% - 100px);
+    }
+
+    .slick-initialized .slick-slide {
+        display: flex;
+    }
+
+    .ul_list li {
+        cursor: pointer;
+    }
+
+    .ul_list li:hover {
+        font-weight: 600;
+    }
+
+    .custom-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %} {% block content %}
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            {% include "page/design/tool/common_select" %}
+            <div class="conts_grid">
+                <div class="search_wrap">
+                    <span class="selectbox">
+                        <select id="summaryType">
+                            <option selected disabled value="">{{ message('item.dfccy.062') }}</option>
+                            <!-- 집계 구분분 -->
+                            <option value="cnstty">{{ message('item.safety.003') }}</option> <!-- 공종 -->
+                            <option value="rgstr">{{ message('item.com.064') }}</option> <!-- 작성자 -->
+                        </select>
+                    </span>
+                    <span class="selectbox has_clear" id="designPhaseContainer">
+                        <span class="sty_ip" onclick="$('#designPhaseContainer .dropdown').toggleClass('on')"
+                            id="designPhaseSelect">{{ message('item.dsgn.027') }}</span> <!-- 설계단계 -->
+                        <button class=" icon_btn _clear"
+                            onclick="page.selectClear('designPhase','designPhaseAllCheck');  " style="display: none;">
+                            <i class="ic ic-close"></i>
+                            <span class="blind">{{ message('item.com.085') }}</span>
+                        </button>
+
+                        <div class="dropdown">
+                            <ul class="list_sty dropdown_list" id="dsgnPhaseList">
+                            </ul>
+                        </div>
+                    </span>
+                    <span class="selectbox has_clear" id="rgstrContainer">
+                        <span class="sty_ip" onclick="$('#rgstrContainer .dropdown').toggleClass('on')"
+                            id="rgstrSelect">{{ message('item.dsgn.027') }}</span> <!-- 설계단계 -->
+                        <button class=" icon_btn _clear" onclick="page.selectClear('rgstr','rgstrAllCheck');  "
+                            style="display: none;">
+                            <i class="ic ic-close"></i>
+                            <span class="blind">{{ message('item.com.085') }}</span>
+                        </button>
+
+                        <div class="dropdown">
+                            <ul class="list_sty dropdown_list" id="rgstrList">
+                            </ul>
+                        </div>
+                    </span>
+                    <button type="button" class="icon_btn search" onclick="page.search()">
+                        <i class="ic ic-search"></i>
+                        <span class="blind">{{ message('btn.014') }}</span>
+                    </button>
+                </div>
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">
+                        <button type="button" class="btn _fill">{{ message('item.com.088') }}</button>
+                    </div>
+                </div>
+                <div class="conts_form">
+                    <div class="grid" id="review_summary_grid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+    let summaryType = "cnstty";
+    let dsgnPhaseNoList = [];
+    let rgstrIdList = [];
+
+    var page = {
+
+        init: function () {
+            summaryType = "cnstty";
+
+            page.makedesignPhaseSelect();
+            page.makeRgstrSelect();
+            page.selectClear("designPhase", "designPhaseAllCheck");
+            page.selectClear("rgstr", "rgstrAllCheck");
+            page.grid();
+        },
+
+        grid: function () {
+            const Grid = tui.Grid;
+            let _this = this;
+            const dataSource = {
+                api: {
+                    readData: {
+                        url: `/api/design/reviewsummary/reviewsummaryList`,
+                        method: 'GET',
+                        initParams: {
+                            summaryType: summaryType,
+                            cntrctNo: $("#cntrctNo").val(),
+                            dsgnPhaseNoList: dsgnPhaseNoList,
+                            rgstrIdList: rgstrIdList
+                        }
+                    }
+                },
+                contentType: 'application/json',
+            }
+
+            if (this.reviewsummaryGrid) {
+                this.reviewsummaryGrid.destroy();
+                this.reviewsummaryGrid = null;
+            }
+
+            if (!this.reviewsummaryGrid) {
+                let dynamicColumns = [];
+
+                if (summaryType === "cnstty") {
+                    dynamicColumns.push({ header: "{{ message('item.safety.003') }}", name: 'cnsttyNm' });
+                } else if (summaryType === "rgstr") {
+                    dynamicColumns.push({ header: "{{ message('item.com.064') }}", name: 'rgstrNm' });
+                }
+
+                let bodyHeight;
+                if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                    bodyHeight = window.innerHeight - 490;
+                } else if (isCAIROS()) {
+                    bodyHeight = window.innerHeight - 380;
+                }
+
+                this.reviewsummaryGrid = new Grid({
+                    el: document.getElementById('review_summary_grid'),
+                    data: dataSource,
+                    useClientSort: false,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    bodyHeight: bodyHeight,
+                    header: {
+                        height: 150,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.dsgn.018") }}',
+                                name: 'dsgnOpnion',
+                                childNames: ['dummy1', 'dummy2', 'dummy3'] // 빈칸 3개
+                            },
+                            {
+                                header: '',
+                                name: 'dummy1',
+                                childNames: [summaryType === "cnstty" ? 'cnsttyNm' : 'rgstrNm']
+                            },
+                            {
+                                header: '',
+                                name: 'dummy2',
+                                childNames: ['dsgnCnt']
+                            },
+                            {
+                                header: '',
+                                name: 'dummy3',
+                                childNames: ['dsgnPer']
+                            },
+                            {
+                                header: '{{ message("item.dfccy.008") }}',
+                                name: 'responses',
+                                childNames: ['A', 'B', 'C', 'D'] // 1단계 헤더
+                            },
+                            {
+                                header: 'A',
+                                name: 'A',
+                                childNames: ['replyAgreeCnt'] // 2단계 헤더 (동의)
+                            },
+                            {
+                                header: 'B',
+                                name: 'B',
+                                childNames: ['replyDisagreeCnt'] // 2단계 헤더 (동의 안함)
+                            },
+                            {
+                                header: 'C',
+                                name: 'C',
+                                childNames: ['replyCheckCnt'] // 2단계 헤더 (확인 및 해결)
+                            },
+                            {
+                                header: 'D',
+                                name: 'D',
+                                childNames: ['replyInfoCnt'] // 2단계 헤더 (정보용)
+                            },
+                            {
+                                header: '{{ message("item.dsgn.038") }}',
+                                name: 'Evaluation target',
+                                childNames: ['sum']
+                            },
+                            {
+                                header: 'B+C+D',
+                                name: 'sum',
+                                childNames: ['replyTotalCnt']
+                            },
+                            {
+                                header: '{{ message("item.dsgn.005") }}',
+                                name: 'Evaluation',
+                                childNames: ['E', 'F']
+                            },
+                            {
+                                header: 'E',
+                                name: 'E',
+                                childNames: ['apPendingCnt']
+                            },
+                            {
+                                header: 'F',
+                                name: 'F',
+                                childNames: ['apOnholdCnt']
+                            },
+                            {
+                                header: '{{ message("item.dsgn.039") }}',
+                                name: 'BackCheck',
+                                childNames: ['G', 'H']
+                            },
+                            {
+                                header: 'G',
+                                name: 'G',
+                                childNames: ['backClosedCnt1']
+                            },
+                            {
+                                header: 'H',
+                                name: 'H',
+                                childNames: ['backClosedCnt2']
+                            },
+                        ],
+                    },
+                    columns: [
+                        ...dynamicColumns,
+                        {
+                            header: "{{ message('item.dsgn.040') }}",
+                            name: 'dsgnCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.com.089') }}",
+                            name: 'dsgnPer',
+                            align: "right",
+                        },
+                        {
+                            header: "{{ message('item.dfccy.009') }}",
+                            name: 'replyAgreeCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.010') }}",
+                            name: 'replyDisagreeCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dsgn.003') }}",
+                            name: 'replyCheckCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dsgn.004') }}",
+                            name: 'replyInfoCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: " ",
+                            name: 'replyTotalCnt',
+                            align: "right",
+                        },
+                        {
+                            header: "{{ message('item.dfccy.009') }}",
+                            name: 'apPendingCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.010') }}",
+                            name: 'apOnholdCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.012') }}",
+                            name: 'backClosedCnt1',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.004') }}",
+                            name: 'backClosedCnt2',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                    ],
+                });
+                refreshGrid(this.reviewsummaryGrid);
+            }
+        },
+
+        search: function () {
+            $('.dropdown').removeClass('on');
+
+            $("#dsgnPhaseList").find("input.check_mark:checked").each(function () {
+                if ($(this).attr("id") !== "designPhaseAllCheck") {
+                    const dsgnPhaseNo = Number($(this).val().trim());
+                    if (!isNaN(dsgnPhaseNo)) {
+                        dsgnPhaseNoList.push(dsgnPhaseNo);
+                    }
+                }
+            });
+            $("#rgstrList").find("input.check_mark:checked").each(function () {
+                if ($(this).attr("id") !== "rgstrAllCheck") {
+                    const rgstrId = $(this).val().trim();
+                    if (rgstrId) {
+                        rgstrIdList.push(rgstrId);
+                    }
+                }
+            });
+            page.grid();
+
+            dsgnPhaseNoList = []
+            rgstrIdList = []
+        },
+
+        makeSelect: function (url, containerId, allCheckId) {
+            let cntrctNo = $("#cntrctNo").val();
+
+            $.ajax({
+                url: `${url}?cntrctNo=${cntrctNo}&dsgnPhaseCd=0101`,
+                method: "GET",
+                contentType: "application/json",
+                success: function (data) {
+                    const listId = containerId === "#designPhaseContainer" ? "dsgnPhaseList" : "rgstrList";
+                    const $list = $('#' + listId).empty();
+                    const items = data.details[listId];
+
+                    const myDsgn = containerId === "#designPhaseContainer" ? '' :
+                        `<li class="list_item">
+                            <label class="form_check">
+                                <input class="check_mark" id="myDsgn" type="checkbox" name="check"  value="myDsgn">
+                                <span class="check_label">{{ message('item.dfccy.007') }}</span>
+                            </label>
+                        </li> `
+
+                    $list.append(`
+                        <li class="list_item">
+                            <label class="form_check">
+                                <input class="check_mark" id="${allCheckId}" type="checkbox" name="check">
+                                <span class="check_label">{{ message('item.com.059') }}</span>
+                            </label>
+                        </li>
+                    ${myDsgn}
+                    `);
+
+                    if (items) {
+                        items.forEach(({ usrNm, usrId, dsgnPhaseNm, dsgnPhaseNo }) => {
+                            const name = usrNm || dsgnPhaseNm;
+                            const id = usrId || dsgnPhaseNo;
+                            $list.append(`
+                                <li class="list_item">
+                                    <label class="form_check">
+                                        <input class="check_mark" type="checkbox" name="check" value="${id}">
+                                        <span class="check_label">${name}</span>
+                                    </label>
+                                </li>
+                            `);
+                        });
+                    }
+
+                    // 전체 체크박스 클릭 이벤트
+                    $(containerId).on('change', `#${allCheckId}`, function () {
+                        const isChecked = $(this).is(':checked');
+                        $(containerId + " .check_mark").prop('checked', isChecked);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                    });
+
+                    // 개별 체크박스 상태 변경 시 전체 체크박스 상태 업데이트
+                    $(containerId).on('change', 'input.check_mark:not(#' + allCheckId + ')', function () {
+                        const totalCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + ")").length;
+                        const checkedCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + "):checked").length;
+                        $(containerId + " #" + allCheckId).prop('checked', totalCheckboxes === checkedCheckboxes);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                    });
+
+
+
+                    $(document).off("click").on("click", function (event) {
+                        if (!$(event.target).closest(".selectbox.has_clear").length) {
+                            $(".dropdown").removeClass("on");
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    console.error("Error fetching data:", xhr.responseText);
+                }
+            });
+        },
+
+        updateSelectBoxText: function (containerId, allCheckId) {
+            const allChecked = $(containerId + " #" + allCheckId).is(":checked");
+            const selectedGroups = $(containerId + " .check_mark:checked:not(#" + allCheckId + ")")
+                .map((_, el) => $(el).siblings(".check_label").text())
+                .get();
+            const count = selectedGroups.length;
+
+            let displayText;
+
+            if (allChecked) {
+                displayText = "{{ message('item.com.059') }}"; // 전체 선택된 경우
+            } else if (count === 0) {
+                displayText = containerId === "#designPhaseContainer" ? "설계단계" : "작성자"; // 아무것도 선택되지 않은 경우
+            } else if (count === 1) {
+                displayText = selectedGroups[0]; // 하나 선택된 경우
+            } else {
+                displayText = `${selectedGroups[0]} 외 ${count - 1}건`; // 여러 개 선택된 경우
+            }
+
+            // Select 박스의 텍스트 업데이트
+            $(containerId === "#designPhaseContainer" ? "#designPhaseSelect" : "#rgstrSelect").text(displayText);
+
+            // Clear 버튼 표시 여부 업데이트
+            $(containerId + " .icon_btn._clear").toggle(allChecked || count > 0);
+        },
+
+
+        selectClear: function (selectType, allCheckId) {
+            const containerId = selectType === 'designPhase' ? "#designPhaseContainer" : "#rgstrContainer";
+            $(containerId + " .check_mark").prop("checked", false);
+            page.updateSelectBoxText(containerId, allCheckId);
+        },
+
+        // 설계단계 selectBox
+        makedesignPhaseSelect: function () {
+            this.makeSelect("/api/design/dsgnPhase/list", "#designPhaseContainer", "designPhaseAllCheck");
+        },
+
+        // 작성자 selectBox
+        makeRgstrSelect: function () {
+            this.makeSelect("/api/design/rgstr/list", "#rgstrContainer", "rgstrAllCheck");
+        }
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("M080201", "{{ message('item.dsgn.041') }}");
+                select.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+
+
+
+
+
+
+    $('#summaryType').on('change', function () {
+        summaryType = $(this).val();
+        page.grid();
+    });
+
+    class CustomColumnLink {
+        constructor(props) {
+            this.props = props;
+            this.el = document.createElement('a');
+
+            const rowKey = props.rowKey;
+            const columnName = props.columnInfo.name;
+            const rowData = page.reviewsummaryGrid.getRow(rowKey);
+            const cellValue = rowData[columnName];
+
+            this.el.textContent = cellValue;
+            this.el.style.padding = ".75em";
+            this.el.style.cursor = "pointer";
+            this.el.classList.add('custom-link');
+            this.el.href = "#";
+
+            // 클릭 이벤트 추가
+            this.el.addEventListener('click', (event) => {
+                event.preventDefault(); // 기본 동작 방지
+
+                const cntrctNo = $("#cntrctNo").val();
+                let dsgnCd;
+                let rgstrId;
+                let rgstrNm;
+                if (summaryType == "cnstty") {
+                    dsgnCd = rowData["dsgnCd"];
+                } else {
+                    rgstrId = rowData["rgstrId"];
+                    rgstrNm = rowData["rgstrNm"];
+                }
+
+                const dsgnPhaseNo = $("#designPhaseContainer .check_mark:checked:not(#designPhaseAllCheck)")
+                    .map((_, el) => $(el).val())
+                    .get()[0] || "";
+                const rgstr = $("#rgstrContainer .check_mark:checked:not(#rgstrAllCheck)")
+                    .map((_, el) => $(el).siblings(".check_label").text())
+                    .get()[0] || "";
+
+                const url = "/design/reviewcommentreport";
+                const baseUrls = {
+                    "dsgnCnt": url + "?",
+                    // 답변
+                    "replyAgreeCnt": url + "?rplyCd=0201&",  // 동의
+                    "replyDisagreeCnt": url + "?rplyCd=0202&", // 동의안함
+                    "replyCheckCnt": url + "?rplyCd=0203&", // 확인 및 해결
+                    "replyInfoCnt": url + "?rplyCd=0204&", // 정보용
+                    //평가
+                    "apPendingCnt": url + "?apprerCd=0301&",  // 평가
+                    "apOnholdCnt": url + "?apprerCd=0302&",
+                    //백체크 결과
+                    "backClosedCnt1": url + "?backchkCd=0401&",    // 백체크 결과
+                    "backClosedCnt2": url + "?backchkCd=0402&",
+                };
+
+                if (baseUrls[columnName]) {
+                    let targetUrl = new URL(baseUrls[columnName], window.location.origin);
+                    targetUrl.searchParams.set("cntrctNo", cntrctNo)
+                    targetUrl.searchParams.set("pjtNo", pjtNo);
+                    if (dsgnPhaseNo) targetUrl.searchParams.set("dsgnPhaseNo", dsgnPhaseNo);
+                    if (rgstr) targetUrl.searchParams.set("rgstr", rgstr);
+                    if (dsgnCd) targetUrl.searchParams.set("dsgnCd", dsgnCd);
+                    if (rgstrId) targetUrl.searchParams.set("rgstrNm", rgstrNm);
+
+                    window.location.href = targetUrl.toString();
+                }
+            });
+        }
+
+        getElement() {
+            return this.el;
+        }
+    }
+
+
+</script>
+{% endblock footer_script %}

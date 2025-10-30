@@ -1,0 +1,696 @@
+<div class="modal fade" id="expensesModal" style="z-index:1000;">
+	<div class="pop_box _xlg">
+		<div class="pop_header">
+			<h5 class="pop_tit">장비 항목추가</h5>
+			<div class="btn_area">
+				<button type="button" class="icon_btn pop_close" onclick="cancelExpensesModal()">
+					<i class="ic ic-close"></i>
+					<span class="blind">창닫기</span>
+				</button>
+			</div>
+
+		</div>
+		<div class="pop_body">
+			<div id='inputExpensesForm'>
+				<div class="group">
+					<h4 class="conts_s-tit">장비 목록</h4>
+					<div class="conts_grid">
+						<!-- S: search wrap ---------------------------------------------- -->
+						<div class="search_wrap">
+
+							<!-- searchbox -->
+							<div class="searchbox_wrap">
+								<input type="text" id="expensesSearchText" placeholder="검색어를 입력하세요">
+								<button onclick="expensesSearch()" class="icon_btn search">
+									<i class="ic ic-search"></i>
+									<span class="blind">검색</span>
+								</button>
+							</div>
+						</div>
+						<div>
+                            <!-- 장비 항목 추가 -->
+							<button type="button" class="btn _outline" onclick="addNewExpensesRow()">장비 항목 추가</button>
+						</div>
+						<!-- // E: search wrap ---------------------------------------------- -->
+
+						<div class="sticky_wrap">
+							<div class="sticky_box">
+								<div style="height:300px;min-width:1280px;">
+									<table class="table sticky" style="border:0px;">
+										<thead style="border-bottom: 0px;">
+										<tr>
+											<th style="width:70px;text-align:center;" scope="col" class="stiky">{{ message("btn.001") }}</th>
+											<th style="width:120px;text-align:center;" scope="col" class="stiky">장비코드</th>
+											<th style="width:210px;text-align:center;" scope="col" class="stiky">장비명</th>
+											<th style="width:210px;text-align:center;" scope="col" class="stiky">규격</th>
+											<th style="width:100px;text-align:center;" scope="col" class="stiky">단위</th>
+											<th style="width:100px;text-align:center;" scope="col" class="stiky">총수량</th>
+											<th style="width:100px;text-align:center;" scope="col" class="stiky">금일수량</th>
+											<th style="width:100px;text-align:center;" scope="col" class="stiky">금일누계</th>
+											<th style="width:100px;text-align:center;" scope="col" class="stiky">잔여</th>
+										</tr>
+										</thead>
+										<tbody id="expensesList">
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="s_conts" style="margin-top: var(--gap-row);">
+					<span class="tree_route">장비</span>
+					<div>
+						<div class="group">
+							<h4 class="conts_s-tit">장비</h4>
+
+							<div class="sticky_wrap">
+								<div class="sticky_box">
+									<div style="height:300px;min-width:1280px;">
+										<table class="table sticky" style="border:0px;">
+											<thead>
+                                                <tr>
+                                                    <th style="width:70px;text-align:center;" scope="col" class="stiky">{{ message("btn.002") }}</th>
+                                                    <th style="width:120px;text-align:center;" scope="col" class="stiky">장비코드</th>
+                                                    <th style="width:210px;text-align:center;" scope="col" class="stiky">장비명</th>
+                                                    <th style="width:210px;text-align:center;" scope="col" class="stiky">규격</th>
+                                                    <th style="width:100px;text-align:center;" scope="col" class="stiky">단위</th>
+                                                    <th style="width:100px;text-align:center;" scope="col" class="stiky">총수량</th>
+                                                    <th style="width:100px;text-align:center;" scope="col" class="stiky">금일수량</th>
+                                                    <th style="width:100px;text-align:center;" scope="col" class="stiky">금일누계</th>
+                                                    <th style="width:100px;text-align:center;" scope="col" class="stiky">잔여</th>
+                                                </tr>
+											</thead>
+											<tbody id="expenses">
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area s_default jc_e">
+				<button type="button" class="btn _fill" onclick="saveExpensesEvent()">{{ message("btn.006") }}</button>
+				<button type="button" class="btn _outline" onclick="cancelExpensesModal()">{{ message("btn.007") }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<style>
+	.cell-BizON {
+		background-color: #FFF000 !important
+	}
+
+	.pop_box._sm {
+		width: 62rem;
+	}
+</style>
+<script>
+
+	let expensesUrlParam = new URLSearchParams(location.search);
+    let expensesCntrctNo = expensesUrlParam.get("cntrctNo");
+    let expensesRId = expensesUrlParam.get("rId");
+    let oriExpensesData = [];                          // 서버로부터 받은 장비 원본 목록
+    let deleteExpensesList = [];                       // 삭제한 장비 정보
+    let addedExpensesCodes = new Set();                // 부모 테이블에 있는 코드 중복 추가되지 않게 하기 위해 사용
+
+    // 모달 초기화
+	function initExpensesModal() {
+
+		$(".pop_box").css("z-index", 9999);
+
+		$(".searchbox_wrap input[type='text']").val("");
+
+	}
+
+    // 모달 닫기
+    function cancelExpensesModal() {
+        $('#expensesModal').hide();
+		document.body.style.overflow = 'unset';
+
+		$("#expenses").empty();
+	}
+
+    // 장비 정보 조회 API 통신
+	function initExpensesList() {
+        let param = {
+            cntrctNo: expensesCntrctNo,
+            rsceTpCd: "E",
+            dailyReportId: expensesRId,
+            searchText: $("#expensesSearchText").val()
+        };
+        $.ajax({
+            url: "/api/construction/dailyreport/cbs-resource-summary-list",
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(param),
+            success: function (data) {
+                let list = data.details.cbsResourceSummaryList;
+                list = replaceZeroOrNegativeWithBlank(list);
+                // 부모테이블에 있는 data 추출
+                let filterData = filterExpensesData(list);
+
+                console.log('***filterData',filterData);
+                // 상단 테이블에 들어갈 항목 추출 (부모테이블에 없는 데이터)
+                let unmatchedList = list.filter(item =>
+                    !filterData.some(m => m.rsce_cd === item.gnrlexpns_cd)
+                );
+
+                console.log('*** unmatchedList', unmatchedList);
+
+                drawExpensesList(unmatchedList);
+                oriExpensesData.push(...list);
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX request failed:", error);
+            },
+        });
+	}
+
+	// 자재 정보 상단 테이블에 세팅
+    function drawExpensesList(data) {
+        $("#expensesList").empty();
+        data.forEach(function (row) {
+                // 추가 버튼
+                const addButtonHtml = `
+                    <button type="button" class="btn icon_btn _outline" onclick="addExpensesRow(this, 'N')">
+                        <i class="ic ic-plus"></i>
+                    </button>
+                `;
+
+                $("#expensesList").append(`
+                    <tr>
+                        <td style="text-align:center;">${addButtonHtml}</td>
+                        <td style="text-align:center;">${row.gnrlexpns_cd || ''}</td>
+                        <td style="text-align:left;">${row.rsce_nm}</td>
+                        <td style="text-align:left;">${row.spec_nm}</td>
+                        <td style="text-align:center;">${row.unit}</td>
+                        <td style="text-align:right;">${formatNumber(row.total_qty)}</td>
+                        <td style="text-align:right;">${formatNumber(row.actual_qty)}</td>
+                        <td style="text-align:right;">${formatNumber(row.acmtl_qty)}</td>
+                        <td style="text-align:right;">${formatNumber(row.remndr_qty)}</td>
+                        <td style="display:none;"></td>
+                        <td style="display:none;">${row.rsce_tp_cd}</td>
+                        <td style="display:none;">${row.manual_yn}</td>
+                    </tr>
+                `);
+            });
+    }
+
+    // 부모 테이블에 있는 장비 추출 및 하단 테이블 세팅
+    function filterExpensesData(data) {
+        let matched = [];
+
+        displayExpensesList.forEach(item => {
+            let matchedItem = data.find(d => d.gnrlexpns_cd === item.rsce_cd);
+            if (matchedItem && !addedExpensesCodes.has(item.rsce_cd)) {
+                addedExpensesCodes.add(item.rsce_cd);
+                matched.push(item);
+
+                // let todayAcmtlQty = matchedItem.acmtl_qty + matchedItem.actual_qty
+
+                // 하단 테이블에 직접 렌더링
+                $("#expenses").prepend(`
+                    <tr>
+                        <td style="text-align:center;">
+                            <button type="button" class="icon_btn" onclick="deleteExpensesRow(this, 'N')">
+                                <i class="ic ic-delete"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">${item.rsce_cd || ''}</td>
+                        <td style="text-align:left;">${item.rsce_nm}</td>
+                        <td style="text-align:left;">${item.spec_nm}</td>
+                        <td style="text-align:center;">${item.unit}</td>
+                        <td style="text-align:right;">${formatNumber(item.total_qty)}</td>
+                        <td style="text-align:right;">
+                            <input type="number" class="input _sm" value="${item.actual_qty ?? 1}" min="0" step="1" onchange="updateExpensesRow(this, 'actualQty')" style="text-align:right; width:80px;" />
+                        </td>
+                        <td style="text-align:right;">${formatNumber(item.acmtl_qty)}</td>
+                        <td style="text-align:right;">${formatNumber(item.remndr_qty)}</td>
+                        <td style="display:none;">${item.ori_qty}</td>
+                        <td style="display:none;">${item.rsce_tp_cd}</td>
+                        <td style="display:none;">${item.manual_yn}</td>
+                    </tr>
+                `);
+            }
+        });
+
+        return matched;
+    }
+
+    // 자재 추가 버튼 이벤트, cbsInsertYn:Y - 장비 항목 추가한 경우
+    function addExpensesRow(btn, cbsInsertYn) {
+        const $row = $(btn).closest("tr");
+        const $tds = $row.find("td");
+
+        const gnrlexpnsCd = $tds.eq(1).find("input").val() || $tds.eq(1).text().trim();
+        const rsceNm = $tds.eq(2).find("input").val() || $tds.eq(2).text().trim();
+        const specNm = $tds.eq(3).find("input").val() || $tds.eq(3).text().trim();
+        const unit = $tds.eq(4).find("input").val() || $tds.eq(4).text().trim();
+        const totalQty = cleanNumber($tds.eq(5).find("input").val() || $tds.eq(5).text().trim()) || 0;
+        const actualQty = cleanNumber($tds.eq(6).find("input").val() || $tds.eq(6).text().trim()) || 1;
+        const acmtlQty = cleanNumber($tds.eq(7).text().trim()) || 0;
+
+        let todayAcmtlQty = acmtlQty;
+        let remndrQty = cleanNumber($tds.eq(8).find("input").val() || $tds.eq(8).text().trim()) || 0;
+
+        // 코드 추가인경우 이미 계산되어 있음
+        if(cbsInsertYn != 'Y') {
+            todayAcmtlQty = acmtlQty + actualQty;
+            remndrQty     = remndrQty - actualQty;
+        } else {
+            // 장비 항목 추가인 경우 필수값 검증
+            if(!rsceNm || !specNm || !unit) {
+                gaiaCommon.customAlert("장비명, 규격, 단위는 필수 입력값입니다.");
+                return;
+            }
+            // 금일누계, 잔여 없는 경우(총수량만 입력하고, 금일수량 입력 안했을 때)
+            if(remndrQty == totalQty) {
+                todayAcmtlQty = acmtlQty + actualQty;
+                remndrQty     = totalQty - todayAcmtlQty;
+            }
+        }
+
+        let manualYn = $tds.eq(11).text().trim();
+        let rsceTpCd = $tds.eq(10).text().trim();
+
+        // 추가한 행 제거
+        $("#expensesList tr").each(function () {
+            const existingGnrlexpnsCd = $(this).find("td").eq(1).find("input").val() || $(this).find("td").eq(1).text().trim();
+            if (existingGnrlexpnsCd === gnrlexpnsCd) {
+                $(this).remove();
+                return false; // break
+            }
+        });
+
+        // Expenses 테이블에 행 추가
+        // 가장 최근 항목이 위로 올라오도록 prepend 사용
+        $("#expenses").prepend(`
+            <tr>
+                <td style="text-align:center;">
+                    <button type="button" class="icon_btn" onclick="deleteExpensesRow(this, '${cbsInsertYn}')">
+                        <i class="ic ic-delete"></i>
+                    </button>
+                </td>
+                <td style="text-align:center;">${gnrlexpnsCd}</td>
+                <td style="text-align:left;">${rsceNm}</td>
+                <td style="text-align:left;">${specNm}</td>
+                <td style="text-align:center;">${unit}</td>
+                <td style="text-align:right;">${formatNumber(totalQty)}</td>
+                <td style="text-align:right;">
+                    <input type="number" class="input _sm" value="${actualQty}" min="0" step="1" onchange="updateExpensesRow(this, 'actualQty')" style="text-align:right; width:80px;" />
+                </td>
+                <td style="text-align:right;">${formatNumber(todayAcmtlQty)}</td>
+                <td style="text-align:right;">${formatNumber(remndrQty)}</td>
+                <td style="display:none;"></td>
+                <td style="display:none;">${rsceTpCd}</td>
+                <td style="display:none;">${manualYn}</td>
+                <td style="display:none;">${cbsInsertYn}</td>
+            </tr>
+        `);
+    }
+
+    // 장비 삭제 버튼 이벤트
+    function deleteExpensesRow(btn, cbsInsertYn) {
+        const $row = $(btn).closest("tr");
+        const $tds = $row.find("td");
+
+        const gnrlexpnsCd = $tds.eq(1).text().trim();
+        const rsceNm = $tds.eq(2).text().trim();
+        const specNm = $tds.eq(3).text().trim();
+        const unit = $tds.eq(4).text().trim();
+        const totalQty = cleanNumber($tds.eq(5).text().trim());
+        const actualQty = cleanNumber($tds.eq(6).find("input._sm").val());
+        let todayAcmtlQty = cleanNumber($tds.eq(7).text().trim());
+        let remndrQty = cleanNumber($tds.eq(8).text().trim());
+        todayAcmtlQty = todayAcmtlQty - actualQty
+        remndrQty = remndrQty + actualQty
+        let manualYn = $tds.eq(11).text().trim();
+        let rsceTpCd = $tds.eq(10).text().trim();
+        let oriQty = cleanNumber($tds.eq(9).text().trim());
+
+        $row.remove();
+
+        // 자원코드 추가 항목은 상단에 다시 복구하지 않음
+        if(cbsInsertYn == 'Y') {
+            return;
+        }
+
+        // 추가 버튼
+        const addButtonHtml = `
+            <button type="button" class="btn icon_btn _outline" onclick="addExpensesRow(this, '${cbsInsertYn}')">
+                <i class="ic ic-plus"></i>
+            </button>
+        `;
+
+        const $expensesList = $("#expensesList");
+        const $existingRow = $expensesList.find("tr").filter(function () {
+            return $(this).find("td").eq(1).text().trim() === gnrlexpnsCd;
+        });
+
+        // 상단 테이블에 다시 복구
+        const newRowHtml = `
+            <tr>
+                <td style="text-align:center;">${addButtonHtml}</td>
+                <td style="text-align:center;">${gnrlexpnsCd}</td>
+                <td style="text-align:left;">${rsceNm}</td>
+                <td style="text-align:left;">${specNm}</td>
+                <td style="text-align:center;">${unit}</td>
+                <td style="text-align:right;">${formatNumber(totalQty)}</td>
+                <td style="text-align:right;">0</td>
+                <td style="text-align:right;">${formatNumber(todayAcmtlQty)}</td>
+                <td style="text-align:right;">${formatNumber(remndrQty)}</td>
+                <td style="display:none;">${oriQty}</td>
+                <td style="display:none;">${rsceTpCd}</td>
+                <td style="display:none;">${manualYn}</td>
+                <td style="display:none;">${cbsInsertYn}</td>
+            </tr>
+        `;
+
+        if ($existingRow.length > 0) {
+            $existingRow.replaceWith(newRowHtml); // 기존 행 덮어쓰기
+        } else {
+            $expensesList.append(newRowHtml);    // 없으면 새로 추가
+        }
+
+
+        // 서버 업데이트용 데이터 세팅
+        let acmtlQty = todayAcmtlQty - actualQty
+        let item = {
+            cntrctNo: expensesCntrctNo,
+            dailyReportId: expensesRId,
+            rsceTpCd: rsceTpCd,
+            rsceCd: gnrlexpnsCd,
+            totalQty: totalQty,
+            actualQty: 0,   // 금일수량
+            acmtlQty: acmtlQty,
+            remndrQty: remndrQty,
+            dltYn: 'Y',
+            manualYn: manualYn,
+            cbsInsertYn: cbsInsertYn,
+            oriQty: oriQty
+        };
+        deleteExpensesList.push(item);
+
+    }
+
+    // 저장 버튼 클릭 이벤트
+    function saveExpensesEvent() {
+        let saveExpensesList = [];
+
+        // 추가한 항목 추출
+        $("#expenses tr").each(function () {
+            const $tds = $(this).find("td");
+
+            // 입력된 금일수량
+            const inputQty = cleanNumber($tds.eq(6).find("input._sm").val()) || 0;
+
+            // 금일누계
+            const todayAcmtlQty = cleanNumber($tds.eq(7).text().trim()) || 0;
+            // 전일누계
+            let acmtlQty = todayAcmtlQty - inputQty;
+
+            let govsplyMtrlYn =  ($tds.eq(1).text().trim() === "관급자재") ? "Y" : "N";
+
+            let rsceCd =  $tds.eq(1).text().trim();
+            const matchedItem = oriExpensesData.find(item => item.gnrlexpns_cd === rsceCd);
+            const rsceTpCd = $tds.eq(10).text().trim();
+
+            let manualYn= $tds.eq(11).text().trim()
+            let item = {
+                cntrctNo: expensesCntrctNo,
+                dailyReportId: expensesRId,
+                govsplyMtrlYn: govsplyMtrlYn,
+                rsceTpCd: rsceTpCd,
+                rsceCd: rsceCd,
+                rsceNm: $tds.eq(2).text().trim(),
+                specNm: $tds.eq(3).text().trim(),
+                unit: $tds.eq(4).text().trim(),
+                totalQty: cleanNumber($tds.eq(5).text().trim()) || 0,
+                actualQty: cleanNumber($tds.eq(6).find("input._sm").val()) || 0,   // 금일수량
+                acmtlQty: acmtlQty,
+                remndrQty: cleanNumber($tds.eq(8).text().trim()) || 0,
+                oriQty: cleanNumber($tds.eq(9).text().trim()) || 0,
+                dltYn: 'N',
+                manualYn: manualYn,
+                cbsInsertYn: $tds.eq(12).text().trim()
+            };
+
+            saveExpensesList.push(item);
+        });
+
+        // 삭제 항목 추가 (원본에서 삭제 항목 추출)
+        expensesData.forEach(function (oriItem) {
+            const match = deleteExpensesList.some(item => item.rsceCd === oriItem.rsce_cd);
+            if (match) {
+                let deletedItem = {
+                    cntrctNo: expensesCntrctNo,
+                    dailyReportId: expensesRId,
+                    rsceCd: oriItem.rsce_cd,
+                    rsceTpCd: oriItem.rsce_tp_cd,
+                    totalQty: 0,
+                    actualQty: 0,
+                    acmtlQty: 0,
+                    remndrQty: 0,
+                    dltYn: 'Y',
+                    manualYn: oriItem.manualYn
+                };
+
+                saveExpensesList.push(deletedItem);
+            }
+        });
+
+        // 전송 파라미터는 객체로 래핑
+        let param = {
+            resourceList: saveExpensesList
+        };
+
+        saveExpenses(param);
+
+        // 부모 테이블에 행 추가
+        appendExpensesModalDataToGrid(saveExpensesList);
+
+    }
+
+    // 저장한 데이터 부모 테이블에 표시
+    function appendExpensesModalDataToGrid(data) {
+        // 삭제 데이터 부모 테이블에서 제거
+        const deleteList = (data || []).filter(item => item.dltYn === 'Y');
+
+        deleteList.forEach(item => {
+            const row = expnss.expnssDataGrid.getData().find(
+                row => row.rsce_cd === item.rsceCd
+            );
+            if (row) {
+                const rowKey = row.rowKey;
+                expnss.expnssDataGrid.removeRow(rowKey);
+                displayExpensesList = displayExpensesList.filter(exp => exp.rsce_cd !== item.rsceCd);
+                expensesData = expensesData.filter(exp => exp.rsce_cd !== item.rsceCd);
+
+            }
+        });
+
+        // 신규 데이터(dltYn !== 'Y')만 필터링
+        const filteredList = (data || []).filter(item => item.dltYn !== 'Y');
+
+        // 부모 테이블에 존재하는 건 제거
+        const finalList = filteredList.filter(item =>
+            !displayExpensesList.some(exp => exp.rsce_cd === item.rsceCd)
+        )
+
+        filteredList.forEach(item => {
+            const existingRow = expnss.expnssDataGrid.getData().find(row => row.rsce_cd === item.rsceCd);
+
+            const mapped = {
+                rsce_tp_cd: item.rsceTpCd,
+                rsce_cd: item.rsceCd,
+                rsce_nm: item.rsceNm,
+                spec_nm: item.specNm,
+                unit: item.unit,
+                total_qty: (item.totalQty > 0 ? item.totalQty : ""),
+                actual_qty: (item.actualQty > 0 ? item.actualQty : ""),
+                acmtl_qty: (item.acmtlQty + item.actualQty > 0 ? item.acmtlQty + item.actualQty : ""),
+                remndr_qty: (item.remndrQty > 0 ? item.remndrQty : ""),
+                ori_qty: item.oriQty,
+                manual_yn: item.manualYn
+            };
+
+            if (existingRow) {
+                // 수정된 경우 각 칼럼별로 업데이트
+                Object.keys(mapped).forEach(col => {
+                    expnss.expnssDataGrid.setValue(existingRow.rowKey, col, mapped[col], false);
+                });
+
+                // 부모 배열도 갱신
+                displayExpensesList = displayExpensesList.map(exp =>
+                    exp.rsce_cd === item.rsceCd ? { ...exp, ...mapped } : exp       // exp 에 mapped 덮어씌움
+                );
+                expensesData = expensesData.map(exp =>
+                    exp.rsce_cd === item.rsceCd ? { ...exp, ...mapped } : exp
+                );
+            } else {
+                // 신규 추가
+                expnss.expnssDataGrid.appendRow(mapped);
+                displayExpensesList.push(mapped);
+                expensesData.push(mapped);
+            }
+        });
+        refreshGrid(expnss.expnssDataGrid);
+    }
+
+    // 서버 전송
+    function saveExpenses(save) {
+        console.log('*** 서버 전송 데이터 = ', save);
+        $.ajax({
+            url: "/api/construction/dailyreport/save-manual-cbs-resource",
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(save),
+            success: function (data) {
+                cancelExpensesModal();
+                // window.location.reload();
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX request failed:", error);
+            },
+        });
+    }
+
+    // 금일 수량 입력할 경우 이벤트 실행
+    function updateExpensesRow(input, type) {
+        const $row = $(input).closest("tr");
+        let inputVal = $(input).val().trim();
+
+        let actualQty = '';
+        const rsceCd = $row.find("td").eq(1).text();
+        const $totalQtyCell = $row.find("td").eq(5);
+        const $actualQtyCell = $row.find("td").eq(6);
+        const $todayAcmtlQtyCell = $row.find("td").eq(7);
+        const $remndrQtyCell = $row.find("td").eq(8);
+        const $oriQtyCell = $row.find("td").eq(9);
+        const $manualYn = $row.find("td").eq(11);
+        const $totalQtyInput = $totalQtyCell.find("input");
+        const $actualQtyInput = $actualQtyCell.find("input");
+
+        let totalQty = 0;
+        let oriQty = cleanNumber($oriQtyCell.text().trim()) || 0;
+        if(type == 'totalQty') {
+            // cbs 추가할 때 총수량 수정할 경우 actualQty 가 없음
+            actualQty = cleanNumber($actualQtyInput.val().trim()) || 0;
+            totalQty = cleanNumber(inputVal);
+        } else if(type == 'actualQty' && ($totalQtyInput.length > 0 || $oriQtyCell.length == 0)){
+            actualQty = cleanNumber(inputVal);
+            if($totalQtyInput.length > 0) {
+                // cbs 추가할 때 금일수량 수정할 경우 totalQty가 없음
+                totalQty = cleanNumber($totalQtyInput.val().trim()) || 0;
+            } else if($oriQtyCell.length == 0) {
+                // 자원코드로 추가한 자원인 경우(하단 테이블에서 금일 수량 수정)
+                totalQty = cleanNumber($totalQtyCell.text().trim()) || 0;
+            }
+        } else {
+            // 일반적으로 추가 후 금일 수량 수정한 경우
+            actualQty = cleanNumber(inputVal);
+            totalQty = cleanNumber($totalQtyCell.text().trim()) || 0;
+        }
+
+        if (type == 'actualQty' && (isNaN(actualQty) || actualQty <= 0)) {
+            // 0, 음수, 공백 입력 → 원래 값 복원
+            $(input).val("");
+            $todayAcmtlQtyCell.text(oriQty > 0 ? formatNumber(oriQty) : "");
+            const restoredRemndr = totalQty - oriQty;
+            $remndrQtyCell.text(restoredRemndr > 0 ? formatNumber(restoredRemndr) : "");
+        } else if(type == 'totalQty' && totalQty <= -1) {  // 총수량은 빈값이나, 0 입력 가능
+            $(input).val("");
+            $actualQtyInput.val("");
+            $todayAcmtlQtyCell.text("");
+            $remndrQtyCell.text("");
+        } else {
+            // 양수 입력 → 정상 계산
+            const updatedAcmtlQty = oriQty + actualQty;
+            const updatedRemndr = totalQty - (oriQty + actualQty);
+            $todayAcmtlQtyCell.text(updatedAcmtlQty > 0 ? formatNumber(updatedAcmtlQty) : "");
+            $remndrQtyCell.text(updatedRemndr > 0 ? formatNumber(updatedRemndr) : "");
+
+            if(type == 'actualQty') {
+                $(input).val(cleanNumber(actualQty));
+            } else {
+                $(input).val(cleanNumber(totalQty));
+            }
+        }
+
+        $manualYn.text('Y');
+    }
+
+    function getExpensesCellValue($cell) {
+        // 일반 input[type=text|number|hidden]
+        const $input = $cell.find("input");
+        if ($input.length) {
+            return $input.val();
+        }
+        // 기본 text
+        return $cell.text().trim();
+    }
+
+    function expensesSearch() {
+        initExpensesList();
+    }
+
+    function addNewExpensesRow() {
+        const addButtonHtml = `
+            <button type="button" class="btn icon_btn _outline" onclick="addExpensesRow(this, 'Y')">
+                <i class="ic ic-plus"></i>
+            </button>
+        `;
+
+        // 새 입력 행 구성
+        const newRowHtml = `
+            <tr>
+                <td style="text-align:center;">${addButtonHtml}</td>
+                <td style="text-align:center;"><span name="gnrlexpns_cd">${expensesGenerateGnrlexpnsCd()}</span></td>
+                <td style="text-align:left;"><input type="text" name="rsce_nm" style="width:100%"></td>
+                <td style="text-align:left;"><input type="text" name="spec_nm" style="width:100%"></td>
+                <td style="text-align:center;"><input type="text" name="unit" style="width:100%"></td>
+                <td style="text-align:right;"><input type="number" min="0" name="total_qty" value="0" style="width:100%" onchange="updateExpensesRow(this, 'totalQty')"></td>
+                <td style="text-align:right;"><input type="number" min="0" name="actual_qty" value="0" style="width:100%" onchange="updateExpensesRow(this, 'actualQty')"></td>
+                <td style="text-align:right;"></td>
+                <td style="text-align:right;"></td>
+                <td style="display:none;"></td>     <!-- ori_qty -->
+                <td style="display:none;">E</td>    <!-- rsce_tp_cd -->
+                <td style="display:none;">Y</td>    <!-- 수동 추가 여부 -->
+                <td style="display:none;">Y</td>    <!-- 자원 코드 추가 여부 -->
+            </tr>
+        `;
+
+        // 테이블 최상단에 추가
+        $("#expensesList").prepend(newRowHtml);
+    }
+
+    // C + 9자리 랜덤 숫자 생성
+    function expensesGenerateGnrlexpnsCd() {
+        let num = Math.floor(Math.random() * 1e9).toString().padStart(9, "0");
+        return "C" + num;
+    }
+
+	$(document).on("click", "#addExpenses", function () {
+		initExpensesModal();
+		initExpensesList();
+		addedExpensesCodes = new Set();
+		document.body.style.overflow = 'hidden';
+	});
+
+	// 검색어 입력 후 엔터 시
+    $('#expensesSearchText').on('keypress', function (e) {
+        if (e.which === 13 && e.target.id === 'expensesSearchText') {
+            initExpensesList();
+        }
+    });
+</script>

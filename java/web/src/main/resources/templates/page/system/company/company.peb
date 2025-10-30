@@ -1,0 +1,419 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row">
+<article class="conts_area">
+	<div class="conts">
+		<div class="conts_grid">
+			<!-- S: search wrap ---------------------------------------------- -->
+			<div class="search_wrap">
+				<div name="form_search1" class="uu-box-search">
+					<div class="search_wrap">
+						<span class="selectbox">
+							<select name="company_group" id="company_group">
+								<option selected value="">{{ message('item.com.083') }}</option>
+								<option value="cmn_cd_nm">{{ message('item.comp.002') }}</option>
+								<option value="corp_no">{{ message('item.comp.001') }}</option>
+								<option value="comp_nm">{{ message('item.comp.003') }}</option>
+							</select>
+						</span>
+						<div class="searchbox_wrap">
+							<input type="text" id="keyword" name="keyword1" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){page.company.search();}">
+							<button type="button" class="icon_btn search" onclick="page.company.search()" style="width: auto;">
+								<i class="ic ic-search"></i>
+								<span class="blind">검색</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="toolbar">
+				<div class="btn_area s_default _outline">
+						{{ compBtnHtml | raw }}
+						<!-- <button type="button" class="btn" id="delete-companies" onclick="page.deleteCompanyList()">{{ message('btn.002') }}</button>
+						<button type="button" class="btn" id="update-company" onclick="page.moveUpdateCompany()">{{ message('btn.003') }}</button>
+						<button type="button" class="btn _fill" id="create-company" onclick="page.moveCreateCompany()">{{ message('btn.001') }}</button> -->
+				</div>
+				<span class="selectbox" style="margin-left: inherit; width: inherit;">
+					<!-- <select name="items-per-page" id="items-per-page" onchange="page.changePerPage()"> -->
+					<select name="items-per-page" id="items-per-page">
+					  <option selected disabled value="">{{ message('item.com.004') }}</option>
+					  <option value="10">10</option>
+					  <option value="30">30</option>
+					  <option value="50">50</option>
+					</select>
+				</span>
+			</div>
+			<div class="grid" id="company-grid"></div>
+		</div>
+    </div>
+	</article>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+	//새창 아이콘 렌더러
+	const newWindowViewRenderer = window.NewWindowViewRenderer;
+	const customColumnCheckbox = window.CustomColumnCheckbox;
+
+
+	const BASEPATH = '/api/system/';
+	let pjtNo;
+	let cntrctNo;
+	var page ={
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+		init() {
+			//프로젝트 정보 설정
+			const urlParams = new URLSearchParams(window.location.search);
+			pjtNo = urlParams.get('pjtNo');
+			cntrctNo = urlParams.get('cntrctNo');
+
+			gaiaPortal.navMenuInit('SYSTEM03', "{{ message('item.comp.010') }}");
+			this.initOptionsData();
+			this.company.gridInit();
+			this.company.search();
+
+			// 'items-per-page' 셀렉트박스 변경 이벤트 리스너 추가
+			$('#items-per-page').on('change', (event) => {
+				const newPerPage = parseInt(event.target.value, 10);
+				if (this.company.grid) {
+					this.company.grid.setPerPage(newPerPage); // 그리드의 perPage 설정 업데이트
+				}
+			});
+
+			gaia.loaded = true;
+		},
+		initOptionsData() {
+			try {
+				const pathVariable = 'f306072f-b2aa-4aa6-bf40-192000832cbc';
+				const url = '/api/system/common-code/code-combo/' + pathVariable;
+				gaiaCommon.get(url,null,(response)=>{
+					this.company.optionsData =  response.details.codeCombo;
+				})
+			} catch (error) {
+				console.error('Failed to initial options data:', error);
+				// 서버와의 통신 중 오류가 발생했습니다.
+				gaiaCommon.customAlert("{{ message('msg.060')}}", function(){
+					location.replace("/");
+				});
+				// return {}; // 실패 시 빈 객체 반환
+			}
+			this.company.optionsData =  null;
+		},
+
+		//그리드
+		company: {
+			grid: null,
+			obj: null,
+			requestData: {},
+			isSearch: false,
+			data: {
+				searchData: {},
+				sortData: null
+			},
+			optionsData: {},
+
+			gridInit: function() {
+				const dataSource = createDataSource({
+					readData: {
+						url: '/api/system/company-list', // 데이터를 요청할 API URL
+						method: 'GET',
+					}
+				})
+				dataSource.initialRequest=false;
+				if (this.grid) { // 이미 그리드가 있으면 제거하고 새로 생성.
+                    this.grid.destroy();
+                    this.grid = null;
+                }
+
+				if (!this.grid) {
+					this.grid = new tui.Grid({
+						el: document.getElementById('company-grid'),
+						data: dataSource,
+						pageOptions: {
+							useClient: false,
+							perPage: 10, // 페이지당 항목 수
+						},
+						useClientSort: false,
+						scrollX: false,
+						scrollY: true,
+						// bodyHeight: 200,
+						minBodyHeight: 200,
+						contextMenu: null,
+						rowHeaders: [
+							{
+								type: 'checkbox',
+								width: 100,
+								renderer: {
+									type: window.IconRenderer,
+									options: [
+										{
+											type:'checkBox'
+										},
+										{
+											type:'trash',
+											//휴지통 클릭 삭제 시 필요한 값 설정
+											url: '/api/system/company/delete',
+											idField: 'corpNo',
+											keyName: 'corpNoList',
+											auth: page.isDelAuth == "true",
+											msgList: {
+												confirmTit: "{{ message('item.comp.014') }}", //회사 삭제
+												confirmMsg: "{{ message('msg.009') }}",
+												completeMsg: "{{ message('msg.006') }}"
+											}
+										}
+									]
+								}
+							}
+						],
+						columns:[
+							{
+								header: "{{ message('item.comp.001') }}",
+								name: 'corpNo',
+								sortable: true,
+								sortingType: 'asc',
+								resizable: true,
+								align: 'center',
+								//width: 100,
+								validation: { required: true }
+							},
+							{
+								header: "{{ message('item.comp.002') }}",
+								name: 'compGrpCdNm',
+								sortable: true,
+								sortingType: 'asc',
+								align: 'center',
+								//width: 80,
+								validation: { required: true }
+							},
+							{
+								header: "{{ message('item.comp.003') }}",
+								name: 'compNm',
+								className: 'compNm', //상세 조회 기능 구현 시, 설정.
+								align: 'left',
+								renderer: {
+									type: window.IconRenderer,
+									options: [
+										{
+											type:'newWindow',
+											idField: 'corpNo', //조회에 필요한 id
+											gridId: 'company-grid',
+											isHover:true,
+											align:'right',
+											open:{
+												url:`/system/company/{id}?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`, //상세조회 url
+											}
+										}
+									]
+								},
+								//width: 'auto'
+							},
+							{
+								header: "{{ message('item.comp.005') }}",
+								name: 'pstnNm',
+								align: 'center',
+								//width: 100
+							},
+							{
+								header: "{{ message('item.comp.006') }}",
+								name: 'mngNm',
+								sortable: true,
+								sortingType: 'asc',
+								align: 'center',
+								//width: 80
+							},
+							{
+								header: "{{ message('item.com.003') }}",
+								name: 'useYn' ,
+								align: 'center',
+								//width: 80,'
+								formatter:(row)=>{
+									return row.useYn == "Y" ? "사용":(row.useYn == "N" ? "미사용" : "")
+								}
+							},
+							{
+								header: "{{ message('item.com.002') }}",
+								name: 'chgDt',
+								align: 'center',
+								//width: 90,
+								sortable: true,
+								sortingType: 'asc',
+								validation: { required: true },
+							},
+
+						],
+					});
+
+					refreshGrid(this.grid); // 그리드 리사이즈 문제 해결
+				}
+
+				// 'beforeSort' 이벤트 핸들러 설정(정렬 ui 멀티 컬럼 정렬로 나타나는 문제 해결)
+                this.grid.on("beforeSort", (ev) => {
+					// 'columns' 데이터 가져오기 및 멀티 컬럼 정렬 방지 처리
+					const { columns } = ev.instance.store.data.sortState;
+					if (columns.length > 1) {
+						columns.shift();
+					}
+
+					// 추가 파라미터 설정
+					let additionalParams = this.requestData;
+
+					// 검색 조건이 활성화된 경우(search 관련 데이터 추가)
+					if (this.isSearch) {
+						additionalParams.searchText = this.data.searchData.searchText;
+						additionalParams.columnNm = this.data.searchData.columnNm;
+					}
+
+					// 추가 파라미터를 요청 옵션에 병합
+					ev.instance.dataProvider.setRequestParams(additionalParams);
+
+				});
+
+				this.grid.on("afterSort", (ev) => {
+					// 정렬된 상태에서 다른 컬럼을 정렬하려고 할 때 정렬 초기화 진행.
+					if(page.company.grid.getSortState().columns.length > 1){
+						page.company.grid.unsort(page.company.grid.getSortState().columns[0].columnName);
+					}
+				});
+
+				// errorResponse 이벤트 핸들러 추가
+                this.grid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert("로그인이 필요합니다. 로그인 페이지로 이동합니다.", function(){
+							location.reload();
+						});
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+
+			},
+
+			search(){
+				const column = $('select[name="company_group"]').val();
+				const keyword = $('input[name="keyword1"]').val();
+
+
+				//구분명을 설정하지 않았을 때 처리
+				if(column == 'none' || column =='' || column == null){
+					// page.customAlert("{{ message('msg.003') }}"); // 구분을 선택해주세요.
+					$('input[name="keyword1"]').val('');
+					// return false;
+				}
+
+				//키워드가 없을 때 알림 처리
+				if(keyword == null || keyword == ''){
+					$('select[name="company_group"]').val('');
+
+					delete this.requestData.keyword;
+					delete this.requestData.column;
+				}else{
+					this.data.searchData = {
+						keyword: keyword,
+						column: column
+					};
+
+					this.isSearch = true;
+
+					this.requestData.keyword = keyword;
+					this.requestData.column = column;
+
+					gaia.setSearchData(this.requestData);
+				}
+
+
+				this.grid.readData(1, this.requestData, true);
+			},
+
+			moveCreateCompany(){
+				window.location.href = `/system/company/create?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+			},
+
+			deleteCompanyList(){
+				const url = '/api/system/company/delete';
+				let corpNoList = []; //체크된 행의 id 정보 가져오기
+
+				const checkedRows = this.grid.getCheckedRows();
+				checkedRows.forEach((v) => {
+					corpNoList.push(v.corpNo);
+				});
+
+				if (corpNoList.length > 0) {
+                    //정말 삭제하시겠습니까?
+                    gaiaCommon.customConfirm("{{ message('item.comp.014') }}", "{{ message('item.comp.014') }}", "{{ message('msg.009') }}", function(){
+						gaiaCommon.post(url, {corpNoList}, function (result) {
+                            gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제되었습니다.
+                            page.company.grid.reloadData();
+                        },
+                        function(error){
+                            gaiaCommon.customAlert("삭제에 실패하였습니다."); // 삭제에 실패하였습니다.
+                            console.error(error);
+                        });
+                    });
+
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.001') }}"); // 삭제할 회사를 선택해주세요.
+					return false;
+                }
+
+			},
+
+			moveUpdateCompany(){
+				const checkedRows = this.grid.getCheckedRows();
+				if(checkedRows.length == 1){
+					const companyRowData = checkedRows[0] // 그리드에서 해당 행 데이터 가져오기
+					const corpNo = companyRowData.corpNo;
+
+					window.location.href = `/system/company/update?corpNo=${corpNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+			
+				}else{
+					page.customAlert("{{ message('msg.002') }}"); // 하나의 회사를 선택해주세요.
+					return false;
+				}
+			},
+		},
+
+
+		//알림창 기능
+		customAlert(msg){
+			$('.pop_box.toast').show();
+			$('.toast_msg').text(msg);
+			$('.pop_box.toast').addClass('on');
+
+			// 일정 시간 후에 'on' 클래스 제거
+			setTimeout(function() {
+				$('.pop_box.toast').removeClass('on');
+				$('.pop_box.toast').hide();
+			}, 1500); // 1500ms = 1.5초
+		}
+
+  	};
+  	
+	$(document).ready(function() {
+		gaia.create({
+			$init: function ($params) {
+                if ($params.search) {
+                    $('#company_group').val($params.search.column);
+                    $('#keyword').val($params.search.keyword);
+                }
+
+				page.init();
+            }
+        });
+
+
+		$('.pop_box.toast').hide();
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function() {
+			$('.pop_box.toast').removeClass('on');
+			$('.pop_box.toast').hide();
+		});
+	});
+
+</script>
+{% endblock footer_script %}

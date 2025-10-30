@@ -1,0 +1,687 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default _outline">
+						<button type="button" class="btn" id="" onclick="popup.delete()">{{ message('btn.002') }}</button>
+						<button type="button" class="btn" id="" onclick="popup.moveToUpdateProperty()">{{ message('btn.003') }}</button>
+						<button type="button" class="btn _fill" id="" onclick="popup.moveToAddProperty()">{{ message('btn.001') }}</button>
+						<!-- <button type="button" class="btn _outline" id="close_popup" onclick="popup.close()">{{ message('btn.007') }}</button> -->
+					</div>
+				</div>
+				<div class="grid" id="property_grid"></div>
+			</div>
+			<div class="btn_area s_default" style="justify-content: end;">
+				<button type="button" class="btn _outline" onclick="popup.close()" style="margin-top: 10px;">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</article>
+</section>
+<!-- 토스트 메세지 : 활성화:'on'추가, 수초 후 'on'제거-->
+<div class="pop_box toast" style="display: none; z-index: 16;">
+	<span class="toast_msg">
+	</span>
+	<button type="button" class="icon_btn pop_close">
+		<i class="ic ic-close"></i>
+		<span class="blind">창닫기</span>
+	</button>
+</div>
+<section>{% include "page/document/common/common_document_modal_popup" %}</section>
+<script>
+	var page = null;
+	// 새창 모드일때, 부모창이 있는지 감지.
+	if(opener){
+		page = opener.page;
+
+		opener.document.onkeydown = fkey;
+		opener.document.onkeypress = fkey;
+		opener.document.onkeyup = fkey;
+
+		// 부모창의 f5 새로고침 누를때 열려있는 팝업 창 닫기
+		function fkey(e){
+			if (window.event.keyCode == 116) {
+				window.close();
+			}
+		};
+
+		window.opener.onbeforeunload = function () {
+			// 부모창이 새로고침되거나 페이지 이동할 때 실행
+			if (window) {
+				// 자식 창 닫기
+				window.close();
+			}
+		};
+
+	}
+
+
+	var popup = {
+		selectedNaviId: null,
+		selectedNaviNo: null,
+		codeComboData: {},
+		propertyList: {
+
+		},
+		init() {
+			const pjtData = commonJs.getSessionStorage("pageCommonData");
+
+			//page 헤더 생성
+			gaiaPortal.navMenuInit('M0501', "{{ message('item.doc.047') }}"); 	//속성 정의
+			$("#menuDepth").append(`<li class=\"breadcrumb_item\">{{ message('item.doc.047') }}</li>`);
+
+			if(page){
+				this.selectedNaviId = page.navigation.data.selected.naviId;
+				this.selectedNaviNo = page.navigation.data.selected.naviNo;
+			}
+
+			this.property.gridInit(this.selectedNaviId);
+
+			//콤보박스 데이터 설정
+			gaiaCommon.get("/api/document/property/code-combo-list", {}, function (result) {
+				if(result.details?.codeComboMap){
+					const data = result.details.codeComboMap;
+					let attrbtTypeOptions = data.attrbtType.map(item => ({
+						value: item.cmn_cd,
+						text: item.cmn_cd_nm
+					}));
+
+					let attrbtCdTypeOptions = data.attrbtCdType.map(item => ({
+						value: item.cmn_cd,
+						text: item.cmn_cd_nm
+					}));
+
+					let attrbtTypeSelOptions = data.attrbtTypeSel.map(item => ({
+						value: item.cmn_grp_cd,
+						text: item.cmn_cd_nm
+					}));
+
+					let attrbtHtmlOptions = data.attrbtHtmlOptions.map(item => ({
+						value: item.form_no,
+						text: item.form_nm
+					}));
+
+					popup.codeComboData = {
+						attrbtTypeOptions : attrbtTypeOptions,
+						attrbtCdTypeOptions : attrbtCdTypeOptions,
+						attrbtTypeSelOptions : attrbtTypeSelOptions,
+						attrbtHtmlOptions : attrbtHtmlOptions
+					}
+				};
+			});
+
+			gaia.loaded = true;
+		},
+
+		close() {
+			opener.page.refresh(true, true);
+			popup.propertyList = null;
+			window.close();
+		},
+
+		closeModal(){
+			this.modal.resetData();
+			$("#insertProperty").removeClass("open");
+			$("#attrbtTypeSel_form").hide();
+		},
+
+		refresh(){
+			this.property.loadData(this.selectedNaviId);
+		},
+
+		property: {
+			grid: null,
+			gridInit: function(naviId){
+				this.grid = new tui.Grid({
+					el: document.getElementById('property_grid'),
+					scrollX: false,
+					scrollY: true,
+					useClientSort: false,
+					minBodyHeight: 40,
+					width: 'auto',
+					// bodyHeight: 160,
+					contextMenu: null,
+					rowHeaders: [
+						{
+							type: 'checkbox',
+							header: `
+								<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+							`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:"checkBox"
+									},
+									{
+										type:"trash",
+										//휴지통 클릭 삭제 시 필요한 값 설정
+										url: '/api/document/navigation-property/delete',
+										idField: 'attrbtNo',
+										keyName: 'attrbtNoList',
+										// isdelAuth: popup.isDelAuth == "true" ? true : false,
+										msgList: {
+											confirmTit: "{{ message('item.doc.050') }}",  // 속성 삭제
+											confirmMsg: "{{ message('msg.009') }}", 		 	// 정말 삭제하시겠습니까?
+											completeMsg: "{{ message('msg.006') }}" 	// 삭제되었습니다.
+										},
+										success: function() { popup.refresh(); }
+									}
+								]
+							}
+						}
+					],
+					columns:[
+						{
+							header: "attrbtNo",
+							name: 'attrbtNo',
+							hidden: true,
+							// width: 'auto'
+						},
+						{
+							header: "{{ message('item.doc.049') }}", 	//속성코드
+							name: 'attrbtCd',
+							align: 'center',
+							resizable: true,
+							// width: 120
+						},
+						{
+							header: "{{ message('item.doc.022') }}", 	//이름(한)
+							name: 'attrbtNmKrn',
+							align: 'left',
+							resizable: true,
+							width: 150
+						},
+						{
+							header: "{{ message('item.doc.023') }}", 	//이름(영)
+							name: 'attrbtNmEng',
+							align: 'left',
+							resizable: true,
+							width: 150
+						},
+						{
+							header: "{{ message('item.doc.024') }}", 	//타입
+							name: 'attrbtType',
+							align: 'center',
+							resizable: true,
+							// width: 75
+						},
+						{
+							header: "{{ message('item.doc.025') }}", 	//표시여부
+							name: 'attrbtDsplyYn',
+							align: 'center',
+							resizable: true,
+							// width: 70
+						},
+						{
+							header: "{{ message('item.doc.026') }}", 	//수정여부
+							name: 'attrbtChgYn',
+							align: 'center',
+							resizable: true,
+							// width: 70
+						},
+						{
+							header: "{{ message('item.com.082') }}", 	//순서
+							name: 'attrbtDsplyOrder',
+							align: 'center',
+							// width: 50
+						},
+					],
+				});
+
+				this.loadData(naviId);
+			},
+
+			loadData: function(naviId){
+
+				gaiaCommon.get(`/api/document/${naviId}/property/list`, {}, function (result) {
+					let data = {};
+					if (result.details?.propertyList) {
+						data = result.details.propertyList;
+						popup.propertyList = data;
+					}
+
+					// 그리드의 높이를 동적으로 설정
+					const rowCount = data.length;
+					const rowHeight = 40; // 행당 높이 (임의로 40px로 설정)
+					const maxHeight = 600; // 그리드의 최대 높이
+					const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행의 개수에 맞춰 높이 조정
+
+					popup.property.grid.setBodyHeight(newHeight);
+					popup.property.grid.resetData(data);
+            	});
+			}
+		},
+
+		moveToAddProperty: function () {
+			$('#insertProperty').addClass('open');
+			$("#attrbtType_form").removeClass("readonly");					// 읽기 전용 클래스 제거
+			popup.modal.setComboBoxOptions();  								// 콤보박스 옵션 설정
+			$("#property_cu_tit").text(gaiaCommon.decodeSafeText("{{ message('item.doc.027') }}"));	// 속성 추가
+			popup.modal.mode = "create";
+		},
+
+		moveToUpdateProperty: function() {
+			// 선택된 행의 사이즈를 체크 (길이는 1이어야 함.)
+			let checkedRowLength = popup.property.grid.getCheckedRows().length;
+			let checkedRowData = popup.property.grid.getCheckedRows()[0];
+
+			if(checkedRowLength === 1){
+				popup.modal.setComboBoxOptions();  // 콤보박스 옵션 설정
+				this.modal.setUpdateData(checkedRowData);
+
+				$('#insertProperty').addClass('open');
+				popup.modal.mode = "update";
+			}else if(checkedRowLength > 1){
+				gaiaCommon.customAlert("{{ message('msg.doc.107') }}"); // 하나의 속성을 선택해주세요.
+				return;
+			}else{
+                gaiaCommon.customAlert("{{ message('msg.doc.108') }}"); // 수정할 속성을 선택해주세요.
+				return;
+			}
+
+		},
+
+		// 속성 삭제
+		delete: function() {
+			var attrbtNoList = [];
+
+			popup.property.grid.getCheckedRows().forEach(function(v){
+				attrbtNoList.push(v.attrbtNo);
+			});
+
+			if (attrbtNoList.length > 0) {
+				//선택한 속성을 삭제하시겠습니까?
+                gaiaCommon.customConfirm("{{ message('item.doc.029') }}", "{{ message('item.doc.029') }}", "{{ message('msg.doc.109') }}", function(){ // 선택한 속성을 삭제하시겠습니까?
+					gaiaCommon.post("/api/document/navigation-property/delete", { attrbtNoList : attrbtNoList }, function (result) {
+                        gaiaCommon.customAlert("{{ message('msg.006') }}", function(){ //삭제되었습니다.
+							popup.refresh(true);
+						});
+					});
+				});
+
+			} else {
+                gaiaCommon.customAlert("{{ message('msg.doc.110') }}"); //삭제할 속성을 선택해주세요.
+			}
+		},
+
+		modal: {
+			mode: null,
+			setComboBoxOptions: function() {
+				const attrbtCdTypeSelect = $("#attrbtCdType");
+				const attrbtTypeSelect = $("#attrbtType");
+
+				// 속성 종류 콤보박스 업데이트
+				attrbtCdTypeSelect.empty().append('<option selected disabled value="">{{ message("item.com.005") }}</option>');
+				popup.codeComboData.attrbtCdTypeOptions.forEach(option => {
+					attrbtCdTypeSelect.append(`<option value="${option.value}">${option.text}</option>`);
+				});
+
+				// 속성 타입 콤보박스 업데이트
+				attrbtTypeSelect.empty().append('<option selected disabled value="">{{ message("item.com.005") }}</option>');
+				popup.codeComboData.attrbtTypeOptions.forEach(option => {
+					attrbtTypeSelect.append(`<option value="${option.value}">${option.text}</option>`);
+				});
+			},
+
+			setAttrbtTypeSelOptions: function() {
+				const attrbtTypeSelect = $("#attrbtType").val();
+				const attrbtTypeSelSelect = $("#attrbtTypeSel");
+
+				//속성 타입이 SEL(콤보박스) 일 때,
+				if(attrbtTypeSelect === "SEL"){
+					attrbtTypeSelSelect.empty().append('<option selected disabled value="">{{ message("item.com.005") }}</option>');
+
+					popup.codeComboData.attrbtTypeSelOptions.forEach(option => {
+						attrbtTypeSelSelect.append(`<option value="${option.value}">${option.text}</option>`);
+					});
+				}
+				// 속성 타입이 HTML 일 때,
+				if(attrbtTypeSelect === "HTML"){
+					attrbtTypeSelSelect.empty().append('<option selected disabled value="">{{ message("item.com.005") }}</option>');
+
+					popup.codeComboData.attrbtHtmlOptions.forEach(option => {
+						attrbtTypeSelSelect.append(`<option value="${option.value}">${option.text}</option>`);
+					});
+				}
+			},
+
+			setUpdateData: function(data) {
+				console.log(data);
+
+				//속성 코드와 속성 종류, 속성 타입은 수정X
+				$("#attrbtCdType").val(data.attrbtCdType || "");
+				$("#attrbtCdType_form").addClass("readonly");
+
+				$("#attrbtCd").val(data.attrbtCd || "");
+				$("#attrbtCd").prop("disabled", false);
+				$("#attrbtCd").prop("readonly", true);
+
+				$("#attrbtType_form").addClass("readonly");
+				$("#property_cu_tit").text("{{ message('item.doc.028') }}");	// 속성 수정
+
+				// 속성 타입 세팅
+				$("#attrbtType").val(data.attrbtType || "");
+
+				// 타입이 SEL 또는 HTML 이면 두번째 콤보박스 옵션 세팅 + 값 넣기
+				if(data.attrbtType && (data.attrbtType === "SEL" || data.attrbtType === "HTML")){
+					popup.modal.setAttrbtTypeSelOptions(); // 옵션 먼저 채우고
+					$("#attrbtTypeSel").val(data.attrbtTypeSel || ""); // 값 넣기
+					$("#attrbtTypeSel").prop("disabled", false);
+					$("#attrbtTypeSel_form").show();
+				} else {
+					$("#attrbtTypeSel").val("");
+					$("#attrbtTypeSel").prop("disabled", true);
+					$("#attrbtTypeSel_form").hide();
+				}
+
+				$("#attrbtNmKrn").val(gaiaCommon.decodeSafeText(data.attrbtNmKrn) || "");
+				$("#attrbtNmEng").val(gaiaCommon.decodeSafeText(data.attrbtNmEng) || "");
+				$("input[name='attrbtDsplyYn'][value='" + (data.attrbtDsplyYn || "Y") + "']").prop("checked", true);
+				$("input[name='attrbtChgYn'][value='" + (data.attrbtChgYn || "Y") + "']").prop("checked", true);
+				$("#attrbtDsplyOrder").val(data.attrbtDsplyOrder || "");
+				$("#attrbtNo").val(data.attrbtNo);
+			},
+
+			enableAttrbtCd: function() {
+				const attrbtCdTypeSelect = $("#attrbtCdType");
+				const attrbtCdInput = $("#attrbtCd");
+				const attrbtCdExistBtn = $("#attrbtCdExist");
+				const attrbtCdRequired = $("#attrbtCd_req");
+
+				// UDC가 선택되었는지 확인
+				if (attrbtCdTypeSelect.val() === "UDC") {
+					attrbtCdInput.prop("disabled", false); // 활성화
+					attrbtCdExistBtn.show();
+
+					attrbtCdRequired.addClass("required"); // 필수 값 추가
+
+				}
+				else {
+					attrbtCdInput.val("");
+					attrbtCdInput.prop("disabled", true); // 비활성화
+					attrbtCdExistBtn.hide();
+
+					attrbtCdRequired.removeClass("required"); // 필수 값 제거
+				}
+			},
+
+			enableAttrbtTypeSel: function() {
+				const attrbtTypeSelect = $("#attrbtType");
+				const attrbtTypeSelSelect = $("#attrbtTypeSel");
+				const attrbtTypeSelForm = $("#attrbtTypeSel_form");
+				// Select가 선택되었는지 확인
+				if (attrbtTypeSelect.val() === "SEL") {
+					attrbtTypeSelSelect.prop("disabled", false); // 활성화
+					attrbtTypeSelForm.show();
+					this.setAttrbtTypeSelOptions(); //속성 타입에 따라 두번째 콤보박스 데이터 변경.
+				}
+				else if (attrbtTypeSelect.val() === "HTML") {
+					attrbtTypeSelSelect.prop("disabled", false); // 활성화
+					attrbtTypeSelForm.show();
+					this.setAttrbtTypeSelOptions(); //속성 타입에 따라 두번째 콤보박스 데이터 변경.
+				}
+				else {
+					attrbtTypeSelSelect.val("");
+					attrbtTypeSelForm.hide();
+					attrbtTypeSelSelect.prop("disabled", true); // 비활성화
+				}
+			},
+
+			resetData: function(){
+				// 모달 내의 모든 입력 필드 초기화
+				$("#insertProperty input[type='text']").val('');
+				$("#insertProperty input[type='hidden']").val('N');
+				$("#insertProperty select").val('');
+				$("#insertProperty input[type='radio']").prop('checked', false);
+
+				// 기본 선택이 필요한 라디오 버튼 초기화
+				$("#dsplyY").prop('checked', true);
+				$("#chgY").prop('checked', true);
+
+				// 속성 코드와 타입 선택 비활성화
+				$("#attrbtCd").prop("disabled", true);
+				$("#attrbtCdExist").hide();
+				$("#attrbtTypeSel").prop("disabled", true);
+
+				//속성 종류, 속성코드 읽기 모드 해제
+				$("#attrbtCdType_form").removeClass("readonly");
+				$("#attrbtCd").prop("readonly", false);
+			},
+
+			// 속성 코드 중복체크
+			existAttbtCd: function(){
+				const addRegex = /^(?!\s)[^\/:*?"<>|.]+$/;
+				const attrbtCd = $("#attrbtCd").val().split(' ').join('');
+				let addAttrbtCdVaild = $('#addAttrbtCdVaild');
+				const defaultAttrbtCd = ["TYPE", "APL", "STEP", "DCN"];	// 기존 정의된 속성종류의 코드값 (사용자 정의 코드로 사용불가)
+
+				if(!attrbtCd){
+                    gaiaCommon.customAlert("{{ message('msg.doc.113') }}");	// 속성 코드를 입력해주세요.
+					addAttrbtCdVaild.val('N');
+					return;
+				}
+
+				// UDC 타입 검사
+				if(attrbtCd && defaultAttrbtCd.includes(attrbtCd)){
+                    gaiaCommon.customAlert("기본 속성 코드는 사용할 수 없습니다 : TYPE, APL, STEP, DCN"); // 기본 속성 코드는 사용할 수 없습니다.
+					$("#attrbtCd").focus();
+					return false;
+				}
+
+				// 유효성 검사
+				if (!addRegex.test(attrbtCd)) {
+                    gaiaCommon.customAlert("{{ message('msg.079') }}" + '/ , : , * , ? , " , < , >  , | , .'); // 유효하지 않은 값이 포함되어 있습니다 : [/, :, *, ?, ", <, >, ., |]
+					$("#attrbtCd").focus();
+					addAttrbtCdVaild.val('N');
+					return false;
+				}
+
+				const requestData = {
+					naviId: popup.selectedNaviId,
+					attrbtCd: attrbtCd,
+				};
+
+				//서버 전송
+				gaiaCommon.post("/api/document/property/attrbtCd/exist", requestData, function (result) {
+					if(result.details?.attrbtCdExist === 'Y') {
+                        gaiaCommon.customAlert("{{ message('msg.doc.111') }}");		// 이미 사용중인 속성 코드입니다.
+						$("#attrbtCd").focus();
+						$("#attrbtCd").val(attrbtCd);
+						addAttrbtCdVaild.val('N');
+						return;
+					}else if(result.details?.attrbtCdExist === 'N'){
+						addAttrbtCdVaild.val('Y');
+						$("#attrbtCd").val(attrbtCd);
+                        gaiaCommon.customAlert("{{ message('msg.doc.112') }}");		// 사용 가능한 속성 코드입니다.
+					}
+				});
+
+			},
+
+			changeValid: function() {
+				$('#addAttrbtCdVaild').val('N');
+			},
+
+			save: function() {
+				// 값이 누락된 필드가 없으면 저장 진행
+				if (this.validateData()) {
+					if(this.mode === "create") {
+						this.create();
+					} else {
+						this.update();
+					}
+				}
+			},
+
+			// 입력값 유효성 검증
+			validateData: function() {
+				const attrbtDsplyOrder = $("#attrbtDsplyOrder").val();
+				const attrbtCdType = $("#attrbtCdType").val();
+				const attrbtType = $("#attrbtType").val();
+				const attrbtTypeSel = $("#attrbtTypeSel").val();
+				const attrbtCd = $("#attrbtCd").val();
+				const addAttrbtCdVaild = $('#addAttrbtCdVaild').val();
+
+				// 필수 값 검사
+				let isValid = true;
+				$("#insertProperty .required").each(function() {
+					const inputElement = $(this).closest(".row").find("input, select");
+
+					if (!inputElement.val()) { // 값이 없는 경우
+                        gaiaCommon.customAlert("{{ message('msg.008') }}");		// 필수 값이 누락되었습니다.
+						inputElement.focus(); // 포커스를 해당 필드로 이동
+						isValid = false;
+						return false; // each 반복문을 중지
+					}
+				});
+
+				if (!isValid) return false;
+
+				// 순서 유효성 검사
+				if (attrbtDsplyOrder) {
+					const orderVal = parseInt(attrbtDsplyOrder, 10);
+					if (isNaN(orderVal) || orderVal < 0 || orderVal > 32767) {
+                        gaiaCommon.customAlert("{{ message('msg.doc.122') }}"); // 순서 값은 0 ~ 32767 사이여야 합니다.
+						$("#attrbtDsplyOrder").focus();
+						return false;
+					}
+				}
+
+				// 타입이 SEL인 경우 타입 선택 값 확인
+				if (attrbtType === "SEL") {
+					if(!attrbtTypeSel){
+                        gaiaCommon.customAlert("타입 선택 값을 선택하세요.");
+						$("#attrbtTypeSel").focus();
+						return false;
+					}
+				}
+
+				return true;
+			},
+
+			// 속성 추가
+			create: function() {
+				// 입력값 수집 및 XSS 방지
+				const sanitizedInput = (val) => val?.replace(/[<>]/g, "") || "";
+
+				const attrbtCdType = $("#attrbtCdType").val();
+				let attrbtCd = $("#attrbtCd").val();
+				const attrbtType = $("#attrbtType").val();
+				const attrbtTypeSel = $("#attrbtTypeSel").val();
+				const addAttrbtCdVaild = $('#addAttrbtCdVaild').val();
+				const defaultAttrbtCd = ["TYPE", "APL", "STEP", "DCN"];	// 속성 코드 기본값 (사용자 정의 코드로 사용불가)
+
+				// UDC 타입 검사
+				if(this.mode === "create" && attrbtCdType === "UDC"){
+					if (!attrbtCd || attrbtCd.trim() === "") {
+                        gaiaCommon.customAlert("{{ message('msg.doc.113') }}"); // 속성 코드를 입력해주세요.
+						$("#attrbtCd").focus();
+						return false;
+					}
+					else if (addAttrbtCdVaild !== 'Y') {
+                        gaiaCommon.customAlert("{{ message('msg.doc.114') }}"); // 속성 코드 중복체크를 해주세요.
+						$("#attrbtCd").focus();
+						return false;
+					}
+					else if(attrbtCd && defaultAttrbtCd.includes(attrbtCd)){
+                        gaiaCommon.customAlert("기본 속성 코드는 사용할 수 없습니다."); // 기본 속성 코드는 사용할 수 없습니다.
+						$("#attrbtCd").focus();
+						return false;
+					}
+					else if(attrbtCd && attrbtCd.length > 20){
+                        gaiaCommon.customAlert("속성 코드는 20자 이내로 입력해주세요."); // 속성 코드는 20자 이내로 입력해주세요.
+						$("#attrbtCd").focus();
+						return false;
+					}
+				}
+				// UDC 타입이 아닌 경우 속성 종류 값을 코드 값으로 설정
+				else if(attrbtCdType !== "UDC"){
+					// 기본 속성이 추가되어 있는 경우, 추가로 생성 안됨.
+					if(popup.propertyList.some(item => item.attrbtCdType === attrbtCdType)){
+                        gaiaCommon.customAlert("이미 정의된 속성입니다. 추가 생성할 수 없습니다."); // 이미 정의된 속성입니다. 추가 생성할 수 없습니다.
+						$("#attrbtCdType").focus();
+						return false;
+					}
+
+					attrbtCd = attrbtCdType;
+				}
+
+
+				// 필요한 모든 데이터가 올바르게 입력되었는지 확인 후 저장 로직 수행
+				let requestData = {
+					naviId: popup.selectedNaviId,
+					naviNo: popup.selectedNaviNo,
+					attrbtCd: sanitizedInput(attrbtCd),
+					attrbtCdType: sanitizedInput(attrbtCdType),
+					attrbtType:sanitizedInput(attrbtType),
+					attrbtTypeSel:sanitizedInput(attrbtTypeSel),
+					attrbtNmKrn: sanitizedInput($("#attrbtNmKrn").val()),
+					attrbtNmEng: sanitizedInput($("#attrbtNmEng").val()),
+					attrbtDsplyYn: $("input[name='attrbtDsplyYn']:checked").val(),
+					attrbtChgYn: $("input[name='attrbtChgYn']:checked").val(),
+					attrbtDsplyOrder: sanitizedInput($("#attrbtDsplyOrder").val()),
+				};
+
+				// 서버 전송
+				gaiaCommon.post("/api/document/navigation-property/create", requestData, function (result) {
+                    gaiaCommon.customAlert("{{ message('msg.005') }}");	// 추가되었습니다.
+
+					popup.modal.resetData(); //입력 폼 초기화
+					$('#insertProperty').removeClass('open');
+					popup.property.loadData(popup.selectedNaviId); //속성 그리드 새로고침
+				});
+
+			},
+
+			// 속성 수정
+			update: function() {
+				// 입력값 수집 및 XSS 방지
+				const sanitizedInput = (val) => val?.replace(/[<>]/g, "") || "";
+
+				const attrbtCdType = $("#attrbtCdType").val();
+				const attrbtCd = $("#attrbtCd").val();
+				const attrbtType = $("#attrbtType").val();
+				const attrbtTypeSel = $("#attrbtTypeSel").val();
+				const addAttrbtCdVaild = $('#addAttrbtCdVaild').val();
+				const attrbtNo = $("#attrbtNo").val();
+
+				// 필요한 모든 데이터가 올바르게 입력되었는지 확인 후 저장 로직 수행
+				let requestData = {
+					attrbtNo: sanitizedInput(attrbtNo),
+					attrbtCdType: sanitizedInput(attrbtCdType),
+					attrbtTypeSel:sanitizedInput(attrbtTypeSel),
+					attrbtType: sanitizedInput(attrbtType),
+					attrbtNmKrn: sanitizedInput($("#attrbtNmKrn").val()),
+					attrbtNmEng: sanitizedInput($("#attrbtNmEng").val()),
+					attrbtDsplyYn: $("input[name='attrbtDsplyYn']:checked").val(),
+					attrbtChgYn: $("input[name='attrbtChgYn']:checked").val(),
+					attrbtDsplyOrder: sanitizedInput($("#attrbtDsplyOrder").val()),
+				};
+
+				gaiaCommon.post("/api/document/navigation-property/update", requestData, function (result) {
+                    gaiaCommon.customAlert("{{ message('msg.007') }}");	// 수정되었습니다.
+
+					popup.modal.resetData(); //입력 폼 초기화
+					$('#insertProperty').removeClass('open');
+					popup.property.loadData(popup.selectedNaviId); //속성 그리드 새로고침
+				});
+			}
+		},
+
+
+	};
+
+	$(function () {
+		gaia.create({
+            $init: function ($params) {
+				popup.init();
+            }
+        });
+	});
+</script>
+{% endblock content %}

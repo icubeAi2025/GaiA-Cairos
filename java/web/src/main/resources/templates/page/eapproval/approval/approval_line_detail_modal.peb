@@ -1,0 +1,26 @@
+
+<div class="modal" id="apLineDetailModal">
+    <div class="pop_box _xlg">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message('item.app.041') }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="methods.modalClose()">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">창닫기</span>
+                </button>
+            </div>
+
+        </div>
+        <div class="pop_body">
+            <div class="doc_list sty_step horizontal" id="detailModalBody">
+            </div>
+        </div>
+        <div class="pop_footer">
+            <div class="btn_area s_default jc_e">
+                <button type="button" class="btn _outline" onclick="methods.modalClose()">{{ message('btn.005') }}</button>
+                <button type="button" class="btn _fill" onclick="methods.modalClose()">{{ message('btn.004') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+

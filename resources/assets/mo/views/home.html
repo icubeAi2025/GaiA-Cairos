@@ -1,0 +1,48 @@
+<section id="contentWrap"></section>
+
+<script id="content-template" type="text/x-handlebars-template">
+    <h3>프로젝트 선택</h3>
+
+    <div class="mini-posts">
+        {{#each data.items}}
+        <article class="mini-post">
+            <header>
+                <h3><a href="#quality-list?pjtNo={{id}}&cntrctNo={{id}}">{{name}}</a></h3>
+                <p>공정률: 20%</p>
+                <time class="published" datetime="2015-10-20">October 20, 2015</time>
+                <footer>
+                    <ul class="actions">
+                        <li><a href="#project-infomation?pjtNo={{id}}&cntrctNo={{id}}" class="button alt">상세보기</a></li>
+                    </ul>
+                </footer>
+            </header>
+            <a href="#quality-list?pjtNo={{id}}&cntrctNo={{id}}" class="image"><img src="/assets/mo/images/pic04.jpg" alt=""></a>
+        </article>
+        {{/each}}
+        <article class="mini-post" style="text-align:center;{{#ifCond data.items.length '>' 0}}display:none;{{/ifCond}}">
+            <header>
+                <h3>데이터가 없습니다.</h3>
+            </header>
+        </article>
+    </div>
+</script>
+
+<script>
+    function loaded() {
+        console.log('loaded called');
+        gaiaCommon.get('/webApi/test/mock', {}, function (res) {
+            $('#contentWrap').append(tware.utils.handlebarCompile($('#content-template').html(), {
+                title: 'test'
+                , items: res.details.items
+            }));
+
+            $('#contentWrap a').on('click', function (e) {
+                const path = $(this).attr('href');
+
+                const args = gaia.utils.parseParams(path);
+                sessionStorage.setItem('pjtNo', args.pjtNo);
+                sessionStorage.setItem('cntrctNo', args.cntrctNo);
+            });
+        });
+    }
+</script>

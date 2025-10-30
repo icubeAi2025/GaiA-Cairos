@@ -1,0 +1,210 @@
+<style>
+    #detail {
+        display: inline-block;
+        padding: 10px;
+        /*text-align: center;*/
+    }
+
+    .info {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+<div id="input" style=" position: sticky; top: 20px;">
+    <div class="group">
+        <h4 class="conts_s-tit collapse_head">
+            {{ message('item.com.087') }}
+            <div class="btn_group iconbtns" style="margin-right: 7px;" id="terminationDate">
+            </div>
+            <button type="button" class="icon_btn collapse_btn">
+                <i class="ic ic-arrow"></i>
+                <span class="tooltip">{{ message('item.dfccy.038') }}</span>
+            </button>
+            <button type="button" class="icon_btn collapse_btn" style="position: absolute; right: 10px;" onclick="termination.closeForm()">
+                <i class="ic ic-close"></i>
+                <span class="tooltip">닫기</span>
+            </button>
+        </h4>
+        <div class="collapse collapse_body">
+            <div class="form_box" id="inputForm">
+                <!-- detail -->
+                <div class="group">
+                    <div class="row" id="detail" style="display: none;">
+                        <div class="info">
+                            <p class="data_info">
+                                {{ message('msg.dfccy.004') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <form name="form" id="form" style="display: none;">
+                    <div class="group">
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col" id="ed_check">
+                                <div class="form_label requireCheck">종결 확인</div>
+                                <div class="form_data">
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" name="ed_cd" id="ed_cd_n" value="0501">
+                                        <span class="check_label">{{ message('item.dfccy.012') }}</span>
+                                    </label>
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" name="ed_cd" id="ed_cd_y" value="0502">
+                                        <span class="check_label">{{ message('item.dfccy.015') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="btn_area s_default _outline" style="margin-top: .35em; display: none; justify-content: end;" id="inputBtn">
+                {{ btnHtml | raw }}
+                <!-- <button type="button" class="btn" onclick="termination.save()">
+                        {{ message('btn.006') }}
+                </button> -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var termination = {
+        selectedEdCd: null,
+
+        init: function () {
+            const selectedEdCd = page.currentEdCd || null;
+            if(selectedEdCd !== null){
+                this.selectedEdCd = selectedEdCd;
+            }
+
+            termination.loadData();
+        },
+
+        save: function () {
+            const edCd = $('input[name="ed_cd"]:checked').val();
+
+            if (!edCd) {
+                gaiaCommon.customAlert("종결 여부를 선택해주세요.");
+                return false;
+            }
+
+            let reqData = {
+                cntrctNo: $("#cntrctNo").val(),
+                dfccyNo: currentDfccyNo,
+                edCd: edCd,
+            };
+
+            let msg = edCd === "0502" ? "종결 처리 시 수정, 삭제가 불가능합니다." : "";
+
+            // 서버 전송
+            gaiaCommon.customConfirm("종결 여부", "종결 여부를 저장하시겠습니까?", msg, function () {
+                gaiaCommon.LoadingOverlay('body', true);
+                $.ajax({
+                    url: `/api/defecttracking/termination/save`,
+                    method: "POST",
+                    data: JSON.stringify(reqData),
+                    processData: false,
+                    contentType: "application/json",
+                    success: function (result) {
+                        if(result.ok){
+                            gaiaCommon.customAlert("{{ message('msg.044') }}"); //저장되었습니다.
+                            // page.read(currentPage, currentDfccyNo);
+                            dfccyPhase.tree.init(currentPage, currentDfccyNo);
+                        }else{
+                            gaiaCommon.customAlert(result.message);
+                        }
+                        gaiaCommon.LoadingOverlay('body', false);
+                    },
+                    error: function(err) {
+                        gaiaCommon.customAlert("{{ message('msg.060') }}");
+                        console.error(err.message);
+                        gaiaCommon.LoadingOverlay('body', false);
+                    }
+                })
+            });
+        },
+
+        loadData: function () {
+            $.ajax({
+                url: `/api/defecttracking/termination/detail`,
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    cntrctNo: $("#cntrctNo").val(),
+                    dfccyPhaseNo: dfccyPhaseNo,
+                    dfccyNo: currentDfccyNo,
+                }),
+                success: function (data) {
+                    let phase = data.details.phase[0];
+
+                    let today = new Date().setHours(0, 0, 0, 0);
+                    let startDate = new Date(phase.finish_bgn_date).setHours(0, 0, 0, 0);
+                    let endDate = new Date(phase.finish_end_date).setHours(0, 0, 0, 0);
+
+                    let statusText = endDate < today ? "{{ message('item.dfccy.004') }}" : startDate > today ? "{{ message('item.dfccy.002') }}" : "{{ message('item.dfccy.003') }}";
+                    $("#terminationDate").html(`${phase.finish_bgn_date} ~ ${phase.finish_end_date} <div style='color: red; padding:.35em;'>[ ${statusText} ]</div>`);
+
+                    let isEnded = endDate < today;
+                    let isTerminated = termination.selectedEdCd === '0502';
+                    let hasTermination = termination.selectedEdCd != null;
+
+                    // 진행중이고 미결이거나 값이 없을때 버튼 생성.
+                    $("#inputBtn").toggle(!isEnded && !isTerminated);
+                    $(".form_check").toggleClass("form_check", !isEnded && !isTerminated);
+
+                    if (hasTermination) {
+                        const currnetEdCd = termination.selectedEdCd;
+                        if (currnetEdCd === "0501"){
+                            $("#ed_cd_n").prop("checked", true);
+                            $("#ed_cd_y").prop("checked", false);
+
+                        }
+                        else if (currnetEdCd === "0502") {
+                            $("#ed_cd_y").prop("checked", true);
+                            $("#ed_cd_n").prop("checked", false);
+                        }
+
+                        $("#inputForm").toggleClass("readonly", isEnded || currnetEdCd === "0502");
+
+                    }
+
+                    $("#form").toggle(!isEnded || hasTermination);
+                    $("#detail").toggle(isEnded && !hasTermination);                // 입력기간 종료 알림 요소 (기한이 지난 후 종결 여부 입력 X 일때)
+                    $(".requireCheck").toggleClass("required", !hasTermination);    // 입력 값 없을 때, 필수 표시.
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            });
+        },
+
+        closeForm(){
+            $('.gridContainer').removeClass('active');
+            $("#popup").empty();
+
+            const container = document.querySelector(".gridContainer");
+            const table = document.querySelector(".table ");
+            const newWidth = container.clientWidth;
+            if(container.clientWidth < table.clientWidth) {
+                $("#grid table").css("width", "max-content");
+            } else {
+                $("#grid table").css("width", "");
+            }
+            $('#grid').css("maxWidth", newWidth + "px");
+        }
+    };
+
+    $(function(){
+        termination.init();
+
+        var cTargetBtn = $(".collapse_btn");
+        var cTargetArea = $(".collapse_body");
+        $(cTargetBtn).click(function () {
+            $(this).toggleClass('collapsed');
+            $(this).parent().next(cTargetArea).slideToggle();
+        });
+
+        gaia.loaded = true;
+    })
+</script>

@@ -1,0 +1,150 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row" style="height: auto;">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_grid">
+				<!-- PDF 미리보기를 위한 iframe -->
+				<iframe id="preview-frame" style="width: 100%; height: 80vh; border-style:solid;"></iframe>
+			</div>
+			<div class="btn_area s_default" style="justify-content: end;">
+				<button type="button" class="btn _outline" onclick="popup.close()" style="margin-top: 10px;">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</article>
+</section>
+<!-- 토스트 메세지 : 활성화:'on'추가, 수초 후 'on'제거-->
+<div class="pop_box toast" style="display: none; z-index: 16;">
+	<span class="toast_msg">
+	</span>
+	<button type="button" class="icon_btn pop_close">
+		<i class="ic ic-close"></i>
+		<span class="blind">창닫기</span>
+	</button>
+</div>
+
+<div class="alertModal fade" style="z-index:16;" id="pdf_alert">
+	<div class="pop_box alert on" id="pdf_popBoxAlert" data-name="Alert" style="display:none;">
+	    <div class="pop_header">
+	        <h5 class="pop_tit">{{ message('item.com.084') }}</h5> <!--알림-->
+	        <button type="button" class="icon_btn pop_close">
+	            <i class="ic ic-close"></i>
+	            <span class="blind">창닫기</span>
+	        </button>
+	    </div>
+	    <div class="pop_body">
+	        <strong class="msg_tit"></strong>
+	        <p class="msg_tit_dlt"></p>
+	    </div>
+	    <div class="pop_footer">
+	        <div class="btn_area jc_e">
+	            <button type="button" class="btn _outline" id="pop_box_confirm">{{ message('btn.007') }}</button> <!--닫기-->
+	        </div>
+	    </div>
+	</div>
+</div>
+<script>
+	let page = null;
+	let iframe = document.getElementById("preview-frame");
+	let fileMeta = null;
+	let srcData = null;
+	// 새창 모드일때, 부모창이 있는지 감지.
+	if(opener){
+		page = opener.page;
+	}else{
+		gaiaCommon.customAlert("{{ message('msg.059') }}", function(){	// 잘못된 요청입니다.
+			location.replace('/');
+		});
+	}
+
+	var popup = {
+		init(){
+			if(fileMeta.ext !== 'txt' && fileMeta.ext !== 'pdf' && !['jpg', 'gif', 'png'].includes(fileMeta.ext)){
+				gaiaCommon.customAlert("지원하지 않는 파일 형식입니다",()=>{
+					window.close();
+				},{timeout:2000});
+			}
+			else{
+				if(srcData){
+					document.getElementById('pageNav').innerHTML = `<h2 class="page_tit" id="menuName">${fileMeta.fileName}</h2>`;
+					popup.render(srcData,"new");
+				}
+				else{
+					gaiaCommon.post("/api/util/file/check",fileMeta,(response,status,xhr)=>{
+						if(response.ok){
+							document.getElementById('pageNav').innerHTML = `<h2 class="page_tit" id="menuName">${fileMeta.originalFilename}</h2>`;
+							popup.render(`/api/util/file/preview?filePath=${encodeURIComponent(fileMeta.filePath)}`,"old");
+						}
+						else{
+							gaiaCommon.customAlert("존재하지 않는 파일입니다.",()=>{
+								window.close();
+							},{timeout:2000});
+						}
+					},(xhr,status,error)=>{
+						gaiaCommon.customAlert("존재하지 않는 파일입니다.",()=>{
+							window.close();
+						},{timeout:2000});
+
+					})
+				}
+			}
+			gaia.loaded = true;
+		},
+		render(srcData,type){
+			gaiaCommon.LoadingOverlay('body', true);
+			if(fileMeta.ext === 'txt'){
+				if(type === "new"){
+					const binary = atob(srcData.split(',')[1]);
+					const bytes = new Uint8Array(binary.length);
+					for(let i = 0; i < bytes.length; i++){
+						bytes[i] = binary.charCodeAt(i);
+					}
+					const blob = new Blob([bytes],{type:"text/plain;charset=utf-8"});
+					iframe.src = URL.createObjectURL(blob);
+				}
+				else if(type === "old") {
+					iframe.src = srcData;
+				}
+			}
+			else if( ['jpg', 'gif', 'png'].includes(fileMeta.ext) ){
+				iframe.srcdoc = `
+		  <html>
+			<head>
+			  <style>
+				body { margin:0; display:flex; justify-content:center; align-items:center; height:100%; }
+				img { max-width:100%; max-height:100%; object-fit:contain; }
+			  </style>
+			</head>
+			<body>
+			  <img src="${srcData}" />
+			</body>
+		  </html>
+		`;
+			}
+			else if(fileMeta.ext === 'pdf'){
+				iframe.src = `/assets/static/pdfjs/web/viewer.html?file=${encodeURIComponent(srcData)}`
+			}
+			gaiaCommon.LoadingOverlay('body', false); 	// 로딩 바 비활성화
+		},
+		
+		close() {
+			window.close();
+		},
+	}
+
+	$(function () {
+		if(window.opener){
+			window.opener.postMessage({type:"ready"},window.location.origin);
+		}
+		window.addEventListener("message", (event) => {
+			if (event.origin !== window.location.origin) return;
+			if(event.data.type === "fileInfo"){
+				fileMeta = event.data.data.fileMeta;
+				srcData = event.data.data.srcData;
+			}
+			popup.init();
+		});
+	});
+</script>
+{% endblock content %}

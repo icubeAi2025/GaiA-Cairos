@@ -1,0 +1,445 @@
+
+<div class="open modal" id="updateActivity">
+    <div class="pop_box _xlg">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message("item.weeklyreport.006") }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="modal.close()">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">창닫기</span>
+                </button>
+            </div>
+
+        </div>
+        <div class="pop_body">
+            <div class="group">
+                <h4 class="conts_s-tit">Activity {{ message("item.com.066") }}</h4>
+                <div class="conts_grid">
+                    <div class="sticky_wrap" style="margin-top: 10px;">
+                        <div class="sticky_box">
+                            <div style="height:300px;min-width:1280px;" id="update_add_tbl">
+                                <table class="table sticky" style="border:0px; border-right: 1px solid var(--tb-bd);">
+                                    <colgroup>
+                                        <col style="width: 90px;">
+                                        <col style="width: 250px;">
+                                        <col style="width: 120px;">
+                                        <col style="width: 300px;">
+                                        <col style="width: 150px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 90px;">
+                                    </colgroup>
+                                    <thead>
+                                    <tr>
+                                        <th rowspan="2">{{ message("btn.001") }}</th>
+                                        <th rowspan="2">WBS</th>
+                                        <th rowspan="2">Activity ID</th>
+                                        <th rowspan="2">{{ message("item.activity.003") }}</th>
+                                        <th rowspan="2">{{ message("item.construction.055") }}</th>
+                                        <th colspan="2">{{ message("item.com.055") }}</th>
+                                        <th colspan="2">{{ message("item.construction.206") }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.construction.030") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.com.030") }}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="addActivityTbody">
+                                    <tr id="noAddData" hidden>
+                                        <td colspan="9">
+                                            <div style="display: flex;justify-content: center;">
+                                                <p class="data_info">
+                                                    {{message('msg.091')}}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div id="update_add_grid" class="grid"></div> -->
+                </div>
+            </div>
+
+            <div class="group">
+                <div class="s_conts">
+                    <span class="tree_route">{{ message("item.weeklyreport.016") }}</span>
+                    <div class="sticky_wrap">
+                        <div class="sticky_box">
+                            <div style="max-height:300px;min-width:1280px;" id="tblDiv">
+                                <table class="table sticky" style="border:0px;">
+                                    <colgroup>
+                                        <col style="width: 60px;">
+                                        <col style="width: 180px;">
+                                        <col style="width: 250px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 90px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
+                                    </colgroup>
+                                    <thead>
+                                    <tr>
+                                        <th rowspan="2">{{ message("btn.002") }}</th>
+                                        <th rowspan="2">WBS</th>
+                                        <th rowspan="2">Activity</th>
+                                        <th colspan="3">{{ message("item.com.055") }}</th>
+                                        <th colspan="3">{{ message("item.construction.206") }}</th>
+                                        <th rowspan="2">{{ message("item.weeklyreport.017") }}</th>
+                                        <th rowspan="2">{{ message("item.app.018") }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.construction.030") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.monthlyreport.020") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.com.029") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.com.030") }}</th>
+                                        <th style="top:51.5px;">{{ message("item.construction.033") }}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="majorActivityTbody">
+                                    <tr id="noActData" hidden>
+                                        <td colspan="11">
+                                            <div style="display: flex;justify-content: center;">
+                                                <p class="data_info">
+                                                    {{message('msg.091')}}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area s_default jc_e">
+                <button type="button" class="btn _fill" onclick="modal.update()">{{ message("btn.006") }}</button>
+                <button type="button" class="btn _outline" onclick="modal.close()">{{ message("btn.007") }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var addList = [];
+    var delList = [];
+    var updateList = [];
+
+    var modal = {
+        init() {
+            let params = {
+                cntrctNo: urlCntrctNo,
+                cntrctChgId: cntrctChgId,
+                weeklyReportId: weeklyReportId,
+                reportDate: $('#reportDate').val()
+            }
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            $.ajax({
+                url: BASEPATH+'/select-major-activty',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(params),
+                success: function(data) {
+                    let maList = data.details.majorActivityList;
+                    major.read(maList)
+                    let uaList = data.details.addActivityList;
+                    modal.read(uaList);
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                },
+                complete: function() {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            })
+
+            gaia.loaded = true;
+        },
+        close() {
+            $('#update_modal').removeClass('open');
+            $('#popup').empty();
+        },
+        read(data) {
+            // $('#addActivityTbody').empty();
+            if(data.length > 0) {
+                $.each(data, function(index, obj) {
+                    let html = `<tr id="add_${obj.activity_id}" data-status="old">
+                                    <td class="align_center">
+                                        <button class="btn icon_btn _outline" type="button" onclick="modal.add(event)"><i class="ic ic-plus"><span class="blind">추가</span></i></button>
+                                    </td>
+                                    <td class="align_center" data-path_nm="${obj.path_nm}">${obj.path_nm}</td>
+                                    <td class="align_center" data-activity_id="${obj.activity_id}">${obj.activity_id}</td>
+                                    <td data-activity_nm="${obj.activity_nm}">${obj.activity_nm}</td>
+                                    <td class="align_right" >${obj.expt_cost.toLocaleString()}</td>
+                                    <td class="align_center" data-plan_start="${obj.plan_start}">${obj.plan_start}</td>
+                                    <td class="align_center" data-plan_finish="${obj.plan_finish}">${obj.plan_finish}</td>
+                                    <td class="align_center" data-actual_start="${obj.actual_start}">${obj.actual_start}</td>
+                                    <td class="align_center" data-actual_finish="${obj.actual_finish}">${obj.actual_finish}</td>
+                                    <td data-wbs_cd="${obj.wbs_cd}" style="display:none"></td>
+                                    <td data-dly_div="${obj.dly_div}" style="display:none"></td>
+                                    <td data-revision_id="${obj.revision_id}" style="display:none"></td>
+                                    ${obj.plan_reqre_daynum ? `<td data-plan_reqre_daynum="${obj.plan_reqre_daynum}" style="display:none"></td>` : ''}
+                                    ${obj.actual_reqre_daynum ? `<td data-actual_reqre_daynum="${obj.actual_reqre_daynum}" style="display:none"></td>` : ''}
+                                    ${obj.pstats ? `<td data-pstats="${obj.pstats}" style="display:none"></td>` : ''}
+                                    ${obj.pstats_nm ? `<td data-pstats_nm="${obj.pstats_nm}" style="display:none"></td>` : ''}
+                                    ${obj.thismth_exe_rate ? `<td data-thismth_exe_rate="${obj.thismth_exe_rate}" style="display:none"></td>` : ''}
+                                    ${obj.thismth_plan_rate ? `<td data-thismth_plan_rate="${obj.thismth_plan_rate}" style="display:none"></td>` : ''}
+                                </tr>`
+                    $('#addActivityTbody').append(html);
+                })
+            } else {
+                $('#noAddData').show();
+            }
+        },
+        add(event) {
+            let modalType = $('#modalType').val();
+            const $tr = $(event.target).closest('tr');
+            $tr.hide();
+
+            const rowData = modal.functions.makeRowData($tr);
+
+            const targetRow = $('#tblDiv tbody').find(`#acti_${rowData.activity_id}`);
+
+            if(targetRow.length > 0) {
+                targetRow.show();
+            } else {
+                major.addActivity(rowData);
+            }
+
+            modal.functions.noDataMsg();
+        },
+        delete(event) {
+            const $tr = $(event.target).closest('tr');
+            $tr.hide();
+            const rowData = modal.functions.makeRowData($tr);
+            const targetRow = $('#addActivityTbody').find(`#add_${rowData.activity_id}`);
+
+            if($('#noAddData').length > 0) {
+                $('#noAddData').hide();
+            }
+
+            if(targetRow.length > 0) {
+                targetRow.show();
+            } else {
+                let html = `<tr id="add_${rowData.activity_id}" data-status="new">
+                                <td class="align_center">
+                                    <button class="btn icon_btn _outline" type="button" onclick="modal.add(event)"><i class="ic ic-plus"><span class="blind">추가</span></i></button>
+                                </td>
+                                <td class="align_center">${rowData.path_nm}</td>
+                                <td data-activity_id=${rowData.activity_id} class="align_center">${rowData.activity_id}</td>
+                                <td>${rowData.activity_nm}</td>
+                                <td class="align_right">${rowData.expt_cost}</td>
+                                <td class="align_center">${rowData.plan_bgn_date}</td>
+                                <td class="align_center">${rowData.plan_end_date}</td>
+                                <td class="align_center">${rowData.actual_bgn_date}</td>
+                                <td class="align_center">${rowData.actual_end_date}</td>
+                            </tr>`
+                $('#addActivityTbody').prepend(html);
+            }
+
+            let isNew = $tr.data('status') === 'new';
+            if(isNew) {
+                let activityIndex = addList.findIndex(item => item.activityId === rowData.activity_id);
+                addList.splice(activityIndex, 1);
+            } else {
+                let activityIndex = updateList.findIndex(item => item.activityId === rowData.activity_id);
+                updateList.splice(activityIndex, 1);
+            }
+
+            modal.functions.noDataMsg();
+        },
+        update() {
+            addList = [];
+            delList = [];
+
+            let goUpdate = true;
+
+            const tbodyId = $('#tblDiv').find('tbody').attr('id');
+
+            $(`#${tbodyId} tr`).each(function () {
+                const $tr = $(this);
+                const status = $tr.data('status');
+                const display = $tr.css('display');
+                const originalData = $tr.data('original');
+                const rowData = modal.functions.makeRowData($tr);
+
+                if (status === 'new' && display !== 'none') {
+                    addList = modal.functions.pushAddList(addList, rowData, 'T', 'N');
+                } else if (status === 'old' && display === 'none') {
+                    delList = modal.functions.pushDeleteList(delList, rowData.weekly_activity_id);
+                }
+            });
+
+            if (!goUpdate) return;
+
+            if (delList.length > 0 || addList.length > 0) {
+                const params = {
+                    modalType: 't',
+                    delActivityList: delList,
+                    addActivityList: addList,
+                    updateActivityList: [],
+                };
+                $.ajax({
+                    url: `${BASEPATH}/update-activity`,
+                    method: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json; charset-utf-8',
+                    data: JSON.stringify(params),
+                    success: function (result) {
+                        if (result.ok) {
+                            gaiaCommon.customAlert('{{ message("msg.monthlyreport.013") }}', function(){
+                                modal.close();
+                                reportDetail.getReport();
+                            });
+                        } else {
+                            gaiaCommon.customAlert('{{ message("msg.monthlyreport.004") }}',);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error(status, error);
+                        gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    }
+                });
+            } else {
+                modal.close();
+            }
+        },
+        functions: {
+            noDataMsg() {
+                this.toggleMsg('#addActivityTbody', '#noAddData');
+                this.toggleMsg('#majorActivityTbody', '#noActData');
+            },
+            toggleMsg(tbody, msgId) {
+                const $rows = $(`${tbody} tr`).not(msgId);
+                const visibleRow = $rows.filter(':visible').length > 0;
+                $(msgId).toggle(!visibleRow);
+            },
+            pushAddList(addList, rowData, workDtType, majorPrcsYn, etcData={}) {
+                const delayType = rowData.dly_div ? rowData.dly_div : null;
+                const pstats = rowData.pstats ? rowData.pstats : null;
+                const planRate = rowData.thismth_plan_rate ? rowData.thismth_plan_rate : null;
+                const exeRate = rowData.thismth_exe_rate ? rowData.thismth_exe_rate : null;
+                addList.push({
+                    cntrctChgId: cntrctChgId,
+                    weeklyReportId: weeklyReportId,
+                    wbsCd: rowData.wbs_cd,
+                    activityId: rowData.activity_id,
+                    workDtType: workDtType,
+                    planBgnDate: rowData.plan_bgn_date,
+                    planEndDate: rowData.plan_end_date,
+                    actualBgnDate: rowData.actual_bgn_date,
+                    actualEndDate: rowData.actual_end_date,
+                    majorPrcsYn: majorPrcsYn,
+                    dlyDiv: delayType,
+                    revisionId: rowData.revision_id,
+                    pstats: pstats,
+                    thismthPlanRate: planRate,
+                    thismthExeRate: exeRate,
+                    ...etcData
+                });
+                return addList;
+            },
+            pushDeleteList(delList, weeklyActivityId) {
+                delList.push({
+                    cntrctChgId: cntrctChgId,
+                    weeklyReportId: weeklyReportId,
+                    weeklyActivityId: weeklyActivityId,
+                });
+                return delList;
+            },
+            makeRowData(tr) {
+                const rowData = {};
+                tr.find('td').each(function () {
+                    $.each(this.dataset, (key, value) => {
+                        rowData[key] = value;
+                    });
+                });
+                return rowData;
+            }
+        }
+
+    }
+
+    var major = {
+        read(data) {
+            if(data.length > 0) {
+                $.each(data, function(index, obj) {
+                    let thismth_exe_rate = (obj.thismth_exe_rate != null)
+                            ? Number(obj.thismth_exe_rate).toFixed(2)
+                            : "0.00";
+                    let html = `<tr id="acti_${obj.activity_id}" data-status="old">
+                                    <td class="align_center">
+                                        <button type="button" class="icon_btn" onclick="modal.delete(event)"><i class="ic ic-delete"><span class="blind">삭제</span></i></button>
+                                    </td>
+                                    <td class="align_center" data-path_nm="${obj.path_nm}">${obj.path_nm}</td>
+                                    <td data-activity_nm="${obj.activity_nm}">${obj.activity_nm}</td>
+                                    <td class="align_center" data-plan_bgn_date="${obj.plan_bgn_date}">${obj.plan_bgn_date}</td>
+                                    <td class="align_center" data-plan_end_date="${obj.plan_end_date}">${obj.plan_end_date}</td>
+                                    <td class="align_right">${obj.plan_reqre_daynum === null ? '' : `${obj.plan_reqre_daynum}`}</td>
+                                    <td class="align_center" data-actual_bgn_date="${obj.actual_bgn_date}">${obj.actual_bgn_date}</td>
+                                    <td class="align_center" data-actual_end_date="${obj.actual_end_date}">${obj.actual_end_date}</td>
+                                    <td class="align_right">${obj.actual_reqre_daynum === null ? '' : `${obj.actual_reqre_daynum}`}</td>
+                                    <td class="align_right">${thismth_exe_rate}%</td>
+                                    <td class="align_center">${obj.pstats_nm ? `${obj.pstats_nm}` : ''}</td>
+                                    <td data-activity_id="${obj.activity_id}" style="display:none"></td>
+                                    <td data-weekly_activity_id="${obj.weekly_activity_id}" style="display:none"></td>
+                                    <td data-expt_cost="${obj.expt_cost.toLocaleString()}" style="display:none"></td>
+                                </tr>`
+                    $('#majorActivityTbody').append(html);
+                })
+            } else {
+                $('#noActData').show();
+            }
+        },
+        addActivity(data) {
+            let targetRow = $('#majorActivityTbody').find(`#acti_${data.activity_id}`);
+            if(targetRow.length > 0) {
+                targetRow.show();
+            } else {
+                let exeRate = data.thismth_exe_rate ? `${data.thismth_exe_rate}` : 0;
+                let html = `<tr id="acti_${data.activity_id}" data-status="new">
+                                <td class="align_center">
+                                    <button type="button" class="icon_btn" onclick="modal.delete(event)"><i class="ic ic-delete"><span class="blind">삭제</span></i></button>
+                                </td>
+                                <td class="align_center">${data.path_nm}</td>
+                                <td data-activity_id="${data.activity_id}">${data.activity_nm}</td>
+                                <td class="align_center" data-plan_bgn_date="${data.plan_start}">${data.plan_start}</td>
+                                <td class="align_center" data-plan_end_date="${data.plan_finish}">${data.plan_finish}</td>
+                                <td class="align_right">${data.plan_reqre_daynum ? `${data.plan_reqre_daynum}` : ''}</td>
+                                <td class="align_center" data-actual_bgn_date="${data.actual_start}">${data.actual_start}</td>
+                                <td class="align_center" data-actual_end_date="${data.actual_finish}">${data.actual_finish}</td>
+                                <td class="align_right">${data.actual_reqre_daynum ? `${data.actual_reqre_daynum}` : '' }</td>
+                                <td class="align_right" data-thismth_exe_rate="${exeRate}">${exeRate}%</td>
+                                ${data.pstats ? `<td class="align_center" data-pstats="${data.pstats}">${data.pstats_nm}</td>` : `<td></td>`}
+                                <td data-dly_div="${data.dly_div}" style="display:none"></td>
+                                <td data-revision_id="${data.revision_id}" style="display:none"></td>
+                                <td data-wbs_cd="${data.wbs_cd}" style="display:none"></td>
+                                <td data-thismth_plan_rate="${data.thismth_plan_rate}" style="display:none"></td>
+                            </tr>`
+                $('#majorActivityTbody').prepend(html);
+            }
+        },
+    }
+
+
+    $(function() {
+        modal.init();
+    })
+</script>

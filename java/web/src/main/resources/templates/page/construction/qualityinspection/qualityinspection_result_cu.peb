@@ -1,0 +1,821 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_form">
+                <div class="btn_area s_default _outline">
+                    <button type="button" class="btn save-btn" id="addButton" onclick="page.saveResult()">{{
+                        message('btn.006')}}</button> <!-- 저장 -->
+                    <button type="button" class="btn" id="deleteButton" onclick="page.closePage()">{{ message('btn.007')
+                        }} </button> <!-- 닫기 -->
+                    <button class="icon_btn" onclick="newWindow()" id="newWindow">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span class="tooltip" style="position: absolute; z-index: 1000;">{{ message('item.com.017') }}
+                        </span>
+                    </button> <!-- 새창으로 열기 -->
+                </div>
+                <div class="s_conts" id="formBox">
+                    <span class="tree_route">{{ message('item.quality.020')}}</span> <!-- 검측 요청 정보 -->
+                    <div class="form_box" id="quality-form">
+                        <!-- row -->
+                        <div class="row cols5">
+                            <div class="col merge3">
+                                <div class="form_label">{{ message('item.quality.007')}}</div> <!-- 문서 번호 -->
+                                <div class="form_data">
+                                    <input type="text" name="ispDocNo">
+                                </div>
+                            </div>
+                            <div class="col merge2">
+                                <div class="form_label">{{ message('item.quality.010')}}</div> <!-- 검측 요청 일자 -->
+                                <div class="form_data">
+                                    <span id="ispReqDt">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row cols5">
+                            <div class="col merge3">
+                                <div class="form_label">{{ message('item.quality.008')}}</div> <!-- 위치 -->
+                                <div class="form_data">
+                                    <input type="text" name="ispLct">
+                                </div>
+                            </div>
+                            <div class="col merge2">
+                                <div class="form_label">{{ message("item.progressstatus.010") }}</div> <!-- 공종 -->
+                                <div class="form_data" style="justify-content: space-between;">
+                                    <span id="workTypeSelect">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row cols">
+                            <div class="col">
+                                <div class="form_label">{{ message("item.quality.021") }}</div> <!-- 검측 부위 -->
+                                <div class="form_data">
+                                    <input type="text" class="form-control" name="ispPart">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row cols">
+                            <div class="col">
+                                <div class="form_label">{{ message("item.construction.052") }}</div>
+                                <!-- Activity 명 -->
+                                <div class="form_data">
+                                    <span class="item_wrap">
+                                        <input type="text" name="activity" id="activity" class="form-control" readonly>
+                                        <button type="button" class="btn icon_btn _fill" onclick="page.getActivity()">
+                                            <i class="ic ic-search"></i>
+                                            <span class="blind">{{ message('btn.015') }}</span> <!-- 조회 -->
+                                        </button>
+                                        <input type="hidden" name="wbs_cd" id="wbs_cd">
+                                        <input type="hidden" name="activity_id" id="activity_id">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row cols">
+                            <div class="col">
+                                <div class="col merge">
+                                    <div class="form_label">{{ message("item.quality.009") }}</div> <!-- 검측 사항 -->
+                                    <div class="form_data">
+                                        <textarea id="ispIssue" name="ispIssue"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label">{{ message('btn.021') }}</div> <!-- 파일첨부 -->
+                                <div class="form_data">
+
+                                    <div class="attach_wrap">
+                                        <div class="attach_toolbar">
+                                            <div class="attach_info">
+                                            </div>
+                                        </div>
+
+                                        <div class="attach_area">
+                                            <!-- 첨부파일 미등록 시 -->
+                                            <p class="data_info">
+                                                {{ message('msg.pinstall.003') }}
+                                            </p>
+
+                                            <!-- 첨부파일 등록 시 활성화 'hide' 제거-->
+                                            <div class="attach_list hide">
+                                                <ul class="file_header">
+                                                    <li class="header_item"
+                                                        style="display:flex; justify-content:space-between;">
+                                                        <span class="f_name">{{ message('item.com.020') }}</span>
+                                                        <!-- 파일명 -->
+                                                        <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                                        <!-- 크기 -->
+                                                    </li>
+                                                </ul>
+                                                <ul class="file_list" id="fileList"></ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="group">
+            <div class="s_conts">
+                <span class="tree_route">{{ message("item.quality.023") }}</span> <!-- 체크리스트 -->
+                <div class="conts_grid">
+                    <table class="table ta_c" id="checkListTable">
+                        <colgroup>
+                            <col width="100px">
+                            <col>
+                            <col>
+                            <col>
+                            <col>
+                        </colgroup>
+                        <thead id="checkListHead">
+                        </thead>
+                        <tbody id="checkListBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="group">
+            <div class="s_conts">
+                <span class="tree_route">{{ message("item.quality.024") }}</span>
+
+                <!-- S: Slick Slider -->
+                <div class="process_photo">
+                    <div class="quality_photo_list" id="qualityPhotoList">
+                    </div>
+
+                    <div class="slick_nav">
+                        <div class="btn_area">
+                            <div class="btn_group _outline slick_indigator">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="blind">이전</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="blind">다음</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="group" id="result-group">
+            <div class="s_conts">
+                <span class="tree_route">{{ message("item.quality.041") }}</span> <!-- 검측 결과 통보서 작성 -->
+                <div class="form_box" id="quality-form">
+                    <div class="container" style="display: flex; align-items: center;">
+                        <span class="caption">
+                            <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                        </span>
+                    </div>
+                    <div class="container" style="display: flex; align-items: center;">
+                        <span class="caption">
+                            <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                        </span>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col merge">
+                            <div class="form_label required">{{ message("item.quality.007") }}</div> <!-- 문서 번호 -->
+                            <div class="form_data">
+                                <input type="text" name="rsltDocNo" class="maxlength" maxlength="100" required>
+                            </div>
+                        </div>
+                        <div class="col merge">
+                            <div class="form_label">{{ message("item.quality.042") }}</div> <!-- 검측 일자 -->
+                            <div class="form_data">
+                                <input type="date" id="rsltDt" name="rsltDt" class="date">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col merge">
+                            <div class="form_label required">{{ message("item.quality.011") }}</div> <!-- 검측 결과 -->
+                            <div class="form_data" style="justify-content: space-between;">
+                                <span class="selectbox w-md">
+                                    <select name="rsltType" id="rsltSelectBox">
+                                        <option value="select" selected disabled>
+                                            =선택=
+                                        </option>
+                                        <option value="01">
+                                            {{ message("item.quality.046") }} <!-- 적합 -->
+                                        </option>
+                                        <option value="02">
+                                            {{ message("item.quality.047") }} <!-- 부적합 -->
+                                        </option>
+                                    </select>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="col merge">
+                                <div class="form_label">{{ message("item.quality.043") }}</div> <!-- 지시 사항 -->
+                                <div class="form_data">
+                                    <textarea id="ordeOpnin" name="ordeOpnin" class="maxlength"
+                                        maxlength="2000"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    #formBox {
+        margin-top: 1em;
+    }
+
+    .chklst-dscrpt {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .p_photo_info .desc {
+        max-height: 100px;
+        overflow: auto;
+        word-break: break-word;
+    }
+</style>
+<script>
+    var pjtNo;
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo')
+    var qltyIspId = urlParams.get('qltyIspId');
+    const mode = urlParams.get('mode');
+    const type = urlParams.get('type');
+    const returnType = urlParams.get('returnType');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+            }
+        });
+    });
+
+    var page = {
+        init: function () {
+            pjtNo = pjtInfo.pjtNo;
+
+            $(function () {
+                if (mode === "create") {
+                    var title = '{{ message("item.quality.039") }}'
+                }
+                if (mode === "update") {
+                    var title = '{{ message("item.quality.040") }}'
+                }
+                if (type === 'p') {
+                    $("#newWindow").hide();  // 버튼 숨기기
+                }
+                $("#formBox").addClass("readonly");
+
+                gaiaPortal.navMenuInit('M0404', title);
+                $("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+            })
+
+            // Slick slide
+            $('.quality_photo_list').not('.slick-initialized').slick({
+                arrows: true,
+                prevArrow: $('.process_photo .prev'),
+                nextArrow: $('.process_photo .next'),
+                dots: true,
+                infinite: false,
+                slidesToShow: 4,
+                slidesToScroll: 4,
+                autoplay: false,
+                speed: 1000,
+                draggable: true
+            });
+
+            page.getQuality();
+            file.init();
+        },
+        getQuality: function () {
+            gaiaCommon.get("/api/construction/qualityinspection/get/quality/" + cntrctNo + "/" + qltyIspId, {}, function (result) {
+                let activityData = result.details.activitys;
+                let checkListData = result.details.checkList
+                let qualityData = result.details.quality;
+                let attachments = result.details.attachments
+                let photoList = result.details.photoList;
+                let photoAttachments = result.details.photoAttachments;
+
+                $('input[name="ispDocNo"]').val(gaiaCommon.decodeSafeText(qualityData.ispDocNo));  // 문서번호 
+                if (qualityData.ispReqDt) { // 검측 요청 일자
+                    const date = qualityData.ispReqDt.split(' ')[0];
+                    $('#ispReqDt').text(date);
+                }
+                $('input[name="ispLct"]').val(gaiaCommon.decodeSafeText(qualityData.ispLct));  // 위치 
+                $('#workTypeSelect').text(qualityData.cnsttyCdKrn + " / " + gaiaCommon.decodeSafeText(checkListData[0].cnsttyCd2) + " / " + gaiaCommon.decodeSafeText(checkListData[0].cnsttyCd1)); // 공종
+                $('input[name="ispPart"]').val(gaiaCommon.decodeSafeText(qualityData.ispPart));    // 검측 부위 
+
+                let activityNames = activityData.map(item => item.activityNm).join(", ");
+                let wbsCds = activityData.map(item => item.wbsCd).join(", ");
+                let activityIds = activityData.map(item => item.activityId).join(", ");
+                $('input[name="activity"]').val(activityNames); // Activity 명
+                $('input[name="wbs_cd"]').val(wbsCds); // WBS 코드
+                $('input[name="activity_id"]').val(activityIds);   // Activity ID
+
+                $('textarea[name="ispIssue"]').val(gaiaCommon.decodeSafeText(qualityData.ispIssue));   // 검측 사항
+
+                if (qualityData.rsltDocNo) {    // 결과 문서번호
+                    $('input[name="rsltDocNo"]').val(gaiaCommon.decodeSafeText(qualityData.rsltDocNo));
+                } else {
+                    const cnsttyCd = qualityData.cnsttyCd;   // 공종코드
+                    const newRsltDocNo = `CM검측-${cnsttyCd}-`;
+                    $('input[name="rsltDocNo"]').val(newRsltDocNo);
+                }
+
+                if (qualityData.rsltDt) {   // 검측 일자
+                    const date2 = qualityData.rsltDt.split(' ')[0];
+                    $('input[name="rsltDt"]').val(date2);
+                }
+
+                if (qualityData.rsltCd === "01" || qualityData.rsltCd === "02") {
+                    $('#rsltSelectBox').val(qualityData.rsltCd);
+                } else {
+                    $('#rsltSelectBox').val("select");
+                }
+                if (qualityData.rsltCd === "01" && qualityData.apprvlStats != "R") {
+                    $('#rsltSelectBox').prop('disabled', true);
+                }
+
+                $('textarea[name="ordeOpnin"]').val(gaiaCommon.decodeSafeText(qualityData.ordeOpnin));
+
+                checkList.checkListData = checkListData.map(item => ({
+                    chklstId: item.chklstId,
+                    rowNum: item.chklstSno,
+                    chklstDscrpt: item.chklstDscrpt,
+                    chklstBssCd: item.chklstBssCd,
+                    cnstrtnYn: item.cnstrtnYn,
+                    cnsttyCd1: item.cnsttyCd1,
+                    cnsttyCd2: item.cnsttyCd2,
+                    cqcYn: item.cqcYn
+                }));
+
+                checkList.resultCheckList();
+
+                const fileList = document.getElementById('fileList');
+                if (fileList) {
+                    file.clearFileList(); // 기존 파일 목록 지우기
+                    if (attachments) {
+                        if (attachments.length > 0) {
+                            file.processFetchedFiles(attachments); // 새 파일 목록 추가
+                        } else {
+                            file.updateFileSizeSummary(); // 파일 사이즈 요약 업데이트
+                        }
+                    }
+                }
+
+                if (photoList && photoList.length > 0) {
+                    photoList.forEach(function (photoData) {
+                        let attachedFile = photoAttachments.find(function (file) {
+                            return file.fileNo === photoData.atchFileNo && file.sno === photoData.phtSno;
+                        });
+
+                        if (attachedFile) {
+                            photoData.fileDiskPath = attachedFile.fileDiskPath;
+                            photoData.fileDiskNm = attachedFile.fileDiskNm;
+                        }
+                    });
+                    photo.init(photoList);
+                }
+            });
+        },
+        closePage: function () {
+            if (type === 'p') {
+                window.close();
+            } else {
+                if (returnType) {
+                    window.location.href = `/construction/qualityinspection?cntrctNo=${cntrctNo}&pjtNo=${pjtInfo.pjtNo}&_condition=init`;
+                } else {
+                    window.history.back();
+                }
+            }
+        },
+        saveResult: function () {
+            const rsltDocNo = $('input[name="rsltDocNo"]').val()
+            const rsltDt = $('#rsltSelectBox').val();
+
+            if (!rsltDocNo) {
+                gaiaCommon.customAlert('{{ message("msg.quality.007") }}'); // 문서 번호를 입력해주세요.
+                $('input[name="rsltDocNo"]').focus()
+                return;
+            }
+
+            if (!rsltDt) {
+                gaiaCommon.customAlert('{{ message("msg.quality.031") }}'); // 검측 결과를 등록해주세요.
+                $('#rsltSelectBox').focus();
+                return;
+            }
+
+            let param;
+            let url;
+            let message;
+
+            if (mode === 'create') {
+                message = '{{ message("msg.044") }}'    // 저장되었습니다.
+            }
+            if (mode === 'update') {
+                message = '{{ message("msg.007") }}'    // 수정되었습니다.
+            }
+
+            param = {
+                cntrctNo: cntrctNo,
+                qltyIspId: qltyIspId,
+                rsltDocNo: rsltDocNo,
+                rsltDt: $('input[name="rsltDt"]').val(),
+                rsltCd: $('#rsltSelectBox').val(),
+                ordeOpnin: $('textarea[name="ordeOpnin"]').val(),
+                checklist: checkList.getCheckListData()
+            }
+
+            const formData = new FormData();
+            formData.append('quality', new Blob([JSON.stringify(param)], { type: 'application/json' }));
+
+            formData.forEach(function (value, key) {
+                if (value instanceof Blob) {
+                    const reader = new FileReader();
+                    reader.readAsText(value);
+                }
+            });
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+
+                url: '/api/construction/qualityinspection/create/result',
+                method: 'POST',
+                processData: false,
+                contentType: false,
+                data: formData,
+                success: function (response) {
+                    if (response.ok) {
+                        gaiaCommon.customAlert(message, function () {
+                            gaiaCommon.LoadingOverlay('body', false);
+                            if (type === 'p') {
+                                if (window.opener) {
+                                    window.close();
+                                }
+                            } else {
+                                window.location.href = `/construction/qualityinspection?cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`;
+                            }
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                },
+            });
+        },
+    }
+    // 체크리스트
+    window.checkList = {
+        checkListData: [], // 데이터 저장
+        resultCheckList: function () {
+            const thead = document.getElementById('checkListHead');
+            const tbody = document.getElementById('checkListBody');
+
+            thead.innerHTML = `
+                <tr>
+                    <th style="width: 5%;">{{ message("item.app.035") }}</th>
+                    <th style="width: 10%;">{{ message("item.progressstatus.010") }}</th>
+                    <th style="width: 8%;">{{ message("item.quality.044") }}</th>
+                    <th style="width: 48%;">{{ message("item.quality.030") }}</th>
+                    <th style="width: 12%;">{{ message("item.quality.031") }}</th>
+                    <th style="width: 7%;">{{ message("item.quality.032") }}</th>
+                    <th style="width: 10%;">
+                        {{ message("item.quality.045") }}<br><br>
+                    <input class="check_mark" type="checkbox" id="checkAllCqcYn">
+                </th>
+                </tr>
+            `;
+            tbody.innerHTML = '';
+
+            if (this.checkListData.length === 0) {  // 체크리스트 데이터 없을 시 테이블 숨김처리
+                $('#checkListTable').hide();
+            } else {
+                $('#checkListTable').show();
+            }
+
+            this.checkListData.forEach((item, index) => {
+                item.rowNum = index + 1;
+
+                const row = document.createElement('tr');
+
+                // 번호
+                const numCell = document.createElement('td');
+                numCell.textContent = item.rowNum;
+                row.appendChild(numCell);
+
+                // 공종
+                const workCell2 = document.createElement('td');
+                workCell2.classList.add('cnsttyCd2');
+                workCell2.textContent = item.cnsttyCd2;
+                workCell2.style.textAlign = 'left';
+                row.appendChild(workCell2);
+
+                // 세부 공종
+                const workCell1 = document.createElement('td');
+                workCell1.classList.add('cnsttyCd1');
+                workCell1.textContent = item.cnsttyCd1;
+                workCell1.style.textAlign = 'left';
+                row.appendChild(workCell1);
+
+                // 검사항목
+                const itemCell = document.createElement('td');
+                itemCell.classList.add('chklstDscrpt');
+                itemCell.textContent = gaiaCommon.decodeSafeText(item.chklstDscrpt);
+                itemCell.style.textAlign = 'left';
+                itemCell.style.wordWrap = 'break-word';
+                itemCell.style.whiteSpace = 'normal';
+                row.appendChild(itemCell);
+
+                // 검사 기준
+                const bssCell = document.createElement('td');
+                bssCell.classList.add('chklstBssCd');
+                bssCell.id = `${item.chklstBssCd}`;
+                let displayText = '';
+                switch (item.chklstBssCd) {
+                    case '01':
+                        displayText = '{{ message("item.quality.033") }}';
+                        break;
+                    case '02':
+                        displayText = '{{ message("item.quality.034") }}';
+                        break;
+                    case '03':
+                        displayText = '{{ message("item.quality.035") }}';
+                        break;
+                    case '04':
+                        displayText = '{{ message("item.quality.036") }}';
+                        break;
+                    case '05':
+                        displayText = '{{ message("item.quality.037") }}';
+                        break;
+                }
+                bssCell.textContent = displayText;
+                row.appendChild(bssCell);
+
+                // 시공담당자 확인
+                const checkCell1 = document.createElement('td');
+                checkCell1.innerHTML = `
+                    <div class="item_group">
+                        <label class="form_check">
+                        <input class="check_mark" type="checkbox" name="checkboxgroup" ${item.cnstrtnYn === 'Y' ? 'checked' : ''} disabled>
+                            <span class="check_label blind">선택</span>
+                        </label>
+                    </div>
+                `;
+                row.appendChild(checkCell1);
+
+                // 건설사업 관리 기술인 확인
+                const checkCell2 = document.createElement('td');
+                checkCell2.innerHTML = `
+                    <div class="item_group">
+                        <label class="form_check">
+                        <input class="check_mark" type="checkbox" name="checkboxgroup" id="cqcYnCheckbox-${item.chklstId}" ${item.cqcYn === 'Y' ? 'checked' : ''} onchange="checkList.updateCheckStatus(${item.chklstId}, this)">
+                            <span class="check_label blind">선택</span>
+                        </label>
+                    </div>
+                `;
+                row.appendChild(checkCell2);
+
+                const checkbox = checkCell2.querySelector(`#cqcYnCheckbox-${item.chklstId}`);
+                checkbox.checked = (item.cqcYn === 'Y');
+                checkbox.onchange = () => this.updateCheckStatus(item.chklstId, checkbox);
+
+                tbody.appendChild(row);
+            });
+            // 전체 선택 이벤트 바인딩
+            $(document).off("change", "#checkAllCqcYn").on("change", "#checkAllCqcYn", function () {
+                const isChecked = this.checked;
+                checkList.checkListData.forEach(item => {
+                    item.cqcYn = isChecked ? 'Y' : 'N';
+                    const checkbox = document.getElementById(`cqcYnCheckbox-${item.chklstId}`);
+                    if (checkbox) {
+                        checkbox.checked = isChecked;
+                    }
+                });
+            });
+        },
+        updateCheckStatus: function (chklstId, checkbox) {
+            const isChecked = checkbox.checked ? 'Y' : 'N';
+            // 체크박스 상태를 데이터에 반영
+            const item = this.checkListData.find(item => item.chklstId === chklstId);
+            if (item) {
+                item.cqcYn = isChecked;
+            }
+        },
+        // 화면의 체크리스트 데이터 가져오기
+        getCheckListData: function () {
+            return this.checkListData.map((item, index) => {
+                const bssCell = document.querySelector(`#checkListBody tr:nth-child(${index + 1}) .chklstBssCd`);
+                const chklstBssCd = bssCell ? bssCell.id : '';
+                const checkbox = document.getElementById(`cqcYnCheckbox-${item.chklstId}`);
+                const cqcYn = checkbox && checkbox.checked ? 'Y' : 'N';
+
+                return {
+                    chklstId: item.chklstId,
+                    chklstSno: index + 1,
+                    chklstBssCd: chklstBssCd, // 선택된 값
+                    cnstrtnYn: item.cnstrtnYn,
+                    cqcYn: cqcYn
+                };
+            });
+        },
+    };
+
+    let file = {    // 조회 전용 파일 목록
+        maxTotalFileSize: 25 * 1024 * 1024, // 25 MB
+        totalFileSize: 0,
+        serverFiles: [],
+
+        init() {
+            this.fileList = document.getElementById('fileList');
+            this.uploadedFileSize = document.getElementById('uploadedFileSize');
+        },
+
+        // 서버에서 받은 파일 목록 세팅
+        processFetchedFiles(attachments) {
+            this.serverFiles = attachments.map(file => ({
+                name: file.fileNm,
+                size: Number(file.fileSize) || 0,
+                fileNo: file.fileNo,
+                sno: file.sno
+            }));
+            this.renderFileList();
+        },
+
+        clearFileList() {
+            this.serverFiles = [];
+            if (this.fileList) this.fileList.innerHTML = '';
+            this.totalFileSize = 0;
+            this.updateFileSizeSummary();
+
+            const dataInfo = document.querySelector('.data_info');
+            const attachList = document.querySelector('.attach_list');
+            if (dataInfo && attachList) {
+                dataInfo.classList.remove('hide');
+                attachList.classList.add('hide');
+            }
+        },
+
+        renderFileList() {
+            if (!this.fileList) return;
+            this.fileList.innerHTML = '';
+            this.totalFileSize = 0;
+
+            if (this.serverFiles.length === 0) {
+                document.querySelector('.data_info').classList.remove('hide');
+                document.querySelector('.attach_list').classList.add('hide');
+                return;
+            }
+
+            document.querySelector('.data_info').classList.add('hide');
+            document.querySelector('.attach_list').classList.remove('hide');
+
+            this.serverFiles.forEach(file => {
+                const li = document.createElement('li');
+                li.classList.add('list_item');
+                li.style.display = "flex";
+                li.style.justifyContent = "space-between";
+                li.style.alignItems = "center";
+
+                // 파일명
+                const fileName = document.createElement('span');
+                fileName.classList.add('f_name');
+                fileName.textContent = file.name;
+                fileName.style.cursor = 'pointer';
+                fileName.addEventListener('click', () => {
+                    this.download(`/api/construction/qualityinspection/${file.fileNo}/${file.sno}/file-download`);
+                });
+
+                // 크기
+                const fileSize = document.createElement('span');
+                fileSize.classList.add('f_capacity');
+                fileSize.textContent = this.formatFileSize(file.size);
+
+                li.appendChild(fileName);
+                li.appendChild(fileSize);
+                this.fileList.appendChild(li);
+
+                this.totalFileSize += file.size;
+            });
+
+            this.updateFileSizeSummary();
+        },
+
+        updateFileSizeSummary() {
+            if (this.uploadedFileSize) {
+                this.uploadedFileSize.textContent = this.formatFileSize(this.totalFileSize);
+            }
+        },
+
+        formatFileSize(size) {
+            if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + ' MB';
+            if (size >= 1024) return (size / 1024).toFixed(2) + ' KB';
+            return size + ' bytes';
+        },
+
+        download(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
+
+    // 사진관련
+    let photo = {
+        init: function (data) {
+            data.forEach(function (row, seq) {
+                let formattedDate = '';
+                if (Array.isArray(row.shotDate)) {
+                    const [year, month, day] = row.shotDate;
+                    formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                } else if (typeof row.shotDate === 'string') {
+                    formattedDate = row.shotDate.split('T')[0]; // ISO 형식일 경우
+                }
+
+                let webPath = row.fileDiskPath;
+
+                // 백슬래시 경로 처리 (윈도우)
+                if (webPath.includes('\\')) {
+                    webPath = webPath.replace(/^.*\\upload/, '/upload').replace(/\\/g, '/');
+                } else {
+                    // 슬래시 경로 처리 (리눅스)
+                    webPath = webPath.replace(/^.*\/upload/, '/upload');
+                }
+
+                const imgSrc = `${webPath}/${row.fileDiskNm}`;
+                $(".quality_photo_list").slick('slickAdd',
+                    `<div>` +
+                    `<dl class="dl_box p_photo">` +
+                    `<dt class="item_dt">` +
+                    `<label class="form_check">` +
+                    `<span class="check_label">` + row.titlNm + `</span>` +
+                    `</label>` +
+                    `</dt>` +
+                    `<dd class="item_dd">` +
+                    `<figure class="p_photo_info">` +
+                    `<img src="${imgSrc}" alt="${row.fileNm}" style="height:200px;">` +
+                    `<figcaption>` +
+                    `<p class="tit">` + row.titlNm + `</p>` +
+                    `<p class="desc">` + row.dscrpt + `</p>` +
+                    `<p class="date">` + formattedDate + `</p>` +
+                    `</figcaption>` +
+                    `</figure>` +
+                    `</dd>` +
+                    `</dl>` +
+                    `</div>`
+                );
+            });
+        }
+    }
+    function newWindow() {
+        const width = 1300;
+        const height = 800;
+        let left = Math.ceil((window.screen.width - width) / 2);
+        left += window.screenLeft; // 듀얼 모니터일 때
+        const top = Math.ceil((window.screen.height - height) / 2);
+
+        window.open(`/construction/qualityinspection/addResult?type=p&mode=${mode}&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&returnType=A`, '_blank', `scrollbars=yes,resizable=yes,width=${width},height=${height},left=${left},top=${top}`);
+        if (returnType) {
+            window.location.href = `/construction/qualityinspection?cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`;
+        } else {
+            window.history.back();
+        }
+
+    }
+    $(function () {
+        // 오늘 날짜 기본 세팅
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById("rsltDt").value = `${yyyy}-${mm}-${dd}`;
+    });
+</script>
+{% endblock footer_script %}

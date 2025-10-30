@@ -1,0 +1,265 @@
+{% extends 'layout/base_content' %} {% block head %}
+
+<style>
+	.tui-grid-body-area a,
+	.tui-grid-body-area button,
+	.tui-grid-body-area .ic-star-fill {
+		cursor: pointer;
+	}
+
+	td[data-column-name="frm_nm_krn"],
+	td[data-column-name="frm_nm_krn"] div {
+		cursor: pointer;
+	}
+</style>
+
+{% endblock %} {% block content %}
+
+<section class="contents_wrap">
+	<article class="conts g-col2 ty2">
+		<div class="group">
+			<dl class="box dl_box">
+				<dt>{{ message('item.app.014') }}</dt>
+				<dd>
+					<div class="item_group vertical" role="group" id="formType">
+					</div>
+				</dd>
+			</dl>
+			<dl class="box dl_box">
+				<dt>{{ message('item.app.015') }}</dt>
+				<dd>
+					<div class="item_group vertical" role="group" id="latestDraftForm">
+					</div>
+				</dd>
+			</dl>
+			<dl class="box dl_box">
+				<dt>{{ message('item.app.016') }}</dt>
+				<dd>
+					<div class="item_group vertical" role="group" id="bookkmarkList">
+					</div>
+				</dd>
+			</dl>
+		</div>
+		<div class="group">
+			<div class="conts_grid">
+				<div class="toolbar">
+					<!-- S: search wrap ---------------------------------------------- -->
+					<div class="search_wrap">
+						<!-- searchbox -->
+						<div class="searchbox_wrap">
+							<input type="text" id="searchForm" placeholder="{{ message('msg.004') }}" onkeyup="if(window.event.keyCode == 13) methods.getformList('Text')">
+							<button type="submit" class="icon_btn search" onclick="methods.getformList('Text');" style="width: auto;">
+								<i class="ic ic-search"></i>
+								<span class="tooltip">{{ message('btn.014') }}</span>
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="grid">
+					<div id="list_grid"></div>
+				</div>
+			</div>
+		</div>
+
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+
+<script>
+	var grid_1 = new tui.Grid({
+		el: list_grid,
+		scrollX: true,
+		scrollY: true,
+		width: 'auto',
+		bodyHeight: 545,
+		columns : [
+			{name: 'row', 			header: "{{ message('item.app.035') }}", 	align: 'center', 	width: 70},
+			{name: 'up_frm_nm_krn', header: "{{ message('item.app.014') }}", 	align: 'center', 	sortable: true},
+			{name: 'frm_nm_krn', 	header: "{{ message('item.app.030') }}", 	align: 'center',
+				formatter: function(e){
+					return `<a href="/eapproval/draft/create-draft?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&url=${e.row.url}&frm_no=${e.row.frm_no}&frm_id=${e.row.frm_id}">${e.value}</a>`;
+				}
+			},
+			{name: 'frm_dscrpt', 	header: "{{ message('item.app.036') }}", 	align: 'center'},
+			{name: 'fvrts_div', 	header: "{{ message('btn.015') }}", 		align: 'center', 	width: 70,
+				formatter: function(e){
+					let isBookmarked = e.value === '1'; 
+					let classType = isBookmarked ? 'favorites' : '';
+					return `
+							<button type="button" class="btn icon_btn _outline bookmark-btn ${classType}" data-btn-toggle="favorites" data-frm-no="${e.row.frm_no}">
+								<i class="ic ic-star-fill"></i>
+							</button>
+							`;
+				}
+			},
+		],
+		contextMenu: null,
+	});
+
+	var methods = {
+		//초기화
+		init(){
+			pjtNo = pjtInfo.pjtNo;
+    		cntrctNo = pjtInfo.cntrctNo;
+			
+			methods.getDraftMainList();
+
+			gaia.loaded = true;
+		},
+		//메인화면 조회
+		getDraftMainList(){
+			gaiaCommon.post("/api/eapproval/draft/draft-main", "", function(data) {
+				var list1 = data.details.formTypeList;
+				var list2 = data.details.formList;
+				var latestFormList = data.details.latestFormList;
+
+				// leftBox 서식그룹
+				if(list1.length > 0) {
+					for(var i=0; i < list1.length; i++) {
+						if(list1[i].count > 0) {
+							let formTypeHtml = `
+												<label class="form_check">
+													<input class="check_mark" type="checkbox" name="checkbox" value="${list1[i].frm_no}">
+													<span class="check_label">${list1[i].frm_nm_krn} <span class="badge">${list1[i].count}</span></span>
+												</label>
+												`
+							$('#formType').append(formTypeHtml);
+						}
+					}
+					//체크박스 체크 이벤트
+					$('input[type="checkbox"][class="check_mark"]').click(function(){
+						methods.getformList('CheckBox');
+					});
+					grid_1.resetData(list2);
+					refreshGrid(grid_1);
+				}
+
+				// leftBox 최근 사용 서식
+				if(latestFormList.length > 0) {
+					$.each(latestFormList, function(index, obj) {
+						let isBookmarked = obj.is_favorite === 'Y';
+						let classType = isBookmarked ? 'favorites' : '';
+						let listHtml = methods.makeHtml(obj, classType);
+						$('#latestDraftForm').append(listHtml);
+					})
+				}
+
+				// leftBox 즐겨찾기 서식
+				var bookkmarkList = list2.filter(
+					item => item.fvrts_div === '1'
+				)
+				if(bookkmarkList.length > 0) {
+					$.each(bookkmarkList, function(index, obj) {
+						let isBookmarked = obj.fvrts_div === '1';
+						let classType = isBookmarked ? 'favorites' : '';
+						let listHtml = methods.makeHtml(obj, classType);
+						$('#bookkmarkList').append(listHtml);
+					})
+				}
+            }, function (error) {
+				gaiaCommon.customAlert("{{ message('msg.060') }}");
+			})
+		},
+		makeHtml(obj, classType){
+			return `<div class="item_wrap">
+						<button type="button" class="btn icon_btn _outline ${classType} bookmark-btn" data-btn-toggle="favorites" data-frm-no="${obj.frm_no}">
+							<i class="ic ic-star-fill"></i>
+							<span class="tooltip">{{ message('btn.015') }}</span>
+						</button>
+						<a href="/eapproval/draft/create-draft?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&url=${encodeURIComponent(obj.url)}&frm_no=${encodeURIComponent(obj.frm_no)}&frm_id=${encodeURIComponent(obj.frm_id)}">
+							${obj.frm_nm_krn}
+						</a>
+					</div>
+					`;
+		},
+		//서식 리스트 가져오기
+		getformList(searchType) {
+			var checkedData = '';
+
+			if(searchType === 'CheckBox') {
+				$('input[type="checkbox"][class="check_mark"]:checked').each(function(){
+					var chk = $(this).val();
+					checkedData = checkedData + '-' + chk;
+				});
+			}	
+
+			var getDraftFormSearchData = {
+				searchText: $('#searchForm').val(),
+				searchCheckBox: checkedData.substr(1)
+			};
+
+			gaiaCommon.post("/api/eapproval/draft/search-draftForm", getDraftFormSearchData, function(data) {
+				var list1 = data.details.formList;
+				grid_1.resetData(list1);
+				refreshGrid(grid_1);
+            }, function (error) {
+				gaiaCommon.customAlert("{{ message('msg.060') }}");
+			})
+		},
+		refreshBookmark(){
+			$('#bookkmarkList').empty();
+			gaiaCommon.get("/api/eapproval/draft/refresh-bookmark", "", function(data) {
+				let list = data.details.bookmarkList;
+				if(list && list.length > 0){
+					$.each(list, function(index, obj) {
+						let listHtml = `<div class="item_wrap">
+											<button type="button" class="btn icon_btn _outline favorites bookmark-btn" data-btn-toggle="favorites" data-frm-no="${obj.frm_no}">
+												<i class="ic ic-star-fill"></i>
+												<span class="tooltip">{{ message('btn.015') }}</span>
+											</button>
+											<a href="/eapproval/draft/create-draft?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&url=${encodeURIComponent(obj.url)}&frm_no=${encodeURIComponent(obj.frm_no)}&frm_id=${encodeURIComponent(obj.frm_id)}">
+												${obj.frm_nm_krn}
+											</a>
+										</div>`;
+						$('#bookkmarkList').append(listHtml);
+					})
+				}
+            }, function (error) {
+				gaiaCommon.customAlert("{{ message('msg.060') }}");
+			})
+		}
+	};
+
+	//함수 모음
+	$(document).on('click', '.bookmark-btn', function() {
+		let target = $(this);
+		let frmNo = $(this).data('frm-no');
+		let hasAddClass = target.hasClass('favorites');
+		let urlType = hasAddClass ? 'delete-bookmark' : 'create-bookmark';
+		let param = {
+			frmNo : frmNo
+		}
+
+		gaiaCommon.get(`/api/eapproval/draft/${urlType}`, param, function(result) {
+			$('.bookmark-btn[data-frm-no="' + frmNo + '"]').each(function() {
+				$(this).toggleClass('favorites', !hasAddClass);
+			});
+			methods.refreshBookmark();
+		}, function (error) {
+			gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}", function(){
+				location.reload();
+			})
+		})
+	});
+
+	$(document).on('click', 'td[data-column-name="frm_nm_krn"]', function() {
+		window.location.href = $(this).find('a').attr('href');
+	});
+
+
+	$(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M060101", "{{ message('item.app.045') }}");
+				methods.init();
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

@@ -1,0 +1,40 @@
+{% extends 'layout/base_content' %} 
+{% block head %}
+<style>
+	#document_grid .tui-grid-cell-current-row {
+		background-color: var(--select-list-bg);
+	}
+	#document_grid .tui-grid-body-area :not(p, textarea, select) {
+		line-height: 1;
+		cursor: pointer;
+	}
+	#approvalSendModal #approval-fileAttach{
+
+	}
+	#approvalSendModal .form_box+.form_box{
+		border-top:none;
+	}
+</style>
+{% endblock head %}
+{% block content %}
+	{% include "page/document/common/common_document" %}
+{% endblock content %} 
+{% block footer_script %}
+<script>
+	var menuId = '{{menuId}}';
+	var documentType = '{{documentType}}';
+	var docTitle = '{{docTitle}}';
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				gaiaCommon.setCommonCode("f8a92327-c9ae-4d1e-aa95-76f15c2a9e61");
+				gaiaPortal.navMenuInit(menuId, docTitle);	//통합문서관리
+				page.init(documentType, menuId);
+
+			}
+		});
+	});
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+{% endblock footer_script %}

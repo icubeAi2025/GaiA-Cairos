@@ -1,0 +1,161 @@
+{% extends header ? 'layout/base_popup' : 'layout/base_content' %}
+{% block content %}
+<article class="conts_area">
+    <div class="conts">
+        <h3 class="conts_tit" id="company_cu_tit"></h3>
+        <div class="conts_form">
+            <div class="btn_area s_default">
+                {{ btnHtml | raw }}
+                <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">{{ message('btn.007') }}</button>
+                <!-- 팝업 띄우기 추후 만들지 말지 보류!! 
+				<div class="btn_group iconbtns">
+                    <button class="icon_btn" id="open-new-window" onclick="popup.open()">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span class="tooltip">{{ message('item.com.017') }}</span>
+                    </button>
+                </div> 
+				-->
+            </div>
+            <div class="form_box">
+                <form id="create-form">
+					<div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.resources.003") }}</div>
+                            <div class="form_data">
+                                <div class="item_group">
+                                    <input type="text" id="rescId" name="rescId" readonly/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.resources.004") }}</div>
+                            <div class="form_data">
+                                <div class="item_group">
+									<input type="text" id="menuNm" name="menuNm" readonly/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.resources.005') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="rescNm" name="rescNm" readonly/>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.authority.007") }}</div>
+                            <div class="form_data">
+                                <input type="text" id="rghtKind" name="rghtKind" readonly/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.resources.006') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="rescUrl" name="rescUrl" readonly/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.resources.010') }}</div>
+                            <div class="form_data">
+                                <textarea id="rescDscr" name="rescDscr" readonly/></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.003') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="useNm" name="useNm" readonly/>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</article>
+{% endblock content %} 
+{% block footer_script %}
+<script>
+	let rescId;
+
+    var page = {
+        init: function () {
+			rescId = page.getRescIdFromUrl();
+			page.loadResourcesData(rescId);
+        },
+
+		getRescIdFromUrl: function () {
+			const pathArray = window.location.pathname.split('/'); //'/'를 기준으로 url의 데이터를 배열로 저장.
+			return pathArray[pathArray.length - 1]; //가장 마지막 요소(path-variable)를 추출.
+		},
+
+		loadResourcesData: function (rescId) {
+			let readData = {
+                rescId: rescId
+            };
+			gaiaCommon.get(
+				"/api/system/resources/resources-read",
+				readData,
+				function (result) {
+					if(result.details?.resourcesInfo){
+						let data = result.details.resourcesInfo;
+						let tempMenuNm;
+						console.log(data);
+						console.log(data.menu_nm);
+
+						if(data.menu_nm) { 
+							let tempMenu = data.menu_depth.toString().split(",");
+							tempMenuNm = tempMenu.reverse().toString().replaceAll(",", " > ");
+						}else {
+							tempMenuNm = "공통";
+						}
+						
+						$('#rescId').val(data.resc_id);
+						$('#menuNm').val(tempMenuNm);
+						$('#rescNm').val(data.resc_nm);
+						$('#rghtKind').val(data.rght_kind_nm_kr);
+						$('#rescUrl').val(data.resc_url);
+						$('#rescDscr').val(data.resc_dscr);
+						$('#useNm').val(data.use_nm);
+					}else{
+						// 프로그램 정보가 존재하지 않습니다.
+						gaiaCommon.customAlert("{{ message('msg.105') }}", function(){
+							location.replace("/system/resources");
+						});
+					}
+				}, function (error) {
+					console.log("오류 처리 로직 추후 추가!!!!!!");
+				}
+			);
+		},
+
+		//수정 페이지 이동
+		update: function () {
+            window.location.href = `/system/resources/update/`+rescId;
+        },        
+
+		//닫기 이벤트
+		close: function () {
+			window.location.replace(`/system/resources?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`);
+        },        
+	};
+        
+	$(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+				gaiaPortal.navMenuInit("SYSTEM11", "{{ message('item.resources.015') }}");
+				$("#menuDepth").append('<li class=\"breadcrumb_item\">'+ "{{ message('item.resources.015') }}" +'</li>');
+
+                gaia.loaded = true
+            }
+        });
+    });
+</script>
+{% endblock footer_script %}

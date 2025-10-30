@@ -1,0 +1,895 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+	.tui-grid-cell-header {
+		white-space: break-spaces;
+	}
+</style>
+{% endblock head %}
+{% block content %}
+<section class="contents_wrap">
+	<article class="conts g-row">
+		<div class="group">
+			<div class="conts_grid" id="container">
+				<div class="search_wrap">
+					<span class="selectbox">
+						<select name="workType" id="workType">
+							<option value="type" selected>
+								업무구분
+							</option>
+							<option value="W">
+								전체
+							</option>
+							<option value="A">
+								건축
+							</option>
+							<option value="C">
+								토목
+							</option>
+							<option value="S">
+								안전
+							</option>
+							<option value="M">
+								설비
+							</option>
+							<option value="E">
+								전기
+							</option>
+						</select>
+					</span>
+					<span class="selectbox">
+						<select name="year" id="year">
+							<option selected value="">년</option>
+						</select>
+					</span>
+					<span class="selectbox">
+						<select name="month" id="month">
+							<option selected value="">월</option>
+							<option value="1">1</option>
+							<option value="2">2</option>
+							<option value="3">3</option>
+							<option value="4">4</option>
+							<option value="5">5</option>
+							<option value="6">6</option>
+							<option value="7">7</option>
+							<option value="8">8</option>
+							<option value="9">9</option>
+							<option value="10">10</option>
+							<option value="11">11</option>
+							<option value="12">12</option>
+						</select>
+					</span>
+					<span class="selectbox">
+						<select name="appStatus" id="appStatus">
+							<option value="status" selected>
+								상태
+							</option>
+							<option value="E">
+								작성중
+							</option>
+							<option value="A">
+								작성완료
+							</option>
+						</select>
+					</span>
+					<span class="selectbox">
+						<select name="rgstrId" id="rgstrId">
+							<option value="" selected>
+								작성자
+							</option>
+						</select>
+					</span>
+					<!-- searchbox -->
+					<div class="searchbox_wrap" style="width: 300px;">
+						<input type="text" id="searchInput" placeholder="보고서 번호">
+						<button type="submit" class="icon_btn search">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+					</div>
+				</div>
+				<!-- // E: search wrap ---------------------------------------------- -->
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ btnHtml | raw }}
+						<input type="button" value="PDF 생성" onclick="test()" style="border:1px solid #ccc; cursor: pointer; pointer-events: initial">
+						<input type="button" value="미리보기" onclick="openMultiPdfPreview()" style="border:1px solid #ccc; cursor: pointer; pointer-events: initial">
+					</div>
+
+				</div>
+				<div class="grid" id="reportGrid">
+				</div>
+			</div>
+		</div>
+	</article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<script>
+	let isRgstrSelectInitialized = false;
+	let copyTargetRowData = null;
+	let imgDir = '{{imgDir}}';
+	let pjtNo;
+	let cntrctNo;
+	let myCMList = null;
+	let myWorkType = null;
+
+	let requestData = {};
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				page.init();
+			}
+		});
+	});
+
+	var page = {
+		init: function () {
+			pjtNo = pjtInfo.pjtNo;
+			cntrctNo = pjtInfo.cntrctNo;
+
+
+			gaiaPortal.navMenuInit('M0405', "CM 기술인 업무일지");
+			var systemType = document.body.className.trim().toLowerCase();
+			var userType = $("#userType").text().toLowerCase();
+
+			gaiaCommon.makeCntrctSelectBox(
+					"#container", // 계약코드 selectBox를 붙일 위치
+					() => {
+						$(".btn_area").hide();
+					},
+					function initCb(initialCntrctNo) {	// 초기 콜백
+						cntrctNo = initialCntrctNo;
+						// reportGrid.getData();
+						// loadYearList();
+						page.initData();
+					},
+					function chgCb(newCntrctNo) {	// 변경 콜백
+						cntrctNo = newCntrctNo;
+						if (reportGrid) {
+							$('#searchInput').val("");
+							$("#year").val("");
+							$("#month").val("");
+							$("#appStatus").val("status");
+							$("#workType").val("type");
+							$("#rgstrId").val("");
+							reportGrid.getData();
+							loadYearList();
+						}
+					}
+			);
+
+
+			gaia.loaded = true
+		},
+		addReport: function () {    // 추가
+			window.location.href = `/construction/inspectionreport/addReport?&cntrctNo=${cntrctNo}`;
+		},
+		setDropdownValues : () => {
+			if(gaiaCommon.me.isAdmin()){
+				const $rgstrSelect = $('#rgstrId');
+				$rgstrSelect.empty().append(`<option value="" selected>작성자</option>`);
+
+				const uniqueRgstrMap = new Map();
+				reportGrid.gridData.forEach(item => {
+					if (item.inspectionRgstrId && item.rgstr) {
+						uniqueRgstrMap.set(item.inspectionRgstrId, item.rgstr);
+					}
+				});
+				for (const [id, name] of uniqueRgstrMap.entries()) {
+					$rgstrSelect.append(`<option value="${id}">${name}</option>`);
+				}
+			}
+			else {
+				// 작성자 셀렉트박스 최초 한 번만 생성
+				if (!isRgstrSelectInitialized) {
+					const $rgstrSelect = $('#rgstrId');
+					$rgstrSelect.empty().append(`<option value="" selected>작성자</option>`);
+
+					const uniqueRgstrMap = new Map();
+					reportGrid.gridData.forEach(item => {
+						if (item.inspectionRgstrId && item.rgstr) {
+							uniqueRgstrMap.set(item.inspectionRgstrId, item.rgstr);
+						}
+					});
+					for (const [id, name] of uniqueRgstrMap.entries()) {
+						$rgstrSelect.append(`<option value="${id}">${name}</option>`);
+					}
+					if ($rgstrSelect.find(`option[value='${gaiaCommon.me.info.usrId}']`).length > 0) {
+						$rgstrSelect.val(gaiaCommon.me.info.usrId);
+					}
+					isRgstrSelectInitialized = true;  // 플래그
+				}
+
+				if(myWorkType == null){
+					let count = 0;
+					for(const organization of myCMList) {
+						if(organization.ratngCd != null && organization.ratngCd != undefined &&  organization.ratngCd != ''){
+							const optionTag = document.querySelector(`#workType [value="${organization.ratngCd}"]`);
+							if(optionTag != null){
+								count++;
+								myWorkType = organization;
+							}
+						}
+					}
+					if(count == 1){
+						$("#workType").val(myWorkType.ratngCd);
+					}
+					else{
+						myWorkType = {};
+						myWorkType.ratngCd = "W";
+						$("#workType").val("W");
+					}
+				}
+			}
+		},
+		initData:() => {
+			const param = {
+				year: $('#year').val(),
+				month: ($('#month').val() ? $('#month').val().padStart(2, '0') : ''),  // 1 -> '01'
+				selectValue: $('#appStatus').val(),
+				searchValue: $('#searchInput').val(),
+				workType: $('#workType').val(),
+				rgstrId: $("#rgstrId").val(),
+				cntrctNo: cntrctNo
+			};
+
+			$.ajax({
+				url: '/api/construction/inspectionreport/list/main',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(param),
+				success: function (response) {
+					if (response.ok) {
+						const data = response.details.reportList || [];
+						console.log("gridData: ", data)
+
+						const gridData = data.map(item => ({
+							cntrctNo: item.cntrctNo,
+							dailyReportId: item.dailyReportId,
+							reportNo: gaiaCommon.decodeSafeText(item.reportNo),
+							dailyReportDate: item.dailyReportDate,
+							apprvlStats: item.apprvlStats,
+							amWthr: item.amWthr,
+							pmWthr: item.pmWthr,
+							dtopTmprtVal: item.dtopTmprtVal,
+							dlowstTmprtVal: item.dlowstTmprtVal,
+							apprvl: item.apprvl,
+							workType: item.workType,
+							workCd: item.workCd,
+							inspectionRgstrId: item.rgstrId,
+							apprvlId: item.apprvlId,
+							rgstr: item.rgstr,
+							apprvlr: item.apprvlr,
+							docId: item.docId,
+							hasCfReport: item.hasCfReport
+						}));
+
+						reportGrid.gridData = gridData;
+						myCMList = response.details.myCMList;
+					} else {
+						reportGrid.gridData = [];
+					}
+					// 드롭박스 변경 이벤트
+					$('#year, #month, #appStatus, #workType, #rgstrId').on('change', function () {
+						if ($(this).attr('id') === 'workType') {	// '업무구분'은 화면 첫 로딩시에만 설정
+							const selectedValue = $(this).val();
+							if (selectedValue !== 'type') {
+
+								$('#workType option[value="type"]').prop('disabled', true);
+							}
+						}
+
+						updateRequestData()
+						reportGrid.getData();
+					});
+
+
+					page.setDropdownValues();
+					reportGrid.init();
+					loadYearList();
+				},
+				error: function () {
+					reportGrid.gridData = [];
+				}
+			});
+		}
+	}
+
+	let reportGrid = {
+		init: function () {
+			let _this = this;
+
+			let bodyHeight;
+
+			if (gaiaCommon.me.isAdmin() || isGAIA()) {
+				bodyHeight = window.innerHeight - 500;
+			} else if (isCAIROS()) {
+				bodyHeight = window.innerHeight - 420;
+			}
+
+			if (!this.reportGrid) {
+				this.reportGrid = new tui.Grid({
+					el: document.getElementById('reportGrid'),
+					bodyHeight: bodyHeight,
+					scrollX: false,
+					scrollY: true,
+					contextMenu: null,
+					header: {
+						height: 80,
+						complexColumns: [
+							{
+								header: "날씨",
+								name: 'wthr',
+								childNames: ['amWthr', 'pmWthr']
+							},
+							{
+								header: "기온",
+								name: 'tmprt',
+								childNames: ['dtopTmprtVal', 'dlowstTmprtVal']
+							},
+						],
+					},
+					rowHeaders: [
+						{
+							type: "checkbox",
+							header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:"checkBox",
+									},
+									{
+										type:"trash",
+										url:"/api/construction/inspectionreport/delete/report",
+										gridId: "inspectionGrid",
+										auth: `{{ isDelAuth | raw }}` == 'true' ? true : false,
+										idFields: "cntrctNo,dailyReportId",
+										keyName: "reportList",
+										msgList: {
+											confirmTit: "감리일지 삭제",
+											confirmSubTit: "감리일지 삭제",
+											confirmMsg:"{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										},
+										condition:(rowData)=>{
+											if(( rowData.inspectionRgstrId !== gaiaCommon.me.info.usrId) && !gaiaCommon.isAdmin() ){
+												gaiaCommon.customAlert("본인이 작성한 문서만 삭제 가능합니다.");
+												return false;
+											}
+											if(rowData.hasCfReport === "Y"){
+												gaiaCommon.customAlert("책임기술인 업무일지가 작성된 항목은 삭제할 수 없습니다.");
+												return false;
+											}
+											return true;
+										},
+										success: function () {
+											reportGrid.getData('');
+											$('#searchInput').val("");
+											$("#year").val("");
+											$("#month").val("");
+											$("#appStatus").val("status");
+										}
+									},
+									{
+										auth: `{{ isAddAuth | raw }}` == 'true' ? true : false,	// 복사 권한
+										type:"copy",
+										success: function (rowData) {
+											reportGrid.copyreportIcon(rowData);
+										}
+									},
+									{
+										type:"eyes",
+										success:(rowData)=>{
+											gaiaCommon.openReportViewer('/inspection-report/inspection_report.jrf',{
+												'p_cntrctNo':rowData.cntrctNo,
+												'p_dailyReportId':rowData.dailyReportId
+												,'p_imgDir':imgDir.substring(0,imgDir.indexOf("/upload"))
+												,'p_baseUrl':window.location.origin
+											})
+										}
+									}
+								],
+							},
+						},
+					],
+					columns: [
+						{
+							header: "업무 구분", name: "workType", width: 100, align: "center"
+						},
+						{
+							header: "보고서 번호",
+							name: "reportNo",
+							className: "reportNo",
+							width: 400,
+							renderer: {
+								type: window.IconRenderer,
+								options: [{
+									type:"newWindow",
+									isHover:true,
+									open:{
+										url:"/construction/inspectionreport/getReport?cntrctNo={id1}&dailyReportId={id2}",
+										width: "1300",
+										height: "550",
+									},
+									idFields: "cntrctNo,dailyReportId"
+								}],
+							},
+							align: "center",
+							resizable: true,
+						},
+						{
+							header: "보고일자", name: "dailyReportDate", width: 200, align: "center"
+						},
+						{
+							header: "작성자", name: "rgstr", width: 150, align: "center",
+						},
+						{
+							header: "책임기술인", name: "apprvlr", width: 150, align: "center",
+						},
+						{
+							header: "상태", name: "apprvl", width: 200, align: "center"
+						},
+						{
+							header: "오전", name: "amWthr", align: "center",
+						},
+						{
+							header: "오후", name: "pmWthr", align: "center",
+						},
+						{
+							header: "최고", name: "dtopTmprtVal", align: "center",
+						},
+						{
+							header: "최저", name: "dlowstTmprtVal", align: "center",
+						},
+					],
+				});
+
+				reportGrid.getData();
+				// reportGrid.reportGrid.resetData(reportGrid.gridData);
+			}
+			// 검색
+			$('.icon_btn.search').on('click', function () {
+				const searchValue = $('#searchInput').val();
+				let list = _this.getData(searchValue);
+				if (list) {
+					_this.reportGrid.resetData(list);
+				}
+				updateRequestData();
+			});
+			// 엔터키 검색
+			$(document).ready(function () {
+				$('#searchInput').on('keypress', function (event) {
+					if (event.which === 13) {
+						const searchValue = $('#searchInput').val();
+						let list = _this.getData(searchValue);
+						if (list) {
+							_this.reportGrid.resetData(list);
+						}
+						updateRequestData();
+					}
+				});
+			});
+
+			this.reportGrid.on("errorResponse", function (ev) {
+				const statusCode = ev.xhr.status;
+
+				if (statusCode === 403) {
+					gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+				} else {
+					console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+				}
+			});
+			refreshGrid(this.reportGrid);
+
+			// 검색 조건 설정
+			// session 값으로 설정
+			let searchData = gaia.getSearchData();
+			if (searchData.month !== undefined && searchData.month !== '') {
+				$("#month").val(searchData.month);
+			}
+			if (searchData.appStatus !== undefined && searchData.appStatus !== '') {
+				$("#appStatus").val(searchData.appStatus);
+			}
+			if (searchData.searchInput !== undefined && searchData.searchInput !== '') {
+				$("#searchInput").val(searchData.searchInput);
+			}
+		},
+		getData: function () {
+			const param = {
+				year: $('#year').val(),
+				month: ($('#month').val() ? $('#month').val().padStart(2, '0') : ''),  // 1 -> '01'
+				selectValue: $('#appStatus').val(),
+				searchValue: $('#searchInput').val(),
+				workType: $('#workType').val(),
+				rgstrId: $('#rgstrId').val(),
+				cntrctNo: cntrctNo
+			};
+
+			$.ajax({
+				url: '/api/construction/inspectionreport/get/report',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(param),
+				success: function (response) {
+					if (response.ok) {
+						const data = response.details.reportList || [];
+						console.log("gridData: ", data)
+
+						const gridData = data.map(item => ({
+							cntrctNo: item.cntrctNo,
+							dailyReportId: item.dailyReportId,
+							reportNo: gaiaCommon.decodeSafeText(item.reportNo),
+							dailyReportDate: item.dailyReportDate,
+							apprvlStats: item.apprvlStats,
+							amWthr: item.amWthr,
+							pmWthr: item.pmWthr,
+							dtopTmprtVal: item.dtopTmprtVal,
+							dlowstTmprtVal: item.dlowstTmprtVal,
+							apprvl: item.apprvl,
+							workType: item.workType,
+							workCd: item.workCd,
+							inspectionRgstrId: item.rgstrId,
+							apprvlId: item.apprvlId,
+							rgstr: item.rgstr,
+							apprvlr: item.apprvlr,
+							docId: item.docId,
+							hasCfReport: item.hasCfReport
+						}));
+						reportGrid.reportGrid.resetData(gridData);
+
+					} else {
+						reportGrid.reportGrid.resetData([]);
+					}
+				},
+				error: function () {
+					reportGrid.reportGrid.resetData([]);
+				}
+			});
+		},
+		updateReport: function () {
+			const checkedRows = reportGrid.reportGrid.getCheckedRows();
+			if (checkedRows.length === 0) {
+				gaiaCommon.customAlert("{{ message('msg.contract.022') }}");
+				return;
+			}
+
+			if (checkedRows.length === 1) {
+				const RowData = checkedRows[0];
+				const dailyReportId = RowData.dailyReportId;
+				const rgstrId = RowData.inspectionRgstrId;
+				const apprvlStats = RowData.apprvlStats;
+
+				// 본인 확인
+				if (rgstrId !== gaiaCommon.me.info.usrId && !gaiaCommon.me.info.admin) {
+					gaiaCommon.customAlert("본인이 작성한 문서만 수정 가능합니다.");
+					return;
+				}
+
+				window.location.href = `/construction/inspectionreport/updateReport?cntrctNo=${cntrctNo}&dailyReportId=${dailyReportId}`;
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.020') }}");  // 수정할 항목을 하나만 선택해주세요.
+			}
+		},
+		deleteReport: function () {
+			const listName = "reportList";
+			const checkedRows = reportGrid.reportGrid.getCheckedRows();
+			let blockMessage = null;
+			let hasApprovedItem = false;
+			let checked = [];
+
+			// 선택 항목 처리
+			for (let RowData of checkedRows) {
+				const cntrctNo = RowData.cntrctNo;
+				const dailyReportId = RowData.dailyReportId;
+				const rgstrId = RowData.inspectionRgstrId;
+				const hasCfReport = RowData.hasCfReport;
+
+				if ((rgstrId !== gaiaCommon.me.info.usrId) && !gaiaCommon.me.info.admin) {
+					blockMessage = "본인이 작성한 문서만 삭제 가능합니다.";
+					break;
+				}
+
+				checked.push({ cntrctNo, dailyReportId, hasCfReport });
+			}
+
+			if (blockMessage !== null) {
+				gaiaCommon.customAlert(blockMessage);
+				return;
+			}
+
+			if (checked.length === 0) {
+				gaiaCommon.customAlert("{{ message('msg.055') }}"); // 삭제할 항목을 선택해주세요.
+				return;
+			}
+
+			if (checked.some(item => item.hasCfReport === 'Y')) {
+				gaiaCommon.customAlert("책임기술인 업무일지가 작성된 항목은 삭제할 수 없습니다.");
+				return;
+			}
+
+			gaiaCommon.customConfirm("{{ message('item.safety.008') }}", "감리일지 삭제", "{{ message('msg.009') }}", function () {
+				let data = { [listName]: checked };
+
+				$.ajax({
+					url: '/api/construction/inspectionreport/delete/report',
+					type: 'POST',
+					contentType: 'application/json',
+					dataType: "json",
+					data: JSON.stringify(data),
+					success: function (response) {
+						if (response.ok) {
+							gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+							$('#searchInput').val("");
+							$("#year").val("");
+							$("#month").val("");
+							$("#appStatus").val("status");
+							reportGrid.getData();
+						}
+					}
+				});
+			});
+		},
+		// 복사 아이콘 클릭 이벤트
+		copyreportIcon: function (rowData) {
+			gaiaCommon.customDateConfirm("복사", "날짜 선택", "{{ message('msg.009') }}", function () {
+				// 선택된 날짜 값 확인
+				let selectedDate = new Date($('#copyDate').val());
+
+				if (!selectedDate) {
+					gaiaCommon.customAlert("복사할 날짜를 선택해주세요");
+					return;
+				}
+
+				// 복사 대상 게시물 ID 추출
+				const dailyReportId = rowData.dailyReportId;
+				const workCd = rowData.workCd;
+
+				// 복사 파라미터 구성
+				const param = {
+					cntrctNo: cntrctNo,
+					dailyReportId: dailyReportId,
+					dailyReportDate: $('#copyDate').val(),
+					type: "copy"
+				};
+
+				// 복사 실행
+				copyInspection(param);
+			});
+		},
+		// 복사 버튼 클릭 이벤트
+		copyreport: function () {
+			const checkedRows = reportGrid.reportGrid.getCheckedRows();
+
+			if (checkedRows.length === 0) {
+				gaiaCommon.customAlert("복사할 항목을 선택해주세요");
+				return;
+			}
+
+			if (checkedRows.length > 1) {
+				gaiaCommon.customAlert("복사할 항목을 하나만 선택해주세요");
+				return;
+			}
+
+			gaiaCommon.customDateConfirm("복사", "날짜 선택", "{{ message('msg.009') }}", function () {
+				let selectedDate = new Date($('#copyDate').val());
+
+				if (!selectedDate) {
+					gaiaCommon.customAlert("복사할 날짜를 선택해주세요");
+					return;
+				}
+
+				const rowData = checkedRows[0];
+				const dailyReportId = rowData.dailyReportId;
+				const workCd = rowData.workCd;
+
+				const param = {
+					cntrctNo: cntrctNo,
+					dailyReportId: dailyReportId,
+					dailyReportDate: $('#copyDate').val(),
+					type: "copy"
+				};
+
+				copyInspection(param);
+			});
+		},
+		approvalRequest: function () {
+			const checkedRows = reportGrid.reportGrid.getCheckedRows();
+			let myRows = [];
+			let hasOtherDoc = false; // 작성자 본인 아닌 문서가 있는지 체크
+
+			// 본인 문서만 추출
+			for (let RowData of checkedRows) {
+				const rgstrId = RowData.inspectionRgstrId;
+
+				if (rgstrId === gaiaCommon.me.info.usrId) {
+					myRows.push(RowData);
+				} else {
+					hasOtherDoc = true; // 작성자 본인 아닌 문서
+				}
+			}
+
+			// 체크는 했는데 본인 문서가 없음
+			if (myRows.length === 0) {
+				gaiaCommon.customAlert("본인이 작성한 문서만 작성완료 가능합니다.");
+				return;
+			}
+
+			// blockMessage 결정
+			let blockMessage = hasOtherDoc
+				? "본인이 작성한 문서만 작성완료 가능합니다. 작성완료하시겠습니까?"
+				: "선택한 항목을 작성완료하시겠습니까?";
+
+
+			gaiaCommon.customConfirm("{{ message('btn.064') }}", "{{ message('btn.064') }}", blockMessage, function () {
+				$.ajax({
+					url: '/api/construction/inspectionreport/approval',
+					type: 'POST',
+					contentType: 'application/json',
+					dataType: "json",
+					data: JSON.stringify(checkedRows),
+					success: function (response) {
+						if (response.ok) {
+							gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+								location.reload();
+							});
+						} else if (response.code === 1000) {
+							gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+						}
+					},
+					error: function (xhr, status, error) {
+						console.error(status, error);
+						gaiaCommon.customAlert("{{ message('msg.060') }}");
+					}
+				});
+			});
+		}
+	}
+
+	function loadYearList() {
+		$.ajax({
+			url: "/api/construction/inspectionreport/get/year",
+			method: "POST",
+			contentType: "application/json",
+			data: JSON.stringify({ cntrctNo: cntrctNo }),
+			success: function (response) {
+				if (response.ok) {
+					const years = response.details.yearList;
+					const $yearSelect = $('#year');
+					$yearSelect.empty().append('<option value="">년</option>');
+
+					years.forEach(year => {
+						$yearSelect.append(`<option value="${year}">${year}</option>`);
+					});
+
+					// 검색 조건 session 값으로 설정
+					let searchData = gaia.getSearchData();
+					if (searchData.year !== undefined && searchData.year !== '') {
+						$("#year").val(gaiaCommon.decodeSafeText(searchData.year));
+					}
+				}
+			}
+		});
+	}
+	// 감리일지 복사(최초 복사 후 저장) 
+	function copyInspection(param) {
+		gaiaCommon.LoadingOverlay('body', true);
+		$.ajax({
+			url: `/api/construction/inspectionreport/copy`,
+			method: 'POST',
+			dataType: 'json',
+			contentType: 'application/json; charset=utf-8', // ← 오타 수정: utf-8
+			data: JSON.stringify(param),
+			success: function (response) {
+				if (response.ok) {
+					const copiedData = response.details.copiedData;
+
+					setTimeout(() => {
+						gaiaCommon.LoadingOverlay('body', false);
+						window.location.href = `/construction/inspectionreport/updateReport?cntrctNo=${copiedData.cntrctNo}&dailyReportId=${copiedData.dailyReportId}&copyMode=true`;
+					}, 1000);
+				}
+			},
+			error: function (xhr, status, error) {
+				console.error("복사 요청 실패:", error);
+				gaiaCommon.customAlert("복사 중 오류가 발생했습니다.");
+			}
+		});
+	}
+
+
+
+	// 검색 조건 유지, session 저장
+	function updateRequestData() {
+		requestData.year = $("#year").val();
+		requestData.month = $("#month").val();
+		requestData.appStatus = $("#appStatus").val();
+		requestData.searchInput = $("#searchInput").val();
+		requestData.workType = $("#workType").val();
+		requestData.rgstrId = $("#rgstrId").val();
+		gaia.setSearchData(requestData);
+	}
+	function test() {
+		const checkedRows = reportGrid.reportGrid.getCheckedRows();
+		let dailyReportId = null;
+		if(!cntrctNo){
+			gaiaCommon.customAlert('계약이 선택되지 않았습니다.')
+			return;
+		}
+
+		if (checkedRows.length === 0) {
+			gaiaCommon.customAlert("PDF 생성할 항목을 선택해주세요."); // 삭제할 항목을 선택해주세요.
+			return;
+		}
+		if(checkedRows.length > 1) {
+			gaiaCommon.customAlert("항목을 하나만 선택해주세요.");
+			return;
+		}
+
+		// 선택 항목 처리
+		for (let RowData of checkedRows) {
+			dailyReportId = RowData.dailyReportId;
+		}
+
+		const data = {
+			dailyReportId:dailyReportId,
+			baseUrl:window.location.origin,
+			imgDir:imgDir.substring(0,imgDir.indexOf("/upload")),
+			cntrctNo:cntrctNo
+		}
+
+		$.ajax({
+			url: '/api/construction/inspectionreport/test',
+			type: 'POST',
+			contentType: 'application/json',
+			dataType: "json",
+			data: JSON.stringify(data),
+			success: function (response) {
+				if (response.ok) {
+					gaiaCommon.customAlert("TEST 성공")
+				} else {
+					gaiaCommon.customAlert("Test 싥패")
+					console.log(response)
+				}
+			},
+			fail: function (xhr, status, error) {
+				gaiaCommon.customAlert("Test 싥패")
+				console.log(xhr)
+			}
+		});
+	}
+	function openMultiPdfPreview() {
+		const checkedRows = reportGrid.reportGrid.getCheckedRows();
+		let dailyReportId = [];
+		if(!cntrctNo){
+			gaiaCommon.customAlert('계약이 선택되지 않았습니다.')
+			return;
+		}
+		// 선택 항목 처리
+		for (let RowData of checkedRows) {
+			dailyReportId.push(RowData.dailyReportId);
+		}
+
+		dailyReportId.sort((a, b) => {
+			return a-b;
+		})
+
+		if (checkedRows.length === 0) {
+			gaiaCommon.customAlert("삭제할 항목을 선택해주세요."); // 삭제할 항목을 선택해주세요.
+			return;
+		}
+
+		gaiaCommon.openReportViewer('/inspection-report/inspection_report.jrf',{
+			'p_cntrctNo':cntrctNo,
+			'p_dailyReportId':dailyReportId.join(",")
+			,'p_imgDir':imgDir.substring(0,imgDir.indexOf("/upload"))
+			,'p_baseUrl':window.location.origin
+		})
+	}
+</script>
+{% endblock footer_script %}

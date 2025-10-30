@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+
+    <script src="https://unpkg.com/vue@3.5.21"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script type="text/javascript" src="./assets/js/jquery-3.4.1.min.js"></script>
+
+    <script src="./assets/js/common/axios.common.js"></script>
+    <script src="./assets/js/common/custom-components.js"></script>
+    <script src="./assets/js/common.js"></script>
+    <script src="./assets/js/gaia_common.js"></script>
+    <script src="./assets/js/gaia-cairos.js"></script>
+</head>
+<body>
+<h1>커스텀 태그 이벤트 예제</h1>
+<my-button label="클릭하세요"></my-button>
+
+
+<div id="fileUploaderSection"></div>
+<!--<button id="btnTest">click</button>-->
+
+<template id="vueTemplate">
+    <div id="vueApp">
+        {{ message }}
+        <test></test>
+
+
+        <upload-files></upload-files>
+    </div>
+</template>
+<script>
+    // my-button이라는 이름의 커스텀 태그를 정의합니다.
+    class MyButton extends HTMLElement {
+        constructor() {
+            super(); // 부모 클래스인 HTMLElement의 생성자 호출
+            this.attachShadow({ mode: 'open' }); // Shadow DOM 생성
+        }
+
+        // 요소가 문서에 연결될 때 호출되는 생명주기 콜백
+        connectedCallback() {
+            // label 속성 값을 가져오거나 기본값 설정
+            const label = this.getAttribute('label') || '기본 버튼';
+
+            // 버튼 요소 생성 및 Shadow DOM에 추가
+            this.shadowRoot.innerHTML = `
+      <style>
+        button {
+          padding: 10px 15px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          background-color: #f0f0f0;
+          cursor: pointer;
+        }
+        button:hover {
+          background-color: #e0e0e0;
+        }
+      </style>
+      <button>${label}</button>
+    `;
+
+            // 버튼 클릭 이벤트 리스너 등록
+            this.shadowRoot.querySelector('button').addEventListener('click', () => {
+                // CustomEvent를 생성합니다.
+                const customEvent = new CustomEvent('btn-click', {
+                    bubbles: true, // 이벤트가 DOM 트리를 따라 버블링되도록 설정
+                    composed: true, // Shadow DOM 바깥으로 이벤트가 전달되도록 설정
+                    detail: { // 이벤트와 함께 전달할 데이터
+                        message: '커스텀 버튼이 클릭되었습니다.'
+                    }
+                });
+
+                // 커스텀 이벤트를 발생시킵니다.
+                this.dispatchEvent(customEvent);
+            });
+        }
+    }
+
+    // 커스텀 태그를 브라우저에 등록합니다.
+    customElements.define('my-button', MyButton);
+
+    const myButton = document.querySelector('my-button');
+
+    // 커스텀 태그의 'btn-click' 이벤트를 구독합니다.
+    myButton.addEventListener('btn-click', (e) => {
+        // 콜백 함수 실행
+        console.log('커스텀 이벤트가 발생했습니다!');
+        console.log('이벤트 데이터:', e.detail);
+
+        // 알림창 띄우기
+        alert(`버튼이 클릭되었습니다! 메시지: "${e.detail.message}"`);
+    });
+</script>
+
+<script>
+
+    $(function () {
+        const files = [{name: 'test', url: ''}];
+
+        gaia.util.createUploader('fileUploaderSection', files, '/webApi/test/file', (data) => {
+            console.log('callback()', data)
+        });
+    });
+</script>
+</body>
+</html>

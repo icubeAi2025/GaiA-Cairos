@@ -1,0 +1,18 @@
+<hr style="margin: 0"/>
+<footer class="footer">
+    <span class="copyright">ⓒ IDEA Information Technology.</span>
+    <a class="footerImage" href="javascript:void(0);">
+        <img src="/assets/images/svg/IEDA.svg" alt="IDEA" class="logo">
+    </a>
+</footer>
+
+<script>
+    $('.footerImage').on('click', function(e) {
+        e.preventDefault();
+        if (location.host.includes('pces') || location.host.includes('8088')) {
+            window.location.href = 'https://www.pces.co.kr/html/pces-portal/main/main_index.html';
+        } else {
+            window.location.href = 'https://www.idea-platform.net/platform';
+        }
+    });
+</script>

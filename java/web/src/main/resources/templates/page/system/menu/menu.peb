@@ -1,0 +1,627 @@
+{% extends 'layout/base_content' %} {% block content %}
+	<section class="contents_wrap g-col2 ty1">
+		<!-- S: TREE View ------------------------------------------------------------------------ -->
+		<article class="treeview_area g-row2 ty1" style="height: calc(100dvh - 115px); overflow: auto;">
+			<div class="treeview_area" >
+				<div class="treeview ty_pd0" id="jstree"></div>
+			</div>
+		</article>
+		<article class="conts g-row" style="height: calc(100dvh - 115px); overflow-y: scroll; overflow-x: hidden;">
+			<div class="group">
+				<h3 class="conts_tit">{{ message('item.menu.011') }}</h3>
+				<div class="conts_form">
+					<div class="btn_area s_default">
+						{{ mBtnHtml | raw }}
+						<!-- <button type="button" class="btn _outline" onclick="page.menu.delete()">{{ message('btn.002') }}</button>
+						<button type="button" class="btn _outline" onclick="page.menu.update()">{{ message('btn.003') }}</button>
+						<button type="button" class="btn _point" id="subMenuAddButton" onclick="page.menu.create()">{{ message('btn.013') }}</button> -->
+					</div>
+					<div class="form_box">
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.001') }}</div>
+								<div class="form_data">
+									<input type="text" id="upBreadCrumb" name="upBreadCrumb" required readonly>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.002') }}</div>
+								<div class="form_data">
+									<input type="text" id="upMenuCd" name="upMenuCd" required readonly>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.003') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuNm" name="menuNm" required readonly>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.004') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuCd" name="menuCd" required readonly>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.005') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuDscrpt" name="menuDscrpt" required readonly>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.007') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuUrl" name="menuUrl" required readonly>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.006') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuUseYn" name="menuUseYn" required readonly>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.030') }}</div>
+								<div class="form_data">
+									<input type="text" id="menuDiv" name="menuDiv" required readonly>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.009') }}</div>
+								<div class="form_data">
+									<textarea id="iconNm" name="iconNm" required readonly style="pointer-events: auto;"></textarea>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.010') }}</div>
+								<div class="form_data">
+									<input type="text" id="lkYn" name="lkYn" required readonly>
+								</div>
+							</div>
+						</div>						
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('item.menu.033') }}</div>
+								<div class="form_data">
+									<input type="text" class="maxlength" id="menuApi" required readonly>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.com.001') }}</div>
+								<div class="form_data">
+									<input type="text" id="rgstDt" name="rgstDt" required readonly>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.com.002') }}</div>
+								<div class="form_data">
+									<input type="text" id="chgDt" name="chgDt" required readonly>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="group" id="cash_list">
+				<div class="conts_grid">
+					<h3 class="conts_tit">{{ message('item.menu.013') }}</h3>
+					<div class="toolbar">
+						<div class="btn_area s_default">
+							{{ biBtnHtml | raw }}
+							<!-- <button type="button" class="btn _outline" id="" onclick="page.billing.delete()">{{ message('btn.002') }}</button>
+							<button type="button" class="btn _fill" id="" onclick="page.billing.create()">{{ message('btn.001') }}</button> -->
+						</div>
+					</div>
+					<div class="grid" id="billing-grid"></div>
+				</div>
+			</div>
+		</article>
+	</section>
+	<div id="popup" class="popup_overlay modal_base" style="display: none;">
+        <!-- 팝업 내용 -->
+    </div>
+	{% endblock content %} {% block footer_script %}
+<script>
+	let pjtNo;
+	let cntrctNo;
+
+	var errorMessage = "{{ message('msg.012') }}"; // 메뉴를 선택해주세요.
+	var page = {
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+		popup: {
+			mode: null,
+			close: function () {
+				this.mode = null;
+				$("#popup").html("");
+			},
+			rghtKindCodes: [],
+			menu: {}
+
+		},
+		addClassToNodeAndParents: function (node) {
+
+			$(".jstree-anchor").removeClass("current"); //이전에 선택된 노드에 current 삭제
+
+			// 현재 노드에 a 태그 클래스 추가
+			$("#" + node.id + "_anchor").addClass("current");
+
+			// 부모 노드를 순차적으로 찾아가면서 a 태그 클래스 추가
+			while (node.parent && node.parent !== "#") {
+				node = page.tree.getNode(node.parent);
+				$("#" + node.id + "_anchor").addClass("current");
+			}
+		},
+		clear: function (treeRefresh, billing) {
+			if (treeRefresh) {
+				this.tree.refresh();
+				// $("#details").html("");
+				// $("#subList").html("");
+			}
+
+			if (billing) {
+				this.billing.list();
+			}
+
+		},
+		// 해당 메뉴 정보 조회
+		menuDetail: function (node) {
+			console.log(node.data);
+			this.menu.currentNode = node;
+			this.menu.obj = node.data;
+			this.menu.parent = "";
+			this.menu.breadCrumb = node.data.menuNm;
+			this.popup.close();
+			this.billing.list();
+
+			// 상위 메뉴 breadcrumb 생성
+			while (node.parent && node.parent != "#") {
+				node = this.tree.getNode(node.parent);
+				this.menu.breadCrumb = node.data.menuNm + " > " + this.menu.breadCrumb;
+
+				if (!this.menu.parent) {
+					this.menu.parent = { menuCd: node.data.menuCd, menuLvl: node.data.menuLvl };
+				}
+
+				if (!this.menu.parent.breadCrumb) {
+					this.menu.parent.breadCrumb = node.data.menuNm;
+				} else {
+					this.menu.parent.breadCrumb = node.data.menuNm + " > " + this.menu.parent.breadCrumb;
+				}
+			}
+			$("#upBreadCrumb").val(gaiaCommon.decodeSafeText(this.menu.parent.breadCrumb));
+			$("#upMenuCd").val(gaiaCommon.decodeSafeText(this.menu.parent.menuCd));
+			$("#menuNm").val(gaiaCommon.decodeSafeText(this.menu.obj.menuNm));
+			$("#menuCd").val(gaiaCommon.decodeSafeText(this.menu.obj.menuCd));
+			$("#menuDscrpt").val(gaiaCommon.decodeSafeText(this.menu.obj.menuDscrpt));
+			$("#menuUrl").val(this.menu.obj.menuUrl);
+			$("#menuDiv").val(this.menu.obj.menuDiv);
+			$("#iconNm").val(gaiaCommon.decodeSafeText(this.menu.obj.iconNm));
+			$("#rgstDt").val(this.menu.obj.rgstDt);
+			$("#chgDt").val(this.menu.obj.chgDt);
+			this.menu.obj.menuUseYn == "Y" ?  $("#menuUseYn").val("{{ message('btn.008') }}") : $("#menuUseYn").val("{{ message('btn.009') }}");
+			this.menu.obj.menuApi == "Y" ?  $("#menuApi").val("{{ message('btn.008') }}") : $("#menuApi").val("{{ message('btn.009') }}");
+			
+			//메뉴 구분 설정
+			if(this.menu.obj.menuDiv == "A"){
+				$("#menuDiv").val("{{ message('item.com.059') }}");		// 전체
+			}
+			else if(this.menu.obj.menuDiv == "C"){
+				$("#menuDiv").val("{{ message('item.menu.032') }}");	// CAIROS
+			}
+			else if(this.menu.obj.menuDiv == "G"){
+				$("#menuDiv").val("{{ message('item.menu.031') }}");	// GAIA
+			}
+			else{
+				$("#menuDiv").val("");
+			}
+
+
+            if(this.menu.obj.lkYn === "Y") {
+                $("#lkYn").val("{{ message('btn.008') }}");
+                document.getElementById("cash_list").style.display ='block';
+            }else {
+                $("#lkYn").val("{{ message('btn.009') }}");
+                document.getElementById("cash_list").style.display ='none';
+            }
+
+			//메뉴 URL이 있거나 menulv이 3레벨이면, 하위메뉴 추가 버튼 숨김 처리.
+			const menuUrl = $("#menuUrl").val();
+			const menuLvl = this.menu.obj.menuLvl;
+			if(menuUrl || menuLvl===3){
+				$("#subMenuAddButton").hide();
+			}else{
+				$("#subMenuAddButton").show();
+			}
+
+			// console.log("menu: ", this.menu);
+			// console.log("breadCrumb: ", this.menu.breadCrumb);
+			// console.log("parent: ", this.menu.parent);
+		},
+
+		menu: {
+			obj: "",
+			parent: "",
+			breadCrumb: "",
+			create: function () {
+				if (this.obj) {
+					if (this.obj.menuLvl > 2) {
+                        gaiaCommon.customAlert("{{ message('msg.menu.002') }}"); //3레벨까지만 만들수 있습니다.
+					} else {
+						page.popup.mode = "create";
+                        gaiaCommon.checkAuth("MENU_C_01", () => {
+                            $("#popup").load(`/system/menu-popup/create?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            $("#popup").css({"display":"flex"});
+                        });
+					}
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.menu.001') }}"); //추가할 상위 메뉴를 선택해주세요.
+				}
+			},
+			// 메뉴 수정
+			update: function () {
+				if (this.obj) {
+					page.popup.mode = "update";
+                    gaiaCommon.checkAuth("MENU_U_01", () => {
+                        $("#popup").load(`/system/menu-popup/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        $("#popup").css({"display":"flex"});
+                    });
+					} else {
+                        gaiaCommon.customAlert("{{ message('msg.012') }}"); // 메뉴를 선택해주세요.
+					}
+			},
+			// 메뉴 삭제
+			delete: function () {
+				let msg = "{{ message('msg.009') }}"; // 정말 삭제하시겠습니까?
+
+				if(page.menu.currentNode.children_d.length > 0){
+					msg = "{{ message('msg.menu.003') }}"; // 하위메뉴가 존재합니다. 그래도 삭제하시겠습니까?
+				}
+
+                gaiaCommon.customConfirm("{{ message('item.menu.028') }}", "{{ message('item.menu.028') }}", msg, function(){
+					let menuCdList = page.menu.currentNode.children_d
+					menuCdList.push(page.menu.obj.menuCd);
+					var data = {
+						menuCdList: menuCdList,
+					};
+					gaiaCommon.post("/api/system/menu/delete", data, function (result) {
+						page.clear(true);
+                        gaiaCommon.customAlert("{{ message('msg.006') }}", function(){
+							location.reload();
+						}); // 삭제 되었습니다.
+					});
+				});
+			},
+
+			// 메뉴 위로 이동
+			up: function () {
+				//순서 위로
+				// console.log("선택 메뉴 정보: ", page.menu.obj);
+				const url = '/api/system/menu/move-up'
+				let data = {
+					menuDsplyOrdr: page.menu.obj.menuDsplyOrdr,
+					menuLvl: page.menu.obj.menuLvl,
+					upMenuCd: page.menu.obj.upMenuCd,
+					menuCd: page.menu.obj.menuCd
+				}
+
+				if(page.menu.obj){
+					if(page.menu.currentNode.parent == "#"){
+                        gaiaCommon.customAlert("{{ message('msg.menu.005') }}"); //메뉴를 이동할 수 없습니다.
+						return;
+					}
+					gaiaCommon.post(url,data,(response) => {
+						if(response.ok){
+							page.clear(true);
+							gaiaCommon.customAlert("{{ message('msg.menu.006') }}"); //메뉴가 이동되었습니다.
+						}else{
+							gaiaCommon.customAlert(response.message);
+						}
+					},(response) => {
+						gaiaCommon.customAlert(response.message);
+					})
+				}else{
+                    gaiaCommon.customAlert("{{ message('msg.012') }}"); //메뉴를 선택해주세요.
+				}
+			},
+
+			// 메뉴 아래로 이동
+			down: function () {
+				//순서 아래로
+				// console.log("선택 메뉴 정보: ", page.menu.obj);
+				const url = '/api/system/menu/move-down'
+				let data = {
+					menuDsplyOrdr: page.menu.obj.menuDsplyOrdr,
+					menuLvl: page.menu.obj.menuLvl,
+					upMenuCd: page.menu.obj.upMenuCd,
+					menuCd: page.menu.obj.menuCd
+				}
+
+				if(page.menu.obj){
+					if(page.menu.currentNode.parent == "#"){
+                        gaiaCommon.customAlert("{{ message('msg.menu.005') }}"); //이동할 수 없습니다.
+						return;
+					}
+					gaiaCommon.post(url,data,(response) => {
+						if(response.ok){
+							page.clear(true);
+							gaiaCommon.customAlert("{{ message('msg.menu.006') }}"); //이동되었습니다.
+						}else{
+							gaiaCommon.customAlert(response.message);
+						}
+					},(error)=>{
+						gaiaCommon.customAlert(response.message);
+					})
+				}else{
+                    gaiaCommon.customAlert("{{ message('msg.012') }}"); //메뉴를 선택해주세요.
+				}
+
+			},
+		},
+
+		billing: {
+			grid: null,
+			obj: null,
+			data: {
+				//
+			},
+			gridInit: function(){
+				this.grid = new tui.Grid({
+					el: document.getElementById('billing-grid'),
+					scrollX: false,
+					scrollY: true,
+					useClientSort: false,
+					// bodyHeight: 150,
+					minBodyHeight: 200,
+					rowHeaders:[
+							{
+							type: 'checkbox',
+							header: `
+								<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+							`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:"checkBox",
+									},
+									{
+										type:"trash",
+										//휴지통 클릭 삭제 시 필요한 값 설정
+										url: '/api/system/menu/billing/delete',
+										idField: 'bilNo',
+										keyName: 'bilNoList',
+										auth: page.isDelAuth == "true",
+										msgList: {
+											confirmTit: "{{ message('item.menu.025') }}", //유료기능 삭제
+											confirmMsg: "{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										},
+										success: function() { page.billing.list(); }
+									}
+								]
+							}
+						}
+					],
+					columns:[
+						{
+							header: "{{ message('item.menu.017') }}",
+							name: 'bilCode',
+						},
+						{
+							header: "{{ message('item.menu.018') }}",
+							name: 'bilNm',
+							align: 'center',
+						},
+						{
+							header: "{{ message('item.menu.019') }}",
+							name: 'bilDscrpt',
+							align: 'center',
+						},
+						{
+							header: "{{ message('item.com.002') }}",
+							name: 'chgDt',
+							align: 'center',
+							validation: { required: true },
+						},
+
+					],
+				});
+
+				refreshGrid(this.grid);
+			},
+			list: function (checkNo) {
+				this.data = {};
+                menuCd = page.menu.obj.menuCd;
+				url = "/api/system/menu/" + menuCd + "/billing";
+				gaiaCommon.get(url,null,(response) => {
+					let data = response.details.billingList;
+					page.billing.data = data;
+
+					// 그리드의 높이를 동적으로 설정
+					const rowCount = data.length;
+					const rowHeight = 40; // 행당 높이 (임의로 40px로 설정)
+					const maxHeight = 160; // 그리드의 최대 높이
+					const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행의 개수에 맞춰 높이 조정
+
+					page.billing.grid.setBodyHeight(newHeight);
+					page.billing.grid.resetData(data);
+				}, (response) => {
+					gaiaCommon.customAlert(response.message);
+				})
+			},
+
+			create: function () {
+				if(page.menu.obj){
+					page.popup.mode = "create";
+                    gaiaCommon.checkAuth("MENU_C_02", () => {
+                        $("#popup").load(`/system/menu-billing-popup?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        $("#popup").css({"display":"flex"});
+                    });
+				}else{
+                    gaiaCommon.customAlert("{{ message('msg.012') }}");
+				}
+			},
+
+			delete: function () {
+				if(page.menu.obj){
+					// var checkedNos = $(".billing-no:checked");
+					const url = '/api/system/menu/billing/delete';
+					let checkedbillingIds = []; //체크된 행의 id 정보 가져오기
+
+					page.billing.grid.getCheckedRows().forEach((rowData)=> {
+						const bilNo = rowData.bilNo;
+						checkedbillingIds.push(bilNo);
+					});
+
+					if(checkedbillingIds.length > 0){
+                        gaiaCommon.customConfirm("{{ message('item.menu.025') }}","{{ message('item.menu.025') }}","{{ message('msg.009') }}", function(){
+							let data = {["bilNoList"] : checkedbillingIds};
+							gaiaCommon.post(url,data,(response) => {
+								page.billing.list();
+								gaiaCommon.customAlert("{{ message('msg.006') }}"); //삭제되었습니다.
+							}, (response) => {
+								gaiaCommon.customAlert(response.message);
+							})
+						});
+					}else{
+                        gaiaCommon.customAlert("{{ message('msg.016') }}"); //유료 기능을 선택해주세요.
+						return false;
+					};
+				}else{
+                    gaiaCommon.customAlert(errorMessage);
+				}
+			},
+		},
+
+		// 따로 js로 분리
+		tree: {
+			obj: null,
+			refresh: function () {
+				this.obj.jstree(true).refresh();
+				this.applyTreeStylesAndActions();
+			},
+			getNode: function (id) {
+				return this.obj.jstree("get_node", id);
+			},
+			applyTreeStylesAndActions: function(){
+				// 모든 jstree-anchor 요소를 순회하며 nav 요소를 추가
+				const treeIconHtml = `{{ treeIconHtml | raw }}`;
+				$(".jstree-anchor:not(#M_anchor)").each(function() {
+					// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+					if ($(this).next("nav.item_opt").length === 0) {
+						let iconEl = `<nav class="item_opt">
+										${treeIconHtml}
+									</nav>`;
+						// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+						$(this).after(iconEl);
+					}
+				});
+
+			},
+			init: function () {
+				this.obj = $("#jstree").jstree({
+					plugins: ["search"],
+					core: {
+						data: function (obj, cb) {
+							gaiaCommon.get("/api/system/menu/all-list", {}, function (result) {
+								var data = [];
+								if (result.details?.menuList) {
+									result.details?.menuList.forEach((item, index) => {
+										data.push({
+											id: item.menuCd,
+											parent: item.upMenuCd,
+											text: item.menuNm,
+											state: { opened: false },
+											data: item,
+											icons: 'fa-solid fa-caret-right',
+											// li_attr: { class: "list_item" },
+										});
+									});
+									cb.call(obj, data);
+								}
+							});
+						},
+						check_callback: true, // 요거이 없으면, create_node 안먹음
+						themes : {
+								"theme" : "default",
+								"dots": false,
+								"responsive": false,
+								"icons" : false
+						}
+					},
+				});
+
+				// JsTree가 완전히 초기화된 후 `ul`에 클래스 추가
+				this.obj.on("loaded.jstree", function () {
+					// page.tree.applyTreeStylesAndActions();
+				});
+
+				this.obj.on("ready.jstree", function(e, data){
+					page.tree.openFirstChild('#', data); // 루트 노드에서 시작하여 첫 번째 자식만 열기
+
+				});
+
+				this.obj.on("select_node.jstree", function (e, data) {
+					// console.log("트리데이터: ", data);
+					page.menuDetail(data.node);
+					page.addClassToNodeAndParents(data.node);
+					page.tree.applyTreeStylesAndActions();
+					$('.jstree-anchor').siblings('nav.item_opt').css('display', 'none');
+					$('.jstree-anchor.jstree-clicked.current').siblings('nav.item_opt').css('display', 'contents');
+				});
+
+			},
+
+			//첫번째 노드만 열린 상태로 하는 함수
+			openFirstChild(nodeId, data){
+				var node = data.instance.get_node(nodeId);
+
+				if (node.children.length > 0) {
+					data.instance.open_node(node.children[0]); // 첫 번째 자식 노드만 열기
+				}
+			}
+		},
+
+	};
+
+	$(document).ready(function () {
+		gaia.create({
+            $init: function ($params) {
+				gaiaPortal.navMenuInit('SYSTEM06', "{{ message('item.menu.023') }}");
+
+				//프로젝트, 계약 정보 설정
+				const pjtData = commonJs.getSessionStorage("pageCommonData");
+				cntrctNo = pjtData.cntrctNo;
+				pjtNo = pjtData.pjtNo;
+
+				page.tree.init();
+				page.billing.gridInit();
+
+				$("#subMenuAddButton").hide(); //하위메뉴 버튼 숨김.
+
+				gaia.loaded = true;
+            }
+        });
+	});
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

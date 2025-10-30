@@ -1,0 +1,538 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+    .ris_dt {
+        width: 100px;
+    }
+
+    .ris_dd {
+        width: calc(100% - 100px);
+    }
+
+    .slick-initialized .slick-slide {
+        display: flex;
+    }
+
+    .ul_list li {
+        cursor: pointer;
+    }
+
+    .ul_list li:hover {
+        font-weight: 600;
+    }
+
+    .custom-link:hover {
+        text-decoration: underline;
+        /* 호버 시 언더라인 표시 */
+    }
+</style>
+{% endblock %} {% block content %}
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            {% include "page/defecttracking/tool/common_select" %}
+            <div class="conts_grid">
+                <div class="search_wrap">
+                    <span class="selectbox">
+                        <select id="summaryType">
+                            <option selected disabled value="">{{ message('item.dfccy.062') }}</option>
+                            <option value="cnstty" selected>{{ message('item.safety.003') }}</option>
+                            <option value="rgstr">{{ message('item.com.064') }}</option>
+                        </select>
+                    </span>
+                    <span class="selectbox has_clear" id="dfccyPhaseContainer">
+                        <span class="sty_ip" onclick="$('#dfccyPhaseContainer .dropdown').toggleClass('on')"
+                            id="dfccyPhaseSelect">{{ message('item.dfccy.063') }}</span> <!-- 결함단계 -->
+                        <button class=" icon_btn _clear"
+                            onclick="page.selectClear('dfccyPhase','dfccyPhaseAllCheck');  " style="display: none;">
+                            <i class="ic ic-close"></i>
+                            <span class="blind">{{ message('item.com.085') }}</span>
+                        </button>
+
+                        <div class="dropdown">
+                            <ul class="list_sty dropdown_list" id="dfccyPhaseList">
+                            </ul>
+                        </div>
+                    </span>
+                    <span class="selectbox has_clear" id="rgstrContainer">
+                        <span class="sty_ip" onclick="$('#rgstrContainer .dropdown').toggleClass('on')"
+                            id="rgstrSelect">{{ message('item.dfccy.063') }}</span> <!-- 결함단계 -->
+                        <button class=" icon_btn _clear" onclick="page.selectClear('rgstr','rgstrAllCheck');  "
+                            style="display: none;">
+                            <i class="ic ic-close"></i>
+                            <span class="blind">{{ message('item.com.085') }}</span>
+                        </button>
+
+                        <div class="dropdown">
+                            <ul class="list_sty dropdown_list" id="rgstrList">
+                            </ul>
+                        </div>
+                    </span>
+                    <button type="button" class="icon_btn search" onclick="page.search()">
+                        <i class="ic ic-search"></i>
+                        <span class="blind">{{ message('item.com.014') }}</span>
+                    </button>
+                    <!-- searchbox -->
+                    <!-- <div class="searchbox_wrap">
+                        <input type="text" name="dfccy_search_text" id="dfccy_search_text" placeholder="ID,제목,Act명,작성자"
+                            onkeypress="if(event.keyCode == 13){page.search();}">
+                        <button type="button" class="icon_btn search" onclick="page.search()">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">검색</span>
+                        </button>
+                    </div> -->
+
+                </div>
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">
+                        <button type="button" class="btn _fill">{{ message('item.com.088') }}</button>
+                    </div>
+                </div>
+                <!-- 메인 내용 시작 -->
+                <div class="conts_form">
+                    <div class="grid" id="summary_grid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+    let summaryType = "cnstty";
+    let dfccyPhaseNoList = [];
+    let rgstrIdList = [];
+    var page = {
+
+        init: function () {
+            page.makeDfccyPhaseSelect();
+            page.makeRgstrSelect();
+            page.selectClear("dfccyPhase", "dfccyPhaseAllCheck");
+            page.selectClear("rgstr", "rgstrAllCheck");
+            page.grid();
+
+            $('#summaryType').on('change', function () {
+                summaryType = $(this).val();
+                $(".check_mark").prop("checked", false);
+                page.updateSelectBoxText("#dfccyPhaseContainer", "dfccyPhaseAllCheck");
+                page.updateSelectBoxText("#rgstrContainer", "rgstrAllCheck");
+                page.search();
+                page.grid();
+            });
+        },
+
+        grid: function () {
+            const Grid = tui.Grid;
+            let _this = this;
+            const dataSource = {
+                api: {
+                    readData: {
+                        url: `/api/defecttracking/summary/summaryList`,
+                        method: 'GET',
+                        initParams: {
+                            summaryType: summaryType,
+                            cntrctNo: $("#cntrctNo").val(),
+                            dfccyPhaseNoList: dfccyPhaseNoList,
+                            rgstrIdList: rgstrIdList
+                        }
+                    }
+                },
+                contentType: 'application/json',
+            }
+
+            if (this.summaryGrid) {
+                this.summaryGrid.destroy();
+                this.summaryGrid = null;
+            }
+
+            if (!this.summaryGrid) {
+                let dynamicColumns = [];
+                let defectTrackingChildNames = ['dfccyCnt', 'dfccyPer'];
+
+                if (summaryType === "cnstty") {
+                    dynamicColumns.push({
+                        header: "{{ message('item.safety.003') }}", name: 'cnsttyNm', align: "center",
+                    });
+                    defectTrackingChildNames.unshift('cnsttyNm'); // 공종
+                } else if (summaryType === "rgstr") {
+                    dynamicColumns.push({
+                        header: "{{ message('item.com.064') }}", name: 'rgstrNm', align: "center",
+                    });
+                    defectTrackingChildNames.unshift('rgstrNm'); // 작성자
+                }
+
+                let bodyHeight;
+                if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                    bodyHeight = window.innerHeight - 490;
+                } else if (isCAIROS()) {
+                    bodyHeight = window.innerHeight - 380;
+                }
+
+                this.summaryGrid = new Grid({
+                    el: document.getElementById('summary_grid'),
+                    data: dataSource,
+                    useClientSort: false,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    bodyHeight: bodyHeight,
+                    header: {
+                        height: 150,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.dfccy.005") }}', // 결함사항
+                                name: 'defecttracking',
+                                childNames: defectTrackingChildNames
+                            },
+                            {
+                                header: '{{ message("item.dfccy.008") }}', // 답변
+                                name: 'responses',
+                                childNames: ['replyAgreeCnt', 'replyDisagreeCnt', 'replyCheckCnt', 'replyDoneCnt']
+                            },
+                            {
+                                header: '{{ message("item.dfccy.064") }}', // 확인
+                                name: 'verification',
+                                childNames: ['qa', 'spvs']
+                            },
+                            {
+                                header: '{{ message("item.dfccy.015") }}', // 종결
+                                name: 'termination',
+                                childNames: ['edPendingCnt', 'edClosedCnt']
+                            },
+                            {
+                                header: '{{ message("item.dfccy.065") }}', // QA
+                                name: 'qa',
+                                childNames: ['qaPendingCnt', 'qaOnHoldCnt', 'qaClosedCnt']
+                            },
+                            {
+                                header: '{{ message("item.dash.022") }}', // 관리관
+                                name: 'spvs',
+                                childNames: ['spvsPendingCnt', 'spvsOnHoldCnt', 'spvsClosedCnt']
+                            },
+
+                        ],
+                    },
+                    columns: [
+                        ...dynamicColumns,
+                        {
+                            header: "{{ message('item.dfccy.066') }}", // 결함수 
+                            name: 'dfccyCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.com.089') }}", // 비율
+                            name: 'dfccyPer',
+                            align: "right",
+                        },
+                        {
+                            header: "{{ message('item.dfccy.009') }}", // 동의
+                            name: 'replyAgreeCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.010') }}", // 동의 안함
+                            name: 'replyDisagreeCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dsgn.003') }}", // 확인 및 해결
+                            name: 'replyCheckCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.com.042') }}", // 완료 
+                            name: 'replyDoneCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.012') }}", // 미결
+                            name: 'qaPendingCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.013') }}", // 보류
+                            name: 'qaOnHoldCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.004') }}", // 종료
+                            name: 'qaClosedCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.012') }}", // 미결
+                            name: 'spvsPendingCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.013') }}", // 보류
+                            name: 'spvsOnHoldCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.004') }}", // 종료
+                            name: 'spvsClosedCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.012') }}", // 미결
+                            name: 'edPendingCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+                        {
+                            header: "{{ message('item.dfccy.004') }}", // 종료
+                            name: 'edClosedCnt',
+                            align: "right",
+                            renderer: CustomColumnLink
+                        },
+
+                    ],
+                });
+
+                refreshGrid(this.summaryGrid);
+
+                this.summaryGrid.on('errorResponse', ev => {
+                    console.error("그리드 오류 발생", ev);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                });
+            }
+        },
+
+        search: function () {
+            $('.dropdown').removeClass('on');
+
+            $("#dfccyPhaseList").find("input.check_mark:checked").each(function () {
+                if ($(this).attr("id") !== "dfccyPhaseAllCheck") {
+                    const dfccyPhaseNo = $(this).val().trim();
+                    if (dfccyPhaseNo) {
+                        dfccyPhaseNoList.push(dfccyPhaseNo);
+                    }
+                }
+            });
+
+            $("#rgstrList").find("input.check_mark:checked").each(function () {
+                if ($(this).attr("id") !== "rgstrAllCheck") {
+                    const rgstrId = $(this).val().trim();
+                    if (rgstrId) {
+                        rgstrIdList.push(rgstrId);
+                    }
+                }
+            });
+            page.grid();
+
+            dfccyPhaseNoList = []
+            rgstrIdList = []
+        },
+
+        makeSelect: function (url, containerId, allCheckId) {
+            let cntrctNo = $("#cntrctNo").val();
+            $.ajax({
+                url: `${url}?cntrctNo=${cntrctNo}`,
+                method: "GET",
+                contentType: "application/json",
+                success: function (data) {
+                    const listId = containerId === "#dfccyPhaseContainer" ? "dfccyPhaseList" : "rgstrList";
+                    const $list = $('#' + listId).empty();
+                    const items = data.details[listId];
+
+                    const myDfccy = containerId === "#dfccyPhaseContainer" ? '' :
+                        `<li class="list_item">
+                            <label class="form_check">
+                                <input class="check_mark" id="myDfccy" type="checkbox" name="check" value="myDfccy">
+                                <span class="check_label">{{ message('item.dfccy.067') }}</span>
+                            </label>
+                        </li> `
+
+                    $list.append(`
+                        <li class="list_item">
+                            <label class="form_check">
+                                <input class="check_mark" id="${allCheckId}" type="checkbox" name="check">
+                                <span class="check_label">{{ message('item.com.059') }}</span>
+                            </label>
+                        </li>
+                    ${myDfccy}
+                    `);
+
+                    items.forEach(({ usrNm, usrId, dfccyPhaseNm, dfccyPhaseNo }) => {
+                        const name = usrNm || dfccyPhaseNm;
+                        const id = usrId || dfccyPhaseNo;
+                        $list.append(`
+                            <li class="list_item">
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="check" value="${id}">
+                                    <span class="check_label">${name}</span>
+                                </label>
+                            </li>
+                        `);
+                    });
+
+                    // 전체 체크박스 클릭 이벤트
+                    $(containerId).on('change', `#${allCheckId}`, function () {
+                        const isChecked = $(this).is(':checked');
+                        $(containerId + " .check_mark").prop('checked', isChecked);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                    });
+
+                    // 개별 체크박스 상태 변경 시 전체 체크박스 상태 업데이트
+                    $(containerId).on('change', 'input.check_mark:not(#' + allCheckId + ')', function () {
+                        const totalCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + ")").length;
+                        const checkedCheckboxes = $(containerId).find("input.check_mark:not(#" + allCheckId + "):checked").length;
+                        $(containerId + " #" + allCheckId).prop('checked', totalCheckboxes === checkedCheckboxes);
+                        page.updateSelectBoxText(containerId, allCheckId);
+                    });
+
+
+
+                    $(document).off("click").on("click", function (event) {
+                        if (!$(event.target).closest(".selectbox.has_clear").length) {
+                            $(".dropdown").removeClass("on");
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    console.error("Error fetching data:", xhr.responseText);
+                }
+            });
+        },
+
+        updateSelectBoxText: function (containerId, allCheckId) {
+            const allChecked = $(containerId + " #" + allCheckId).is(":checked");
+            const selectedGroups = $(containerId + " .check_mark:checked:not(#" + allCheckId + ")")
+                .map((_, el) => $(el).siblings(".check_label").text())
+                .get();
+            const count = selectedGroups.length;
+
+            let displayText;
+
+            if (allChecked) {
+                displayText = "{{ message('item.com.059') }}"; // 전체 선택된 경우
+            } else if (count === 0) {
+                displayText = containerId === "#dfccyPhaseContainer" ? "결함단계" : "작성자"; // 아무것도 선택되지 않은 경우
+            } else if (count === 1) {
+                displayText = selectedGroups[0]; // 하나 선택된 경우
+            } else {
+                displayText = `${selectedGroups[0]} 외 ${count - 1}건`; // 여러 개 선택된 경우
+            }
+
+            // Select 박스의 텍스트 업데이트
+            $(containerId === "#dfccyPhaseContainer" ? "#dfccyPhaseSelect" : "#rgstrSelect").text(displayText);
+
+            // Clear 버튼 표시 여부 업데이트
+            $(containerId + " .icon_btn._clear").toggle(allChecked || count > 0);
+        },
+
+        selectClear: function (selectType, allCheckId) {
+            const containerId = selectType === 'dfccyPhase' ? "#dfccyPhaseContainer" : "#rgstrContainer";
+            $(containerId + " .check_mark").prop("checked", false);
+            page.updateSelectBoxText(containerId, allCheckId);
+        },
+
+        // 결함단계 selectBox
+        makeDfccyPhaseSelect: function () {
+            this.makeSelect("/api/defecttracking/summary/dfccyPhaseList", "#dfccyPhaseContainer", "dfccyPhaseAllCheck");
+        },
+
+        // 작성자 selectBox
+        makeRgstrSelect: function () {
+            this.makeSelect("/api/defecttracking/summary/rgstrList", "#rgstrContainer", "rgstrAllCheck");
+        }
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("M090201", "{{ message('item.dfccy.068') }}");
+                select.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+
+    class CustomColumnLink {
+        constructor(props) {
+            this.props = props;
+            this.el = document.createElement('a');
+
+            const rowKey = props.rowKey;
+            const columnName = props.columnInfo.name;
+            const rowData = page.summaryGrid.getRow(rowKey);
+            const cellValue = rowData[columnName];
+
+            this.el.textContent = cellValue;
+            this.el.style.padding = ".75em";
+            this.el.style.cursor = "pointer";
+            this.el.classList.add('custom-link');
+            this.el.href = "#";
+
+            // 클릭 이벤트 추가
+            this.el.addEventListener("click", (event) => {
+                event.preventDefault();
+
+                const cntrctNo = $("#cntrctNo").val();
+                let dfccyCd;
+                let rgstrId;
+                let rgstrNm;
+                if (summaryType == "cnstty") {
+                    dfccyCd = rowData["dfccyCd"];
+                } else {
+                    rgstrId = rowData["rgstrId"];
+                    rgstrNm = rowData["rgstrNm"];
+                }
+
+                const dfccyPhaseNo = $("#dfccyPhaseContainer .check_mark:checked:not(#dfccyPhaseAllCheck)")
+                    .map((_, el) => $(el).val())
+                    .get()[0] || "";
+                const rgstr = $("#rgstrContainer .check_mark:checked:not(#rgstrAllCheck)")
+                    .map((_, el) => $(el).siblings(".check_label").text())
+                    .get()[0] || "";
+
+                const url = "/defectTracking/defectreport";
+                const baseUrls = {
+                    "dfccyCnt": url+"?",
+                    "replyAgreeCnt": url+"?rplyCd=0201&",
+                    "replyDisagreeCnt": url+"?rplyCd=0202&",
+                    "replyCheckCnt": url+"?rplyCd=0203&",
+                    "replyDoneCnt": url+"?rplyStatus=ok&",
+                    "qaPendingCnt": url+"?detail_qa_status=0301&",
+                    "qaOnHoldCnt": url+"?detail_qa_status=0302&",
+                    "qaClosedCnt": url+"?detail_qa_status=0303&",
+                    "spvsPendingCnt": url+"?detail_spvsCd=0401&",
+                    "spvsOnHoldCnt": url+"?detail_spvsCd=0402&",
+                    "spvsClosedCnt": url+"?detail_spvsCd=0403&",
+                    "edPendingCnt": url+"?edCd=0501&",
+                    "edClosedCnt": url+"?edCd=0502&",
+                };
+
+                if (baseUrls[columnName]) {
+                    let targetUrl = new URL(baseUrls[columnName], window.location.origin);
+                    targetUrl.searchParams.set("cntrctNo", cntrctNo);
+                    targetUrl.searchParams.set("pjtNo", pjtNo);
+                    if (dfccyPhaseNo) targetUrl.searchParams.set("dfccyPhaseNo", dfccyPhaseNo);
+                    if (rgstr) targetUrl.searchParams.set("rgstr", rgstr);
+                    if (dfccyCd) targetUrl.searchParams.set("dfccyCd", dfccyCd);
+                    if (rgstrId) targetUrl.searchParams.set("rgstrNm", rgstrNm);
+
+                    window.location.href = targetUrl.toString();
+                }
+            });
+        }
+
+        getElement() {
+            return this.el;
+        }
+    }
+</script>
+{% endblock footer_script %}

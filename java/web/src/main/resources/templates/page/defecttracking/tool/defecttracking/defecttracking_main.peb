@@ -1,0 +1,1335 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+
+	.tui-pagination {
+		flex-grow: 1; /* 가운데 정렬을 위한 유동적인 공간 차지 */
+		display: flex;
+		justify-content: center; /* 페이징 요소 중앙 정렬 */
+		align-items: center;
+	}
+
+</style>
+
+{% endblock %} {% block content %}
+<section class="contents_wrap g-col2 ty1">
+	{% include "page/defecttracking/tool/common_tree" %}
+	<article class="conts_area defect_conts">
+		<div class="conts">
+			{% include "page/defecttracking/tool/common_select" %}
+			<div class="conts_grid" id="dfccy_list">
+				<span class="tree_route" id="dfccy_phase_path">
+					{{ message('item.dfccy.016') }} <!-- 결함 단계-->
+				</span>
+				<div class="search_wrap">
+                    <span class="selectbox" id="dfccyCd_box">
+                        <select name="dfccyType" id="selectbox_dfccy">
+							<option selected disabled value="">{{ message('item.dfccy.017') }}</option>
+						</select>
+                    </span>
+					<!-- <span class="selectbox">
+                        <select name="rgstr_search_select" id="rgstr_search_select">
+                            <option selected disabled value="">작성자</option>
+                        </select>
+                    </span> -->
+					<!-- searchbox -->
+					<div class="searchbox_wrap defect_search">
+						<!-- 검색어 입력창 -->
+						<input type="text" name="keyword" id="keyword" placeholder="ID,제목,Act명,작성자"
+							   onkeypress="if(event.keyCode == 13){page.dfccy.search();}">
+						<!-- 상세검색 아이콘 -->
+						<button type="button" class="btn icon_btn filter" onclick="page.layPop.detailSearchOpen()">
+							<i class="ic ic-setting-config"></i>
+							<span class="blind">{{ message('item.com.044') }}</span>
+						</button>
+						<!-- 일반검색 아이콘 -->
+						<button type="button" class="icon_btn search" onclick="page.dfccy.search()">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+						<!-- 상세검색 검색창 ("lay_pop on"일때 보여짐) -->
+						<div class="lay_pop" data-name="search_detail">
+							<button type="button" class="lay_pop_close icon_btn" onclick="page.layPop.detailSearchClose()" style="position: absolute;">
+								<i class="ic ic-close"></i>
+								<span class="blind">{{ message('item.com.037') }}</span>
+							</button>
+
+							<div class="form_box ">
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.017') }}</div>
+										<div class="form_data">
+                                            <span class="selectbox" id="detail_dfccyCd_box">
+                                                <select name="detail_dfccyCd" id="detail_dfccyCd">
+													<option selected disabled value="">{{ message('item.dfccy.017') }}</option>
+												</select>
+                                            </span>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.com.064') }}</div> <!--작성자-->
+										<div class="form_data">
+											<input type="text" name="rgstr" id="detail_rgstr" class="">
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col chkbox">
+										<div class="form_label"></div>
+										<div class="form_data detailSearch">
+											<label class="form_check">
+												<input class="check_mark" type="checkbox" name="checkbox" id="detail_my_rplyYn" value="Y">
+												<span class="check_label">
+													{{ message('item.dfccy.021') }} <!--내 작성 의견만 보기 -->
+												</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.022') }}</div> <!--결함 ID-->
+										<div class="form_data">
+											<div class="item_group">
+												<!-- 숫자만 입력 -->
+												<input type="text" name="startDfccyNo" id="startDfccyNo" class="number">
+												~
+												<input type="text" name="endDfccyNo" id="endDfccyNo" class="number">
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.020') }}</div> <!-- act 명-->
+										<div class="form_data">
+											<input type="text" name="activityNm" id="activityNm" class="">
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.023') }}</div> <!--답변 상태-->
+										<div class="form_data">
+											<div class="item_group selectbox">
+												<span class="selectbox">
+													<select name="detail_rply_status" id="detail_rply_status">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="ing">{{ message('item.dfccy.003') }}</option>
+														<option value="ok">{{ message('item.com.042') }}</option>
+														<option value="end">{{ message('item.dfccy.004') }}</option>
+													</select>
+												</span>
+												<span class="selectbox">
+													<select name="detail_rplyCd" id="detail_rplyCd">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="0201">{{ message('item.dfccy.024') }}</option>
+														<option value="0202">{{ message('item.dfccy.010') }}</option>
+														<option value="0203">{{ message('item.dsgn.003') }}</option>
+													</select>
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.050') }}</div> <!--QA 결과-->
+										<div class="form_data">
+											<div class="item_group selectbox">
+												<span class="selectbox">
+													<select name="detail_qa_status" id="detail_qa_status">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="ing">{{ message('item.dfccy.003') }}</option>
+														<option value="ok">{{ message('item.com.042') }}</option>
+														<option value="end">{{ message('item.dfccy.004') }}</option>
+													</select>
+												</span>
+												<span class="selectbox">
+													<select name="detail_qaCd" id="detail_qaCd">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="0301">{{ message('item.dfccy.012') }}</option>
+														<option value="0302">{{ message('item.dfccy.013') }}</option>
+														<option value="0303">{{ message('item.dfccy.004') }}</option>
+													</select>
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.051') }}</div> <!--관리관 결과-->
+										<div class="form_data">
+											<div class="item_group selectbox">
+												<span class="selectbox">
+													<select name="detail_spvs_status" id="detail_spvs_status">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="ing">{{ message('item.dfccy.003') }}</option>
+														<option value="ok">{{ message('item.com.042') }}</option>
+														<option value="end">{{ message('item.dfccy.004') }}</option>
+													</select>
+												</span>
+												<span class="selectbox">
+													<select name="detail_spvsCd" id="detail_spvsCd">
+														<option selected value="all">{{ message('item.dfccy.006') }}</option>
+														<option value="0401">{{ message('item.dfccy.012') }}</option> <!--미결-->
+														<option value="0402">{{ message('item.dfccy.013') }}</option> <!--보류-->
+														<option value="0403">{{ message('item.dfccy.004') }}</option> <!--종료-->
+													</select>
+												</span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.072') }}</div> <!--종결결과-->
+										<div class="form_data">
+                                            <span class="selectbox">
+                                                <select name="detail_edCd" id="detail_edCd">
+													<option selected value="all">{{ message('item.dfccy.006') }}</option>
+													<option value="0501">{{ message('item.dfccy.012') }}</option> <!--미결-->
+													<option value="0502">{{ message('item.dfccy.015') }}</option> <!--종결-->
+                                                </select>
+                                            </span>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.dfccy.025') }}</div> <!--최근 입력기간-->
+										<div class="form_data">
+											<div class="item_group">
+												<!-- 직접선택시 input type="date"를 "text"로 변경 -->
+												<input type="date" name="startRgstDt" id="startRgstDt" class="date" data-date-format="DD/MM/YYYY" onchange="page.layPop.setMinDate('startRgstDt', 'endRgstDt')">
+												~
+												<input type="date" name="endRgstDt" id="endRgstDt" class="date" data-date-format="DD/MM/YYYY">
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- 중요 -->
+								<div class="row">
+									<div class="col chkbox">
+										<div class="form_label"></div>
+										<div class="form_data detailSearch">
+											<label class="form_check">
+												<input class="check_mark" type="checkbox" name="checkbox" id="priorityCheck" value="Y">
+												<span class="check_label">
+													{{ message('item.dfccy.083') }}
+												</span>
+											</label>
+										</div>
+									</div>
+								</div>
+								<!-- 생명/보건/안전 관련-->
+								<div class="row">
+									<div class="col chkbox">
+										<div class="form_label"></div>
+										<div class="form_data detailSearch">
+											<label class="form_check">
+												<input class="check_mark" type="checkbox" name="checkbox" id="crtcIsueYn" value="Y">
+												<span class="check_label">
+													{{ message('item.dfccy.026') }}
+												</span>
+											</label>
+										</div>
+									</div>
+								</div>
+								<!--첨부파일 있음-->
+								<div class="row">
+									<div class="col chkbox">
+										<div class="form_label"></div>
+										<div class="form_data detailSearch">
+											<label class="form_check">
+												<input class="check_mark" type="checkbox" name="checkbox" id="atachYn" value="Y">
+												<span class="check_label">
+													{{ message('item.dfccy.027') }}
+												</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+							</div>
+
+							<div class="btn_group _fill s_small jc_e">
+								<button type="button" class="btn" onclick="page.layPop.detailSearch()">
+									{{message('btn.014') }}
+								</button>
+								<button type="button" class="btn" onclick="page.layPop.detailSearchReset()">
+									{{message('btn.024')}}
+								</button>
+							</div>
+						</div>
+					</div>
+
+				</div>
+				<!-- // E: search wrap ---------------------------------------------- -->
+
+				<!-- S: 상세검색에서 선택된 항목 표시 -->
+				<p class="selected_list">
+
+				</p>
+				<!-- E: 상세검색에서 선택된 항목 표시 -->
+
+				<div class="toolbar">
+					<div class="btn_area s_default _outline">
+						{{ btnHtml | raw }}
+						<!-- <button type="button" class="btn" id="delete_dfccy" onclick="page.deleteDfccy()">{{ message('btn.002') }}</button> -->
+						<!-- <button type="button" class="btn" id="update_dfccy" onclick="page.moveToUpdateDfccy()">{{ message('btn.003') }}</button> -->
+						<!-- <button type="button" class="btn _fill" id="create_dfccy" onclick="page.moveToCreateDfccy()">{{ message('btn.001') }}</button> -->
+					</div>
+
+					<div class="etc_info">
+						<span class="folder_doc">
+							<span class="">{{ message('item.dfccy.006') }}</span> <!--전체-->
+							<b class="num" id="all_cnt">0</b>
+						</span>
+						<span class="folder_doc">
+							<span class="">{{ message('item.dfccy.015') }}</span> <!--종결-->
+							<b class="num" id="end_cnt">0</b>
+						</span>
+						<span class="item_doc">
+							<span class="">{{ message('item.dfccy.012') }}</span> <!--미결-->
+							<b class="num" id="ing_cnt">0</b>
+						</span>
+					</div>
+
+					<div class="selectbox sort">
+						<select name="items_per_page" id="items_per_page" class="" onchange="page.dfccy.setPerPage()">
+							<!--                            <option selected disabled value="">{{ message('item.com.004') }}</option>-->
+							<option value="10">10</option>
+							<option value="20">20</option>
+							<option value="30">30</option>
+							<option value="50">50</option>
+						</select>
+					</div>
+				</div>
+				<div class="grid" id="dfccy_grid"></div>
+			</div>
+			<div class="conts_form" id="dfccy_cu" style="display: none;">
+				{% include "page/defecttracking/tool/defecttracking/defecttracking_cu" %}
+			</div>
+			<!-- ////////////// 상세보기 /////////////////-->
+			<div class="conts_detail" style="height: 100%; display: none;" id="dfccy_detail_list">
+				{% include "page/defecttracking/tool/defecttracking/defecttracking_detail" %}
+			</div>
+		</div>
+	</article>
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+	const dfccyPhaseCd = "0101";    // 구분: 결함사항
+	let dfccyPhaseNo; // 결함단계번호
+	let isEnd = false; // 결함 추가, 수정 기간 종료 여부
+	let myRplyYn = null;
+	let dfccyCd = null;
+	let isDelAuth = '{{ isDelAuth }}' === 'true' ? true : false;
+
+	$(document).ready(function () {
+
+		gaia.create({
+			$init: function ($params) {
+				gaiaPortal.navMenuInit("M090102", "{{ message('item.dfccy.069') }}"); //결함 추적 관리
+
+				select.init();
+				page.getDfccySelectbox();
+
+				gaia.loaded = true;
+
+			}
+		});
+	});
+
+	var page = {
+		init: function (curPage) {
+			const params = new URLSearchParams(window.location.search);
+			myRplyYn = params.get("myRplyYn") || null;
+
+			if (myRplyYn !== "" && myRplyYn) {
+				$("#detail_my_rplyYn").prop("checked", true);
+			}
+			if(curPage) {
+				page.dfccy.grid.getPagination().movePageTo(curPage);
+			} else {
+				page.dfccy.gridInit(false, function () {
+					page.layPop.detailSearch();
+				});
+			}
+
+			history.replaceState(null, null, window.location.pathname+`?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+		},
+
+		pjtData: {
+			pjtNo: null,
+			cntrctNo: null,
+		},
+
+		// 결함분류 콤보박스 생성
+		// 셀렉트박스 호출
+		makeSelectBox: function (cmnGrpCd, selectBoxId, elementId, ckeckedValue) {
+			let initText = "{{ message('item.dfccy.017') }}"; //결함 분류
+			let requestData = {
+				cmnGrpCd: cmnGrpCd,
+				selectBoxId: selectBoxId,
+				selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+				ckeckedValue: ckeckedValue,
+				orderByCol: "",
+				orderByType: "",
+				initText: initText,
+				paramNm: selectBoxId,
+				funName: "",
+				funParam: "this.value",
+				funtype: "onchange",
+			};
+
+			$.ajax({
+				url: "/api/util/make-selectBox",
+				method: "POST",
+				dataType: "json",
+				xhrFields: { withCredentials: true },
+				contentType: "application/json; charset=UTF-8",
+				traditional: true,
+				data: JSON.stringify([requestData]), // Wrap requestData in an array
+				success: function (data) {
+					let returnMap = data.details.returnMap;
+
+					// 메인 화면 결함분류 콤보박스 업데이트
+					let addAppLineContent = document.getElementById(elementId);
+					addAppLineContent.innerHTML = returnMap[selectBoxId];
+
+					// 상세검색 결함분류 콤보박스 업데이트
+					let detailDfccyCdContent = document.getElementById("detail_dfccyCd_box");
+					detailDfccyCdContent.innerHTML = ""; // 기존 내용 초기화
+
+					// 새로운 select 요소 생성
+					let newSelect = document.createElement("select");
+					newSelect.id = "detail_dfccyCd"; // 원하는 새로운 ID
+					newSelect.name = "detail_dfccyCd";  // 필요한 경우 name도 추가
+
+					// 옵션 추가
+					let options = returnMap[selectBoxId].match(/<option.*?<\/option>/g); // 옵션만 추출
+					if (options) {
+						options.forEach(optionHTML => {
+							let tempDiv = document.createElement("div");
+							tempDiv.innerHTML = optionHTML;
+							newSelect.appendChild(tempDiv.firstChild);
+						});
+					}
+
+					// 새로운 select 요소를 detailDfccyCdContent에 추가
+					detailDfccyCdContent.appendChild(newSelect);
+				},
+				error: function (xhr, status, error) {
+					console.error("Error making select box:", status, error);
+				},
+			});
+		},
+
+		initializeSelectBoxes(ckeckedValue) {
+			page.makeSelectBox(
+					"19a8bb53-74b4-405a-8d91-2b38555fc7d9",
+					"dfccyCd",
+					"dfccyCd_box",
+					ckeckedValue
+			);
+		},
+		getDfccySelectbox(){
+			$.ajax({
+				url: "/api/defecttracking/verification/dfccy-selectbox",
+				method: "GET",
+				success: function (data) {
+					let dfccyCdList = data.details.dfccySelectbox;
+					$.each(dfccyCdList, function (index, obj) {
+						$('#selectbox_dfccy').append(`<option value="${obj.cmn_cd}">${obj.cmn_cd_nm_krn}</option>`);
+						$('#detail_dfccyCd').append(`<option value="${obj.cmn_cd}">${obj.cmn_cd_nm_krn}</option>`);
+					})
+				},
+				error: function (xhr, status, error) {
+					console.error(status, error);
+					gaiaCommon.customAlert("{{ message('msg.060') }}");
+				}
+			});
+		},
+
+		//결함 추가 페이지 이동
+		moveToCreateDfccy(){
+			dfccyInput.init("create");
+
+			$("#dfccy_list").hide();
+			$("#dfccy_cu").show();
+		},
+
+		//결함 수정 페이지 이동
+		moveToUpdateDfccy(){
+
+			// 선택된 행의 사이즈를 체크 (길이는 1이어야 함.)
+			let checkedRowLength = this.dfccy.grid.getCheckedRows().length;
+			let checkedRowData = this.dfccy.grid.getCheckedRows()[0];
+
+			if(checkedRowLength > 1) {
+				gaiaCommon.customAlert("{{ message('msg.dfccy.023') }}"); // 하나의 결함을 선택해주세요.
+				return;
+			}
+
+			if(checkedRowLength < 1) {
+				gaiaCommon.customAlert("{{ message('msg.dfccy.024') }}"); // 수정할 결함을 선택해주세요.
+				return;
+			}
+
+			if(checkedRowData.rplyCd) {
+				gaiaCommon.customAlert("답변이 완료된 결함은 수정할 수 없습니다.");
+				return;
+			}
+
+			const dfccyNo = checkedRowData.dfccyNo;
+			dfccyInput.init("update", dfccyNo);
+
+			$("#dfccy_list").hide();
+			$("#dfccy_cu").show();
+		},
+
+		//결함 삭제
+		deleteDfccy(){
+			let checkedRowData = this.dfccy.grid.getCheckedRows();
+
+			if (checkedRowData.length <= 0) {
+				gaiaCommon.customAlert("{{ message('msg.dfccy.025') }}"); // 삭제할 결함을 선택해주세요.
+				return;
+			}
+
+			let dfccyNoList = [];
+
+			// `some()`을 사용하여 "Y"가 있는 경우 즉시 alert 후 종료
+			const hasAnswered = checkedRowData.some(row => {
+				if (row.rplyYn === "Y" || row.rplyCd) {
+					gaiaCommon.customAlert("{{ message('msg.dfccy.026') }}"); // 답변이 완료된 결함은 삭제할 수 없습니다. 다시 시도해주세요.
+					return true; // 루프 즉시 종료
+				}
+				// rplyYn이 null이거나 "Y"가 아닌 경우만 dfccyNoList에 추가
+				dfccyNoList.push(row.dfccyNo);
+				return false;
+			});
+
+			if (!hasAnswered) {
+				//선택한 결함을 삭제하시겠습니까?
+				gaiaCommon.customConfirm("{{ message('item.dfccy.070') }}", "{{ message('item.dfccy.070') }}", "{{ message('msg.dfccy.027') }}", function(){
+					page.dfccy.currentPage = page.dfccy.grid.getPagination().getCurrentPage();
+					gaiaCommon.post("/api/defecttraking/tool/defectTracking/delete", { dfccyNoList : dfccyNoList }, function (result) {
+						if(result.ok){
+							gaiaCommon.customAlert("{{ message('msg.006') }}"); //삭제되었습니다.
+							dfccyPhase.tree.init(page.dfccy.currentPage);
+						}else{
+							gaiaCommon.customAlert("{{ message('msg.090') }}"); //삭제에 실패했습니다.
+							console.error(result);
+						}
+					});
+				});
+			}
+		},
+
+		dfccy: {
+			grid: null,
+			obj: null,
+			requestData: {},
+			isSearch: false,
+			data: {
+				searchData: {},
+				sortData: null
+			},
+			optionsData: {},
+			currentPage: 1,
+
+			gridInit: function(initReq = true, cb) {
+				if(isEnd){
+					$("#create_dfccy").hide();
+					$("#update_dfccy").hide();
+					$("#delete_dfccy").hide();
+				}else{
+					$("#create_dfccy").show();
+					$("#update_dfccy").show();
+					$("#delete_dfccy").show();
+				}
+
+				const cntrctNo = $("#cntrctNo").val();
+
+				let defectTrackingListGet = {
+					cntrctNo: cntrctNo,
+					dfccyPhaseNo: dfccyPhaseNo
+				}
+
+				const dataSource = {
+					api: {
+						readData: {
+							url: `/api/defecttraking/tool/defectTracking/list?cntrctNo=${cntrctNo}&dfccyPhaseNo=${dfccyPhaseNo}`, // 데이터를 요청할 API URL
+							method: 'GET',
+							// initParams: {myRplyYn: myRplyYn}
+						}
+					},
+					initialRequest: initReq,
+					contentType: 'application/json',
+					withCredentials: true // 필요 시 설정
+				}
+
+				if (this.grid) { // 이미 그리드가 있으면 제거하고 새로 생성.
+					this.grid.destroy();
+					this.grid = null;
+				}
+
+				if (!this.grid) {
+					this.grid = new tui.Grid({
+						el: document.getElementById('dfccy_grid'),
+						data: dataSource,
+						pageOptions: {
+							useClient: false,
+							perPage: parseInt($('#items_per_page').val(), 10), // 페이지당 항목 수
+						},
+						useClientSort: false,
+						scrollX: true,
+						scrollY: true,
+						// bodyHeight: 200,
+						contextMenu: null,
+						rowHeaders: [
+							{
+								type: 'checkbox',
+								width: 100,
+								renderer: {
+									type: window.IconRenderer,
+									options: [
+										{
+											type:'checkBox'
+										},
+										{
+											type:"trash",
+											//휴지통 클릭 삭제 시 필요한 값 설정
+											url: '/api/defecttraking/tool/defectTracking/delete',
+											idField: 'dfccyNo',
+											keyName: 'dfccyNoList',
+											auth: isDelAuth && !isEnd,
+											msgList: {
+												confirmMsg: "{{ message('msg.009') }}",
+												confirmTit: "{{ message('item.dfccy.070') }}", //결함 삭제
+												completeMsg: "{{ message('msg.006') }}"
+											},
+											condition:function(rowData){
+												if(rowData.rplyStatus === "Y" || rowData.rplyCd){
+													gaiaCommon.customAlert("답변이 완료된 결함은 삭제할 수 없습니다. 다시 시도해주세요.");
+													return false;
+												}
+												return true;
+											},
+											success: function(rowData) {
+												page.dfccy.currentPage = page.dfccy.grid.getPagination().getCurrentPage();
+												dfccyPhase.tree.init(page.dfccy.currentPage);
+											}
+										}
+									]
+
+								}
+							}
+						],
+						header: {
+							height: 100,
+							complexColumns: [
+								{
+									header: "{{ message('item.dfccy.008') }}", // 답변
+									name: 'reply',
+									childNames: ['rplyStatus', 'rplyCdNm']
+								},
+								{
+									header: 'QA',
+									name: 'qa',
+									childNames: ['qaStatus', 'qaCdNm']
+								},
+								{
+									header: "{{ message('item.dfccy.071') }}", //관리관
+									name: 'spvs',
+									childNames: ['spvsStatus', 'spvsCdNm']
+								},
+							],
+						},
+						columns:[
+							{
+								header: "{{ message('item.dfccy.019') }}", 	//ID
+								name: 'dfccyNo',
+								sortable: true,
+								sortingType: 'asc',
+								resizable: true,
+								align: 'center',
+								width: 130,
+								renderer: {
+									type: window.IconRenderer,
+									options: [
+										{
+											type:'newWindow',
+											//새창, 상세 조회 시 필요한 값 설정
+											idField: 'dfccyNo', //조회에 필요한 id
+											gridId: 'dfccy_grid',
+											contsId: 'dfccy_list',
+											align: 'right',
+											absolute:true,
+											isHover:true,
+											success: function(rowData){
+												const contsEl = $(`#dfccy_list`);
+												const renderDetailIdEl = $(`#dfccy_detail_list`);
+
+												// 상세보기 화면으로 전환.
+												contsEl.hide();
+												renderDetailIdEl.show();
+												$('.more_info').addClass('open');
+
+												dfccyDetail.init(rowData); // 결함 데이터 전송.
+											},
+										}
+									]
+								},
+							},
+							{
+								header: "{{ message('item.com.064') }}", // 작성자
+								name: 'rgstrNm',
+								sortable: true,
+								sortingType: 'asc',
+								align: 'center',
+								width: 80,
+							},
+							{
+								header: "결함등록일", // 결함등록일
+								name: 'rgstDt',
+								align: 'center',
+								width: 130,
+							},
+							{
+								header: "{{ message('item.com.060') }}", // 제목
+								name: 'title',
+								className: 'title', //상세 조회 기능 구현 시, 설정.
+								align: 'left',
+								resizable: true,
+								ellipsis: true,
+								formatter: function(e) {
+									if (e.row.priorityCheck === 'Y') return `<span class="dfccy_priority">${e.value}</span>`;
+									return e.value
+								}
+							},
+							{
+								header: "{{ message('item.dfccy.017') }}", //결함분류
+								name: 'dfccyCdNm',
+								align: 'center',
+								width: 70
+							},
+							{
+								header: "{{ message('item.construction.052') }}", //Activity명
+								name: 'activityIds',
+								resizable: true,
+								ellipsis: true,
+								sortable: true,
+								sortingType: 'asc',
+								align: 'left',
+								//width: 80,
+								renderer: {
+									type: window.IconRenderer,
+									options: [
+										{
+											type:"newWindow",
+											align:"right",
+											isHover:true,
+											//새창, 상세 조회 시 필요한 값 설정
+											idFields: 'cntrctNo,dfccyNo', //조회에 필요한 id
+											gridId: 'dfccy_grid',
+											open:{
+												url:`/defectTracking/activity?cntrctNo={id1}&dfccyNo={id2}&pjtNo=${pjtNo}`,
+												width:1000,
+												height:450,
+												target:"activityDetailPopup",
+												align:'center'
+											}
+										}
+									]
+								},
+							},
+							{name: 'rplyStatus', header: "{{ message('item.dfccy.018') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{name: 'rplyCdNm', 	 header: "{{ message('item.dfccy.031') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{name: 'qaStatus', 	 header: "{{ message('item.dfccy.049') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{name: 'qaCdNm', 	 header: "{{ message('item.dfccy.031') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{name: 'spvsStatus', header: "{{ message('item.dfccy.049') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{name: 'spvsCdNm', 	 header: "{{ message('item.dfccy.031') }}", align: 'center', width: 65, resizable: true, ellipsis: true},
+							{
+								header: "{{ message('item.dfccy.072') }}", // 종결결과
+								name: 'edCdOk',
+								align: 'center',
+								width: 70,
+								resizable: true,
+								ellipsis: true,
+								formatter: function({ row }) {
+									if (row.edCd === '0501') return "{{ message('item.dfccy.012') }}"; //미결
+									if (row.edCd === '0502') return "{{ message('item.dfccy.015') }}"; //종결
+									return '-';
+								}
+							},
+						],
+					});
+
+					refreshGrid(this.grid); // 그리드 리사이즈 문제 해결
+
+				}
+
+				// 'beforeSort' 이벤트 핸들러 설정(정렬 ui 멀티 컬럼 정렬로 나타나는 문제 해결)
+				this.grid.on("beforeSort", (ev) => {
+					// 'columns' 데이터 가져오기 및 멀티 컬럼 정렬 방지 처리
+					const { columns } = ev.instance.store.data.sortState;
+					if (columns.length > 1) {
+						columns.shift();
+					}
+
+					// 추가 파라미터 설정
+					let additionalParams = this.requestData;
+
+					// 검색 조건이 활성화된 경우(search 관련 데이터 추가)
+					if (this.isSearch) {
+						additionalParams.searchText = this.data.searchData.searchText;
+						additionalParams.columnNm = this.data.searchData.columnNm;
+					}
+
+					// 추가 파라미터를 요청 옵션에 병합
+					ev.instance.dataProvider.setRequestParams(additionalParams);
+
+				});
+
+				this.grid.on("afterSort", (ev) => {
+					// 정렬된 상태에서 다른 컬럼을 정렬하려고 할 때 정렬 초기화 진행.
+					if(page.dfccy.grid.getSortState().columns.length > 1){
+						page.dfccy.grid.unsort(page.dfccy.grid.getSortState().columns[0].columnName);
+					}
+				});
+
+				// 'click' 이벤트 핸들러 설정
+				this.grid.on("click", function (e) {
+					const rowKey = e.rowKey; // 클릭된 행의 키를 가져옴
+
+					if (e.columnName == "_checked") {
+						if(e.nativeEvent.target.className == "checkGroup"){
+							let temp = page.dfccy.grid.getRow(rowKey);
+							temp._attributes.checked = page.dfccy.grid.getRow(rowKey)._attributes.checked ? false : true;
+							page.dfccy.grid.setRow(rowKey, temp);
+						}
+						return;
+					}
+
+					if(e.columnName === "dfccyNo"){
+						// 한페이지 당 개수 , 현재 페이지, 선택한 행(로우키)
+						page.dfccy.currentPage = page.dfccy.grid.getPagination().getCurrentPage();
+						const perPage = page.dfccy.grid.getPagination()._options.itemsPerPage;
+						const selectedRowkey = rowKey + 1;
+
+						dfccyTotalCnt = page.dfccy.grid.getPagination()._options.totalItems;
+
+						// pageNumber = (perPage * currentPage) - (perPage - selectedRowkey)
+						const pageNumber = (perPage * page.dfccy.currentPage) - (perPage - selectedRowkey);
+						$("#pageNumber").val(pageNumber);
+						dfccyDetail.updatePaginationButtons(pageNumber);
+
+						const reqData = page.dfccy.requestData;
+						if(reqData.constructor === Object && Object.keys(reqData).length > 0){
+							dfccyDetail.searchData = page.dfccy.requestData;
+						}
+					}
+				});
+
+				//그리드 업데이트 될 경우, 처리 기능 모음
+				this.grid.on('onGridUpdated', (ev) => {
+					let allCount = ev.instance.store.data.pageOptions.totalCount; // 전체 행 개수
+					let endCount = 0;  // 종결 개수 (edCdOk = 1)
+					let ingCount = 0;  // 미결 개수 (edCdNok = 1)
+
+					// 모든 행을 순회하면서 개수 카운트
+					// console.log(ev.instance.store.data.pageOptions.totalCount);
+					const gridDataOne = this.grid.getData()[0];
+					if(gridDataOne) {
+						endCount = gridDataOne.edYCnt; // 종결 개수 증가
+						ingCount = gridDataOne.edNCnt; // 미결 개수 증가
+					}
+
+					// HTML 요소 업데이트
+					document.getElementById("all_cnt").innerText = allCount;
+					document.getElementById("end_cnt").innerText = endCount;
+					document.getElementById("ing_cnt").innerText = ingCount;
+				});
+
+				if(cb){
+					cb();
+				}
+
+			},
+			//grid 페이징 사이즈 설정
+			setPerPage(){
+				const newPerPage = parseInt($('select[name="items_per_page"]').val(), 10);
+				this.grid.setPerPage(newPerPage);
+			},
+			search(){
+				// const rgstr = $('select[name="rgstr_search_select"]').val();
+				const dfccyCd = $('select[id="selectbox_dfccy"]').val();
+				const keyword = $('input[name="keyword"]').val();
+
+				this.data.searchData = {
+					keyword: keyword,
+					dfccyCd: dfccyCd,
+					// rgstr: rgstr
+				};
+
+				this.isSearch = true;
+
+				this.requestData.keyword = keyword;
+				// this.requestData.dfccyCd = dfccyCd;
+				// this.requestData.rgstr = rgstr;
+
+				//결함분류를 설정하지 않았을 때 처리
+				if(dfccyCd){
+					this.requestData.dfccyCd = dfccyCd;
+				}
+				// if(dfccyCd == 'none' || dfccyCd =='' || dfccyCd == null){
+					// gaiaCommon.customAlert("{{ message('msg.003') }}"); // 구분을 선택해주세요.
+					// $('input[name="keyword1"]').val('');
+					// return false;
+					// delete this.requestData.dfccyCd;
+				// }
+
+				//키워드가 없을 때 알림 처리
+				if(keyword == null || keyword == ''){
+
+					delete this.requestData.keyword;
+				}else{
+					if(keyword.length < 1){
+						gaiaCommon.customAlert("한 글자 이상 검색해주세요."); // 한 글자 이상 검색해주세요.
+						delete this.requestData.keyword;
+						return;
+					}
+				}
+
+				// if(rgstr == 'none' || rgstr =='' || rgstr == null){
+				// 	// gaiaCommon.customAlert("{{ message('msg.003') }}"); // 구분을 선택해주세요.
+				// 	// $('input[name="keyword1"]').val('');
+				// 	// return false;
+				// 	delete this.requestData.rgstr;
+				// }
+
+				this.grid.readData(1, this.requestData, true);
+			},
+			searchReset(){
+				page.layPop.detailSearchReset();
+				$('.selected_list').children().remove();
+				$('.selected_list').removeClass('on');
+
+				const searchElements = document.querySelector(".search_wrap");
+
+				if(searchElements){
+					// 모든 select 요소 초기화
+					searchElements.querySelectorAll("select").forEach(select => {
+						select.selectedIndex = 0; // 첫 번째 옵션으로 설정
+					});
+				}
+
+			}
+		},
+
+		//상세 검색
+		layPop: {
+			detailSearchReset() {
+				// `lay_pop` 클래스 하위의 모든 입력 요소 선택
+				const layPopElements = document.querySelector(".lay_pop");
+
+				if (layPopElements) {
+					// 모든 input 요소 초기화
+					layPopElements.querySelectorAll("input").forEach(input => {
+						if (input.type === "checkbox" || input.type === "radio") {
+							input.checked = false; // 체크박스 및 라디오 버튼 초기화
+						} else {
+							input.value = ""; // 일반 입력 필드 초기화
+						}
+					});
+
+					// 모든 select 요소 초기화
+					layPopElements.querySelectorAll("select").forEach(select => {
+						select.selectedIndex = 0; // 첫 번째 옵션으로 설정
+					});
+
+					// 상세 검색 데이터 초기화
+					Object.keys(page.dfccy.requestData).forEach(key => {
+						page.dfccy.requestData[key] = null;
+					});
+				}
+			},
+
+			detailSearchOpen() {
+				const dfccyCd = $("#dfccyCd").val();
+				const rgstr = $("#rgstr_search_select").val();
+
+				// 값이 있을 경우 초기화
+				if(dfccyCd || rgstr){
+					$("#dfccyCd").prop("selectedIndex", 0);  // 첫 번째 옵션 선택
+					$("#rgstr_search_select").prop("selectedIndex", 0); // 첫 번째 옵션 선택
+				}
+				$("[data-name='search_detail']").addClass("on");
+			},
+
+			detailSearchClose() {
+				$("[data-name='search_detail']").removeClass("on");
+			},
+
+			// 상세검색 최소 날짜 지정
+			setMinDate(startDtId, endDtId) {
+				var startDate = new Date($(`#${startDtId}`).val());
+				startDate.setDate(startDate.getDate() + 1);
+				var minEndDate = startDate.toISOString().split('T')[0];
+				$(`#${endDtId}`).attr('min', minEndDate);
+			},
+
+			detailSearch() {
+				// 상세 검색 조건 표시 on
+				$('.selected_list').addClass('on');
+				$('.selected_list').children().remove();
+
+				// 선택된 조건 설정
+				searchText = ''
+				$('#searchText').val('')
+				$('#searchType').val('')
+
+
+				const dfccyCd = $("select[name='detail_dfccyCd']").val();
+				const rgstrNm = $("#detail_rgstr").val();
+				// const rgstr = $("select[name='detail_rgstr']").val();
+				const myRplyYn = $("input[id='detail_my_rplyYn']:checked").val();
+				const startDfccyNo = $('#startDfccyNo').val();
+				const endDfccyNo = $('#endDfccyNo').val();
+				const activityNm = $('#activityNm').val();
+				const rplyStatus = $("select[name='detail_rply_status']").val();
+				const rplyCd = $("select[name='detail_rplyCd']").val();
+				const qaStatus = $("select[name='detail_qa_status']").val();
+				const qaCd = $("select[name='detail_qaCd']").val();
+				const spvsStatus = $("select[name='detail_spvs_status']").val();
+				const spvsCd = $("select[name='detail_spvsCd']").val();
+				const edCd = $("select[name='detail_edCd']").val();
+				let startRgstDt = $('#startRgstDt').val();
+				let endRgstDt = $('#endRgstDt').val();
+				const priorityCheck = $("input[id='priorityCheck']:checked").val();
+				const crtcIsueYn = $("input[id='crtcIsueYn']:checked").val();
+				const atachYn = $("input[id='atachYn']:checked").val();
+
+				// page.dfccy.detailSearchData에 값 매핑
+				page.dfccy.requestData = {
+					dfccyCd: dfccyCd && dfccyCd !== "all" ? dfccyCd : null,
+					rgstrNm: rgstrNm && rgstrNm !== "all" ? rgstrNm : null,
+					myRplyYn: myRplyYn,
+					startDfccyNo: startDfccyNo || null,
+					endDfccyNo: endDfccyNo || null,
+					activityNm: activityNm || null,
+					rplyStatus: rplyStatus && rplyStatus !== "all" ? rplyStatus : null,
+					rplyCd: rplyCd && rplyCd !== "all" ? rplyCd : null,
+					qaStatus: qaStatus && qaStatus !== "all" ? qaStatus : null,
+					qaCd: qaCd && qaCd !== "all" ? qaCd : null,
+					spvsStatus: spvsStatus && spvsStatus !== "all" ? spvsStatus : null,
+					spvsCd: spvsCd && spvsCd !== "all" ? spvsCd : null,
+					edCd: edCd && edCd !== "all" ? edCd : null,
+					startRgstDt: startRgstDt ? startRgstDt : null,
+					endRgstDt: endRgstDt ? endRgstDt : null,
+					priorityCheck: priorityCheck ? priorityCheck : null,
+					crtcIsueYn: crtcIsueYn ? crtcIsueYn : null,
+					atachYn: atachYn ? atachYn : null
+				};
+
+				// this.makeDetailSearchHtml(page.dfccy.requestData);
+
+				// 결함 분류
+				if (dfccyCd && dfccyCd !== "all") {
+					$('select[id="dfccyCd"]').val(dfccyCd); // 그리드 결함 구분 값 설정.
+
+					let dfccyCdText = $("#detail_dfccyCd option:selected").text();
+					let keywordHtml = `
+					<span class="selected_item detailDfCd">
+						<span class="item dfCd">${dfccyCdText}</span>
+						<input type="hidden" name="detail_dfccyCd" data-name="dfccyCd" value="${dfccyCd}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailDfCd')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 작성자
+				if (rgstrNm) {
+					let keywordHtml = `
+					<span class="selected_item detailRgstr">
+						<span class="item rgstr">${rgstrNm}</span>
+						<input type="hidden" name="detail_rgstr" data-name="rgstrNm" value="${rgstrNm}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailRgstr')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 결함번호 범위
+				if (startDfccyNo && endDfccyNo) {
+					let combinedValue = `${startDfccyNo} ~ ${endDfccyNo}`;
+					let keywordHtml = `
+					<span class="selected_item detailDfId">
+						<span class="item dfId">${combinedValue}</span>
+						<input type="hidden" name="startDfccyNo" data-name="startDfccyNo" value="${startDfccyNo}">
+						<input type="hidden" name="endDfccyNo" data-name="endDfccyNo" value="${endDfccyNo}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailDfId')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// Activity 이름
+				if (activityNm) {
+					let keywordHtml = `
+					<span class="selected_item detailNm">
+						<span class="item acNm">${activityNm}</span>
+						<input type="hidden" name="activityNm" data-name="activityNm" value="${activityNm}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailNm')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 답변 상태
+				if (rplyStatus && rplyCd) {
+					if(rplyStatus !== "all" || rplyCd !== "all"){
+						let rplyStatusText = $("#detail_rply_status option:selected").text();
+						let rplyCdText = $("#detail_rplyCd option:selected").text();
+						let combinedValue = `${rplyStatusText} | ${rplyCdText}`;
+						let keywordHtml = `
+						<span class="selected_item detailRply">
+							<span class="item rply">${combinedValue}</span>
+							<input type="hidden" name="detail_rply_status" data-name="rplyStatus" value="${rplyStatus}">
+							<input type="hidden" name="detail_rplyCd" data-name="rplyCd" value="${rplyCd}">
+							<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailRply')">
+								<i class="ic ic-close"></i>
+								<span class="blind">{{ message('btn.002') }}</span>
+							</button>
+						</span>
+					`;
+						$('.selected_list').append(keywordHtml);
+					}
+				}
+
+				// QA 결과
+				if (qaStatus && qaCd) {
+					if(qaStatus !== "all" || qaCd !== "all"){
+						let qaStatusText = $("#detail_qa_status option:selected").text();
+						let qaCdText = $("#detail_qaCd option:selected").text();
+						let combinedValue = `${qaStatusText} | ${qaCdText}`;
+						let keywordHtml = `
+						<span class="selected_item detailQa">
+							<span class="item qa">${combinedValue}</span>
+							<input type="hidden" name="detail_qa_status" data-name="qaStatus" value="${qaStatus}">
+							<input type="hidden" name="detail_qaCd" data-name="qaCd" value="${qaCd}">
+							<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailQa')">
+								<i class="ic ic-close"></i>
+								<span class="blind">{{ message('btn.002') }}</span>
+							</button>
+						</span>
+					`;
+						$('.selected_list').append(keywordHtml);
+					}
+				}
+
+				// 관리관 결과
+				if (spvsStatus && spvsCd) {
+					if(spvsStatus !== "all" || spvsCd !== "all"){
+						let spvsStatusText = $("#detail_spvs_status option:selected").text();
+						let spvsCdText = $("#detail_spvsCd option:selected").text();
+						let combinedValue = `${spvsStatusText} | ${spvsCdText}`;
+						let keywordHtml = `
+						<span class="selected_item detailSpvs">
+							<span class="item spvs">${combinedValue}</span>
+							<input type="hidden" name="detail_spvs_status" data-name="spvsStatus" value="${spvsStatus}">
+							<input type="hidden" name="detail_spvsCd" data-name="spvsCd" value="${spvsCd}">
+							<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailSpvs')">
+								<i class="ic ic-close"></i>
+								<span class="blind">{{ message('btn.002') }}</span>
+							</button>
+						</span>
+					`;
+						$('.selected_list').append(keywordHtml);
+					}
+				}
+
+				// 종결결과
+				if (edCd && edCd !== "all") {
+					let edCdText = $("#detail_edCd option:selected").text();
+					let keywordHtml = `
+					<span class="selected_item detailEd">
+						<span class="item ed">${edCdText}</span>
+						<input type="hidden" name="detail_edCd" data-name="edCd" value="${edCd}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailEd')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+
+				// 날짜 범위
+				if (startRgstDt || endRgstDt) {
+					let combinedValue = `${startRgstDt} ~ ${endRgstDt}`;
+					let keywordHtml = `
+					<span class="selected_item detailRgstDt">
+						<span class="item rgstDt">${combinedValue}</span>
+						<input type="hidden" name="startRgstDt" data-name="startRgstDt" value="${startRgstDt}">
+						<input type="hidden" name="endRgstDt" data-name="endRgstDt" value="${endRgstDt}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailRgstDt')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 첨부 파일
+				if (atachYn) {
+					let keywordHtml = `
+					<span class="selected_item detailAtachYn">
+						<span class="item ">{{ message('item.com.062') }} O</span>
+						<input type="hidden" name="atachYn" data-name="atachYn" value="${atachYn}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailAtachYn')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 중요
+				if (priorityCheck) {
+					let keywordHtml = `
+						<span class="selected_item detailPriorityCheck">
+							<span class="item ">{{ message('item.dfccy.083') }} O</span>
+							<input type="hidden" name="priorityCheck" data-name="priorityCheck" value="${priorityCheck}">
+							<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailPriorityCheck')">
+								<i class="ic ic-close"></i>
+								<span class="blind">{{ message('btn.002') }}</span>
+							</button>
+						</span>
+					`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 생명/보건/안전
+				if (crtcIsueYn) {
+					let keywordHtml = `
+					<span class="selected_item detailCrtcIsueYn">
+						<span class="item ">{{ message('item.dfccy.037') }} O</span>
+						<input type="hidden" name="crtcIsueYn" data-name="crtcIsueYn" value="${crtcIsueYn}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailCrtcIsueYn')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 내 의견
+				if (myRplyYn) {
+					let keywordHtml = `
+					<span class="selected_item detailMyRplyYn">
+						<span class="item ">{{ message('item.dfccy.007') }} O</span>
+						<input type="hidden" name="detail_my_rplyYn" data-name="myRplyYn" value="${myRplyYn}">
+						<button type="button" class="icon_btn" onclick="page.layPop.detailSearchListClose('detailMyRplyYn')">
+							<i class="ic ic-close"></i>
+							<span class="blind">{{ message('btn.002') }}</span>
+						</button>
+					</span>
+				`;
+					$('.selected_list').append(keywordHtml);
+				}
+
+				// 선택된 검색 필터가 없으면 selected_list를 비활성화
+				if ($('.selected_list').children().length === 0) {
+					$('.selected_list').removeClass('on');
+				}
+				$("[data-name='search_detail']").removeClass("on");
+
+				$('#selectbox_dfccy').val('');
+				$('#keyword').val('');
+
+				// 그리드 검색 실행.
+				page.dfccy.search();
+			},
+
+			detailSearchListClose(keyword) {
+				let selectedItem = $(`.${keyword}`).closest('.selected_item');
+				let hiddenInputs = selectedItem.find('input[type="hidden"]');
+
+				if (hiddenInputs.length > 0) {
+					hiddenInputs.each(function () {
+						let key = $(this).attr('name');
+						let dataNm = $(this).attr('data-name');
+						let element = $(`#${key}`);
+
+						if (element.length > 0) {
+							switch (element.prop("tagName").toLowerCase()) {
+								case "select":
+									element.prop("selectedIndex", 0); // 첫 번째 옵션 선택
+									break;
+								case "input":
+									if (element.attr("type") === "checkbox") {
+										element.prop("checked", false); // 체크박스 해제
+									} else {
+										element.val(''); // 일반 입력 필드 초기화
+									}
+									break;
+								default:
+									console.warn(`Unhandled element type: ${element.prop("tagName")}`);
+							}
+						}
+
+						if (key === 'detail_dfccyCd') {
+							$('select[id="dfccyCd"]').prop("selectedIndex", 0); 			// 그리드 결함 구분 값 첫 번째 옵션 선택
+						}else if(key === 'detail_rgstr'){
+							$('select[id="rgstr_search_select"]').prop("selectedIndex", 0); // 그리드 작성자 값 첫 번째 옵션 선택
+						}
+
+						page.dfccy.requestData[dataNm] = null; // 값 초기화
+					});
+				}
+
+				selectedItem.remove();
+
+				if ($('.selected_list').children().length === 0) {
+					$('.selected_list').removeClass('on');
+				}
+
+				// 그리드 검색 실행.
+				page.dfccy.search();
+			},
+		},
+	}
+</script>
+{% endblock footer_script %}

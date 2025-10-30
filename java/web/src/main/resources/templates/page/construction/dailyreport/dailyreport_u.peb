@@ -1,0 +1,1821 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_form">
+				<div class="btn_area s_default">
+					{{ btnHtml | raw }}
+					<button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+				</div>
+
+				<form id='inputForm'>
+					<!--개요 S-->
+					<div class="s_conts">
+						<span class="tree_route">{{ message("item.construction.012") }}</span>
+						<div class="form_box">
+							<div class="group">
+								<!-- row -->
+								<div class="row cols2">
+									<div class="col">
+										<div class="form_label required">{{ message("item.construction.002") }}</div>
+										<div class="form_data">
+											<input type="date" class="date w-md dDate" id="dailyReportDate"
+												name="dailyReportDate">
+										</div>
+									</div>
+									<div class="col">
+										<div class="form_label required">{{ message("item.construction.001") }}</div>
+										<div class="form_data">
+											<input type="text" id="reportNo" name="reportNo" class="maxlength" maxlength="20">
+										</div>
+									</div>
+								</div>
+								<!-- row -->
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message("item.app.001") }}</div>
+										<div class="form_data">
+											<input type="text" id="title" name="title" class="maxlength" maxlength="100">
+										</div>
+									</div>
+								</div>
+
+								<!-- row -->
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message("item.construction.013") }}</div>
+										<div class="form_data">
+											<div class="form_box in_formbox">
+												<div class="row cols3">
+													<div class="col">
+														<div class="form_label">{{ message("item.construction.005") }} :
+														</div>
+														<div class="form_data">
+															<div class="item_group">
+																<span class="item_wrap">
+																	{{ message("item.construction.006") }} <input
+																		type="text" class="w-md" id="amWthr"
+																		name="amWthr">
+																</span>
+																<span class="item_wrap">
+																	{{ message("item.construction.007") }} <input
+																		type="text" class="w-md" id="pmWthr"
+																		name="pmWthr">
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="col">
+														<div class="form_label">{{ message("item.construction.014") }} :
+														</div>
+														<div class="form_data">
+															<div class="item_group">
+																<span class="item_wrap put_txt _celsius">
+																	{{ message("item.construction.010") }} <input
+																		type="text" class="w-xs cost" id="dlowstTmprtVal"
+																		name="dlowstTmprtVal">
+																</span>
+																<span class="item_wrap put_txt _celsius">
+																	{{ message("item.construction.009") }} <input
+																		type="text" class="w-xs cost" id="dtopTmprtVal"
+																		name="dtopTmprtVal">
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="col">
+														<div class="form_label blind">{{
+															message("item.construction.015") }}/{{
+															message("item.construction.016") }}</div>
+														<div class="form_data">
+															<div class="item_group">
+
+																<span class="item_wrap put_txt _mm">
+																	{{ message("item.construction.015") }} <input
+																		type="text" class="w-xs cost" id="prcptRate"
+																		name="prcptRate">
+																</span>
+
+																<span class="item_wrap put_txt _mm">
+																	{{ message("item.construction.016") }} <input
+																		type="text" class="w-xs cost" id="snowRate"
+																		name="snowRate">
+																</span>
+															</div>
+														</div>
+													</div>
+												</div>
+
+											</div>
+
+										</div>
+									</div>
+								</div>
+
+								<!-- row -->
+								<div class="row" id="acmltDiv" style="display:none">
+									<div class="col">
+										<div class="form_label">{{ message("item.construction.017") }}</div>                        <!-- 공정현황 -->
+										<div class="form_data">
+
+											<table class="table ta_c" style="width:100%;">
+												<thead>
+													<tr>
+														<th scope="col">{{ message("item.app.040") }}</th>                          <!-- 구분 -->
+														<th scope="col">{{ message("item.construction.018") }}(%)</th>
+														<th scope="col">{{ message("item.construction.019") }}(%)</th>
+														<th scope="col">{{ message("item.construction.020") }}(%)</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr>
+														<th scope="row">{{ message("item.construction.021") }}</th>                 <!-- 당일 -->
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" id="todayPlanBohalRate"
+																name="todayPlanBohalRate"></td>
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" id="todayArsltBohalRate"
+																name="todayArsltBohalRate"></td>
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" id="todayProcess"
+																name="todayProcess"></td>
+													</tr>
+													<tr>
+														<th scope="row">{{ message("item.construction.022") }}</th>                 <!-- 누적 -->
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" id="acmltPlanBohalRate"
+																name="acmltPlanBohalRate"></td>
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" id="acmltArsltBohalRate"
+																name="acmltArsltBohalRate"></td>
+														<td><input type="text" class="w-sm calc"
+																style="text-align:center;" readonly id="acmltProcess"
+																name="acmltProcess"></td>
+													</tr>
+												</tbody>
+											</table>
+
+										</div>
+									</div>
+								</div>
+								<!-- row -->
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message("item.construction.023") }}</div>
+										<div class="form_data">
+											<textarea id="majorMatter" name="majorMatter" class="maxlength" maxlength="2000"></textarea>
+										</div>
+									</div>
+								</div>
+
+							</div>
+						</div>
+					</div>
+					<!--개요 E-->
+
+					<!--금일 주요작업 Activity S-->
+					<div class="s_conts" id="todayDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.024") }}</span>
+
+						<div class="conts_grid">
+							<div class="toolbar">
+								<div class="btn_area s_default">
+									<button type="button" class="btn _outline" id="chgToday">{{ message("item.construction.025") }}</button>
+									<button type="button" class="btn _outline" id="setStartDate" onclick="setDate('start')">보고일자로 시작 설정</button>
+									<button type="button" class="btn _outline" id="setEndDate" onclick="setDate('end')">보고일자로 종료 설정</button>
+								</div>
+							</div>
+
+							<table class="table">
+								<thead>
+									<tr>
+									    <th class="check-col" scope="col" rowspan="2">
+                                            <input type="checkbox" id="checkAll" onclick="checkAllEvent(this)"/>
+                                        </th>
+										<th scope="col" rowspan="2" style="width:200px;text-align:center;">WBS</th>
+										<th scope="col" rowspan="2">Activity</th>
+										<th scope="col" colspan="3">{{ message("item.construction.026") }}</th>
+										<th scope="col" colspan="3">{{ message("item.construction.027") }}</th>
+										<th scope="col" rowspan="2" style="width:120px;text-align:center;">{{ message("item.app.018") }}</th>
+									</tr>
+									<tr>
+										<th scope="col" style="text-align:center;">{{ message("item.construction.029") }}</th>
+										<th scope="col" style="text-align:center;">{{ message("item.construction.030") }}</th>
+										<th scope="col" style="width:95px;text-align:center;">{{ message("item.construction.031") }}</th>
+										<th scope="col" style="width:150px;text-align:center;">{{ message("item.construction.029") }}</th>
+										<th scope="col" style="width:150px;text-align:center;">{{ message("item.construction.032") }}</th>
+										<th scope="col" style="width:95px;text-align:center;">{{ message("item.construction.033") }}</th>
+									</tr>
+								</thead>
+								<tbody id="todayActivityTbody">
+								</tbody>
+							</table>
+						</div>
+						<div class="row">
+                            <div class="col">
+                                <div class="form_label" style="background:white; padding-top:0">금일 작업 내용</div>
+                                <div class="form_data" style="padding-right:0;">
+                                    <textarea id="todayActivityContents" name="todayActivityContents" class="maxlength" maxlength="2000"></textarea>
+                                </div>
+                            </div>
+                        </div>
+					</div>
+					<!--금일 주요작업 Activity E-->
+
+					<!--명일 주요작업 Activity S-->
+					<div class="s_conts" id="nextDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.034") }}</span>
+
+						<div class="conts_grid">
+							<div class="toolbar">
+								<div class="btn_area s_default">
+									<button type="button" class="btn _outline" id="chgNext">{{ message("item.construction.035") }}</button>
+								</div>
+							</div>
+
+							<table class="table">
+								<thead>
+									<tr>
+										<th scope="col" rowspan="2">WBS</th>
+										<th scope="col" rowspan="2">Activity</th>
+										<th scope="col" colspan="3">{{ message("item.construction.036") }}</th>
+										<th scope="col" rowspan="2">{{ message("item.app.018") }}</th>
+									</tr>
+									<tr>
+										<th scope="col">{{ message("item.construction.029") }}</th>
+										<th scope="col">{{ message("item.construction.030") }}</th>
+										<th scope="col">{{ message("item.construction.031") }}</th>
+									</tr>
+								</thead>
+								<tbody id="nextActivityTbody">
+								</tbody>
+							</table>
+
+						</div>
+						<div class="row">
+                            <div class="col">
+                                <div class="form_label" style="background:white; padding-top:0">명일 작업 계획</div>
+                                <div class="form_data" style="padding-right:0;">
+                                    <textarea id="tomorrowActivityContents" name="todayActivityContents" class="maxlength" maxlength="2000"></textarea>
+                                </div>
+                            </div>
+                        </div>
+					</div>
+					<!--명일 주요작업 Activity E-->
+
+					<!--주요 자재 S-->
+					<div class="s_conts" id="mtrlDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.038") }}</span>
+
+						<div class="conts_grid" id="mtrlTable">
+                            <div class="toolbar">
+								<div class="btn_area s_default">
+									<button type="button" class="btn _outline" id="addMaterial">자재 추가</button>
+								</div>
+                                <label style="display:flex; align-items:center; gap:4px; margin:20px 3px 0 auto;">
+                                    <input type="checkbox" id="mainResource" onclick="mainResourceEvent(this)">
+                                    주요 자재 표시
+                                </label>
+							</div>
+
+							<div id="mtrlDataGrid" class="grid"></div>
+
+						</div>
+					</div>
+					<!--주요 자재 E-->
+
+					<!--인력 S-->
+					<div class="s_conts" id="lbrDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.044") }}</span>
+
+						<div class="conts_grid" id="lbrTable">
+                            <div class="toolbar">
+								<div class="btn_area s_default">
+									<button type="button" class="btn _outline" id="addSiteLabor">인력 추가</button>
+								</div>
+							</div>
+
+							<div id="lbrDataGrid" class="grid"></div>
+						</div>
+					</div>
+					<!--인력 E-->
+
+
+
+					<!--장비 S-->
+					<div class="s_conts" id="expnssDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.046") }}</span>
+
+						<div class="conts_grid" id="expnssTable">
+                            <div class="toolbar">
+								<div class="btn_area s_default">
+									<button type="button" class="btn _outline" id="addExpenses">장비 추가</button>
+								</div>
+							</div>
+							<div id="expnssDataGrid" class="grid"></div>
+						</div>
+					</div>
+					<!--장비 E-->
+
+
+					<!--공정 사진 S-->
+					<div class="s_conts" id="photoDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.049") }}</span>
+
+
+						<!-- S: Slick Slider -->
+						<div class="process_photo">
+							<div class="process_photo_list">
+							</div>
+
+							<div class="slick_nav">
+								<div class="btn_area">
+									<div class="btn_group _outline">
+										<button type="button" class="btn icon_btn" id="addPhotoData"
+											style="display:none">
+											<i class="ic ic-picture-one"></i>
+											<span class="blind">추가</span>
+										</button>
+										<button type="button" class="btn icon_btn" onclick="delPhoto()"
+											id="delPhotoData" style="display:none">
+											<i class="ic ic-delete"></i>
+											<span class="blind">삭제</span>
+										</button>
+									</div>
+
+									<div class="btn_group _outline slick_indigator">
+										<button type="button" class="btn icon_btn prev">
+											<span class="blind">이전</span>
+										</button>
+										<button type="button" class="btn icon_btn next">
+											<span class="blind">다음</span>
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--공정 사진 E-->
+
+					<!--안전 작업 사항 S-->
+					<div class="s_conts" id="sftyDiv" style="display:none">
+						<span class="tree_route">{{ message("item.construction.050") }}</span>
+
+						<div class="conts_form">
+							<textarea name="sftyWorkItem" id="sftyWorkItem"></textarea>
+						</div>
+					</div>
+					<!--안전 작업 사항 E-->
+				</form>
+			</div>
+		</div>
+	</article>
+</section>
+{% include "page/construction/dailyreport/dailyreport_today" %}
+{% include "page/construction/dailyreport/dailyreport_next" %}
+{% include "page/construction/dailyreport/dailyreport_pic" %}
+{% include "page/construction/dailyreport/dailyreport_labor" %}
+{% include "page/construction/dailyreport/dailyreport_material" %}
+{% include "page/construction/dailyreport/dailyreport_expenses" %}
+{% include 'sub/grid' %}
+<link rel="stylesheet" href="/assets/css/all.min.css">
+<input type="text" id="oriAmt" hidden />
+<input type="text" id="oriType" hidden />
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+	.slider-container {
+		max-width: 100vw;
+		width: 100%;
+		overflow: hidden;
+	}
+</style>
+<script src="/assets/js/construction/construction.js"></script>
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script>
+	let SearchArr = new Array();
+	var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo');
+	var rId = urlParams.get('rId');
+	let returnMap = new Array();
+	let editing = false;
+	let photoArr = new Array();
+	let finishArr = new Array();
+	let delArr = new Array();
+	var qtyDiff = 0;
+	let uploadedPhotoArr = [];    // 모달에서 넘겨받을 photoArr
+    let uploadedFileList = [];    // 모달에서 넘겨받을 File[]
+    let laborData = [];           // 서버에서 받은 인력 데이터 원본
+    let displayLaborList = [];       // 최종 테이블에 표시한 인력 정보
+    let materialData = [];              // 서버에서 받은 주요자재 데이터 원본
+    let displayMaterialList = [];       // 최종 테이블에 표시한 주요자재 정보
+    let expensesData = [];              // 서버에서 받은 장비 데이터 원본
+    let displayExpensesList = [];       // 최종 테이블에 표시한 장비 정보
+    let activityRows = [];
+    let saveModal = 'N';                 // 액티비티 모달에서 저장한 경우
+    let inputOriVal = 0;                 // 금일 수량 바꾸기 전 값
+
+    // 복사로 게시물 추가한 경우 update api에서 보고서번호 중복 체크 하기 위해 사용
+    let createType = '';
+
+	//d: 기본, p: 팝업
+	var type = urlParams.get('type');
+
+	//d: 보기, e: 수정하기(input on), a: 추가
+	var sType = urlParams.get('sType');
+
+	var init = function () {
+		if (sType != "a") {
+			gaiaCommon.LoadingOverlay('body', true);
+		}
+		$("#cancel").click(function () {
+			window.location.href = "/construction/dailyreport"+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+			sessionStorage.setItem('cntrctNo', cntrctNo);
+		});
+		$("#edit").click(function () {
+			window.location.href = "/construction/dailyreport/detail?type=d&sType=e&cntrctNo=" + cntrctNo + "&rId=" + rId+`&pjtNo=${pjtInfo.pjtNo}`;
+		});
+		$("#save").click(function () {
+			goSave();
+		});
+		$("#addPhotoData").click(function () {
+			$("#photoModal").show();
+		});
+		$("#chgToday").click(function () {
+			$("#todayModal").show();
+
+			// 테이블 데이터 추출
+            getActivityData();
+		});
+		$("#chgNext").click(function () {
+			$("#nextModal").show();
+		});
+		$("#dailyReportDate").change(function (e) {
+			// gaiaCommon.LoadingOverlay('body', true);
+			callJsonApi();
+		});
+        $("#addMaterial").click(function () {
+			$("#materialModal").show();
+		});
+        $("#addSiteLabor").click(function () {
+            $("#siteLaborModal").show();
+		});
+        $("#addExpenses").click(function () {
+			$("#expensesModal").show();
+		});
+
+		if (sType == "e") {
+			let commonItem = [];
+			commonItem[0] = {
+				cmnGrpCd: 'b5af6b1b-224f-3ce1-ab98-0c8db36c2955',
+				selectBoxId: 'statusType',
+				selectBoxNmType: 'KOR',
+				paramNm: 'testBox',
+				funName: 'chgStatus',
+				funParam: 'this.value, this',
+				funtype: 'onchange'
+			};
+
+			$.ajax({
+				url: '/api/util/make-selectBox',
+				method: "POST",
+				dataType: "json",
+				xhrFields: { withCredentials: true },
+				contentType: 'application/json; charset=UTF-8',
+				traditional: true,
+				data: JSON.stringify(commonItem),
+				success: function (data) {
+					returnMap = data.details.returnMap;
+
+					returnMap.testBox = returnMap.testBox.replace("id='statusType'", "name='statusTypeToday'");
+					returnMap.newBox = returnMap.testBox.replace("<option value='0101'>완료</option>", "");
+					returnMap.newBox = returnMap.newBox.replace("name='statusTypeToday'", "name='statusTypeNext'");
+
+
+					returnMap.testBox = returnMap.testBox.replace("<option value='0102'>", "<option value='0102' selected>");
+					returnMap.testBox = returnMap.testBox.replace("<option value='0103'>시작예정</option>", "");
+					returnMap.testBox = returnMap.testBox.replace("<option value='0104'>완료예정</option>", "");
+				},
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+			});
+		}
+
+		setTimeout(() => summary.init(), 500);
+	};
+
+	let summary = {
+		//수정되기 전 원래 데이터들을 담아놓는 state
+		summaryDetail :null,
+		activityTodayDetail:null,
+		activityNextDetail:null,
+		mData:null,
+		lData:null,
+		eData:null,
+		photoData:null,
+		init: function () {
+			if (sType == "d" || sType == "e") {
+				this.read();
+				/*
+				$(document).on('mousedown', function(event) {
+					if(editing){
+						editing = false;
+						mtrl.mtrlDataGrid.finishEditing();
+						lbr.lbrDataGrid.finishEditing();
+						expnss.expnssDataGrid.finishEditing();
+					}
+				});
+				*/
+			}
+		},
+		read: function () {
+
+			var param = {
+				cntrctNo: cntrctNo
+				, dailyReportId: rId
+			};
+
+			$.ajax({
+				url: BASEPATH + 'dailyreport/dailyreport-detail',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function (response, status, xhr) {
+					Object.keys(response.details).forEach(key => {
+						summary[key] = response.details[key];
+					});
+					data = summary.summaryDetail;
+
+					if (data.dailyReportDate == "" && sType == "d") {
+						$("#dailyReportDate").hide();
+					} else {
+						$("#dailyReportDate").val(data.dailyReportDate);
+					}
+
+
+					$("#reportNo").val(gaiaCommon.decodeSafeText(data.reportNo));
+					$("#title").val(gaiaCommon.decodeSafeText(data.title));
+					$("#amWthr").val(data.amWthr);
+					$("#pmWthr").val(data.pmWthr);
+					$("#dlowstTmprtVal").val(data.dlowstTmprtVal);
+					$("#dtopTmprtVal").val(data.dtopTmprtVal);
+					$("#prcptRate").val(data.prcptRate);
+					$("#snowRate").val(data.snowRate);
+					$("#majorMatter").val(gaiaCommon.decodeSafeText(data.majorMatter));
+					$("#todayPlanBohalRate").val(data.todayPlanBohalRate || 0);
+					$("#todayArsltBohalRate").val(data.todayArsltBohalRate || 0);
+					$("#todayProcess").val(data.todayProcess || 0);
+					$("#acmltPlanBohalRate").val(data.acmltPlanBohalRate || 0);
+					$("#acmltArsltBohalRate").val(data.acmltArsltBohalRate || 0);
+					$("#acmltProcess").val(data.acmltProcess || 0);
+					$("#sftyWorkItem").val(gaiaCommon.decodeSafeText(data.sftyWorkItem));
+					$("#todayActivityContents").val(gaiaCommon.decodeSafeText(data.todayActivityContents));
+					$("#tomorrowActivityContents").val(gaiaCommon.decodeSafeText(data.tomorrowActivityContents));
+
+                    // 승인/반려/승인요청인 경우 수정버튼 숨김
+                    if(data.apprvlStats) {
+                        $("#edit").hide();
+                    } else {
+                        $("#edit").show();
+                    }
+
+					activity.init("todayActivityTbody", response.details.activityTodayDetail);
+					activity.init("nextActivityTbody", response.details.activityNextDetail);
+
+                    // 총수량, 금일수량, 금일누계, 잔여 0일 경우 공백으로 치환
+					let mData = replaceZeroOrNegativeWithBlank(response.details.mData);
+					let lData = replaceZeroOrNegativeWithBlank(response.details.lData);
+					let eData = replaceZeroOrNegativeWithBlank(response.details.eData);
+					console.log('***lData=', lData);
+					mtrl.init(mData);
+					lbr.init(lData);
+					expnss.init(eData);
+					photo.init(response.details.photoData);
+				},
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+			});
+			gaiaCommon.LoadingOverlay('body', false);
+		}
+	}
+
+
+	let activity = {
+		init: function (type, data) {
+			if (type == "todayActivityTbody") {
+				data.forEach(function (row, seq) {
+					var ro = "";
+					const today = new Date();
+
+					const year = today.getFullYear();
+					const month = (today.getMonth() + 1).toString().padStart(2, '0');
+					const day = today.getDate().toString().padStart(2, '0');
+
+					const dateString = year + '-' + month + '-' + day;
+
+					row.pstats = row.pstats == null?'0102':row.pstats
+
+                    // 금일 실행 시작일이 없을 경우 보고일자로 설정
+                    let displayActualBgnDate = row.actual_bgn_date;
+                    if(row.actual_bgn_date == '' || row.actual_bgn_date == null) {
+                        displayActualBgnDate = $("#dailyReportDate").val();
+                    }
+
+					var bgnDateTd = `<td><input class="date" type="date" id="actual_bgn_date_` + row.daily_activity_id + `" name="actual_bgn_date" value="` + displayActualBgnDate + `" dId="` + row.daily_activity_id + `" aId="` + row.activity_id + `" ` + ro + ` onchange="calcDate(` + seq + `, 'start', '` + row.daily_activity_id + `', '` + row.activity_kind + `');"/></td>`;
+					if (sType == "d") {
+						bgnDateTd = `<td>` + row.actual_bgn_date + `</td>`;
+					}
+					let actual_end = row.actual_end_date;
+					if (row.plan_end_date == $("#dailyReportDate").val()) {
+						actual_end = $("#dailyReportDate").val();
+					}
+					var endDateTd = `<td><input class="date" type="date" id="actual_end_date_` + row.daily_activity_id + `" name="actual_end_date" value="` + actual_end + `" dId="` + row.daily_activity_id + `" aId="` + row.activity_id + `" onchange="calcDate(` + seq + `, 'end', '` + row.daily_activity_id + `', '` + row.activity_kind + `');"/></td>`;
+					if (sType == "d") {
+						endDateTd = `<td>` + row.actual_end_date + `</td>`;
+					}
+					var statsTd = `<td><div class="selectbox" name="statusType_` + seq + `" aId="` + row.activity_id + `">` + returnMap.testBox + `</div></td>`;
+					if (sType == "d") {
+						statsTd = `<td>` + row.pstats_txt + `</td>`;
+					}
+
+                    let checkboxTd = `<td style="text-align:center;">
+                                        <input type="checkbox" name="rowCheck" value="1" onclick="syncCheckAll()"/>
+                                      </td>`;
+                    if (sType == "d") {
+                        checkboxTd = `<td style="text-align:center; display:none;"></td>`;
+                    }
+
+					// 소요일 수 계산
+					let actual_reqre_daynum = '';
+                    if (displayActualBgnDate && actual_end) {
+                        const start = new Date(displayActualBgnDate);
+                        const end = new Date(actual_end);
+                        if (!isNaN(start) && !isNaN(end)) {
+                            actual_reqre_daynum = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                        }
+                    } else {
+                        actual_reqre_daynum = row.actual_reqre_daynum < 1 ? '' : row.actual_reqre_daynum;
+                    }
+					$("#todayActivityTbody").append(
+						`<tr>
+						    `+ checkboxTd +`
+							<td style="display:none;" id="revision_id" name="revision_id">`+ row.revision_id + `</td>
+							<td style="display:none;" id="activity_id" name="activity_id">`+ row.activity_id + `</td>
+							<td style="display:none;" id="daily_activity_id" name="daily_activity_id">`+ row.daily_activity_id + `</td>
+							<td>`+ row.path_nm + `</td>
+							<td>`+ row.activity_nm + `</td>
+							<td style="text-align:center;"><span id="plan_start_`+ seq + `">` + row.plan_start + `</span></td>
+							<td style="text-align:center;"><span id="plan_finish_`+ seq + `">` + row.plan_finish + `</span></td>
+							<td style="text-align:right;">`+ row.plan_reqre_daynum + `</td>
+							`+ bgnDateTd + `
+							`+ endDateTd + `
+							<td style="text-align:right;"><span id="actual_reqre_daynum_`+ row.daily_activity_id + `">` + actual_reqre_daynum + `</span></td>
+							`+ statsTd + `
+						</tr>`);
+					// if (row.pstats != "" && row.pstats != null) {
+						if (sType == "e") {
+							$("select[name='statusTypeToday']")[seq].value = row.pstats;
+						}
+					// }
+					// else{
+
+					// }
+				});
+
+				document.getElementsByName("actual_bgn_date").forEach((e) => {
+					e.setAttribute("max", today);
+				});
+
+				document.getElementsByName("actual_end_date").forEach((e) => {
+					e.setAttribute("max", today);
+				});
+			}
+			if (type == "nextActivityTbody") {
+				const date = new Date();
+				let currentDay = String(date.getDate() + 1).padStart(2, '0');
+				let currentMonth = String(date.getMonth() + 1).padStart(2, "0");
+				let currentYear = date.getFullYear();
+				let currentDate = `${currentYear}-${currentMonth}-${currentDay}`;
+
+				data.forEach(function (row, seq) {
+					var hidden = "";
+					if (row.dlt_yn == "Y") {
+						hidden = "hidden";
+					}
+					row.pstats = row.pstats == null?'0102':row.pstats
+
+					var tempTd = `<td style="width:120px;"><div class="selectbox" name="nextActivity" dId="` + row.daily_activity_id + `" aId="` + row.activity_id + `">` + returnMap.newBox + `</div></td>`;
+					if (sType == "d") {
+						tempTd = `<td style="width:120px;text-align:center;">` + row.pstats_txt + `</td>`;
+					}
+					var diff = Math.abs((new Date(row.plan_start) - new Date(row.plan_finish)) / 86_400_000) + 1;
+					diff = isNaN(diff) ? '' : diff;
+					var rate = ((Math.abs((new Date(row.plan_start) - new Date(currentDate))) / 86_400_000) + 1) / diff * 100;
+					rate = isNaN(rate) ? '' : rate;
+					rate = isFinite(rate) ? rate : '';
+					$("#nextActivityTbody").append(
+						`<tr id="next_` + row.daily_activity_id + `" ` + hidden + `>
+							<td style="display:none;" id="revision_id" name="revision_id">`+ row.revision_id + `</td>
+							<td style="display:none;" id="activity_id" name="activity_id">`+ row.activity_id + `</td>
+							<td style="display:none;" id="daily_activity_id" name="daily_activity_id">`+ row.daily_activity_id + `</td>
+							<td style="width:200px;text-align:center;">`+ row.path_nm + `</td>
+							<td>`+ row.activity_nm + `</td>
+							<td style="width:150px;text-align:center;">`+ row.plan_start + `</td>
+							<td style="width:150px;text-align:center;">`+ row.plan_finish + `</td>
+							<td style="width:95px;text-align:right;">`+ row.plan_reqre_daynum + `</td>
+							`+ tempTd + `
+							<td style="display:none;" id="activity_kind" name="activity_kind">`+ row.activity_kind + `</td>
+						</tr>`);
+					// if (row.pstats != "" && row.pstats != null) {
+						if (sType == "e") {
+							$("select[name='statusTypeNext']")[seq].value = row.pstats;
+						}
+					// }
+				});
+			}
+		}
+	}
+
+	let mtrl = {
+		init: function (data) {
+			let _this = this;
+
+			if (!this.mtrlDataGrid) {
+				this.mtrlDataGrid = new tui.Grid({
+					el: document.getElementById('mtrlDataGrid'),
+					scrollX: false,
+					scrollY: true,
+					contextMenu: null,
+					bodyHeight: 550,
+					header: {
+						height: 80,
+					},
+					columns: [
+						{ header: '{{ message("item.construction.039") }}', name: 'govsply_mtrl_txt', width: 100, align: 'center' },
+						{ header: '{{ message("item.construction.040") }}', name: 'rsce_cd', width: 150, align: 'center' },
+						{ header: '{{ message("item.projectcost.002") }}', name: 'rsce_nm', align: 'left', resizable: true, widthWeight: 1 },
+						{ header: '{{ message("item.projectcost.003") }}', name: 'spec_nm', align: 'left', resizable: true, widthWeight: 1 },
+						{ header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 80, align: 'center', formatter: numberFormat },
+						{ header: '{{ message("item.construction.041") }}', name: 'total_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.042") }}', name: 'actual_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.062") }}', name: 'acmtl_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.039") }}', name: 'remndr_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ name: 'ori_qty', hidden: true },
+						{ name: 'rsce_tp_cd', hidden: true },
+						{ name: 'manual_yn', hidden: true }
+					]
+				});
+
+				this.mtrlDataGrid.on('editingFinish', (ev) => {
+					recalc("mtrl", ev.rowKey);  // 금일수량 입력할 경우 금일누계/잔여 자동 계산
+			        displayMaterialList = this.mtrlDataGrid.getData();  // 모달도 변경된 데이터 사용하기 위해 display 에 반영함
+			        displayMaterialList = replaceZeroOrNegativeWithBlank(displayMaterialList);
+				});
+			}
+
+			if (sType == "e") {
+				this.mtrlDataGrid.store.column.allColumns[6].editor = { type: CustomQtyTextEditor }
+			}
+
+			if (data) {
+
+				// 금일 누계 계산
+                const updatedData = applyAccumulatedQty(data);
+
+                // 항목추가 모달에서 사용
+			    materialData = [... updatedData];
+			    displayMaterialList = [... replaceZeroOrNegativeWithBlank(updatedData)];
+
+				this.mtrlDataGrid.resetData(updatedData);
+
+				refreshGrid(this.mtrlDataGrid);
+			}
+
+
+            // 주요 자재 표시
+            mainResourceEvent($("#mainResource")[0]);
+		}
+	}
+	// 주요 자재 표시
+	function mainResourceEvent(checkbox) {
+        if (!mtrl.mtrlDataGrid) return;
+
+        if (checkbox.checked) {
+            // main_rsce_dsply === 'Y' 인 데이터만 필터링
+            const filtered = materialData.filter(row => row.main_rsce_dsply === 'Y');
+            mtrl.mtrlDataGrid.resetData(filtered);
+        } else {
+            // 전체 데이터 다시 보여주기
+            mtrl.mtrlDataGrid.resetData(materialData);
+        }
+
+        refreshGrid(mtrl.mtrlDataGrid);
+    }
+
+
+	let lbr = {
+		init: function (data) {
+			let _this = this;
+
+			if (!this.lbrDataGrid) {
+				this.lbrDataGrid = new tui.Grid({
+					el: document.getElementById('lbrDataGrid'),
+					scrollX: false,
+					scrollY: true,
+					contextMenu: null,
+					bodyHeight: 350,
+					header: {
+						height: 80,
+					},
+					columns: [
+						{ header: '{{ message("item.construction.045") }}', name: 'rsce_cd', width: 250, align: 'center' },
+						{ header: '{{ message("item.construction.044") }}', name: 'rsce_nm', align: 'left' },
+						{ header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 80, align: 'center' },
+						{ header: '{{ message("item.construction.041") }}', name: 'total_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.042") }}', name: 'actual_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.062") }}', name: 'acmtl_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.039") }}', name: 'remndr_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ name: 'ori_qty', hidden: true },
+						{ name: 'rsce_tp_cd', hidden: true },
+						{ name: 'manual_yn', hidden: true }
+					]
+				});
+
+				this.lbrDataGrid.on('editingFinish', (ev) => {
+					recalc("lbr", ev.rowKey);  // 금일수량 입력할 경우 금일누계/잔여 자동 계산
+			        displayLaborList = replaceZeroOrNegativeWithBlank(this.lbrDataGrid.getData());  // 모달도 변경된 데이터 사용하기 위해 display 에 반영함
+				});
+			}
+
+			if (sType == "e") {
+				this.lbrDataGrid.store.column.allColumns[4].editor = { type: CustomQtyTextEditor }
+			}
+
+			if (data) {
+
+                // 금일 누계 계산
+                const updatedData = applyAccumulatedQty(data);
+
+			    laborData = [... updatedData];
+			    displayLaborList = [... replaceZeroOrNegativeWithBlank(updatedData)];
+				this.lbrDataGrid.resetData(updatedData);
+				refreshGrid(this.lbrDataGrid);
+			}
+
+		}
+	}
+
+
+	let expnss = {
+		init: function (data) {
+			let _this = this;
+
+			if (!this.expnssDataGrid) {
+				this.expnssDataGrid = new tui.Grid({
+					el: document.getElementById('expnssDataGrid'),
+					scrollX: false,
+					scrollY: true,
+					contextMenu: null,
+					bodyHeight: 250,
+					header: {
+						height: 80,
+					},
+					columns: [
+						{ header: '{{ message("item.construction.047") }}', name: 'rsce_cd', width: 250, align: 'center' },
+						{ header: '{{ message("item.construction.048") }}', name: 'rsce_nm', align: 'left', resizable: true, widthWeight: 1 },
+						{ header: '{{ message("item.projectcost.003") }}', name: 'spec_nm', align: 'left', resizable: true, widthWeight: 1 },
+						{ header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 80, align: 'center' },
+						{ header: '{{ message("item.construction.041") }}', name: 'total_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.042") }}', name: 'actual_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.construction.062") }}', name: 'acmtl_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.039") }}', name: 'remndr_qty', width: 100, align: 'right', formatter: numberFormat },
+						{ name: 'ori_qty', hidden: true },
+						{ name: 'rsce_tp_cd', hidden: true },
+						{ name: 'manual_yn', hidden: true }
+					]
+				});
+
+				this.expnssDataGrid.on('editingFinish', (ev) => {
+					recalc("expnss", ev.rowKey);  // 금일수량 입력할 경우 금일누계/잔여 자동 계산
+			        displayExpensesList = replaceZeroOrNegativeWithBlank(this.expnssDataGrid.getData());  // 모달도 변경된 데이터 사용하기 위해 display 에 반영함
+				});
+			}
+
+
+			if (sType == "e") {
+				this.expnssDataGrid.store.column.allColumns[5].editor = { type: CustomQtyTextEditor }
+			}
+
+			if (data) {
+
+                // 금일 누계 계산
+                const updatedData = applyAccumulatedQty(data);
+
+			    expensesData = [... updatedData];
+			    displayExpensesList = [... replaceZeroOrNegativeWithBlank(updatedData)];
+
+				this.expnssDataGrid.resetData(updatedData);
+				refreshGrid(this.expnssDataGrid);
+			}
+		}
+	}
+
+    // 이미지 슬라이더에 렌더링
+	let photo = {
+		init: function (data) {
+			data.forEach(function (row, seq) {
+
+                let imagePath = `${row.file_disk_path}/${row.file_disk_nm}`;
+                imagePath = imagePath.replace(/^.*[\\/](upload[\\/].*)$/, '/$1');
+
+								photoArr.push({
+									file_no: row.file_no
+									, sno: row.sno
+									, seq: seq
+									, activity_nm: row.activity_nm
+									, activity_id: row.activity_id
+									, titl_nm: row.titl_nm
+									, dscrpt: row.dscrpt
+									, shot_date: row.shot_date
+									, base: imagePath
+									, cnstty_pht_sno: row.cnstty_pht_sno
+								});
+				let hid = "style='display:none;'"
+				if (sType == "e") {
+					hid = "";
+				}
+				$(".process_photo_list").slick('slickAdd',
+					`<div class="custom-slide" data-seq="${seq}">` +
+					`<input id="slick_` + row.cnstty_pht_sno + `" file_no="` + row.file_no + `" cnstty_pht_sno="` + row.sno + `" shot_date="` + row.shot_date + `" hidden>` +
+					`<dl class="dl_box p_photo">` +
+					`<dt class="item_dt">` +
+					`<label class="form_check">` +
+					`<input class="check_mark" type="checkbox" name="check" value="` + seq + `" ` + hid + `>` +
+					`<span class="check_label">` + (row.activity_id || '') + ` : ` + (row.activity_nm || '') + `</span>` +
+					`</label>` +
+					`</dt>` +
+					`<dd class="item_dd">` +
+					`<figure class="p_photo_info">` +
+					`<img src="${imagePath}" style="height:200px;">` +
+					`<figcaption>` +
+					`<p class="tit">` + row.titl_nm + `</p>` +
+					`<p class="desc">` + row.dscrpt + `</p>` +
+					`<p class="date">` + row.shot_date + `</p>` +
+					`</figcaption>` +
+					`</figure>` +
+					`</dd>` +
+					`</dl>` +
+					`</div>`
+				);
+			});
+		}
+	}
+
+	function recalc(type, rowkey) {
+		let row, grid;
+
+        if (type === "mtrl") {
+            row = mtrl.mtrlDataGrid.getRow(rowkey);
+            grid = mtrl.mtrlDataGrid;
+        } else if (type === "lbr") {
+            row = lbr.lbrDataGrid.getRow(rowkey);
+            grid = lbr.lbrDataGrid;
+        } else if (type === "expnss") {
+            row = expnss.expnssDataGrid.getRow(rowkey);
+            grid = expnss.expnssDataGrid;
+        } else {
+            return;
+        }
+
+        const actualQty = Number(row.actual_qty);
+        const oriQty = Number(row.ori_qty) || 0;
+        const totalQty = Number(row.total_qty) || 0;
+
+        // actual_qty가 없거나, 0이거나, 음수인 경우 → oriQty 기준으로 복원
+        if (isNaN(actualQty) || actualQty <= 0) {
+            grid.setValue(rowkey, 'actual_qty', ""); // 입력칸은 공백
+            grid.setValue(rowkey, 'acmtl_qty', oriQty > 0 ? oriQty : "");
+            grid.setValue(rowkey, 'remndr_qty', (totalQty - oriQty) > 0 ? (totalQty - oriQty) : "");
+            return;
+        }
+
+        // 정상 입력값 (> 0)
+        const newRemndr = totalQty - (actualQty + oriQty);
+        const newAcmtl = actualQty + oriQty;
+
+        grid.setValue(rowkey, 'remndr_qty', newRemndr > 0 ? newRemndr : "");
+        grid.setValue(rowkey, 'acmtl_qty', newAcmtl > 0 ? newAcmtl : "");
+	}
+
+	function goSave() {
+	    gaiaCommon.LoadingOverlay('body', true);
+		var inputForm = $("#inputForm").serializeArray();
+		var activityForm = new Array();
+		var statusTypeToday = new Array();
+		var statusTypeNext = new Array();
+		var resourceForm = new Array();
+
+		inputForm.push({ name: 'cntrctNo', value: cntrctNo });
+        // 금일, 명일 작업 내용
+        let todayActivityContents = $("#todayActivityContents").val();
+        let tomorrowActivityContents = $("#tomorrowActivityContents").val();
+        inputForm.push({ name: 'todayActivityContents', value: todayActivityContents });
+        inputForm.push({ name: 'tomorrowActivityContents', value: tomorrowActivityContents });
+
+		if (rId) {
+			inputForm.push({ name: 'dailyReportId', value: rId });
+		}
+
+
+		var formData = objectifyForm(inputForm);
+
+		if ($("#dailyReportDate").val() == "") {
+			gaiaCommon.customAlert("{{ message('msg.039') }}".replace('{0}', "{{ message('item.construction.002') }}"));
+		 	gaiaCommon.LoadingOverlay('body', false);
+			return false;
+		}
+		if ($("#reportNo").val().trim() == "") {
+			gaiaCommon.customAlert("{{ message('msg.039') }}".replace('{0}', "{{ message('item.construction.001') }}"));
+		 	gaiaCommon.LoadingOverlay('body', false);
+			return false;
+		}
+		// a: 추가, e: 수정
+		let url = "";
+		if (sType == "a") {
+			url = "add-dailyreport";
+            dailyReportAddOrUpdate(url, formData);
+		} else if (sType == "e") {
+			var endChk = false;
+			var statusChk = false;
+			var startChk = false;
+
+
+			$("select[name=statusTypeToday]").each(function (i, el) {
+				statusTypeToday.push($(this).val());
+			});
+
+			$('input[name=actual_end_date]').each(function (i, el) {
+				const endDate = new Date($(this).val());
+				const nowDate = new Date();
+				if ($(this).val() != "" && endDate > nowDate) {
+					endChk = true;
+					return false;
+				}
+
+				if ($(this).val() == "" && statusTypeToday[i] == "0101") {
+					statusChk = true;
+					return false;
+				}
+
+				if ($(this).val() != "" && $("#actual_bgn_date_" + i).val() == "") {
+					startChk = true;
+					return false;
+				}
+
+			});
+
+			if (endChk) {
+				gaiaCommon.customAlert("{{ message('msg.056') }}");
+				return false;
+			}
+
+			if (statusChk) {
+				gaiaCommon.customAlert("{{ message('msg.057') }}");
+				return false;
+			}
+
+			if (startChk) {
+				gaiaCommon.customAlert("{{ message('msg.058') }}");
+				return false;
+			}
+
+			$("select[name=statusTypeNext]").each(function (i, el) {
+				statusTypeNext.push($(this).val());
+			});
+			$('input[name=actual_bgn_date]').each(function (i, el) {
+				var dId = $(this).attr("dId");
+
+				const tempObj = {
+					  cntrctNo: cntrctNo
+					, dailyReportId: rId
+					, dailyActivityId: $(this).attr("dId")
+					, activityId: $(this).attr("aId")
+					, workDtType: 'TD'
+					, actualBgnDate: $(this).val() ? $(this).val() : ''
+					, actualEndDate: $("#actual_end_date_" + dId).val() ? $("#actual_end_date_" + dId).val() : ''
+					, actualReqreDaynum: $("#actual_reqre_daynum_" + dId).text()
+					, pstats: statusTypeToday[i]
+					, dltYn: "N"
+				}
+
+				for(const key in tempObj){
+					if(summary.activityTodayDetail[i] != undefined && summary.activityTodayDetail[i][key] != tempObj[key]){
+						console.log(`${key} 가 다름 : `,tempObj,`/${i} : `,summary.activityTodayDetail[i])
+
+						activityForm.push(tempObj);
+						break;
+					}
+				}
+
+
+
+			});
+
+			$('div[name=nextActivity]').each(function (i, el) {
+				var dlt = "N";
+				if ($("#next_" + $(this).attr("dId")).css("display") == "none") {
+					dlt = "Y";
+				}
+				const tempObj = {
+					  cntrctNo: cntrctNo
+					, dailyReportId: rId
+					, dailyActivityId: $(this).attr("dId")
+					, activityId: $(this).attr("aId")
+					, workDtType: 'TM'
+					, pstats: statusTypeNext[i]
+					, dltYn: dlt
+				}
+				for(const key in tempObj){
+					if(summary.activityNextDetail[i][key] != tempObj[key]){
+						console.log(`${key} 가 다름 : `,tempObj,`/${i} : `,summary.activityNextDetail[i])
+						activityForm.push(tempObj);
+						break;
+					}
+				}
+			});
+
+			let mtrlData = mtrl.mtrlDataGrid.getModifiedRows().updatedRows;
+			let lbrData = lbr.lbrDataGrid.getModifiedRows().updatedRows;
+			let expnssData = expnss.expnssDataGrid.getModifiedRows().updatedRows;
+
+			resourceForm = $.merge(resourceForm, mtrlData);
+			resourceForm = $.merge(resourceForm, lbrData);
+			resourceForm = $.merge(resourceForm, expnssData);
+
+            if(saveModal !== 'Y') {
+    			formData['dailyReportActivity'] = activityForm;
+            }
+
+			const reg = /<[^>]*>?/g;
+			const resourceFormData = resourceForm.map(item => {
+				let actualQty = item.actual_qty;
+				let acmtlQty = Number(item.acmtl_qty) - Number(actualQty);         // DB엔 전일누계로 넣어야 해서 금일수량 빼줌
+
+                if (typeof actualQty === "string") {
+                    actualQty = actualQty.replace(reg, "");
+                }
+				return (
+					{
+					    ...item,
+					    actualQty: actualQty || 0,
+					    acmtlQty: acmtlQty || 0,
+					    remndrQty: item.remndr_qty,
+					    cntrctNo: item.cntrct_no,
+					    dailyReportId: rId,
+					    rsceSno: item.rsce_sno,
+					    rsceTpCd: item.rsce_tp_cd,
+					    manualYn: item.manual_yn
+					}
+				);
+			})
+
+			formData['dailyReportResource'] = resourceFormData;
+
+			url = "update-dailyreport";
+
+
+			var inputFile = $("input[name='uploadFile']");
+
+
+			var imgFile = new FormData();
+            var dataObj = [];
+            for (let i = 0; i < uploadedPhotoArr.length; i++) {
+                const photo = uploadedPhotoArr[i];
+                const file = uploadedFileList[i];
+                dataObj.push({
+                    cntrctNo: cntrctNo,
+                    dailyReportId: rId,
+                    activityId: photo.activity_id,
+                    dscrpt: photo.dscrpt,
+                    seq: photo.seq,
+                    shotDate: photo.shot_date.replaceAll("-", ""),
+                    titlNm: photo.titl_nm,
+                    fileNm: photo.fileNm,
+                    fileDiskNm: photo.fileDiskNm,
+                    fileDiskPath: photo.fileDiskPath,
+                    fileSize: photo.fileSize,
+                    meta: photo.meta
+                });
+
+                imgFile.append("uploadFile", uploadedFileList[i]);
+            }
+
+            imgFile.append("uploadData", JSON.stringify(dataObj));
+            imgFile.append("deleteData", JSON.stringify(delArr || []));
+
+
+		 	if (dataObj.length > 0 || delArr.length > 0) {
+		 		$.ajax({
+		 			url: BASEPATH + 'dailyreport/uploadFile',
+		 			processData: false,
+		 			contentType: false,
+		 			data: imgFile,
+		 			type: 'POST',
+		 			success: function (result) {
+		 				// 0.5초 뒤에 다음 Ajax 실행
+                        setTimeout(function () {
+                            dailyReportAddOrUpdate(url, formData);
+                        }, 500);
+		 			}
+		 		});
+		 	} else {
+		 	     dailyReportAddOrUpdate(url, formData);
+		 	}
+		}
+	}
+
+    function dailyReportAddOrUpdate(url, formData) {
+        if (url == "add-dailyreport") {
+            $.ajax({
+                url: BASEPATH + 'dailyreport/' + url,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success(result) {
+                    if (result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                            if (sType == "a") {
+                                window.location.href =
+                                    "/construction/dailyreport/detail?type=d&sType=e&cntrctNo="
+                                    + cntrctNo + "&rId=" + result.details.dailyreportId
+                                    + `&pjtNo=${pjtInfo.pjtNo}`;
+                            } else if (sType == "e") {
+                                window.location.href =
+                                    "/construction/dailyreport"
+                                    + `?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`;
+                            }
+                        });
+                    } else {
+                        if (result.resultMsg == "DuplicateReport") {
+                            gaiaCommon.customAlert("선택한 일자엔 보고서가 이미 존재합니다.");
+                        } else if (result.resultMsg == "DuplicateReportNo") {
+                            gaiaCommon.customAlert("중복된 보고서 번호입니다.");
+                        } else {
+                            gaiaCommon.customAlert(result.message);
+                        }
+                        gaiaCommon.LoadingOverlay('body', false);
+                    }
+                },
+                error() {
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                },
+                complete() {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            });
+        } else {
+            formData['createType'] = createType;
+            $.ajax({
+                url: BASEPATH + 'dailyreport/update-dailyreport',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success(result) {
+                    if (result.ok) {
+                        if (result.details && result.details.resultMsg == "DuplicateReportNo") {
+                            gaiaCommon.customAlert("중복된 보고서 번호입니다.");
+                            return;
+                        }
+                        gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                            if (saveModal == 'N') {
+                                window.location.href =
+                                    "/construction/dailyreport/detail?type=d&sType=d"
+                                    + "&cntrctNo=" + cntrctNo
+                                    + "&rId=" + formData.dailyReportId
+                                    + `&pjtNo=${pjtInfo.pjtNo}`;
+                            }
+                            saveModal = 'N';
+                        });
+
+                        createType = '';
+                    } else {
+                        gaiaCommon.customAlert(result.message);
+                    }
+                },
+                error() {
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                },
+                complete() {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            });
+        }
+    }
+
+	function objectifyForm(formArray) {
+		//serialize data function`
+		var returnArray = {};
+		for (var i = 0; i < formArray.length; i++) {
+			returnArray[formArray[i]['name']] = formArray[i]['value'];
+		}
+		return returnArray;
+	}
+
+	function calcDate(seq, type, daily_activity_id, activity_kind) {
+		var sPlanDate = $("#plan_start_" + seq).text();
+		var ePlanDate = $("#plan_finish_" + seq).text();
+		var sDate = $("#actual_bgn_date_" + daily_activity_id).val();
+		var eDate = $("#actual_end_date_" + daily_activity_id).val();
+		// var diff = Math.abs((new Date(sDate) - new Date(eDate)) / 86_400_000) + 1;
+		var diff = (new Date(eDate) - new Date(sDate)) / 86_400_000 + 1;
+
+        // 날짜 차이 음수일 경우 처리
+        if(diff <= 0) {
+            gaiaCommon.customAlert("잘못된 입력입니다. 종료일은 시작일보다 뒤에 있을 수 없습니다.");
+
+            $("#actual_end_date_" + daily_activity_id).val("");
+    		$("#actual_reqre_daynum_" + daily_activity_id).text("");
+
+    		// 진행중 표시
+			$("select[name='statusTypeToday']")[seq].value = "0102";
+
+            return false;
+        }
+
+		diff = isNaN(diff) ? '' : diff;
+		var rate = diff / ((Math.abs(new Date(sPlanDate) - new Date(ePlanDate)) / 86_400_000) + 1) * 100;
+		rate = isNaN(rate) ? '' : rate;
+		rate = isFinite(rate) ? rate : '';
+
+		// 날짜 차이 설정
+		$("#actual_reqre_daynum_" + daily_activity_id).text(diff);
+
+
+		//종료일 달력을 바꿨을 때
+		if (type == "end") {
+			//종료일이 없다면
+			if (eDate == "") {
+				// 진행중 표시
+				$("select[name='statusTypeToday']")[seq].value = "0102";
+
+				//종료된 daily_activity_id들을 담아놓은 배열에서 해당 dId를 다시 제거
+				finishArr = finishArr.filter((e) => e !== daily_activity_id);
+				$("#next_" + daily_activity_id).show();
+			} else {
+				finishArr.push(daily_activity_id);
+				$("#next_" + daily_activity_id).hide();
+
+				// 시작일도 있으면 완료 표시
+				if(sDate != '')
+    				$("select[name='statusTypeToday']")[seq].value = "0101";
+			}
+		} else {
+		    // 시작일 달력을 바꿨을 때
+		    if(sDate == "") {
+		        // 시작일이 없다면
+		        // 진행중 표시
+				$("select[name='statusTypeToday']")[seq].value = "0102";
+		    } else {
+		        // 종료일도 있으면 완료 표시
+				if(eDate != '')
+    				$("select[name='statusTypeToday']")[seq].value = "0101";
+		    }
+		}
+	}
+
+	function chgStatus(v, t) {
+        const $row = $(t).closest("tr");
+        const $input = $row.find("input.date[id^='actual_end_date_']");
+        const did = $input.attr("did");
+        const aid = $input.attr("aid");
+
+		if (v == "0101") {
+			$("#next_" + aid).hide();
+
+            // 완료 상태로 변경할 경우 종료일을 보고일자로 변경함
+			const d = $("#dailyReportDate").val();
+            const yyyy = d.substr(0,4);
+            const mm = d.substr(5,2);
+            const dd = d.substr(8,2);
+            const today = `${yyyy}-${mm}-${dd}`;
+
+            $("#actual_end_date_" + did).val(today).trigger("change");
+		} else {
+		    $("#actual_end_date_" + did).val("");           // 종료일 비우기
+            $("#actual_reqre_daynum_" + did).text("");      // 일수 비우기
+            $("#next_" + aid).show();
+		}
+	}
+    // 사용자가 추가한 이미지 슬라이더에 추가
+	function setPhoto(seq) {
+		var data = photoArr[seq];
+		$(".process_photo_list").slick('slickAdd',
+			`<div class="custom-slide" data-seq="${seq}">` +
+			`<dl class="dl_box p_photo">` +
+			`<dt class="item_dt">` +
+			`<label class="form_check">` +
+			`<input class="check_mark" type="checkbox" name="check" value="` + seq + `">` +
+			`<span class="check_label">` + data.activity_nm + `</span>` +
+			`</label>` +
+			`</dt>` +
+			`<dd class="item_dd">` +
+			`<figure class="p_photo_info">` +
+			`<img src="` + URL.createObjectURL(data.file)+ `" alt="Act 1 공정사진" style="height:200px;">` +
+			`<figcaption>` +
+			`<p class="tit">` + data.titl_nm + `</p>` +
+			`<p class="desc">` + data.dscrpt + `</p>` +
+			`<p class="date">` + data.shot_date + `</p>` +
+			`</figcaption>` +
+			`</figure>` +
+			`</dd>` +
+			`</dl>` +
+			`</div>`
+		);
+
+	}
+
+
+	function delPhoto() {
+        const $slider = $(".process_photo_list");
+        const $checked = $('input[name=check]:checked');
+
+        if ($checked.length < 1) {
+            gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.002') }}"));
+            return false;
+        }
+
+        // 역순 삭제 (slick 인덱스 꼬임 방지)
+        $checked.get().reverse().forEach(el => {
+            const $slide = $(el).closest('.custom-slide');
+            const slickIndex = parseInt($slide.attr("data-slick-index"));
+            const $input = $slide.find("input[file_no]");
+
+            if (!isNaN(slickIndex)) {
+                $slider.slick('slickRemove', slickIndex);
+            }
+
+            if ($input.length && $input.attr("cnstty_pht_sno")) {
+                // 서버 저장된 사진
+                const sno = $input.attr("cnstty_pht_sno");
+
+                delArr.push({
+                    cntrctNo: cntrctNo,
+                    dailyReportId: rId,
+                    cnsttyPhtSno: sno,
+                    fileNo: $input.attr("file_no"),
+                    sno: sno,
+                    shotDate: $input.attr("shot_date")
+                });
+
+                // 배열 정리
+                photoArr = photoArr.filter(row => row.cnstty_pht_sno != sno);
+                uploadedPhotoArr = uploadedPhotoArr.filter(row => row.cnstty_pht_sno != sno);
+            } else {
+                // 신규 추가(Blob) 사진 data-seq 활용
+                const seq = $slide.data("seq");
+
+                photoArr = photoArr.filter(row => row.seq != seq);
+                uploadedPhotoArr = uploadedPhotoArr.filter(row => row.seq != seq);
+            }
+        });
+
+        $slider.slick('refresh');
+        console.log('*** photoArr =', photoArr, 'delArr =', delArr);
+	}
+
+	function callJsonApi() {
+		gaiaCommon.LoadingOverlay('body', true);
+		gaiaCommon.customAlert("{{ message('msg.dailyreport.001') }}");
+		var formData = {
+			pjtNo: pjtInfo.pjtNo
+			, tm: $("#dailyReportDate").val().replaceAll("-", "")
+		}
+
+		$.ajax({
+			url: '/api/util/kma-weather',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(formData),
+			success: function (response) {
+				let kma = response.details.kma;
+
+				$("#amWthr").val(kma.am_wf);
+				$("#pmWthr").val(kma.pm_wf);
+				$("#dlowstTmprtVal").val(kma.ta_min);
+				$("#dtopTmprtVal").val(kma.ta_max);
+				$("#prcptRate").val(kma.rn_day);
+				$("#snowRate").val(kma.sd_max);
+			},
+			error: function (response) {
+				gaiaCommon.customAlert("{{ message('msg.construction.002') }}");
+				return false;
+			},
+			complete: function(){
+				gaiaCommon.LoadingOverlay('body', false);
+			}
+		});
+	}
+
+	// 이미지 업로드 모달에서 호출할 함수, 이미지 파일 전달 받음
+	function receivePhotosFromModal(photoList, fileList) {
+	    // 서버 전달용
+	    uploadedPhotoArr.push(...photoList);
+	    uploadedFileList.push(...fileList);
+
+        for (let i = 0; i < photoList.length; i++) {
+            const photo = photoList[i];
+            // const file = fileList[i];
+
+            setPhoto(photo.seq);
+        }
+    }
+
+	class CustomQtyTextEditor {
+		constructor(props) {
+            const el = document.createElement('input');
+            el.type = 'text';
+            el.value = props.value ?? "";   // 값 없으면 빈 문자열
+            this.el = el;
+        }
+
+        getElement() {
+            return this.el;
+        }
+
+        getValue() {
+            // 숫자, 소수점, 음수 기호(-)만 허용
+            let result = this.el.value.replace(/[^0-9.-]/g, "");
+
+            // 값이 비어있으면 그대로 반환
+            if (result === "") {
+                return "";
+            }
+
+            // 숫자로 변환
+            let num = Number(result);
+
+            // 유효하지 않은 값이면 빈값 반환
+            if (isNaN(num)) {
+                return "";
+            }
+
+            // 소수점 둘째 자리까지 고정
+            return parseFloat(num.toFixed(2));
+        }
+
+        mounted() {
+            this.el.select();
+        }
+
+	}
+
+    // 금일 누계 구하기
+    function applyAccumulatedQty(data) {
+        return (data || []).map(item => {
+            const actual = Number(item.actual_qty) || 0;
+            const acmtl = Number(item.acmtl_qty) || 0;
+
+            const sum = actual + acmtl;
+
+            return {
+                ...item,
+                acmtl_qty: sum > 0 ? sum : ""   // 0 이하일 경우 공백 처리
+            };
+        });
+
+    }
+
+    // 액티비티 테이블 데이터 저장(액티비티 모달에서 사용)
+    function getActivityData() {
+        activityRows = [];
+
+        $("#todayActivityTbody tr").each(function () {
+            const $tr = $(this);
+
+            const dailyActivityId = $tr.find("td#daily_activity_id").text().trim();
+            const actualBgnDate = $tr.find("input[name='actual_bgn_date']").val();
+            const actualEndDate = $tr.find("input[name='actual_end_date']").val();
+
+            const requiredData = $tr.find("td").eq(10).text().trim(); // 11번째 <td>
+            let statusVal = "";
+
+            const $td12 = $tr.find("td").eq(11);
+            const $select = $td12.find("select");
+
+            if ($select.length > 0) {
+                statusVal = $select.val(); // 셀렉트가 있을 경우
+            } else {
+                statusVal = $td12.text().trim(); // 읽기모드(dType == 'd')일 경우
+            }
+
+            activityRows.push({
+                daily_activity_id: dailyActivityId,
+                actual_bgn_date: actualBgnDate,
+                actual_end_date: actualEndDate,
+                required_data: requiredData,
+                status: statusVal
+            });
+        });
+        console.log('*** activityRows',activityRows);
+    }
+
+    // 금일 액티비티 체크 박스 전체 선택
+    function checkAllEvent(headerCheckbox) {
+        const isChecked = headerCheckbox.checked;
+        document.querySelectorAll("input[name='rowCheck']").forEach(cb => {
+            cb.checked = isChecked;
+        });
+    }
+
+    // 개별 체크박스 → 헤더 체크박스 상태 동기화
+    function syncCheckAll() {
+        const all = document.querySelectorAll("input[name='rowCheck']");
+        const checked = document.querySelectorAll("input[name='rowCheck']:checked");
+        document.getElementById("checkAll").checked = (all.length === checked.length);
+    }
+
+    // 체크박스 선택한 항목 시작/종료일 보고일자로 변경
+    function setDate(type) {
+        const reportDate = $("#dailyReportDate").val();
+
+        if ($("input[name=rowCheck]:checked").length < 1) {
+            gaiaCommon.customAlert("행을 선택하세요.");
+            return;
+        }
+
+        $("input[name=rowCheck]:checked").each(function () {
+            const $tr = $(this).closest("tr");
+            const dailyActivityId = $tr.find("td[name=daily_activity_id]").text();
+
+            if (type === "start") {
+                $("#actual_bgn_date_" + dailyActivityId).val(reportDate).trigger("change");
+            } else if (type === "end") {
+                $("#actual_end_date_" + dailyActivityId).val(reportDate).trigger("change");
+            }
+        });
+    }
+
+    // 총수량, 금일수량, 금일누계, 잔여 0일 경우 공백으로 치환
+    function replaceZeroOrNegativeWithBlank(data) {
+        const targetFields = ["total_qty", "actual_qty", "acmtl_qty", "remndr_qty"];
+
+        return (data || []).map(item => {
+            const newItem = { ...item };
+            targetFields.forEach(field => {
+                const val = newItem[field];
+                if (typeof val === "number") {
+                    if (val <= 0) { // 0보다 작거나 같으면 공백처리
+                        newItem[field] = "";
+                    } else {
+                        // 소수점 2자리까지만 표시 (불필요한 0 제거)
+                        newItem[field] = parseFloat(val.toFixed(2));
+                    }
+                }
+            });
+            return newItem;
+        });
+    }
+
+    // 소수점이 0으로 끝날경우 0 제거 + 0 이하 값은 공백
+    function formatNumber(num) {
+        // 문자열 가능성/콤마 제거 후 숫자화
+        const n = Number(String(num ?? "").replace(/,/g, '').trim());
+
+        // 유효하지 않은 값만 공백 반환
+        if (!Number.isFinite(n)) return "";
+
+        // 0이하 공백처리
+        if (n <= 0) return "";
+
+        const fixed = n.toFixed(2);
+        const trimmed = fixed.replace(/\.?0+$/, "");
+        return trimmed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+     function cleanNumber(v) {     // 계산/저장용
+        if (v == null) return 0;
+        const s = String(v).replace(/,/g, '').trim();   // 콤마 제거
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : 0;
+     }
+
+    $(document).on("click", function(e) {
+        if (!$(e.target).closest(".tui-grid-container .tui-grid-cell-content-editor").length) {
+            lbr.lbrDataGrid.finishEditing();
+            expnss.expnssDataGrid.finishEditing();
+            mtrl.mtrlDataGrid.finishEditing();
+        }
+    });
+
+	$(document).ready(()=>{
+		gaia.create({
+			$init: function ($params) {
+				//readonly 제어
+				if (sType == "d") {
+					$('input').prop('readonly', true);
+					$('textarea').prop('readonly', true);
+					$("#sftyWorkItem").css("pointer-events", "auto");   // readonly는 스크롤 안 돼서 설정해야 함
+				} else if (sType == "a" || sType == "e") {
+					$('input').prop('readonly', false);
+					$('textarea').prop('readonly', false);
+					$('input.calc').prop('readonly', true);
+					if (sType == "e") {
+						$('input.dDate').prop('readonly', true);
+					}
+				}
+
+				//nav, show/hide 제어
+				if (sType == "d") {
+					gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " " + "{{ message('btn.030') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }} {{ message("btn.030") }}</li>');
+
+					$("#acmltDiv").show();
+					$("#todayDiv").show();
+					$("#nextDiv").show();
+					$("#mtrlDiv").show();
+					$("#lbrDiv").show();
+					$("#expnssDiv").show();
+					$("#photoDiv").show();
+					$("#sftyDiv").show();
+					$("#chgToday").hide();
+					$("#chgNext").hide();
+					$("#addMaterial").hide();
+					$("#addSiteLabor").hide();
+					$("#addExpenses").hide();
+					$("#setStartDate").hide();
+					$("#setEndDate").hide();
+					$(".check-col").hide();
+				} else if (sType == "a") {
+					gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " " + "{{ message('btn.001') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }} {{ message("btn.001") }}</li>');
+				} else if (sType == "e") {
+					$("[name=new_item]").remove();
+
+					$("#acmltDiv").show();
+					$("#todayDiv").show();
+					$("#nextDiv").show();
+					$("#mtrlDiv").show();
+					$("#lbrDiv").show();
+					$("#expnssDiv").show();
+					$("#photoDiv").show();
+					$("#sftyDiv").show();
+					$("#chgToday").show();
+					$("#chgNext").show();
+					$("#addPhotoData").show();
+					$("#delPhotoData").show();
+					$("#addMaterial").show();
+					$("#addSiteLabor").show();
+					$("#addExpenses").show();
+					$("#setStartDate").show();
+					$("#setEndDate").show();
+					$(".check-col").show();
+
+					gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " " + "{{ message('btn.003') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }} {{ message("btn.003") }}</li>');
+				}
+
+				//버튼 제어
+				if (sType == "d") {
+					$("#edit").show();
+					//$("#approval").show();
+					//$("#reject").show();
+				} else if (sType == "a" || sType == "e") {
+					$("#save").show();
+				}
+
+				document.getElementById("dailyReportDate").setAttribute("max", today);
+
+				init();
+
+				// Slick slide
+				$('.process_photo_list').not('.slick-initialized').slick({
+					arrows: true,
+					prevArrow: $('.process_photo .prev'),
+					nextArrow: $('.process_photo .next'),
+					dots: true,
+					infinite: false,
+					slidesToShow: 4,
+					slidesToScroll: 4,
+					autoplay: false,
+					speed: 1000,
+					draggable: true
+				});
+
+
+			}
+		});
+
+
+    })
+</script>
+{% endblock footer_script %}

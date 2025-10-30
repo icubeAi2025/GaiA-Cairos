@@ -1,0 +1,481 @@
+<script>
+    (() => {
+        const FileAttachComponent = {
+            id:"",
+            customDragAndDropHandler:null,
+            state:{
+                maxUploadFileSize:0,
+                uploadedFileSize:0,
+                orgFiles:[],
+                uploadedFiles:[],
+                deletedFiles:[]
+            },
+            eventListeners:{
+                clickAddFileButton:null,
+                changeFileInput:null,
+                dragoverWindow:null,
+                dragenterAttachArea:null,
+                dragleaveAttachArea:null,
+                dropWindow:null,
+                clickRemoveAllButton:null,
+                clickAttachArea:null
+            },
+            init:function({id, maxUploadFileSize,orgFiles, failCount=true, customDragAndDropHandler,mode}){
+                if(!mode){
+                    mode = 'U'
+                }
+                else{
+                    mode = mode.toUpperCase();
+                }
+                // DOM 구현
+                if(!id){
+                    console.log("[id] property is null")
+                    return;
+                }
+                if(mode === 'U' && !maxUploadFileSize){
+                    console.log("[maxUploadFileSize] property is null")
+                    return;
+                }
+                const el = document.getElementById(id);
+                if(mode === 'U'){
+                    el.innerHTML +=
+                    `<div class="attach_toolbar">
+                        <div class="btn_area s_small">
+                            <div class="attach_btn">
+                                <input type="file" class="file-input" name="files" multiple>
+                                <button type="button" class="btn _fill addFileButton">{{message('btn.021') }}</button>
+                            </div>
+                            <button type="button" class="btn _outline removeAllButton">{{message('btn.020') }}</button>
+                        </div>
+                        <div class="attach_info">
+                                <span class="attach_result">
+                                    <span class="success">
+                                        <i class="ic ic-check"></i>
+                                        <b class="num uploadedFileCount">0</b>
+                                    </span>
+                                    ${failCount?'<span class="fail">\n                                <i class="ic ic-close"></i>\n                                <b class="num failedFileCount">0</b>\n                            </span>':''}
+                                </span>
+                            <span class="attach_capacity">
+                                    <span class="item uploadedFileSize"></span>
+                                    <span class="item maxUploadFileSize"></span>
+                                </span>
+                        </div>
+                    </div>`
+                }
+                let tempHtml="";
+                tempHtml +=
+                    `<div class="attach_area">
+                        <p class="data_info no-file-msg">
+                            {{ message('msg.pinstall.003') }}
+                        </p>
+                        <div class="attach_list hide">
+                            <ul class="file_header">
+                                <li class="header_item">
+                                    <button type="button" class="icon_btn">
+                                        <i class="ic ic-close"></i>
+                                        <span class="blind">{{ message('item.com.020') }}</span>
+                                    </button>
+                                    <span class="f_name">{{ message('item.com.020') }}</span>
+                `
+                if(mode === 'U'){
+                    tempHtml +=
+                                    `<span class="f_progress">{{ message('item.info.036') }}</span>
+                                    <span class="f_capacity">{{ message('item.com.021') }}</span>`
+                }
+                tempHtml +=
+                                `</li>
+                            </ul>
+                            <ul class="file_list" id="fileList"></ul>
+                        </div>
+                        <p class="data_info dragover-msg">
+                            이곳에 파일을 올려주세요.
+                        </p>
+                    </div>`
+                el.innerHTML += tempHtml;
+                el.classList.add('attach_wrap');
+
+
+                // 객체 구현
+                const component = {};
+                component.el = el;
+                component.id = id;
+                component.customDragAndDropHandler = customDragAndDropHandler;
+                component.state = {
+                    maxUploadFileSize:0,
+                    uploadedFileSize:0,
+                    orgFiles:[],
+                    uploadedFiles:[],
+                    deletedFiles:[]
+                };
+                component.failCount = failCount;
+
+                //초기 state 처리
+                if(mode === 'U'){
+                    component.state.maxUploadFileSize = maxUploadFileSize*1024*1024;
+                    el.querySelector(`.maxUploadFileSize`).textContent = this.formatBytes(component.state.maxUploadFileSize);
+                }
+
+                component.state.uploadedFiles = [];
+                component.state.orgFiles = orgFiles;
+                for(let i=0; i<orgFiles?.length; i++){
+                    const fileDto = orgFiles[i];
+                    fileDto.success = true;
+                    component.state.uploadedFiles.push(fileDto);
+                    if(mode === 'U'){
+                        component.state.uploadedFileSize += fileDto.fileSize;
+                    }
+                }
+
+                //구현 메소드
+                component.render = () => {
+                    if(component.state.uploadedFiles.length === 0) {
+                        document.querySelector(`#${component.id} .no-file-msg`).classList.remove("hide");
+                        document.querySelector(`#${component.id} .attach_list`).classList.add("hide");
+                    }
+                    else{
+                        document.querySelector(`#${component.id} .no-file-msg`).classList.add("hide");
+                        document.querySelector(`#${component.id} .attach_list`).classList.remove("hide");
+                        const fileListTag = document.querySelector(`#${component.id} .file_list`);
+                        fileListTag.innerHTML = '';
+                        let totalSize = 0;
+                        for(let i=0;i<component.state.uploadedFiles.length;i++){
+                            const uploadedFile = component.state.uploadedFiles[i];
+
+                            const iTag = document.createElement("i");
+                            iTag.className = 'ic ic-close';
+                            const blindSpanOfDel = document.createElement("span");
+                            blindSpanOfDel.className = 'blind';
+                            blindSpanOfDel.textContent = "삭제";
+
+                            const delBtn = document.createElement("button");
+                            delBtn.classList.add("icon_btn");
+                            delBtn.classList.add("del-btn");
+                            delBtn.type = "button";
+
+                            delBtn.appendChild(iTag);
+                            delBtn.appendChild(blindSpanOfDel);
+
+                            const fileNameSpan = document.createElement("span");
+                            fileNameSpan.className = 'f_name';
+                            fileNameSpan.textContent = uploadedFile.fileNm || uploadedFile.fileOrgNm;
+
+                            totalSize += uploadedFile.fileSize;
+                            let successSpan = null;
+                            let fileSizeSpan = null;
+                            if(mode === 'U'){
+                                successSpan = document.createElement("span");
+                                if(uploadedFile.success){
+                                    successSpan.className = 'success';
+                                    successSpan.innerHTML = '<i class="ic ic-check"></i>';
+                                }
+                                else{
+                                    successSpan.className = 'fail';
+                                    successSpan.innerHTML = '<i class="ic ic-close"></i>';
+                                }
+                                fileSizeSpan = document.createElement("span");
+                                fileSizeSpan.className = 'f_capacity';
+                                fileSizeSpan.textContent = this.formatBytes(uploadedFile.fileSize);
+                            }
+
+
+                            const li = document.createElement('li');
+                            li.className = `list_item file_attach_li file_attach_${i}`;
+
+                            li.appendChild(delBtn);
+                            li.appendChild(fileNameSpan);
+                            if(mode === 'U'){
+                                li.appendChild(successSpan);
+                                li.appendChild(fileSizeSpan);
+                            }
+
+                            fileListTag.appendChild(li);
+                        }
+                    }
+                    if(mode === 'U') {
+                        document.querySelector(`#${component.id} .uploadedFileCount`).textContent = component.state.uploadedFiles.filter(item => item.success).length + "";
+                        if (component.failCount) {
+                            document.querySelector(`#${component.id} .failedFileCount`).textContent = component.state.uploadedFiles.filter(item => !item.success).length + "";
+                        }
+                        document.querySelector(`#${component.id} .uploadedFileSize`).textContent = this.formatBytes(component.state.uploadedFileSize);
+                    }
+                }
+                component.setOrgFiles = (orgFiles) => {
+                    component.state.orgFiles = orgFiles;
+                    for(let i=0; i<orgFiles?.length; i++){
+                        const fileDto = orgFiles[i];
+                        fileDto.success = true;
+                        component.state.uploadedFiles.push(fileDto);
+                        if(mode === 'U') {
+                            component.state.uploadedFileSize += fileDto.fileSize;
+                        }
+                    }
+                }
+                component.destroy = () => {
+                    component.el.innerHTML = '';
+                    component.state = {
+                        maxUploadFileSize:0,
+                        uploadedFileSize:0,
+                        orgFiles:[],
+                        uploadedFiles:[],
+                        deletedFiles:[]
+                    }
+                }
+                component.reset = () => {
+                    const orgFiles = component.state.orgFiles;
+                    component.state = {
+                        maxUploadFileSize:0,
+                        uploadedFileSize:0,
+                        orgFiles:[],
+                        uploadedFiles:[],
+                        deletedFiles:[]
+                    }
+                    component.setOrgFiles(orgFiles);
+                    component.render();
+                }
+
+                //이벤트리스너
+                component.eventListeners = {};
+                const attachArea = document.querySelector(`#${component.id} .attach_area`);
+                if(mode === 'U') {
+                    const addFileButton = document.querySelector(`#${component.id} .addFileButton`);
+                    if (component.eventListeners.clickAddFileButton) {
+                        addFileButton.removeEventListener('click', component.eventListeners.clickAddFileButton);
+                    }
+                    component.eventListeners.clickAddFileButton = () => {
+                        document.querySelector(`#${component.id} .file-input`).click();
+                    };
+                    addFileButton.addEventListener('click', component.eventListeners.clickAddFileButton);
+
+                    const fileInput = document.querySelector(`#${component.id} .file-input`);
+                    if (component.eventListeners.changeFileInput) {
+                        fileInput.removeEventListener('change', component.eventListeners.changeFileInput);
+                    }
+                    component.eventListeners.changeFileInput = (e) => {
+                        const files = e.target.files;
+                        for (const file of files) {
+                            const fileDto = {
+                                fileNm: file.name,
+                                fileSize: file.size,
+                                realFile: file,
+                                success: true
+                            }
+                            component.state.uploadedFiles.push(fileDto);
+                            component.state.uploadedFileSize += fileDto.fileSize;
+                            if (component.state.uploadedFileSize > component.state.maxUploadFileSize) {
+                                fileDto.success = false;
+                                component.state.uploadedFileSize -= fileDto.fileSize;
+                            }
+                        }
+                        e.target.value = "";
+                        console.log("버튼으로 업로드 : ", component.state.uploadedFiles);
+                        component.render();
+                    }
+                    fileInput.addEventListener("change", component.eventListeners.changeFileInput);
+
+                    let dragCounter = 0;
+
+                    if (component.eventListeners.dragoverWindow) {
+                        window.removeEventListener('dragover', component.eventListeners.dragoverWindow);
+                    }
+                    component.eventListeners.dragoverWindow = (e) => {
+                        e.preventDefault();
+                        document.querySelector(`#${component.id}`).classList.add('dragmode');
+                        // document.querySelector(`#${this.id} .attach_list`).style.pointerEvents = 'none'
+                        // document.querySelector(`#${this.id} .attach_list`).style.pointerEvents = '';
+                    }
+                    window.addEventListener('dragover', component.eventListeners.dragoverWindow);
+
+                    //업로드칸 들어갔을 때
+                    if (component.eventListeners.dragenterAttachArea) {
+                        attachArea.removeEventListener('dragenter', component.eventListeners.dragenterAttachArea);
+                    }
+                    component.eventListeners.dragenterAttachArea = (e) => {
+                        e.preventDefault();
+                        if (attachArea.contains(e.target)) {
+                            dragCounter++;
+                            attachArea.classList.add("dragover");
+                        }
+                    }
+                    attachArea.addEventListener("dragenter", component.eventListeners.dragenterAttachArea);
+
+                    //업로드칸 떠났을 때
+                    if (component.eventListeners.dragleaveAttachArea) {
+                        attachArea.removeEventListener('dragleave', component.eventListeners.dragleaveAttachArea);
+                    }
+                    component.eventListeners.dragleaveAttachArea = (e) => {
+                        e.preventDefault();
+                        if (attachArea.contains(e.target)) {
+                            dragCounter--;
+                            attachArea.classList.remove("dragover");
+                        }
+                    }
+                    attachArea.addEventListener("dragleave", component.eventListeners.dragleaveAttachArea);
+
+                    //드랍
+                    if (component.eventListeners.dropWindow) {
+                        window.removeEventListener('drop', component.eventListeners.dropWindow);
+                    }
+
+                    component.eventListeners.dropWindow = async (e) => {
+                        e.preventDefault();
+                        document.querySelector(`#${component.id}`).classList.remove('dragmode');
+                        attachArea.classList.remove("dragover");
+                        dragCounter = 0;
+
+                        if (attachArea.contains(e.target)) {
+                            if (component.customDragAndDropHandler) {
+                                component.customDragAndDropHandler(e);
+                            } else {
+                                const dt = e.dataTransfer;
+                                const items = dt.items;
+                                console.log("ITEMS:", items);
+                                const files = await this.dragAndDropHandler(items);
+                                console.log("드랍!", files);
+                                for (const file of files) {
+                                    const fileDto = {
+                                        fileNm: file.name,
+                                        fileSize: file.size,
+                                        realFile: file,
+                                        success: true
+                                    }
+                                    component.state.uploadedFiles.push(fileDto);
+                                    component.state.uploadedFileSize += fileDto.fileSize;
+                                    if (component.state.uploadedFileSize > component.state.maxUploadFileSize) {
+                                        fileDto.success = false;
+                                        component.state.uploadedFileSize -= fileDto.fileSize;
+                                    }
+                                }
+                                component.render();
+                            }
+                        }
+                    }
+                    window.addEventListener("drop", component.eventListeners.dropWindow);
+
+                    const removeAllButton = document.querySelector(`#${component.id} .removeAllButton`);
+                    if (component.eventListeners.clickRemoveAllButton) {
+                        removeAllButton.removeEventListener('click', component.eventListeners.clickRemoveAllButton);
+                    }
+                    component.eventListeners.clickRemoveAllButton = () => {
+                        component.state.uploadedFileSize = 0;
+                        while (component.state.uploadedFiles.length > 0) {
+                            const deleteFile = component.state.uploadedFiles.pop();
+                            if (deleteFile.realFile) {
+                                console.log("업로드 했던 파일 삭제!", deleteFile);
+                            } else {
+                                console.log("기존 파일 삭제!", deleteFile);
+                                component.state.deletedFiles.push(deleteFile)
+                            }
+                        }
+                        component.render();
+                    }
+                    removeAllButton.addEventListener('click', component.eventListeners.clickRemoveAllButton);
+                }
+                if(component.eventListeners.clickAttachArea){
+                    attachArea.removeEventListener('click',component.eventListeners.clickAttachArea);
+                }
+                component.eventListeners.clickAttachArea = (e)=>{
+                    if(e.target.classList.contains("del-btn") || (e.target.closest('.del-btn') && e.target.closest('.del-btn') === e.target.parentElement)){
+                        const delBtn = e.target.closest('.del-btn');
+                        const li = delBtn.closest("li");
+                        const idx = Array.from(li.parentElement.children).indexOf(li);
+                        const deleteFile = component.state.uploadedFiles.splice(idx,1)[0];
+
+                        if(deleteFile.realFile){
+                            console.log("업로드 했던 파일 삭제!",deleteFile);
+                        }
+                        else{
+                            console.log("기존 파일 삭제!",deleteFile);
+                            component.state.deletedFiles.push(deleteFile)
+                        }
+                        console.log("UPLOADEDFILES : ",component.state.uploadedFiles);
+                        component.render();
+                    }
+                }
+                attachArea.addEventListener('click', component.eventListeners.clickAttachArea)
+                component.render();
+                return component;
+            },
+            async dragAndDropHandler(items) {
+                const entries = [];
+                for (const item of items) {
+                    const entry = item.webkitGetAsEntry();
+                    if(entry){
+                        entries.push(entry);
+                    }
+                }
+                const files = [];
+
+                for (const entry of entries) {
+                    if (entry.isFile) {
+                        const file = await this.readFile(entry);
+                        files.push(file);
+                    } else if (entry.isDirectory) {
+                        const subFiles = await this.readFilesOfDirectory(entry);
+                        files.push(...subFiles);
+                    }
+                }
+
+                return files;
+            },
+            readFile:function(entry){
+                return new Promise((resolve, reject) => {
+                    entry.file(file => resolve(file),reject);
+                })
+            },
+            readFilesOfDirectory(dirEntry, pathPrefix = '') {
+                return new Promise((resolve, reject) => {
+                    const reader = dirEntry.createReader();
+                    const allFiles = [];
+
+                    const readEntries = () => {
+                        reader.readEntries(async entries => {
+                            if (entries.length === 0) {
+                                resolve(allFiles);
+                                return;
+                            }
+
+                            for (const entry of entries) {
+                                if (entry.isFile) {
+                                    await new Promise((res, rej) => {
+                                        entry.file(file => {
+                                            allFiles.push(file);
+                                            res();
+                                        }, rej);
+                                    });
+                                } else if (entry.isDirectory) {
+                                    const subFiles = await this.readFilesOfDirectory(entry, pathPrefix);
+                                    allFiles.push(...subFiles);
+                                }
+                            }
+
+                            readEntries(); // 계속 읽기
+                        }, reject);
+                    };
+
+                    readEntries();
+                });
+            },
+            formatBytes:function(bytes) {
+                if (bytes < 0) return "0KB"; // 음수는 0으로 처리
+
+                const kb = 1024;
+                const mb = kb * 1024;
+                const gb = mb * 1024;
+                if(bytes < kb){
+                    return `${bytes}bytes`
+                }
+                else if (bytes < 100 * kb) {
+                    return `${(bytes / kb).toFixed(2)}KB`;
+                } else if (bytes < gb) {
+                    // 100KB ~ 999MB: 소수점 1자리 MB 표시 (ex: 0.1MB ~ 999MB)
+                    return `${(bytes / mb).toFixed(2)}MB`;
+                } else {
+                    // 1GB 이상: 정수 GB 표시 (ex: 1GB ~)
+                    return `${(bytes / gb).toFixed(2)}GB`;
+                }
+            }
+        }
+        window.FileAttachComponent = window.FileAttachComponent || FileAttachComponent;
+    })();
+
+</script>

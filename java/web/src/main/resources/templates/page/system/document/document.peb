@@ -1,0 +1,1395 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+#document_grid .tui-grid-cell-current-row {
+	background-color: var(--select-list-bg);
+}
+
+#mng_doc_page .search_wrap .selectbox {
+	width: 100%;
+}
+
+#mng_doc_page div.treeview_area {
+	width: 350px;
+	height: 650px;
+	border-bottom: 1px solid var(--form-bd);
+	overflow: auto;
+	padding-bottom: 30px;
+}
+#mng_doc_page div.treeview_area .treeview{
+	width: 340px;
+}
+#mng_doc_page .jstree-clicked {
+	background:#beebff;
+}
+
+#mng_doc_page .jstree-node{
+	position: relative;
+}
+/* #mng_doc_page li.hovered>a.jstree-anchor{
+	background:#e7f4f9;
+} */
+#mng_doc_page .jstree-clicked:not(.root)+.item_opt{
+	display: inline-block;
+	right:auto;
+}
+/* #mng_doc_page .selected-folder{
+	font-weight: bold;
+}
+#mng_doc_page .selected-document {
+	color:var(--color-green);
+	font-weight: bold;
+} */
+#mng_doc_page div.preview_area {
+	max-height: calc(100vh - 650px);
+	min-height: calc(100vh - 650px);
+}
+
+#mng_doc_page div.preview_area div.preview_name {
+	margin-top: 7px;
+	margin-bottom: 10px;
+	margin-inline: 15px;
+	font-size: .8em;
+}
+
+#mng_doc_page div.preview_area .preview_box iframe {
+	max-height: calc(100vh - 555px);
+	min-height: calc(100vh - 555px);
+}
+
+.btn.all_click_btn {
+	border: 1px solid var(--component-bd);
+	cursor: pointer;
+	padding-inline: 1.9em;
+}
+
+
+#mng_doc_page .toolbar .btn_area{
+	width: 50%;
+}
+#mng_doc_page div.search_wrap {
+	width:100%;
+}
+#mng_doc_page .conts_grid{
+	margin-top:0.5rem;
+}
+
+.modal#createFolderForm .form_box{
+	width:25vw !important;
+}
+.modal#createDocumentForm .formName{
+	justify-content: space-between;
+	gap: 0;
+}
+.modal#createDocumentForm .with_ext input[type=text]{
+	width:90%;
+}
+.modal#createDocumentForm #oriNm::placeholder{
+    color:var(--color-gray);
+}
+.modal#createDocumentForm .extNm{
+
+}
+
+</style>
+{% endblock head %} {% block content %}
+<section class="contents_wrap g-col2 ty1" id="mng_doc_page">
+	<article class="treeview_area g-row2 ty1">
+		<div class="treeview_area">
+			<div class="treeview ty_pd0" id="jstree"></div>
+		</div>
+		<div class="preview_area">
+			<div class="preview_name">미리보기</div>
+			<div class="preview_box">
+				<iframe id="preview_frame" class="preview_frame" name="preview_frame" src="" style="width:100%; height:100%; border:none;"></iframe>
+			</div>
+		</div>
+	</article>
+	<article class="conts_area">
+		<div class="conts" style="height: 100%;">
+			<div class="conts_grid">
+<!--				<div class="search_wrap">-->
+<!--					<span class="selectbox">-->
+
+<!--						<select-->
+<!--						name="contract_search_select" id="contract_search_select">-->
+<!--					</select>-->
+<!--					</span>-->
+<!--				</div>-->
+				<!-- // E: search wrap ---------------------------------------------- -->
+				<div class="toolbar">
+					<div class="btn_area s_default _outline docBtn" id="folderTypeBtn">
+						<button type="button" class="btn _outline" id="" onclick="page.cancelDocumentOfContract()">{{ message("btn.063") }}</button>
+					</div>
+				</div>
+				<div class="grid" id="document_grid"></div>
+				<div id="file-upload-actions">
+					<input type="file" id="fileInput" multiple style="display: none;"
+						onchange="page.document.file.upload()">
+				</div>
+			</div>
+		</div>
+	</article>
+</section>
+<section id="trash_doc_page" style="display: none;">
+	<article class="conts_area">
+		<div class="conts" style="height: 100%;">
+			<div class="conts_grid">
+				<!-- S: search wrap ---------------------------------------------- -->
+				<div id="container" style="grid-template-rows: 0.2fr 1fr 1fr;"></div>
+				<div class="search_wrap">
+					<span class="selectbox"><select
+						name="trash_doc_search_select" id="trash_doc_search_select">
+							<option selected disabled value="">{{
+								message("item.com.083") }}</option>
+							<option value="trash_doc_nm">{{ message("item.doc.051")
+								}}</option>
+							<!-- 문서명-->
+							<option value="trash_usr_id">{{ message("item.doc.052")
+								}}</option>
+							<!-- 삭제자-->
+					</select>
+					</span>
+					<!-- searchbox -->
+					<div class="searchbox_wrap">
+						<input type="text" name="trash_doc_search_text"
+							id="trash_doc_search_text" placeholder="{{ message('msg.004') }}">
+						<button type="button" class="icon_btn search"
+							onclick="page.trash.trashDocSearch()">
+							<i class="ic ic-search"></i> <span class="blind">검색</span>
+						</button>
+					</div>
+				</div>
+				<div class="btn_area s_default _outline" id="trash_type_btn">
+					<button type="button" class="btn"
+						onclick="page.trash.recoveryDoc()">{{
+						message("item.doc.053") }}</button>
+					<!-- 복원-->
+					<button type="button" class="btn"
+						onclick="page.trash.removeTrashDoc()">{{
+						message("item.doc.054") }}</button>
+					<!-- 영구삭제-->
+					<button type="button" class="btn"
+						onclick="page.trash.removeAllTrash()">{{
+						message("item.doc.055") }}</button>
+					<!-- 휴지통 비우기-->
+				</div>
+				<div class="grid" id="trash_document_grid"></div>
+			</div>
+		</div>
+	</article>
+</section>
+<section>{% include
+	"page/system/document/common/common_document_modal" %}</section>
+<script>
+    $(document).ready(()=>{
+        gaia.create({
+            $init: function ($params) {
+                //gaia_common.js는 redux 느낌
+                //gaia_common.js > commonPage.init() 메소드가 선언되어 있다면 호출하여 페이지 렌더링
+                //gaia_common.js > init 시점에 공통코드 정보를 저장해 두고, 페이지에서 필요할때 가져다 씀.
+                gaiaCommon.setCommonCode("f8a92327-c9ae-4d1e-aa95-76f15c2a9e61");
+                //좌측 네비게이션 생성 메소드(param1={string:메뉴코드}, param2={string:메세지코드(pebble 표현식)})
+                gaiaPortal.navMenuInit('SYSTEM09', "{{ message('item.dm.001') }}");
+
+				//화면 시작 함수, page = { init:function(){ } } 형태의 객체 선언 필요
+				page.init('05', 'M070307');
+
+            }
+        });
+	})
+	const addRegex = /^(?!\s)[^\/:*?"<>.|]+$/;
+	let navigationPopup;
+	let propertyPopup;
+
+	document.onkeydown = fkey;
+	document.onkeypress = fkey;
+	document.onkeyup = fkey;
+
+	// f5 새로고침 누를떄 열려있는 팝업 창 닫기
+	function fkey(e) {
+		if (window.event.keyCode == 116) {
+			if (navigationPopup) navigationPopup.close();
+			if (propertyPopup) propertyPopup.close();
+		}
+	};
+
+	var page = {
+		//State Of Page
+		setAuthMode: null, //권한 설정 모드(navi / doc)
+		selectedProjectNo:"",//Query String에 있는 pjtNo를 담음(팝업창을 위해)
+		selectedCntrctNo:'',//Query String에 있는 cntrctNo를 담음(팝업창을 위해)
+		dropdownCntrctNo:'',//드롭다운 클릭 후 선택한 계약 번호를 담음(해당 계약에 등록된 문서 양식들을 봄)
+		naviList:[],//jstree에 나오는 노드 리스트
+		contractList:[],//내 계약 목록 리스트
+		documentList:[],//계약에 등록된 문서 양식 리스트
+		cbgnDocTypeMap:{},//ex : { "D0001" : "착공신고서" }
+
+		//초기화 함수 화면 시작 함수
+		init(documentType, menuId) {
+			const pjtData = pjtInfo;
+			this.selectedProjectNo = pjtData.pjtNo;
+			this.selectedCntrctNo = pjtData.cntrctNo;
+
+			gaiaCommon.get(`/api/system/document/main?pjtNo=${this.selectedProjectNo}`,{},function(result){
+				console.log("DETAIL : ",result.details)
+				//api에서 받아온 데이터들 page 객체에 세팅
+				page.naviList = result.details.naviList;
+				// page.contractList = result.details.contractList;
+				page.me = result.details.me;
+
+				//팝업창에 뜰 문서 양식 드롭다운 및 편이성을 위한 cbgnDocTypeMap 만들기
+				const dropdownList = result.details.dropdownList;
+				const addDocumentForm = document.getElementById("cbgnDocType");
+				for(const cmnCode of dropdownList){
+					page.cbgnDocTypeMap[cmnCode.cmnCd] = cmnCode.cmnCdNmKrn;
+				}
+
+
+				//계약 목록 드롭다운 생성
+				page.contractDropdown.init();
+
+				//Navigation 만들기
+				page.tree.init(page.naviList);
+
+				//Grid 만들기
+				page.grid.init()
+
+				gaia.loaded = true;
+			},function(error){
+				console.log(`MAIN 화면 구성 실패, /api/system/document/main?pjtNo=${this.selectedProjectNo}, PARAMS : {}`,error);
+			})
+
+		},
+		contractDropdown:{
+			//계약 드롭다운 생성
+			init:function(){
+				gaiaCommon.makeCntrctSelectBox('.contents_wrap .conts_area .conts', null, this.changeDropdown, this.changeDropdown)
+				// if(contractList.length == 0){
+				// 	console.log("내 계약 없음")
+				// }
+				// else{
+				// 	//DOM
+				// 	const contract_search_select = document.getElementById("contract_search_select");
+				// 	for(const contract of contractList){
+				// 		const option = document.createElement("option");
+				// 		option.setAttribute('value',contract.cntrct_no);
+				// 		let formatted = "";
+				// 		if(contract.cntrct_date){
+				// 			formatted = `${contract.cntrct_date.substring(0,4)}-${contract.cntrct_date.substring(4,6)}-${contract.cntrct_date.substring(6,8)}`
+				// 		}
+				// 		option.innerHTML = contract.cntrct_nm+(contract.cntrct_date?`[계약일 : ${formatted}]`:``);
+				// 		contract_search_select.appendChild(option);
+				// 	}
+				// }
+			},
+			changeDropdown: (cntrctNo)=>{
+				page.dropdownCntrctNo = cntrctNo;
+				if(page.dropdownCntrctNo){
+					//정상적인 계약을 클릭했다면
+					const params = { contractNo:page.dropdownCntrctNo };
+					gaiaCommon.get(`/api/system/document/document-list?cntrctNo=${page.dropdownCntrctNo}`,params,function(result){
+						//문서 목록 검색
+						page.documentList = result.details?.documentList;
+						//새로운 데이터로 그리드 그리기
+						page.grid.redraw(page.documentList);
+						page.tree.redraw(true);
+
+						//선택된 문서 트리 열리는 로직 당분간 사용 X
+
+						// const tree = page.tree.obj.jstree(true);
+						// tree.close_all();
+						// if(page.documentList.length == 0){
+						// 	tree.open_node(tree.get_node('#').children[0],null,false);
+						// }
+						// else{
+						// 	for(const documentForm of page.documentList){
+						// 		// 상위 노드 ID 배열
+						// 		const path = tree.get_path(documentForm.cbgnNo, null, true);
+						// 		// 마지막은 본인이이니까 제외하고 상위 노드만 open
+						// 		path.forEach((parentId,index) => {
+						// 			if(index == path.length-1){
+						// 				const node = tree.get_node(parentId, true); // 두 번째 파라미터 true 넣으면 DOM element로 가져옴
+						// 				if (node && node.length) {
+						// 					node.children('.jstree-anchor').addClass('selected-document');
+						// 				}
+						// 			}
+						// 			else{
+						// 				tree.open_node(parentId);
+						// 				const node = tree.get_node(parentId, true); // 두 번째 파라미터 true 넣으면 DOM element로 가져옴
+						// 				if (node && node.length) {
+						// 					node.children('.jstree-anchor').addClass('selected-folder');
+						// 				}
+						// 			}
+						// 		});
+						// 	}
+						// }
+					}, function(error){
+						console.log(`계약 코드 선택 후 문서 목록 로딩 실패, /api/system/document/document-list, PARAMS : ${params}`,error);
+					})
+				}
+			}
+		},
+
+
+		/* JSTree 설정 */
+		tree: {
+			obj: null,
+			createdNode:null,
+			nodeList:[],
+			scrollTopBefore:0,
+			init(naviList) {
+
+				this.obj = $("#jstree").jstree({
+					plugins: ["contextmenu"],
+					checkbox:{
+						keep_selected_style: false,
+						three_state: false,
+						whole_node: false,
+						tie_selection: false
+					},
+					contextmenu: {
+						items: ($node) => {
+							const defaultItems = $.jstree.defaults.contextmenu.items();
+
+							//노드의 깊이(레벨) 구하기
+							const tree = $.jstree.reference('#jstree');
+							const level = tree.get_path($node).length;
+
+							//루트 노드일 때에는 폴더 추가 가능
+							if(level == 1){
+								const menuActions = {
+									create:{
+										label:'{{ message("btn.001") }}',
+										action:(data)=>{
+											const dto = ($node).data;
+											// 원하는 추가 동작 수행 (예: 서버에 로그 남기기, 폼 열기 등)
+											createFolderModal.init(dto,(result)=>{
+												page.tree.createNode(result);
+											});
+										}
+									},
+								}
+								return menuActions;
+							}
+							else if(($node).data.docYn == 'Y'){
+								const menuActions = {
+									// add:{
+									// 	label:"계약에 등록하기",
+									// 	separator_after: true,
+									// 	action : function(data){
+									// 		const dto = ($node).data;
+
+									// 		if(document.getElementById("contract_search_select").value == ""){
+									// 			gaiaCommon.customAlert("계약을 먼저 선택하세요");
+									// 			return;
+									// 		}
+									// 		for(const documentForm of page.documentList){
+									// 			if(documentForm.cbgnNo == dto.cbgnNo){
+									// 				gaiaCommon.customAlert(`이미 추가된 파일입니다.`);
+									// 				return;
+									// 			}
+									// 		}
+									// 		console.log("등록하자");
+									// 		//인터페이스 호출
+									// 		const pathIds = tree.get_path($node, null, true); // ID 배열
+									// 		console.log(pathIds);
+									// 		const cbgnList = pathIds.map(id => tree.get_node(id).data);
+									// 		console.log(cbgnList.slice(1,cbgnList.length))
+									// 		gaiaCommon.post("/api/document/create/construct-document?cntrctNo="+page.dropdownCntrctNo,cbgnList.slice(1,cbgnList.length),function(result){
+									// 			if(result.ok){
+									// 				console.log(result)
+									// 				page.refresh();
+									// 			}
+									// 		})
+									// 	}
+									// },
+									delete:{
+										label:"양식 삭제",
+										action:function(data){
+											const cbgnNo = ($node).id;
+											page.tree.removeNode(cbgnNo,'문서');
+										}
+									},
+									rename:{
+										label:"이름 변경",
+										separator_after: true,
+										action:function(data){
+											const dto = ($node).data;
+
+											updateFileModal.init(dto,(result)=>{
+												const findNode = page.naviList.find((item)=>(
+													item.cbgnNo == dto.cbgnNo
+												))
+												findNode.cbgnNm = result.cbgnNm;
+												page.tree.redraw();
+											})
+										}
+									},
+									preview:{
+									label:"미리 보기",
+										action : function(data){
+											console.log("미리보자")
+											const dto = ($node).data;
+                                            console.log("미리보자",dto);
+
+                                            const _width = '950';
+                                            const _height = '750';
+
+                                            let _left = Math.ceil((window.screen.width - _width) / 2);
+                                            _left += window.screenLeft; // 듀얼 모니터일 때
+                                            let _top = Math.ceil((window.screen.height - _height) / 2);
+
+                                            const pdfPopup = window.open(`/system/document/pdf-view?no=${dto.cbgnNo}&pjtNo=${page.selectedProjectNo}&cntrctNo=${page.selectedCntrctNo}&target=tree`, 'pdfPopup', 'width=' + _width + ', height=' + _height + ',left=' + _left + ',top=' + _top + ', scrollbars=yes, resizable=yes,menubar=no,toolbar=no');
+
+										}
+									},
+								}
+								return menuActions;
+							}
+							//폴더 노드 일때는 폴더 추가, 삭제, 이름 변경 가능
+							else if(level == 2){
+								// 기존 동작 + 추가 기능 선언
+								const menuActions = {
+									create:{
+										label:'{{ message("btn.001") }}',//추가
+										action:(data)=>{
+											const dto = ($node).data;
+											// 원하는 추가 동작 수행 (예: 서버에 로그 남기기, 폼 열기 등)
+											createFolderModal.init(dto,(result)=>{
+												page.tree.createNode(result);
+											});
+										}
+									},
+									delete:{
+										label:'{{ message("btn.002") }}',//삭제
+										action : function(data){
+											const cbgnNo = ($node).id;
+											page.tree.removeNode(cbgnNo,'폴더');
+										}
+									},
+									update:{
+										label:"{{ message("item.doc.031") }}",//이름 변경
+										separator_after: true,
+										action : function(data){
+											const dto = ($node).data;
+											updateFolderModal.init(dto,(result)=>{
+												const findNode = page.naviList.find((item)=>(
+													item.cbgnNo == dto.cbgnNo
+												))
+												findNode.cbgnNm = result.cbgnNm;
+												page.tree.redraw();
+											});
+											console.log("노드 이름 변경");
+										}
+									},
+									createDocForm:{
+										label:"양식 추가",
+										action:(data)=>{
+											// 팝업창 열어서 데이터 입력 받고 서버 저장 등 처리
+											createDocumentFormModal.init(($node).data,(result)=>{
+												page.tree.createNode(result)
+											});
+										}
+									},
+									setProperty: {
+										separator_before: true,
+										separator_after: false,
+										label: '{{ message("item.doc.047") }}', // 속성 정의
+										icon: "menu1",
+										_disabled: false,
+										action: () => {
+											page.tree.openPropertyPopup($node);
+
+										},
+									},
+									htmlFormAdd:{
+										label:"HTML 양식 관리",
+										action:function(data){
+											page.tree.openHtmlPopup();
+										}
+									},
+								}
+								return menuActions;
+							}
+							else if(level == 3){
+								// 기존 동작 + 추가 기능 선언
+								const menuActions = {
+									delete:{
+										label:"{{ message("btn.002") }}",//삭제
+										action : function(data){
+											const cbgnNo = ($node).id;
+											page.tree.removeNode(cbgnNo,'폴더');
+										}
+									},
+									update:{
+										label:'{{ message("item.doc.031") }}', // 이름 변경
+										separator_after: true,
+										action : function(data){
+											const dto = ($node).data;
+											updateFolderModal.init(dto,(result)=>{
+												const findNode = page.naviList.find((item)=>(
+													item.cbgnNo == dto.cbgnNo
+												))
+												findNode.cbgnNm = result.cbgnNm;
+												page.tree.redraw();
+											});
+										}
+									},
+									createDocForm:{
+										label:"양식 추가",
+										separator_after: true,
+										action:(data)=>{
+											// 팝업창 열어서 데이터 입력 받고 서버 저장 등 처리
+											createDocumentFormModal.init(($node).data,(result)=>{
+												page.tree.createNode(result);
+											});
+										}
+									},
+									setProperty: {
+										separator_before: true,
+										separator_after: false,
+										label: '{{ message("item.doc.047") }}', // 속성 정의
+										icon: "menu1",
+										_disabled: false,
+										action: () => {
+											page.tree.openPropertyPopup($node);
+										},
+									},
+									htmlFormAdd:{
+										label:"HTML 양식 관리",
+										action:function(data){
+											page.tree.openHtmlPopup();
+										}
+									},
+								}
+								return menuActions;
+							}
+							else{
+								return {};
+							}
+						}
+					},
+					core: {
+						data:[],
+						check_callback: true, // 없으면 create_node 안먹음
+						themes: {
+							"theme": "default",
+							"dots": false,
+							"responsive": false,
+							"icons": false
+						}
+					}
+				});
+				$("#jstree")
+				.on('click', function(e) {
+                    // 클릭한  문서 미리보기
+                    page.tree.previewDocument(e);
+                })
+				.on("ready.jstree", function (e, data) {
+					$("#jstree .jstree-no-list").prev().hide();
+				})
+				.on("open_node.jstree",function(e,data){
+					$("#jstree .jstree-no-list").prev().hide();
+
+				})
+				.on('mouseover', 'li', function (e) {
+					// $("#jstree .hovered").removeClass("hovered");
+					// e.stopPropagation();
+					// const tree = page.tree.obj.jstree(true);
+					// const nodeId = e.target.id;
+					// const eventNode = tree.get_node(nodeId);
+					// const parentId = eventNode.parent;
+
+					// const siblings = tree.get_node(parentId).children; // 형제 노드들의 id 배열
+
+					// const index = siblings.indexOf(eventNode.id);
+
+					// const prevNodeId = siblings[index - 1] || null;
+					// const nextNodeId = siblings[index + 1] || null;
+
+					// const prevNode = prevNodeId ? tree.get_node(prevNodeId) : null;
+					// const nextNode = nextNodeId ? tree.get_node(nextNodeId) : null;
+
+					// page.tree.siblings = [prevNode,nextNode];
+					// console.log("sibling",page.tree.siblings);
+
+					// e.target.classList.add("hovered");
+
+					// const related = e.relatedTarget;
+					// if (!related || !$.contains(this, related)) {
+					// // 진짜로 들어온 거
+
+					// 	const li = $(`#${nodeId}`);
+					// 	li.addClass("hovered");
+					// 	// if(node.state.opened){
+					// 	// 	tree.close_node(node);
+					// 	// }
+					// 	// else{
+					// 	// 	tree.open_node(node);
+					// 	// }
+					// 	//
+					// }
+				})
+				.on('delete_node.jstree',function(e,data){
+
+				})
+				.on('select_node.jstree',function(e,data){
+					const tree = data.instance;
+					const eventNode = data.node;
+					const parentId = eventNode.parent;
+					const siblings = tree.get_node(parentId).children; // 형제 노드들의 id 배열
+
+					const index = siblings.indexOf(eventNode.id);
+
+					const prevNodeId = siblings[index - 1] || null;
+					const nextNodeId = siblings[index + 1] || null;
+
+					const prevNode = prevNodeId ? tree.get_node(prevNodeId) : null;
+					const nextNode = nextNodeId ? tree.get_node(nextNodeId) : null;
+
+					page.tree.siblings = [prevNode,nextNode];
+					page.tree.selectedNode = eventNode;
+				})
+				.on('refresh.jstree', function (e, data) {
+					const tree = data.instance;
+					$("a.jstree-anchor").each((index,item) => {
+						const el = $(item);
+						const nodeId = $(item).attr("id");
+						const eventNode = tree.get_node(nodeId);
+						if(eventNode.parent != "#") {
+							if(eventNode.data.docYn == 'Y'){
+								// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+								if (el.next("nav.item_opt").length === 0) {
+									let iconEl = `<nav class="item_opt">
+										<button type="button" class="icon_btn" onclick="page.tree.addDocumentFormToContract(${eventNode.id})">
+											<i class="fas fa-arrow-right"></i>
+											<span class="tooltip">추가하기</span>
+										</button>
+										<button type="button" class="icon_btn" onclick="page.tree.removeNode(${eventNode.id},'문서')">
+											<i class="ic ic-delete"></i>
+											<span class="tooltip">삭제하기</span>
+										</button>
+									</nav>`;
+									// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+									el.after(iconEl);
+								}
+							}
+							else{
+								// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+								if (el.next("nav.item_opt").length === 0) {
+									let iconEl = `<nav class="item_opt">
+										<button type="button" class="icon_btn" onclick="page.tree.removeNode(${eventNode.id},'폴더')">
+											<i class="ic ic-delete"></i>
+											<span class="tooltip">삭제하기</span>
+										</button>
+									</nav>`;
+									// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+									el.after(iconEl);
+								}
+							}
+						}
+					});
+					setTimeout(()=>{
+						$("div.treeview_area").scrollTop(page.tree.scrollTopBefore);
+					},0)
+
+				})
+				.on('open_node.jstree', function (e, data) {
+					const tree = data.instance;
+					$("a.jstree-anchor").each((index,item) => {
+						const el = $(item);
+						const nodeId = $(item).attr("id");
+						const eventNode = tree.get_node(nodeId);
+						if(eventNode.data.docYn == 'Y'){
+							// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+							if (el.next("nav.item_opt").length === 0) {
+								let iconEl = `<nav class="item_opt">
+									<button type="button" class="icon_btn" onclick="page.tree.addDocumentFormToContract(${eventNode.id})">
+										<i class="fas fa-arrow-right"></i>
+										<span class="tooltip">추가하기</span>
+									</button>
+									<button type="button" class="icon_btn" onclick="page.tree.removeNode(${eventNode.id},'문서')">
+										<i class="ic ic-delete"></i>
+										<span class="tooltip">삭제하기</span>
+									</button>
+								</nav>`;
+								// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+								el.after(iconEl);
+							}
+						}
+						else{
+							// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+							if (el.next("nav.item_opt").length === 0) {
+								let iconEl = `<nav class="item_opt">
+									<button type="button" class="icon_btn" onclick="page.tree.removeNode(${eventNode.id},'폴더')">
+										<i class="ic ic-delete"></i>
+										<span class="tooltip">삭제하기</span>
+									</button>
+								</nav>`;
+								// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+								el.after(iconEl);
+							}
+						}
+					});
+
+				});
+				page.tree.redraw();
+			},
+			toNode:function(dto){
+				dto = {
+					...dto,
+					cbgnNm:gaiaCommon.decodeSafeText(dto.cbgnNm),
+					cbgnPath:gaiaCommon.decodeSafeText(dto.cbgnPath)
+				}
+				let text = dto.cbgnNm;
+				let level = dto.cbgnLevel;
+				let maxLength1 = 20;  // depth 1
+				let maxLength2 = 18;  // depth 2
+				let maxLength3 = 16;  // depth 3
+				let maxLength4 = 14;  // depth 4
+
+				let displayText;
+
+				//이름 길이와 해당 아이템의 레벨에 따라 텍스트 처리
+				if (text.length > maxLength1 && level === 1) {
+					displayText = text.substring(0, maxLength1) + "..." || text;
+				} else if (text.length > maxLength2 && level === 2) {
+					displayText = text.substring(0, maxLength2) + "..." || text;
+				} else if (text.length > maxLength3 && level === 3) {
+					displayText = text.substring(0, maxLength3) + "..." || text;
+				} else if (text.length > maxLength4 && level === 4) {
+					displayText = text.substring(0, maxLength4) + "..." || text;
+				} else {
+					displayText = text;
+				}
+				const newNode = {
+					id: dto.cbgnNo,
+					parent: dto.upCbgnNo == 0?'#':dto.upCbgnNo,
+					text: displayText,
+					data: dto,
+					icon: 'fa-solid fa-caret-right ',
+					li_attr: {
+						title: text
+					},
+					children: dto.docYn == 'Y' ? [] : undefined,
+					state:{"opened":dto.upCbgnNo == 0?true:false},
+					a_attr:{
+						class:[
+							dto.upCbgnNo == 0 ? 'root' : '',
+							dto.docYn == 'Y' ? 'document':'folder'
+						].join(' ').trim()
+					}
+				};
+
+				return newNode;
+			},
+			createNode:function(result){
+				const tree = page.tree.obj.jstree(true);
+				if(result?.details?.createdNode){
+					const item = result.details.createdNode;
+					console.log("ITEM",item);
+					page.naviList.push(item);
+					page.tree.redraw();
+				}
+			},
+			removeNode:function(cbgnNo,type){
+				const tree = page.tree.obj.jstree(true);
+                gaiaCommon.customConfirm(`${type} 삭제`,`${type} 삭제`,`정말 ${type}를 삭제 하시겠습니까?`,()=>{
+					// → 서버 적용
+					const params = {
+						cbgnNo:cbgnNo
+					}
+					gaiaCommon.post("/api/system/document/remove-navi",params,
+						(result)=>{
+                            gaiaCommon.customAlert("삭제에 성공했습니다.")
+							// tree.delete_node(cbgnNo);
+							page.naviList = page.naviList.filter((item)=>(item.cbgnNo != cbgnNo));
+							page.tree.redraw();
+						},
+						(error)=>{
+							console.log(error);
+                            gaiaCommon.customAlert("삭제에 실패했습니다.")
+						}
+					)
+
+				})
+			},
+			addDocumentFormToContract:function(cbgnNo){
+				const tree = page.tree.obj.jstree(true);
+				node = tree.get_node(cbgnNo);
+				const dto = node.data;
+				dto.chgId = page.me;
+				if(document.querySelector("select#cntrctNo").value === ""){
+                    gaiaCommon.customAlert("계약을 먼저 선택하세요");
+					return;
+				}
+				for(const documentForm of page.documentList){
+					if(documentForm.cbgnNo == dto.cbgnNo){
+                        gaiaCommon.customAlert(`이미 추가된 파일입니다.`);
+						return;
+					}
+				}
+				console.log("등록하자");
+				//인터페이스 호출
+				const pathIds = tree.get_path(node, null, true); // ID 배열
+				console.log("NODE INFO",node);
+				const cbgnList = pathIds.map(id => tree.get_node(id).data);
+				console.log(cbgnList.slice(1,cbgnList.length))
+                console.log(node.data.cbgnDocType);
+                const cbgnDocType = node.data.cbgnDocType.substr(0, 1); //D: 한글, C: 엑셀
+                const cntrctNm = encodeURIComponent($("#cntrctNo option:selected").text());
+
+                const url = `/api/document/create/construct-document?cntrctNo=${page.dropdownCntrctNo}&cntrctNm=${cntrctNm}&cbgnDocType=${cbgnDocType}`;
+
+                console.log(url);
+
+                gaiaCommon.post(url,cbgnList.slice(1,cbgnList.length),function(result){
+                	if(result.ok){
+                		console.log("DTO:",dto)
+                        dto.cbgnNm = dto.pdfDocNm;
+                		page.documentList.push(dto)
+                		page.grid.redraw(page.documentList);
+                	}
+                },function(error){
+                	console.log(`문서 양식 파일 계약에 등록 실패, /api/document/create/construct-document?cntrctNo=${page.dropdownCntrctNo}, PARAMS :`,cbgnList.slice(1,cbgnList.length),error);
+                    gaiaCommon.customAlert(error.responseJSON?.resultMsg);
+                })
+			},
+			// createUpDownArrows: function () {
+			// 	// 모든 jstree-anchor 요소를 순회하며 nav 요소를 추가
+			// 	$(".jstree-anchor:not(.root)").each(function () {
+			// 		// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+			// 		if ($(this).next("nav.item_opt").length === 0) {
+			// 			let iconEl = `<nav class="item_opt">
+			// 							<button type="button" class="icon_btn" onclick="page.tree.moveUpDownNavi('up',this)">
+			// 								<i class="ic ic-arrow2 "></i>
+			// 								<span class="tooltip">{{ message('item.menu.021') }}</span>
+			// 							</button>
+			// 							<button type="button" class="icon_btn" onclick="page.tree.moveUpDownNavi('down',this)">
+			// 								<i class="ic ic-arrow2 down"></i>
+			// 								<span class="tooltip">{{ message('item.menu.022') }}</span>
+			// 							</button>
+			// 						</nav>`;
+			// 			// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+			// 			$(this).after(iconEl);
+			// 		}
+			// 	});
+			// },
+			// moveUpDownNavi: function(way,target) {
+			// 	const params = []
+			// 	if (way === 'up') {			//위로 이동
+			// 		if(page.tree.siblings[0]){
+			// 			params.push(page.tree.siblings[0].id)
+			// 			params.push(page.tree.siblings[0].data.dsplyOrdr)
+			// 			params.push(page.tree.selectedNode.id)
+			// 			params.push(page.tree.selectedNode.data.dsplyOrdr)
+			// 			gaiaCommon.post('/api/system/document/update-ordr',params,
+			// 			function(result){
+			// 				page.refresh();
+			// 			},
+			// 			function(error){
+
+			// 			})
+			// 		}
+			// 		else{
+			// 			console.log("가장 위")
+			// 			return;
+			// 		}
+			// 	} else if (way === 'down') { 	//아래로 이동
+			// 		if(page.tree.siblings[1]){
+			// 			params.push(page.tree.siblings[1].id)
+			// 			params.push(page.tree.siblings[1].data.dsplyOrdr)
+			// 			params.push(page.tree.selectedNode.id)
+			// 			params.push(page.tree.selectedNode.data.dsplyOrdr)
+			// 			gaiaCommon.post('/api/system/document/update-ordr',params,
+			// 			function(result){
+			// 				page.refresh();
+			// 			},
+			// 			function(error){
+
+			// 			})
+			// 		}
+			// 		else{
+			// 			console.log("가장 아래")
+			// 			return;
+			// 		}
+			// 	} else {
+			// 		gaiaCommon.customAlert('{{ message("msg.059") }}'); // 잘못된 요청입니다.
+			// 		return;
+			// 	}
+			// },
+			openPropertyPopup:function(node){
+				const _width = '950';
+				const _height = '750';
+
+				let _left = Math.ceil((window.screen.width - _width) / 2);
+				_left += window.screenLeft; // 듀얼 모니터일 때
+				let _top = Math.ceil((window.screen.height - _height) / 2);
+
+				propertyPopup = window.open(`/system/document/property?cbgnNo=${node.data.cbgnNo}&pjtNo=${page.selectedProjectNo}&cntrctNo=${page.selectedCntrctNo}`, 'propertyPopup', 'width=' + _width + ', height=' + _height + ',left=' + _left + ',top=' + _top + ', scrollbars=yes, resizable=yes,menubar=no,toolbar=no');
+			},
+			openHtmlPopup:function(){
+			    const _width = '1200';
+				const _height = '800';
+
+				let _left = Math.ceil((window.screen.width - _width) / 2);
+				_left += window.screenLeft; // 듀얼 모니터일 때
+				let _top = Math.ceil((window.screen.height - _height) / 2);
+
+				propertyPopup = window.open(`/system/document/html?pjtNo=${page.selectedProjectNo}&cntrctNo=${page.selectedCntrctNo}`, 'htmlPopup', 'width=' + _width + ', height=' + _height + ',left=' + _left + ',top=' + _top + ', scrollbars=yes, resizable=yes,menubar=no,toolbar=no');
+			},
+			redraw:function(changed){
+
+				const orgList = page.tree.obj.jstree(true).settings.core.data;
+				const naviList = page.naviList;
+				const data = [];
+				page.tree.scrollTopBefore = $("div.treeview_area").scrollTop();
+				console.log("page.tree.scrollTopBefore",page.tree.scrollTopBefore)
+				if(changed){
+					page.tree.obj.jstree(true).close_all();
+					naviList.forEach((item, index) => {
+						const createdNode = page.tree.toNode(item);
+						data.push(createdNode);
+					})
+					if(page.documentList.length == 0){
+						const findNode = data.find((node) => (node.a_attr.class.includes("root")));
+						findNode.state.opened = true;
+					}
+					else{
+						for(const documentForm of page.documentList){
+							const findNode = data.find((node) => (documentForm.cbgnNo == node.id));
+							if(!findNode){
+								console.log("삭제된 문서")
+								continue;
+							}
+							//id로 노드를 찾기 위한 맵
+							const nodeMap = new Map(data.map(n => [n.id, n]));
+							//현재 노드부터 시작해서
+							let currentId = findNode.id;
+							//반복문을 돌며 부모 쪽으로 올라가기
+							while (currentId && currentId !== '#') {
+								const node = nodeMap.get(currentId);
+								if (!node) break;
+
+								node.state = {};
+								if(node.data.docYn == 'N'){
+									node.state.opened = true;
+									if(!node.a_attr.class.includes('selected-folder')){
+										node.a_attr.class+=' selected-folder'
+									}
+								}
+								else{
+									node.a_attr.class+=' selected-document'
+								}
+								currentId = node.parent;
+							}
+						}
+					}
+					page.tree.scrollTopBefore=0;
+				}
+				else{
+					naviList.forEach((item, index) => {
+						const findNode = orgList.find((node) => {
+							return item.id == node.id;
+						})
+						const createdNode = page.tree.toNode(item);
+						if(findNode){
+							data.push({
+								...createdNode,
+								a_attr:findNode.a_attr,
+								state:findNode.state
+							});
+						}
+						else{
+							data.push(createdNode);
+						}
+					});
+					data.sort((a, b) => {
+						const docYnA = a.data?.docYn;
+						const docYnB = b.data?.docYn;
+
+						// 1. docYn이 'N'인 노드를 먼저 오게 하기
+						if (docYnA === 'N' && docYnB !== 'N') {
+							return -1;  // a가 먼저 오게
+						} else if (docYnA !== 'N' && docYnB === 'N') {
+							return 1;   // b가 먼저 오게
+						}
+
+						// 2. docYn이 같으면 order 값으로 정렬
+						const orderA = a.data?.order ?? 0;
+						const orderB = b.data?.order ?? 0;
+
+						return orderA - orderB;  // order 값 기준으로 오름차순 정렬
+					});
+					console.log("렌더링 DATA :",data);
+				}
+				page.tree.obj.jstree(true).settings.core.data = data;
+				page.tree.obj.jstree(true).refresh();
+
+			},
+
+            // jstree 에서 클릭한 문서 미리보기
+			previewDocument:function(e) {
+			    const tree = $.jstree.reference('#jstree');
+                const nodeId = $(e.target).closest("li").attr("id");
+                const node = tree.get_node(nodeId);
+
+                if (!node || !node.data) return;
+
+                // 문서 노드인지 확인
+                if (node.data.docYn === 'Y') {
+                    const cbgnNm = node.data.cbgnNm;  // 문서 이름
+                    const cbgnNo = node.id;           // 문서 ID
+
+                    // iframe 문서 미리보기
+                    const previewerPath  = '/assets/static/pdfjs/web/viewer.html?file=';
+                    const previewUrl = `/api/system/document/preview/${cbgnNo}`;
+                    // $("#preview_frame").attr("src", previewerPath + previewUrl); // 바로 iframe 에 src 넣으면 파일 미존재할 경우 처리할 방법이 없음
+
+					//이진 데이터 처리
+					gaiaCommon.getBlob(previewUrl,{},(blob)=>{
+						if(!blob) {
+							$(".preview_name").text("미리보기 가능한 파일이 없습니다.");
+							return;
+						}
+						// 문서 이름 표시
+						$(".preview_name").text(cbgnNm);
+						$("#preview_frame").attr("src", previewerPath + previewUrl);
+					},(error)=>{
+						console.error("PDF 가져오기 실패", error);
+					})
+
+                    // 이진 데이터 처리로 gaia_common 사용 안 함
+                    // $.ajax({
+                    //     url: previewUrl,
+                    //     method: "GET",
+                    //     xhrFields: {
+                    //         responseType: 'blob',
+                    //         withCredentials: true,
+                    //     },
+                    //     data: {},
+                    //     success: function(blob) {
+                    //         if(!blob) {
+                    //             $(".preview_name").text("미리보기 가능한 파일이 없습니다.");
+                    //             return;
+                    //         }
+                    //         // 문서 이름 표시
+                    //         $(".preview_name").text(cbgnNm);
+                    //         $("#preview_frame").attr("src", previewerPath + previewUrl);
+					//
+                    //     },
+                    //     error: function(error) {
+                    //         console.error("PDF 가져오기 실패", error);
+                    //     }
+                    // });
+                }
+			}
+		},
+
+		grid:{
+			obj:null,
+			init:function(){
+				//그리드 만들기
+                console.log("DOCUMENT LIST :",page.documentList);
+				tui.Grid.setLanguage('ko', {
+					display: {
+						noData: '데이터가 없습니다'
+					}
+				});
+				page.grid.obj = new tui.Grid({
+					el: document.getElementById('document_grid'),
+					data:page.documentList,
+					scrollX: true,
+					scrollY: true,
+					useClientSort: false,
+					bodyHeight: window.innerHeight - 265,
+					minBodyHeight: 200, // 최소 높이 : row 1개
+					width: 'auto',
+					contextMenu:({ rowKey, columnName }) => page.setGridContextMenu(rowKey),
+					rowHeaders: [
+						{
+							type: 'checkbox',
+							header: `
+								<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+							`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:'checkBox',
+										success:function(rowData){
+											console.log(rowData)
+										}
+									},
+									{
+										type:'trash',
+										url: '/api/document/delete/construct-document',
+										idField:'deleteNo',
+										keyName: 'docIdList',
+										msgList: {
+											confirmTit: "문서 삭제",  // 문서 삭제
+											confirmMsg: "{{ message('msg.009') }}", 		 	// 정말 삭제하시겠습니까?
+											completeMsg: "{{ message('msg.006') }}" 	// 삭제되었습니다.
+										},
+										success:function(rowData) {
+											page.documentList = page.documentList.filter((item) => rowData.deleteNo != item.deleteNo);
+											page.grid.redraw(page.documentList);
+										},
+										fail:function(rowData){
+											console.log("실패",rowData)
+										}
+
+									}
+								]
+							}
+						}
+					],
+					columns: [
+						{
+							header: '경로', //경로
+							name: 'cbgnPath',
+							align: 'left',
+							resizable: true,
+							width: 400,
+						},
+						{
+							header: '문서 종류', //문서 종류
+							name: 'cbgnDocTypeName',
+							align: 'center',
+							resizable: true,
+							width: 150,
+							formatter: function({ row }) {
+								return page.cbgnDocTypeMap[row.cbgnDocType];
+							}
+						},
+						{
+							header: '문서 명', //문서 명
+							name: 'cbgnNm',
+							align: 'center',
+							width: 250,
+						},
+						{
+							header: '결과', //문서 명
+							name: 'result',
+							align: 'center',
+							width: 80,
+						},
+						{
+							header: '수정자', //수정자
+							name: 'chgId',
+							align: 'center',
+							minWidth: 100
+						},
+						{
+							header: '수정일시', //수정일시
+							name: 'chgDt',
+							align: 'center',
+							minWidth: 100,
+							formatter: function({ row }) {
+								const date = new Date(row.chgDt);
+								const formatted = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+								return formatted;
+							}
+						},
+
+					],
+				});
+				page.grid.obj.on("click", (ev) => { //체크박스 상태 설정
+					if(ev.columnName == "_checked" && ev.rowKey >= 0){
+						let temp = page.grid.obj.getRow(ev.rowKey);
+						temp._attributes.checked = page.grid.obj.getRow(ev.rowKey)._attributes.checked ? false : true;
+						page.grid.obj.setRow(ev.rowKey, temp);
+					}
+				});
+
+			},
+			redraw:function(documentList){
+				console.log("redraw 진입",performance.now())
+				page.documentList = documentList.map((item) => {
+					return {
+						...item,
+						result:'완료',
+						deleteNo:`${item.cbgnNo}_${item.cbgnDocType}_${item.cbgnDocForm}_${page.dropdownCntrctNo}`
+					}
+				});
+
+				page.grid.obj.resetData(page.documentList);
+                page.grid.obj.restore();
+				console.log("redraw 끝",performance.now())
+			}
+		},
+
+		refresh:function(){
+			// const tree = page.tree.obj.jstree(true);
+			// tree.refresh();
+			// const params = { contractNo:page.dropdownCntrctNo };
+			// gaiaCommon.get("/api/system/document/document-list",params,function(result){
+			// 	//문서 목록 검색
+			// 	page.documentList = result.details.documentList;
+
+			// 	//D0001 -> 착공신고서 변환
+			// 	const updatedList = page.documentList.map((item) => {
+			// 		const date = new Date(item.chgDt);
+			// 		const formatted = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+			// 		return {
+			// 			...item,
+			// 			result:'완료',
+			// 			cbgnDocTypeName: page.cbgnDocTypeMap[item.cbgnDocType],
+			// 			chgDt:formatted
+			// 		}
+			// 	});
+
+			// 	//새로운 데이터로 그리드 그리기
+			// 	page.grid.obj.resetData(updatedList);
+			// 	tree.close_all();
+			// 	page.tree.addClassToNavi();
+			// 	// page.tree.createDocIcons();
+			// })
+		},
+
+		cancelDocumentOfContract(){
+			var checkedDocIdList = [];
+			page.grid.obj.getData().forEach(function(v){
+				if(v._attributes.checked){
+					checkedDocIdList.push(`${v.cbgnNo}_${v.cbgnDocType}_${v.cbgnDocForm}_${page.dropdownCntrctNo}`);
+				}
+			});
+			if (checkedDocIdList.length > 0) {
+				//문서 삭제, 문서 삭제, 정말 문서를 삭제하시겠습니까?
+                gaiaCommon.customConfirm("{{ message('item.doc.070') }}","{{ message('item.doc.070') }}","{{ message('msg.doc.009') }}",()=>{
+
+					const params = {
+						docIdList:checkedDocIdList
+
+					}
+					page.documentList.filter((item) => {
+						console.log(item)
+					})
+
+					gaiaCommon.post("/api/document/delete/construct-document",params,function(result){
+						page.documentList = page.documentList.filter((item) => {
+							return !checkedDocIdList.includes(item.deleteNo)
+						})
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+						page.grid.redraw(page.documentList);
+					})
+				})
+			} else {
+                gaiaCommon.customAlert("삭제할 문서를 선택해주세요."); //삭제할 문서를 선택해주세요.
+				return;
+			}
+		},
+		setGridContextMenu(rowKey) {
+			// 공통 메뉴 정의
+			const gridContextMenu = [
+				[
+					{
+						name: 'edit',
+						label: "{{ message('item.doc.031') }}", 	// 이름 변경
+						action: () => {
+							const dto = page.documentList[rowKey];
+							console.log(`${dto.cbgnNo}_${dto.cbgnDocType}_${dto.cbgnDocForm}_${page.dropdownCntrctNo}`)
+							const params = {
+								docId:`${dto.cbgnNo}_${dto.cbgnDocType}_${dto.cbgnDocForm}_${page.dropdownCntrctNo}`,
+								docNm:dto.cbgnNm,
+							}
+							gridDocumentRenameModal.init(params,(result)=>{
+								const findData = page.documentList.find((item) => {
+									return item.deleteNo == result.docId;
+								})
+								findData.cbgnNm = result.docNm;
+								page.grid.redraw(page.documentList);
+							});
+						}
+					},
+					{
+						name: 'preview',
+						label: "미리 보기", 	// 미리 보기
+						action: () => {
+							const dto = page.documentList[rowKey];
+							console.log("미리보자",dto);
+
+                            const docId = dto.deleteNo;
+
+                            gaiaCommon.pdfViewUtil("DOC", docId, "DD");
+
+                            // const _width = '950';
+                            // const _height = '750';
+                            //
+                            // let _left = Math.ceil((window.screen.width - _width) / 2);
+                            // _left += window.screenLeft; // 듀얼 모니터일 때
+                            // let _top = Math.ceil((window.screen.height - _height) / 2);
+                            //
+                            // const pdfPopup = window.open(`/system/document/pdf-view?no=${dto.deleteNo}&pjtNo=${page.selectedProjectNo}&cntrctNo=${page.selectedCntrctNo}&target=grid`, 'pdfPopup', 'width=' + _width + ', height=' + _height + ',left=' + _left + ',top=' + _top + ', scrollbars=yes, resizable=yes,menubar=no,toolbar=no');
+						}
+					},
+				]
+			];
+
+			return gridContextMenu;
+		},
+        createDocTypeDropdown(id){
+            const selectTag = document.getElementById(id);
+            selectTag.innerHTML = `<option selected disabled value="">선택</option>`;
+            for(const cbgnDocType in page.cbgnDocTypeMap){
+                const option = document.createElement("option")
+                option.setAttribute("value",cbgnDocType);
+                option.innerHTML = page.cbgnDocTypeMap[cbgnDocType];
+                selectTag.appendChild(option);
+            }
+        }
+	};
+	//f2로 이름 변경하는 행위 막기
+	document.addEventListener("keydown", function (e) {
+		if (e.key === "F2" || e.keyCode === 113) {
+				e.stopPropagation()
+				e.preventDefault();
+		}
+	},true);
+
+	function getByteLength(str) {
+		let byteLength = 0;
+		for (let i = 0; i < str.length; i++) {
+			const char = str.charAt(i);
+			// 한글인지 확인 (유니코드 범위로)
+			if (escape(char).length > 4) {
+				byteLength += 2; // 한글 등 2바이트 문자
+			} else {
+				byteLength += 1; // 영문, 숫자 등 1바이트 문자
+			}
+		}
+		return byteLength;
+	}
+	// 바이트 수에 맞춰 문자열 자르기 (유틸)
+	function truncateByByte(str, maxBytes) {
+		let byteLength = 0;
+		let result = '';
+		for (let i = 0; i < str.length; i++) {
+			const char = str.charAt(i);
+			const charByte = escape(char).length > 4 ? 2 : 1;
+			if (byteLength + charByte > maxBytes) break;
+			byteLength += charByte;
+			result += char;
+		}
+		return result;
+	}
+	// input 요소에 이벤트 걸기
+	const inputTextTags = document.querySelectorAll('.modal .form_data [type=text]')
+	for(const tag of inputTextTags){
+		tag.addEventListener('input', function(e) {
+			const value = e.target.value;
+			const byteLength = getByteLength(value);
+
+			if (byteLength > 50) {
+                gaiaCommon.customAlert('최대 50바이트까지 입력할 수 있습니다.')
+				// 입력을 자르거나 원래 값으로 되돌릴 수도 있음
+				e.target.value = truncateByByte(value, 50);
+			}
+		});
+	}
+</script>
+{% endblock content %} {% block footer_script %}
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

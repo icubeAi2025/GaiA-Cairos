@@ -1,0 +1,239 @@
+<div class="modal open">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="code_cu_tit"></h5>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">{{ message('item.com.038') }}</span>
+            </button>
+        </div>
+        <div class="pop_body" style="">
+            <div class="form_box" id="CodeForm">
+                <div class="group">
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.001') }}</div>
+                            <div class="form_data readonly">
+                                <div style="word-break: break-all; padding: .25em 1em; line-height: 1.45;"
+                                    id="cmnGrpCdNmKrn" name="cmnGrpCdNmKrn"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.commonCode.002') }}</div>
+                            <div class="form_data" id="idForm">
+                                <div class="item_group">
+                                    <input type="text" id="cmnCd" name="cmnCd" class="maxlength" maxlength="20" />
+                                    <button type="button" class="btn _fill s_small" onclick="popup.exist()" id="dupCheck">{{ message('btn.028') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.commonCode.003') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="cmnCdNmKrn" name="cmnCdNmKrn" class="maxlength" maxlength="50" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.004') }}</div>
+                            <div class="form_data">
+                                <input type="text" id="cmnCdNmEng" name="cmnCdNmEng" class="maxlength" maxlength="50" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.005') }}</div> <!-- 설명 -->
+                            <div class="form_data">
+                                <textarea id="cmnCdDscrpt" class="maxlength textareaWrite" maxlength="200"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성1</div> <!-- 속성1 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd1" id="attrbtCd1" class="maxlength textareaWrite" maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성2</div> <!-- 속성2 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd2" id="attrbtCd2" class="maxlength textareaWrite" maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성3</div> <!-- 속성3 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd3" id="attrbtCd3" class="maxlength textareaWrite" maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성4</div> <!-- 속성4 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd4" id="attrbtCd4" class="maxlength textareaWrite" maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성5</div> <!-- 속성5 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd5" id="attrbtCd5" class="maxlength textareaWrite" maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.006') }}</div> <!-- 순번 -->
+                            <div class="form_data">
+                                <input type="text" id="cmnCdDsplyOrder" name="cmnCdDsplyOrder" class="number" value="0"
+                                    maxlength="2" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message("item.com.003") }}</div>
+                            <div class="form_data">
+                                <div class="item_group" role="group" aria-label="Basic radio group">
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" id="useY" name="useYn" value="Y"
+                                            checked />
+                                        <span class="check_label">{{ message("item.com.015") }}</span>
+                                    </label>
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" id="useN" name="useYn" value="N" />
+                                        <span class="check_label">{{ message("item.com.016") }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="codeCheck" value="true">
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close();">{{ message('btn.007')}}</button>
+                <button type="button" class="btn _outline" id="action-button" onclick="popup.save()">{{ message('btn.006')}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/assets/js/validation.js"></script>
+<script>
+    var popup = {
+        code: page.popup.code,
+        groupCode: page.popup.groupCode,
+
+        init: async function () {
+            this.createLoadData();
+            $("#code_cu_tit").text("{{ message('item.commonCode.010') }}");
+        },
+        save: function () {
+            this.create();
+
+        },
+        close: function () {
+            $("#popup").empty();
+            page.popup.code = ''
+        },
+
+        exist: function () {
+            const cmnGrpCd = popup.groupCode.cmnGrpCd;
+            cmnCd = $("#CodeForm #cmnCd").val().trim();
+            if (cmnCd) {
+                gaiaCommon.get("/api/system/common-code/code/exist/" + cmnGrpCd + "/" + cmnCd, {}, function (result) {
+                    if (result.details?.exist) {
+                        gaiaCommon.customAlert("{{ message('msg.commonCode.004') }}");
+                        $("#codeCheck").val(true)
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.commonCode.002') }}");
+                        $("#codeCheck").val(false)
+                    }
+                });
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.commonCode.003') }}");
+                $("#codeCheck").val(true)
+            }
+        },
+
+        createLoadData: function () {
+            $("#CodeForm #cmnGrpCdNmKrn").text(gaiaCommon.decodeSafeText(popup.groupCode.cmnCdNmKrn));
+        },
+
+        create: function () {
+            var codeCheck = $("#codeCheck").val();
+            if (codeCheck == "false") {
+                data = {
+                    cmnGrpNo: popup.groupCode.cmnGrpNo,
+                    cmnGrpCd: popup.groupCode.cmnGrpCd,
+                    cmnCd: $("#CodeForm #cmnCd").val().trim(),
+                    cmnCdNmKrn: $("#CodeForm #cmnCdNmKrn").val().trim(),
+                    cmnCdNmEng: $("#CodeForm #cmnCdNmEng").val().trim(),
+                    cmnCdDscrpt: $("#CodeForm #cmnCdDscrpt").val().trim(),
+                    attrbtCd1: $("#CodeForm #attrbtCd1").val().trim(),
+                    attrbtCd2: $("#CodeForm #attrbtCd2").val().trim(),
+                    attrbtCd3: $("#CodeForm #attrbtCd3").val().trim(),
+                    attrbtCd4: $("#CodeForm #attrbtCd4").val().trim(),
+                    attrbtCd5: $("#CodeForm #attrbtCd5").val().trim(),
+                    cmnCdDsplyOrder: $("#cmnCdDsplyOrder").val(),
+                    useYn: $("#CodeForm input[name=useYn]:checked").val(),
+                };
+                gaiaCommon.post("/api/system/common-code/code/create", data, function (result) {
+                    gaiaCommon.customAlert("{{ message('msg.005') }}");
+                    page.popup.close();
+                }, function (error) {
+                    let callback;
+                    if (!$('#CodeForm #cmnCd').val()) {
+                        callback = function () { $('#CodeForm #cmnCd').focus(); }
+                        gaiaCommon.customAlert("{{ message('msg.080') }}", callback);
+                    } else if (!$('#CodeForm #cmnCdNmKrn').val()) {
+                        callback = function () { $('#GroupForm #cmnCdNmKrn').focus(); }
+                        gaiaCommon.customAlert("{{ message('msg.081') }}", callback);
+                    }
+                });
+            } else if (codeCheck == "true") {
+                gaiaCommon.customAlert("{{ message('msg.commonCode.005') }}")
+            }
+        },
+    }
+
+    $("#CodeForm #cmnCd").change(() => {
+        $("#codeCheck").val("true");
+
+    });
+
+    $(function () {
+
+        popup.init();
+
+        gaia.loaded = true
+
+    })
+
+</script>

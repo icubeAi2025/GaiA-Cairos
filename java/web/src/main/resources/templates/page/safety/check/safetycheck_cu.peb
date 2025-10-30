@@ -1,0 +1,801 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+	<article class="conts g-row">
+		<div class="group" id="formBox">
+			<div class="conts_form">
+				<div class="btn_area s_default _outline">
+					<button type="button" class="btn _outline" onclick="page.saveSafety()">{{
+						message('btn.006')}}</button>
+					<button type="button" class="btn" id="deleteButton" onclick="page.closePage()">{{
+						message('btn.007')}}</button> <!-- 닫기 -->
+				</div>
+				<div class="s_conts">
+					<span class="tree_route">{{ message('item.construction.012') }}</span>
+					<div class="form_box" id="quality-form">
+						<div class="container" style="display: flex; align-items: center;">
+							<span class="caption">
+								<span><b class="c_red">*</b> {{ message('item.app.006') }}</span>
+							</span>
+						</div>
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="form_label required">{{ message('item.safety.009') }}</div>
+								<div class="form_data">
+									<input type="text" name="ispDocNo" class="maxlength" maxlength="100" required>
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.safety.002') }}</div>
+								<div class="form_data">
+									<input type="date" name="ispDt" id="ispDt" class="date">
+								</div>
+							</div>
+						</div>
+
+						<!-- row -->
+						<div class="row cols">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.003') }}</div>
+								<div class="form_data">
+									<input type="text" name="title" class="maxlength" maxlength="200">
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label required">공종</div>
+								<div class="form_data">
+									<div class="select-row">
+										<span class="selectbox">
+											<select name="workType" id="workType">
+												<option value="" selected disabled>= 선택 =</option>
+												<option value="A">{{ message("item.quality.001") }}</option>
+												<option value="C">{{ message("item.quality.002") }}</option>
+												<option value="F">{{ message("item.quality.003") }}</option>
+												<option value="T">{{ message("item.quality.004") }}</option>
+												<option value="M">{{ message("item.quality.005") }}</option>
+												<option value="E">{{ message("item.quality.006") }}</option>
+												<option value="O">{{ message("item.dash.043") }}</option>
+											</select>
+										</span>
+										<span class="selectbox">
+											<select name="work" id="cnsttyCdL1">
+												<option value="" selected>=선택=</option>
+											</select>
+										</span>
+										<span class="selectbox has_clear">
+											<span class="sty_ip" onclick="$('.dropdown').toggleClass('on')"
+												id="cnsttySelect" style="min-width: 220px;">=선택=</span>
+											<button class="icon_btn _clear" style="display: none;">
+												<i class="ic ic-close"></i>
+												<span class="blind">{{ message('item.com.085') }}</span>
+											</button>
+
+											<div class="dropdown">
+												<div class="treeview_area">
+													<div class="treeview ty_pd0" id="cnsttyTree"></div>
+												</div>
+											</div>
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="group">
+			<div class="s_conts">
+				<span class="tree_route">{{ message('item.safety.011') }}</span>
+				<div class="btn_area s_default _outline" style="margin-bottom: 10px;">
+					<button type="button" class="btn save-btn" id="addButton"
+						onclick="inspectionList.addInspection()">{{
+						message('btn.001') }}</button> <!-- 추가 -->
+					<button type="button" class="btn" id="deleteButton" onclick="inspectionList.deleteSelectedRow()">{{
+						message('btn.002')}}</button> <!-- 삭제 -->
+				</div>
+				<table class="table ta_c" id="inspectionListTable">
+					<colgroup>
+						<col width="100px">
+						<col>
+						<col>
+						<col>
+						<col>
+						<col>
+					</colgroup>
+					<thead id="inspectionListHead">
+					</thead>
+					<tbody id="inspectionListBody">
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div id="popup" class="popup_overlay modal_base" style="display: none;">
+			<!-- 팝업 내용 -->
+		</div>
+	</article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+	#formBox {
+		margin-top: 1em;
+	}
+
+	.select-row {
+		display: flex;
+		gap: 12px;
+		width: 100%;
+		flex-wrap: nowrap;
+	}
+</style>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script>
+	var pjtNo;
+	var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo')
+	var inspectionNo = urlParams.get('inspectionNo');
+	const mode = urlParams.get('mode');
+	var checkedCnstty = {};
+	let selectedTexts = [];
+	let deletedInspectionIds = [];
+	const type = urlParams.get('type')
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				page.init();
+			}
+		});
+	});
+
+	var page = {
+		init: function () {
+			pjtNo = pjtInfo.pjtNo;
+
+			$(function () {
+				var title;
+				if (mode === "create") {
+					title = "{{ message('item.safety.014') }}"
+					$('#checkListTable').hide();
+
+					// 점검일자 = 오늘 날짜 -default
+					setTimeout(() => {
+						const dateInput = document.getElementById("ispDt");
+						if (dateInput) {
+							const today = new Date().toISOString().split('T')[0];
+							dateInput.value = today;
+						}
+					}, 100);
+				}
+				if (mode === "update") {
+					title = "{{ message('item.safety.015') }}"
+					$('#checkListTable').show();
+					page.getSafety();
+				}
+				gaiaPortal.navMenuInit('M1001', title);
+				$("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+			});
+		},
+		getSafety: function () {
+			gaiaCommon.get("/api/safetymgmt/check/get/safety/" + cntrctNo + "/" + inspectionNo, {}, function (result) {
+				let safetyData = result.details.safety;
+				let safetyListData = result.details.safetyList;
+				console.log("safetyData: ", safetyData)
+
+				$('input[name="ispDocNo"]').val(gaiaCommon.decodeSafeText(safetyData.ispDocNo));  // 점검번호
+				if (safetyData.ispDt) {	// 점검일
+					const dateOnly = safetyData.ispDt.split(' ')[0];
+					$('input[name="ispDt"]').val(dateOnly);
+				} else {
+					$('input[name="ispDt"]').val('');
+				}
+
+				$('input[name="title"]').val(gaiaCommon.decodeSafeText(safetyData.title));  // 제목
+
+				$('#workType').val(safetyData.cnsttyCd);
+
+				makeLvl1Box(safetyData.cnsttyCd, 'cnsttyCdL1');
+
+				setTimeout(function () {
+					$('#cnsttyCdL1').val(safetyData.cnsttyCdL1).trigger('change');
+
+					// 트리 체크값 적용
+					let selectedCnsttyCodes = safetyData.cnsttyCdL2 ? safetyData.cnsttyCdL2.split(",") : [];
+					inspectionTree.init(safetyData.cnsttyCdL1, selectedCnsttyCodes);
+					$('#cnsttyTree').on('ready.jstree', function () {
+						setCheckedNodes(selectedCnsttyCodes);
+					});
+
+					// 안전점검 항목 리스트
+					inspectionList.inspectionListData = safetyListData.map(item => ({
+						ispLstId: item.ispLstId,
+						ispLstNo: item.ispLstNo,
+						cnsttyNm: item.cnsttyNm,
+						ispLstDscrpt: gaiaCommon.decodeSafeText(item.ispDscrpt),
+						gdFltyYn: item.gdfltyYn,
+						improveReq: gaiaCommon.decodeSafeText(item.imprevReq),
+						cnsttyCd: item.cnsttyCd
+					}));
+					inspectionList.addInspectionList();
+				}, 300); // makeLvl1Box()가 DOM 갱신을 완료할 시간을 확보
+			});
+		},
+		closePage: function () {
+			if (type === 'p') {
+				window.close();
+			} else {
+				window.location.href = `/safetymgmt/check?cntrctNo=${pjtInfo.cntrctNo}&pjtNo=${pjtInfo.pjtNo}&returnCntrctNo=${cntrctNo}&_condition=init`;
+			}
+		},
+		saveSafety: function () {
+			const ispDocNo = $('input[name="ispDocNo"]').val();
+
+			if (!ispDocNo) {
+				gaiaCommon.customAlert('{{ message("msg.safety.004") }}');
+				$('input[name="ispDocNo"]').focus();
+				return;
+			}
+
+			const workType = $('#workType').val()
+
+			if (!workType) {
+				gaiaCommon.customAlert('공종을 선택해주세요.');
+				$('#workType').focus();
+				return;
+			}
+
+			const cnsttyCdL2 = Object.keys(checkedCnstty).join(',');
+
+			if (!cnsttyCdL2) {
+				gaiaCommon.customAlert('{{ message("msg.contract.014") }}');
+				$('#cnsttySelect').focus();
+				return;
+			}
+
+			if (window.inspectionList.inspectionListData.length === 0) {
+				gaiaCommon.customAlert('{{ message("msg.safety.009") }}');
+				return;
+			}
+
+			let param;
+			let url;
+			let message;
+
+			if (mode === 'create') {
+				param = {
+					cntrctNo: cntrctNo,
+					ispDocNo: ispDocNo,
+					ispDt: $('input[name="ispDt"]').val(),
+					title: $('input[name="title"]').val(),
+					cnsttyCd: $('#workType').val(),
+					cnsttyCdL1: $('#cnsttyCdL1').val(),
+					cnsttyCdL2: cnsttyCdL2,
+
+					safetyLists: window.inspectionList.inspectionListData.map(item => ({
+						ispLstId: item.ispLstId,
+						cnsttyCd: item.cnsttyCd,
+						cnsttyNm: item.cnsttyNm,
+						ispDscrpt: item.ispLstDscrpt,
+						ispLstNo: item.ispLstNo,
+					})),
+				}
+				url = '/api/safetymgmt/check/create/safety'
+				message = '{{ message("msg.044") }}'	// 저장되었습니다
+			}
+
+			inspectionList.updateRowNumbers();	// 안전점검 항목번호 최신화
+			if (mode === 'update') {
+				param = {
+					cntrctNo: cntrctNo,
+					inspectionNo: inspectionNo,
+					ispDocNo: ispDocNo,
+					ispDt: $('input[name="ispDt"]').val(),
+					title: $('input[name="title"]').val(),
+					cnsttyCd: $('#workType').val(),
+					cnsttyCdL1: $('#cnsttyCdL1').val(),
+					cnsttyCdL2: cnsttyCdL2,
+
+					safetyLists: window.inspectionList.inspectionListData.map(item => ({
+						ispLstId: item.ispLstId,
+						cnsttyCd: item.cnsttyCd,
+						cnsttyNm: item.cnsttyNm,
+						ispDscrpt: item.ispLstDscrpt,
+						ispLstNo: item.ispLstNo,
+					})),
+				}
+				url = '/api/safetymgmt/check/update/safety'
+				message = '{{ message("msg.007") }}'	// 수정되었습니다
+			}
+
+			gaiaCommon.LoadingOverlay('body', true);
+			$.ajax({
+				url: url,
+				method: "POST",
+				dataType: "json",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify(param),
+				success: function (response) {
+					if (response.ok) {
+						gaiaCommon.customAlert(message, function () {
+							gaiaCommon.LoadingOverlay('body', false);
+							if (type === 'p') {
+								if (window.opener && !window.opener.closed) {
+									window.opener.location.replace(`/safetymgmt/check?cntrctNo=${pjtInfo.cntrctNo}&pjtNo=${pjtInfo.pjtNo}`);
+								}
+								window.close();
+							} else {
+								window.location.replace(`/safetymgmt/check?cntrctNo=${pjtInfo.cntrctNo}&pjtNo=${pjtInfo.pjtNo}&returnCntrctNo=${cntrctNo}`);
+							}
+						});
+					}
+				},
+				error: function (xhr, status, error) {
+					gaiaCommon.LoadingOverlay('body', false);
+					gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+				},
+			});
+		},
+		getInspection: function (cnsttyCd) {	// 점검번호 최대값 에러
+			let param = {
+				cntrctNo: cntrctNo,
+				cnsttyCd: cnsttyCd
+			}
+
+			$.ajax({	// 기존 항목과 인덱스 겹침
+				url: "/api/safetymgmt/check/get/inspectionList",
+				method: "POST",
+				dataType: "json",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify(param),
+				success: function (data) {
+					let existingList = inspectionList.inspectionListData;
+					let maxIspLstNo = existingList.length > 0
+						? Math.max(...existingList.map(item => item.ispLstNo))
+						: 0;
+
+					let newData = data.details.inspectionList.map((item, index) => ({
+						ispLstId: item.isp_lst_id,
+						cnsttyNm: item.cnstty_nm,
+						cnsttyCd: item.cnstty_cd,
+						ispLstDscrpt: item.isp_lst_dscrpt,
+						ispLstNo: maxIspLstNo + index + 1,	// 점검항목 비었을 시 index+1, 기존 점검항목 있을시 최대 ispLstNo에서부터 +1
+					}));
+
+					// 기존 데이터 유지하고 새로운 데이터 추가 (중복 검사)
+					newData.forEach(newItem => {
+						if (!inspectionList.inspectionListData.some(item => item.ispLstId === newItem.ispLstId)) {
+							inspectionList.inspectionListData.push(newItem);
+						}
+					});
+
+					inspectionList.addInspectionList();
+				},
+			});
+		},
+	}
+	// 공종 트리
+	let inspectionTree = {
+		obj: null,
+		clear: function () {
+			const $tree = $("#cnsttyTree");
+			const treeInstance = $tree.jstree(true);
+
+			if ($tree.hasClass("jstree") && treeInstance) {
+				treeInstance.destroy();
+			}
+
+			this.obj = null;
+		},
+		init: function (selectedValue) {
+			this.clear();
+
+			// 전역 변수 초기화
+			checkedCnstty = {}; // 선택된 공종 초기화
+			selectedTexts = []; // 선택된 공종 네이밍 초기화
+			deletedInspectionIds = []; // 삭제된 항목 초기화
+
+			this.obj = $("#cnsttyTree").jstree({
+				core: {
+					data: function (obj, cb) {
+						gaiaCommon.get('/api/safetymgmt/check/get/cnsttyLvl2?cntrctNo=' + cntrctNo + '&upCnsttyCd=' + selectedValue, {}, function (result) {
+							var data = [];
+							if (result.details?.cnsttyList) {
+								result.details.cnsttyList.forEach((item) => {
+									const parent = ["A", "C", "E", "F", "M", "O", "T"].includes(item.parent) ? "#" : item.parent;
+									let nodeText = item.text;
+									let cnsttyNm = item.cnsttyNm;
+
+									if (item.level === 4) {
+										nodeText = `<input disabled class="check_mark" id="cnstty_check_${item.id}" type="checkbox"> ${item.text}`;
+									}
+									data.push({
+										id: item.id,
+										parent: parent,
+										text: nodeText,
+										state: { opened: true },
+										data: item,
+										icon: item.level < 4 ? "ic ic-folder-open" : false,
+										'data-cnstty-nm': item.cnsttyNm,
+										'isplstids': item.all_isp_lst_ids
+									});
+								});
+								cb.call(obj, data);
+							}
+						});
+					},
+					check_callback: true,
+					themes: {
+						dots: false,
+						responsive: false,
+
+					}
+				},
+				plugins: [],
+			});
+			$('#cnsttyTree').off('click', '.jstree-anchor');  // 기존의 클릭 이벤트를 제거
+			this.obj.on("click", ".jstree-anchor", function (e) {	// 체크박스 클릭 이벤트
+				const checkbox = $(this).find('.check_mark');
+				const nodeId = $(this).parent().attr('id');
+				const nodeText = $(this).text().trim();
+				const nodeData = $("#cnsttyTree").jstree(true).get_node(nodeId).data; // 노드 데이터 가져오기
+
+				console.log(nodeData)
+
+				if (checkbox.length) {
+					const isChecked = checkbox.prop("checked");
+
+					if (isChecked) {
+						checkbox.prop("checked", false);	// 체크 해제
+						delete checkedCnstty[nodeId];
+						inspectionList.inspectionListData = inspectionList.inspectionListData.filter(item => {
+							if (item.cnsttyNm === nodeText) {
+								return false;
+							}
+							return true;
+						});
+						selectedTexts = selectedTexts.filter(item => item !== nodeText);
+
+						deletedInspectionIds = deletedInspectionIds.filter(id => {
+							// deletedInspectionIds의 값들을 문자열로 변환하여 비교
+							const idStr = String(id);
+							return !nodeData.all_isp_lst_ids.includes(idStr); // 포함되지 않으면 삭제된 처리
+						});
+
+						inspectionList.addInspectionList();
+					} else {
+						checkbox.prop("checked", true);	// 체크 표시
+						checkedCnstty[nodeId] = {
+							id: nodeId,
+							text: nodeText,
+							isplstids: nodeData.all_isp_lst_ids
+						};
+						selectedTexts.push(nodeText);
+
+						// 공종의 안전점검 리스트가 있을경우에만 안전점검 항목 업데이트
+						if (nodeData.all_isp_lst_ids !== null && nodeData.all_isp_lst_ids.length > 0) {
+							page.getInspection(nodeId);
+						}
+					}
+				}
+
+				$('#cnsttySelect').text(selectedTexts.join(', ') || '=선택=');
+			});
+			this.obj.on('open_node.jstree', function (e, data) {	// 노드 접었다 폈을시 체크상태 유지
+				data.node.children.forEach(function (childNodeId) {
+					const checkboxSelector = `#cnstty_check_${$.escapeSelector(childNodeId)}`;
+					const checkbox = $(checkboxSelector);
+					const nodeData = checkedCnstty[childNodeId];
+					if (nodeData) {
+						checkbox.prop('checked', true);
+					}
+				});
+
+				if (data.node.parent === "#") {  // 최상위 노드일 때
+					data.node.children_d.forEach(function (childNodeId) {
+						const checkboxSelector = `#cnstty_check_${$.escapeSelector(childNodeId)}`;
+						const checkbox = $(checkboxSelector);
+						const nodeData = checkedCnstty[childNodeId];
+						if (nodeData) {
+							checkbox.prop('checked', true);
+						}
+					});
+				}
+			});
+		}
+	}
+	window.inspectionList = {
+		inspectionListData: [],
+		addInspection: function () {
+			const selectedCnstty = document.getElementById("cnsttySelect").textContent.trim();
+			if (selectedCnstty === "=선택=" || selectedCnstty === "") {
+				gaiaCommon.customAlert("{{ message('msg.contract.014') }}");
+				return;
+			}
+
+			gaiaCommon.checkAuth("SAF_C_01", () => {
+				$("#popup").load("/safetymgmt/check/add/modal");
+				$("#popup").css({ "display": "flex" });
+			});
+		},
+		addInspectionList: function () {
+			const thead = document.getElementById('inspectionListHead');
+			const tbody = document.getElementById('inspectionListBody');
+
+			thead.innerHTML = `
+				<tr>
+					<th style="width: 5%;"></th>
+					<th style="width: 10%;">{{ message('item.app.035') }}</th>
+					<th style="width: 20%;">{{ message('item.progressstatus.010') }}</th>
+					<th style="width: 65%;">{{ message('item.safety.017') }}</th>
+				</tr>
+			`;
+			tbody.innerHTML = '';
+
+			// 삭제된 항목을 제외한 데이터만 필터링
+			const filteredData = this.inspectionListData.filter(item => !deletedInspectionIds.includes(item.ispLstId));
+			if (filteredData.length === 0) {
+				$('#inspectionListBody').hide();
+			} else {
+				$('#inspectionListBody').show();
+			}
+
+
+			filteredData.sort((a, b) => a.ispLstNo - b.ispLstNo).forEach((item, index) => {
+
+				const row = document.createElement('tr');
+
+				// 삭제 버튼
+				const deleteCell = document.createElement('td');
+				deleteCell.innerHTML = `
+					<div class="item_group">
+						<input type="checkbox" class="row-checkbox" data-id="${item.ispLstId}">
+						<button type="button" class="icon_btn" onclick="inspectionList.deleteRow('${item.ispLstId}')">
+							<i class="ic ic-delete"></i>
+						</button>
+                	</div>
+					`;
+				row.appendChild(deleteCell);
+
+				// 번호
+				const numCell = document.createElement('td');
+				numCell.textContent = index + 1;
+				row.appendChild(numCell);
+
+				// 공종
+				const cnsttyCell = document.createElement('td');
+				cnsttyCell.classList.add('cnstty-nm');
+				cnsttyCell.textContent = item.cnsttyNm;
+				cnsttyCell.style.textAlign = 'center';
+				row.appendChild(cnsttyCell);
+
+				// 점검내용
+				const itemCell = document.createElement('td');
+				itemCell.classList.add('lst-dscrpt');
+				itemCell.textContent = item.ispLstDscrpt;
+				itemCell.style.textAlign = 'left';
+				itemCell.style.whiteSpace = 'pre-line'; // 줄바꿈 반영
+				row.appendChild(itemCell);
+
+				tbody.appendChild(row);
+			});
+		},
+		deleteSelectedRow: function () {
+			const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
+				.map(checkbox => checkbox.dataset.id);
+
+			if (selectedIds.length === 0) {
+				gaiaCommon.customAlert('{{ message("msg.055") }}');	// 삭제할 항목을 선택해주세요.
+				return;
+			}
+			gaiaCommon.customConfirm("{{ message('item.safety.016') }}", "{{ message('item.safety.016') }}", "{{ message('msg.009') }}", () => {
+				selectedIds.forEach(id => deletedInspectionIds.push(id));
+
+				this.inspectionListData = this.inspectionListData.filter(item => !selectedIds.includes(item.ispLstId));	// 삭제된 항목 제외하고 목록생성
+
+				this.updateRowNumbers();
+				this.addInspectionList();
+				checkCnsttyCd();
+			});
+		},
+		deleteRow: function (ispLstId) {
+			gaiaCommon.customConfirm("{{ message('item.safety.016') }}", "{{ message('item.safety.016') }}", "{{ message('msg.009') }}", () => {
+				deletedInspectionIds.push(ispLstId);
+				this.inspectionListData = this.inspectionListData.filter(item => item.ispLstId !== ispLstId);
+				this.updateRowNumbers();
+				this.addInspectionList();
+				checkCnsttyCd();
+			});
+		},
+		updateRowNumbers: function () {
+			this.inspectionListData = this.inspectionListData.map((item, index) => ({
+				...item,
+				ispLstNo: index + 1
+			}));
+		},
+	}
+	// 데이터 로딩 후 트리에 체크 상태 설정
+	function setCheckedNodes(selectedCnsttyCodes) {
+		selectedCnsttyCodes.forEach(function (code) {
+			let node = $('#cnsttyTree').jstree("get_node", code);
+			let nodeData = node.data;
+
+			let anchorId = node.id + "_anchor";
+			let anchor = $("#" + anchorId.replace(/\./g, "\\.")); // 특수문자(.) 이스케이프 처리
+
+			let checkbox = anchor.find('input.check_mark');
+			checkbox.prop("checked", true); // 체크 표시
+
+			let text = anchor.contents().filter(function () {
+				return this.nodeType === 3; // 텍스트 노드만 선택
+			}).text().trim();
+			selectedTexts.push(text); // 선택된 텍스트 저장
+
+			checkedCnstty[node.id] = {
+				id: node.id,
+				text: text,
+				isplstids: nodeData.all_isp_lst_ids
+			};
+		});
+
+		// 선택된 공종을 화면에 표시
+		$('#cnsttySelect').text(selectedTexts.join(', ') || '=선택=');
+	}
+	// 안전점검 항목 삭제 여부
+	function checkCnsttyCd() {
+		const cnsttyCdList = [];
+		console.log("inspectionListData: ", inspectionList.inspectionListData)
+		inspectionList.inspectionListData.forEach(item => {	// 현재 저장된 안전점검 항목 데이터
+			if (item.cnsttyCd && !cnsttyCdList.includes(item.cnsttyCd)) {
+				cnsttyCdList.push(item.cnsttyCd);
+			}
+		});
+		console.log("cnsttyCdList: ", cnsttyCdList)
+
+		const checkedCheckboxes = document.querySelectorAll('.check_mark:checked');
+		let unchecked = false;  // 체크 해제 여부
+
+		checkedCheckboxes.forEach(checkbox => {
+			const nodeId = checkbox.id.replace("cnstty_check_", "");
+			const nodeIdSelector = "#" + nodeId.replace(/([.#:[\],])/g, "\\$1");	// 특수문자 이스케이프
+			const nodeText = $(nodeIdSelector + "_anchor").text().trim();
+			const nodeData = $("#cnsttyTree").jstree(true).get_node(nodeId).data; //
+
+			if (!cnsttyCdList.includes(nodeId)) { // 점검 항목에 없는 공종이면 체크 해제
+				$(checkbox).prop("checked", false).trigger("change");
+				delete checkedCnstty[nodeId];  // 체크된 공종 리스트에서 제거
+
+				selectedTexts = selectedTexts.filter(text => text !== nodeText);	// 공종명 목록(selectedTexts)에서도 제거
+				unchecked = true;  // 체크 해제
+
+				if (nodeData && nodeData.all_isp_lst_ids) {
+					deletedInspectionIds = deletedInspectionIds.filter(id => {
+						const idStr = String(id);
+						return !nodeData.all_isp_lst_ids.includes(idStr);
+					});
+				}
+			}
+		});
+
+
+		// 선택된 공종 목록이 변경되었으면 '공종 선택' 항목 업데이트
+		if (unchecked) {
+			$('#cnsttySelect').text(selectedTexts.join(', ') || '=선택=');
+		}
+	}
+	// 두번째 공종 셀렉트 박스
+	function makeLvl1Box(workType, elementId, callback) {
+		let param = {
+			cntrctNo: cntrctNo,
+			upCnsttyCd: workType
+		};
+
+		$.ajax({
+			url: "/api/safetymgmt/check/get/cnsttyLvl1",
+			method: "POST",
+			dataType: "json",
+			xhrFields: { withCredentials: true },
+			contentType: "application/json; charset=UTF-8",
+			traditional: true,
+			data: JSON.stringify(param),
+			success: function (response) {
+				let list = response.details.cnsttyList;
+				let selectBoxElement = document.getElementById(elementId);
+
+				selectBoxElement.innerHTML = `<option selected="" disabled="" value="">=선택=</option>`;
+
+				list.forEach(item => {
+					let option = document.createElement("option");
+					option.value = item.cnstty_cd; // val 값 설정
+					option.textContent = item.cnstty_nm; // text 값 설정
+
+					selectBoxElement.appendChild(option);
+				});
+
+				if (callback) callback();
+			},
+			error: function (xhr, status, error) {
+				console.error("Error making construct type select box:", status, error);
+			},
+		});
+	}
+	// 첫번째 공종 선택 시 두번째 공종 초기화 및 활성화
+	$('#workType').on('change', function () {
+		const selectedWorkType = $(this).val();
+		const $cnsttyCdL1 = $('#cnsttyCdL1');
+
+		// 공종이 바뀌면 트리, 공종 선택 텍스트, 내부 상태도 초기화
+		if (selectedWorkType && selectedWorkType !== 'all') {
+			$cnsttyCdL1.prop('disabled', false);
+
+			makeLvl1Box(selectedWorkType, 'cnsttyCdL1', function () {
+				$cnsttyCdL1.val('').trigger('change'); // AJAX 이후에 실행
+			});
+
+			// 트리 및 선택값 초기화
+			inspectionTree.clear();
+			checkedCnstty = {};
+			selectedTexts = [];
+			$('#cnsttySelect').text('=선택=');
+
+			inspectionList.inspectionListData = [];
+			inspectionList.addInspectionList();
+		} else {
+			$cnsttyCdL1.empty().append(`<option selected disabled value="">=선택=</option>`);
+			$cnsttyCdL1.prop('disabled', true);
+
+			inspectionTree.clear();
+			checkedCnstty = {};
+			selectedTexts = [];
+			$('#cnsttySelect').text('=선택=');
+
+			inspectionList.inspectionListData = [];
+			inspectionList.addInspectionList();
+		}
+	});
+	// 두번째 공종 선택 시: 공종 선택 여부 및 옵션 존재 여부 확인
+	$('#cnsttyCdL1').on('mousedown', function (e) {
+		const selectedWorkType = $('#workType').val(); // 공종 선택값
+		const $cnsttyCdL1 = $(this);
+		const options = $cnsttyCdL1.find('option');
+
+		if (!selectedWorkType || selectedWorkType === 'all') {
+			gaiaCommon.customAlert('공종을 선택해주세요.');
+			e.preventDefault(); // 드롭다운 열리지 않게 막음
+			return;
+		}
+
+		if (options.length === 1 && options.eq(0).text().trim() === '=선택=') {
+			gaiaCommon.customAlert('선택할 수 있는 공종이 없습니다. 점검리스트 관리 화면에서 공종을 추가해주세요');
+			e.preventDefault(); // 선택 못하게 막기
+		}
+	});
+	$(document).ready(function () {
+		$('#cnsttyCdL1').change(function () {
+			const selectedValue = $(this).val();
+			if (selectedValue) {
+				if ($('.dropdown').hasClass('on')) {
+					$('.dropdown').removeClass('on');
+				}
+				inspectionTree.init(selectedValue);	// 두번째 공종에 맞는 트리 초기화
+				$('#cnsttySelect').text('=선택=');
+
+				inspectionList.addInspectionList();
+			}
+		});
+
+		$(document).on('click', function (event) {
+			const $dropdown = $('.dropdown');
+			const $trigger = $('#cnsttySelect');
+
+			if (
+				!$(event.target).closest('.dropdown').length &&
+				!$(event.target).closest('#cnsttySelect').length
+			) {
+				$dropdown.removeClass('on');
+			}
+		});
+	});
+</script>
+{% endblock footer_script %}

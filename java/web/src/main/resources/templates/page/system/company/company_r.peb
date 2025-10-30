@@ -1,0 +1,357 @@
+{% extends header ? 'layout/base_popup' : 'layout/base_content' %}
+{% block content %}
+<article class="conts g-row">
+	<div class="group">
+		<h3 class="conts_tit" id="company_cu_tit"></h3>
+		<div class="conts_form">
+			<div id="create-company-form" class="conts_form">
+				<div class="btn_area s_default">
+					{{ btnHtml | raw }}
+					<!-- <button type="button" class="btn _outline" id="update-button" onclick="popup.enableInputs()">{{ message('btn.003') }}</button> -->
+					<button type="button" class="btn _outline" id="close-popup" onclick="popup.close()">{{ message('btn.007') }}</button>
+					<div class="btn_group iconbtns">
+						<button class="icon_btn" id="open-new-window" onclick="popup.open()">
+							<i class="fa-solid fa-up-right-from-square"></i>
+							<span class="tooltip">{{ message('item.com.017') }}</span>
+						</button>
+					</div>
+				</div>
+				<div class="form_box">
+					<div class="container" style="display: flex; align-items: center;">
+						<span class="caption">
+							<span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+						</span>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label required">{{ message('item.comp.002') }}</div>
+							<div class="form_data">
+								<div class="selectbox sort readonly" style="margin-left: 0;">
+									<span class="selectbox" id="compGrpCd_box">
+
+									</span>
+								<!-- <select name="compGrpCd" id="compGrpCd" required>
+										<option value="" style="display: none">
+											회사그룹을 선택하세요.
+										</option>
+								</select> -->
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col">
+							<div class="form_label required">{{ message('item.comp.001') }}</div>
+							<div class="form_data">
+								<input type="text" id="corpNo" name="corpNo" required readonly>
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols3">
+						<div class="col">
+							<div class="form_label required">{{ message('item.comp.003') }}</div>
+							<div class="form_data">
+								<input type="text" class="maxlength" id="compNm" name="compNm" required readonly maxlength="100">
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.org.010') }}</div> <!-- 사업자등록번호 -->
+							<div class="form_data">
+								<input type="text" class="maxlength" id="bsnsmnNo" name="bsnsmnNo" required readonly maxlength="100">
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">대표명</div> <!-- 대표명 -->
+							<div class="form_data">
+								<input type="text" class="maxlength" id="corpCeo" name="corpCeo" required readonly maxlength="100">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.004') }}</div>
+							<div class="form_data">
+								<textarea class="maxlength" id="compDscrpt" name="compDscrpt" readonly maxlength="500" style="pointer-events: auto;"></textarea>
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.005') }}</div>
+							<div class="form_data">
+								<input type="text" class="maxlength" id="pstnNm" name="pstnNm" readonly maxlength="100">
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.006') }}</div>
+							<div class="form_data">
+								<input type="text" class="maxlength" id="mngNm" name="mngNm" readonly maxlength="20">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.007') }}</div>
+							<div class="form_data">
+								<input type="tel" id="compTelno" name="compTelno" class="telNo maxlength" readonly maxlength="15">
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.008') }}</div>
+							<div class="form_data">
+								<input type="tel"  id="compFaxno" name="compFaxno" class="faxNo maxlength" readonly maxlength="15">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.comp.009') }}</div>
+							<div class="form_data">
+								<input type="text" class="maxlength" id="compAdrs" name="compAdrs" readonly maxlength="200">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label required">{{ message('item.com.003') }}</div>
+							<div class="form_data">
+								<input type="text" id="useYnText" name="useYnText" readonly>
+								<div class="item_group" role="group" aria-label="Basic radio group" id="useYnRadio" style="display: none;">
+									<label class="form_check">
+										<input class="check_mark" type="radio" id="useY" name="useYn" value="Y">
+										<span class="check_label">{{ message('btn.008') }}</span>
+									</label>
+									<label class="form_check">
+										<input class="check_mark" type="radio" id="useN" name="useYn" value="N">
+										<span class="check_label">{{ message('btn.009') }}</span>
+									</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</article>
+  <script>
+
+	// 새창 모드일때, 부모창이 있는지 감지.
+	if(opener){
+		opener.document.onkeydown = fkey;
+		opener.document.onkeypress = fkey;
+		opener.document.onkeyup = fkey;
+
+		// 부모창의 f5 새로고침 누를때 열려있는 팝업 창 닫기
+		function fkey(e){
+			if (window.event.keyCode == 116) {
+				window.close();
+			}
+		};
+
+		window.opener.onbeforeunload = function () {
+			// 부모창이 새로고침되거나 페이지 이동할 때 실행
+			if (window) {
+				// 자식 창 닫기
+				window.close();
+			}
+		};
+
+	}
+
+	const addRegex = /^(?!\s)[^\/:*?"<>.|]+$/;
+
+	let pjtNo;
+	let cntrctNo;
+	let corpNo;
+
+	var popup = {
+		mode: "",
+		type: null, // 새창 모드 설정
+		data:{
+
+		},
+
+		init: function () {
+			// URL에서 ID 값을 추출하고 데이터를 로드.
+			corpNo = this.getCompanyNoFromUrl();
+
+			if (!corpNo || corpNo === "undefined") {
+				console.error("No company ID.");
+				window.location.replace("/system/company");
+				return;
+			}
+
+			//page 헤더 생성
+            gaiaPortal.navMenuInit('SYSTEM03', "{{ message('item.comp.013') }}"); // 회사 정보
+			$("#menuDepth").append(`<li class=\"breadcrumb_item\">{{ message('item.comp.013') }}</li>`);
+
+
+			this.loadCompanyData(corpNo);
+			this.mode = "read";
+
+			// URL에서 쿼리 파라미터를 추출하여 페이지 타입(새창)을 확인.
+            const params = new URLSearchParams(window.location.search);
+			pjtNo = params.get('pjtNo');
+			cntrctNo = params.get('cntrctNo');
+
+			if(params.get('type')){ //새창 모드이면, 새창 아이콘 숨김.
+				this.type = params.get('type');
+				$("#open-new-window").hide();
+			}
+
+			gaia.loaded = true;
+    	},
+
+		getCompanyNoFromUrl: function () {
+			const pathArray = window.location.pathname.split('/'); //'/'를 기준으로 url의 데이터를 배열로 저장.
+			return pathArray[pathArray.length - 1]; //가장 마지막 요소(path-variable)를 추출.
+		},
+
+		// 셀렉트박스 호출
+        makeSelectBox: function (cmnGrpCd, selectBoxId, elementId, ckeckedValue) {
+			let initText = "{{ message('msg.038', message('item.comp.002')) }}";
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR",
+                ckeckedValue: ckeckedValue,
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "this.value",
+                funtype: "onchange",
+            };
+
+			gaiaCommon.post("/api/util/make-selectBox",[requestData],(data)=>{
+				let returnMap = data.details.returnMap;
+				let addAppLineContent = document.getElementById(elementId);
+				addAppLineContent.innerHTML = returnMap[selectBoxId];
+			}, (xhr,status,error) => {
+				console.error("Error making select box:", status, error);
+			})
+        },
+        initializeSelectBoxes(ckeckedValue) {
+            popup.makeSelectBox(
+                "f306072f-b2aa-4aa6-bf40-192000832cbc",
+                "compGrpCd",
+                "compGrpCd_box",
+				ckeckedValue
+            );
+        },
+
+		moveUpdateCompany(){
+			window.location.href = this.type === 'p' ?
+				`/system/company/update?corpNo=${corpNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=p` :
+				`/system/company/update?corpNo=${corpNo}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+
+		},
+
+		loadCompanyData: function (corpNo) {
+			gaiaCommon.get("/api/system/company/" + corpNo, {}, async function(result){
+				if(result.details?.company){
+					let data = result.details.company;
+					popup.data = data;
+					$('#corpNo').val(data.corpNo);
+					$('#compNm').val(gaiaCommon.decodeSafeText(data.compNm));
+					$('#bsnsmnNo').val(data.bsnsmnNo);
+					$('#corpCeo').val(gaiaCommon.decodeSafeText(data.corpCeo));
+					$('#compDscrpt').val(gaiaCommon.decodeSafeText(data.compDscrpt));
+					$('#pstnNm').val(gaiaCommon.decodeSafeText(data.pstnNm));
+					$('#mngNm').val(gaiaCommon.decodeSafeText(data.mngNm));
+					$('#compTelno').val(data.compTelno);
+					$('#compFaxno').val(data.compFaxno);
+					$('#compAdrs').val(gaiaCommon.decodeSafeText(data.compAdrs));
+
+					popup.mode = "read";
+
+					// 현재 글자수 설정.
+					if($('.current-count')){
+                    	$('.current-count').text(data.compDscrpt.length);
+                	}
+
+					await popup.initializeSelectBoxes(data.compGrpCd);
+				}else{
+					// 회사 정보가 존재하지 않습니다.
+                    gaiaCommon.customAlert("{{ message('msg.comp.006') }}", function(){
+						location.replace("/system/company");
+					});
+				}
+			});
+		},
+
+		open(){
+			const corpNo = $('#corpNo').val().trim();
+			let url = window.location.pathname + window.location.search + "&type=p";
+
+			const _width = '500';
+            const _height = '750';
+            let _left = Math.ceil((window.screen.width - _width)/2);
+			_left += window.screenLeft; // 듀얼 모니터일 때
+            const _top = Math.ceil((window.screen.height - _height)/2);
+
+			window.open(url, "companyRPopup", `width=${_width}, height=${_height},left=${_left},top=${_top}, scrollbars=yes, resizable=yes`);
+
+			window.location.replace(`/system/company?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+		},
+
+		close: function () {
+			if(popup.type){ // 새창 모드인 경우,
+				window.close();
+				window.opener.location.reload();
+			}else{
+				location.replace(`/system/company?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+			}
+		},
+		//알림창 기능
+		customAlert(msg, cb){
+			$('.pop_box.toast').show();
+			
+			$('.toast_msg').text(msg);
+			$('.pop_box.toast').addClass('on');
+
+			// 일정 시간 후에 'on' 클래스 제거
+			setTimeout(function() {
+				$('.pop_box.toast').removeClass('on');
+				if(cb){
+					cb();
+				}
+				$('.pop_box.toast').hide();
+			}, 1500); // 1500ms = 1.5초
+		}
+
+
+	}
+	$(function() {
+
+		gaia.create({
+            $init: function ($params) {
+				popup.init();
+
+            }
+        });
+
+
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function() {
+			$('.pop_box.toast').removeClass('on');
+			$('.pop_box.toast').hide();
+		});
+
+	  
+	});
+  </script>
+{% endblock content %}

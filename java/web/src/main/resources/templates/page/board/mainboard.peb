@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" style="min-width:0;">
+
+<head>
+    {% include "sub/head" %}
+    {% block head %}{% endblock %}
+    <header>
+        <h1 class="brand" style="width: 130px;">
+            <a href="#"></a>
+        </h1>
+        <h2 class="" id="title"></h2>
+        <div style="padding: 0 30px;"></div>
+    </header>
+</head>
+
+<body style="min-width:0;">
+    <article class="conts_area" style="display: flex;justify-content: center;">
+        <div class="conts" style="height: calc(100dvh - 65px);width: 1000px;">
+
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    <button type="button" class="btn _outline" id="action-button" onclick="page.list()"> {{
+                        message("item.com.066") }}</button>
+                    <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">
+                        {{ message("btn.007") }}
+                    </button>
+                </div>
+                <form name="form" id="form">
+                    <div class="form_box">
+                        <div class="group">
+                            <!-- row -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form_label">{{ message('item.com.060') }}</div>
+                                    <div class="form_data">
+                                        <input type="text" id="boardTitle" name="boardTitle" maxlength="1000"
+                                            placeholder="{{ message('msg.054') }}" />
+                                    </div>
+                                </div>
+
+                            </div>
+                            <!-- row -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form_label">{{ message('item.com.064') }}</div>
+                                    <div class="form_data readonly">
+                                        <input type="text" id="userId" name="userId" />
+                                    </div>
+                                </div>
+                                <!-- <div class="col" id="boardViewContainer">
+                                    <div class="col">
+                                        <div class="form_label">{{ message('item.com.065') }}</div>
+                                        <div class="form_data readonly">
+                                            <input type="text" id="boardView" name="boardView" />
+                                        </div>
+                                    </div>
+                                </div> -->
+                            </div>
+                            <!-- row -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form_label">{{ message('item.com.061') }}</div>
+                                    <div class="form_data">
+                                        <textarea style="height: 250px; pointer-events: auto;" id="boardTxt"
+                                            name="boardTxt" maxlength="5000" readonly></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form_label">{{ message('item.com.062') }}</div> <!-- 자료첨부 -->
+                                    <div class="form_data">
+
+                                        <div class="attach_wrap">
+
+                                            <div class="attach_area" id="attach_area">
+                                                <!-- 첨부파일 미등록 시 -->
+                                                <p class="data_info" id="data_info">
+                                                    {{ message('msg.029') }}
+                                                </p>
+                                                <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                                <div class="attach_list hide" id="attach_list">
+                                                    <ul class="file_header">
+                                                        <li class="header_item">
+                                                            <div class="icon_btn">
+                                                                <i class="ic ic-close" id="fileIcon"></i>
+                                                                <span class="blind">{{ message('item.com.020') }}</span>
+                                                                <!-- 파일명 -->
+                                                            </div>
+                                                            <span class="f_name">{{ message('item.com.020') }}</span>
+                                                            <!-- 파일명 -->
+
+                                                        </li>
+                                                    </ul>
+                                                    <ul class="file_list" id="fileList">
+
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <input type="hidden" id="existCheck" value="true">
+            </div>
+        </div>
+        </div>
+    </article>
+    {% include "sub/pop_box" %}
+</body>
+
+</html>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode");
+
+    let pjtNo;
+    let cntrctNo;
+
+    var boardType = params.get("boardType");
+    var boardNo = params.get("boardNo");
+    var boardCategory = params.get("boardCategory");
+
+    var page = {
+        init: async function () {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+            $("#title").text(boardType == "1" ? "{{ message('item.board.007') }}" : "{{ message('item.board.001') }}")
+            this.readLoadData();
+            this.read()
+        },
+
+        save: function () {
+            $(".form_box").removeClass("readonly");
+            $(".modifyList").show()
+            $(".readList").hide()
+            $("#fileIcon").addClass("ic-close")
+            $("#fileIcon").removeClass("ic-folder-open")
+        },
+
+        close: function () {
+            window.close();
+        },
+
+        list: function () {
+            window.location.replace(`/board/listReadMain?boardType=${boardType}&boardCategory=${boardCategory}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+        },
+
+        read: function () {
+            $(".form_box").addClass("readonly");
+            attachList.classList.remove("hide");
+            dataInfo.classList.add("hide");
+            $("#boardViewContainer").removeClass("hide");
+            $("#fileIcon").removeClass("ic-close")
+            $("#fileIcon").addClass("ic-folder-open")
+        },
+
+        readLoadData: function () {
+            gaiaCommon.get(`/api/board/updateData/${boardNo}`, '', function (result) {
+                board = result.details.updateBoardData.board;
+                attachments = result.details.updateBoardData.attachments;
+                // console.log(attachments)
+                $("#boardTitle").val(gaiaCommon.decodeSafeText(board.boardTitle));
+                $("#userId").val(gaiaCommon.decodeSafeText(board.usrNm));
+                $("#boardTxt").val(gaiaCommon.decodeSafeText(board.boardTxt));
+                $("#boardView").val(gaiaCommon.decodeSafeText(board.boardView));
+
+                const fileList = document.getElementById("fileList");
+
+
+                let virtualFiles = [];  // 가상 파일 배열로 관리
+                fileList.innerHTML = "";
+
+                const getWebPath = (diskPath, fileName) => {
+                    let normalized = diskPath.replace(/\\/g, '/');
+                    let trimmed = normalized.replace(/^.*\/upload/, '/upload');
+                    return `${trimmed}/${fileName}`;
+                };
+
+                attachments.forEach((attachment, index) => {
+                    const url = getWebPath(attachment.fileDiskPath, attachment.fileDiskNm);
+                    const listItem = `
+                            <div>
+                                <li class="list_item readList">
+                                    <a class="icon_btn" href="${url}"  download="${attachment.fileOrgNm}">
+                                        <i class="ic ic-folder-open"></i>
+                                        <span class="blind">${attachment.fileOrgNm}</span>
+                                    </a>
+                                    <a class="f_name" href="${url}"  download="${attachment.fileOrgNm}">${attachment.fileOrgNm}</a>
+                                </li>
+                            <div>
+                            `;
+                    fileList.insertAdjacentHTML('beforeend', listItem);
+                    virtualFiles.push(new File([""], attachment.fileOrgNm + ":" + attachment.fileDiskNm));
+                });
+
+                function updateFileInput() {
+                    const dataTransfer = new DataTransfer();
+                    virtualFiles.forEach(file => dataTransfer.items.add(file));
+
+                }
+
+                updateFileInput();
+                $(".modifyList").hide()
+            },function (xhr, status, error){
+                console.error(status, error);
+            });
+        },
+    };
+
+    //파일인풋
+    //드래그앤드롭영역
+    const dropArea = document.getElementById("attach_area");
+    //버튼
+    const addBtn = document.getElementById("addFileButton");
+    const removeBtn = document.getElementById("removeAllButton");
+    //첨부파일 목록
+    const fileList = document.getElementById("fileList");
+    //파일여부에따른영역
+    const dataInfo = document.getElementById("data_info");
+    const attachList = document.getElementById("attach_list");
+
+    // 새창 모드일때, 부모창이 있는지 감지.
+    if (opener) {
+        opener.document.onkeydown = fkey;
+        opener.document.onkeypress = fkey;
+        opener.document.onkeyup = fkey;
+
+        function fkey(e) {
+            if (window.event.keyCode == 116) {
+                window.close();
+            }
+        };
+
+        window.opener.onbeforeunload = function () {
+            if (window) {
+                window.close();
+            }
+        };
+
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>

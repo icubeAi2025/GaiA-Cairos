@@ -1,0 +1,320 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+    .ris_dt {
+        width: 100px;
+    }
+
+    .ris_dd {
+        width: calc(100% - 100px);
+    }
+
+    .slick-initialized .slick-slide {
+        display: flex;
+    }
+
+    .ul_list li {
+        cursor: pointer;
+    }
+
+    .ul_list li:hover {
+        font-weight: 600;
+    }
+</style>
+{% endblock %} {% block content %}
+<section class="contents_wrap">
+
+    <article class="conts_area">
+
+        <div class="conts">
+            {% include "page/defecttracking/tool/common_select" %}
+            <div style="display: flex; justify-content: space-between;">
+                <div class='group'>
+                    <h3 class='conts_tit'>{{ message('item.dfccy.001') }}</h3>
+                    <div class="color-legend" style="margin-top: 5px; margin-bottom: 10px;">
+                        <span
+                                style="display: inline-block; width: 15px; height: 15px; background-color: #cecece; margin-right: 3px; vertical-align: middle;"></span>
+                        <span style="vertical-align: middle;">{{ message('item.dfccy.002') }}</span>
+                        <span
+                                style="display: inline-block; width: 15px; height: 15px; background-color: #9DC3E6; margin-right: 3px; margin-left: 20px; vertical-align: middle;"></span>
+                        <span style="vertical-align: middle;">{{ message('item.dfccy.003') }}</span>
+                        <span
+                                style="display: inline-block; width: 15px; height: 15px; background-color: #00B050; margin-right: 3px; margin-left: 20px; vertical-align: middle;"></span>
+                        <span style="vertical-align: middle;">{{ message('item.dfccy.004') }}</span>
+                    </div>
+                </div>
+
+                <div class="slick_nav" style="position: relative;">
+                    <div class="slick_paging"></div>
+                    <div class="btn_area slick_indigator">
+                        <div class="btn_group _outline">
+                            <button type="button" class="btn icon_btn prev">
+                                <span class="blind">{{ message('btn.016') }}</span>
+                            </button>
+                            <button type="button" class="btn icon_btn next">
+                                <span class="blind">{{ message('btn.017') }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 메인 내용 시작 -->
+            <div class="conts_form d_info">
+                <div class="slick_wrap">
+
+                    <div class="d_list">
+                        <div class="ris_list monthly on" id="dashboardList">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 메인 내용 끝 -->
+        </div>
+    </article>
+
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+    //페이징
+    var currentPage = 1;
+    var itemsPerPage = 8;
+
+    var page = {
+        data: {
+
+        },
+
+        init: function () {
+            page.list(currentPage);
+        },
+
+        list: function (curPage) {
+            let data = {
+                page: curPage,
+                size: itemsPerPage,
+                cntrctNo: $("#cntrctNo").val()
+            }
+
+            $.ajax({
+                url: `/api/defecttracking/dashboard`,
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (data) {
+                    $("#dashboardList").empty();
+                    var dashboardList = data.details.dfccyList;
+
+                    let totalCount = data.details.totalCount;
+                    let totalPages = Math.ceil(totalCount / itemsPerPage);
+
+                    // 페이지네이션 업데이트
+                    page.updatePagination(curPage, totalPages);
+                    let status = '';
+                    dashboardList.forEach((list, index) => {
+
+                        if (list.end_date) {
+                            // 오늘 날짜 가져오기 (시간 제거)
+                            let today = new Date();
+                            today.setHours(0, 0, 0, 0);
+
+                            // 날짜 변환 (시간 제거)
+                            let startDate = new Date(list.bgn_date);
+                            let endDate = new Date(list.end_date);
+                            endDate.setHours(0, 0, 0, 0);
+                            startDate.setHours(0, 0, 0, 0);
+
+                            if (startDate > today && endDate > today) { //대기
+                                status = `<span style="display: inline-block; width: 15px; height: 15px; background-color: #cecece; margin-right: 5px; vertical-align: middle;"></span>`;
+                            } else if (startDate <= today && endDate >= today) { //진행중
+                                status = `<span style="display: inline-block; width: 15px; height: 15px; background-color: #9DC3E6; margin-right: 5px; vertical-align: middle;"></span>`;
+                            } else if (endDate < today) { //종료
+                                status = `<span style="display: inline-block; width: 15px; height: 15px; background-color: #00B050; margin-right: 5px; margin-left: 20px; vertical-align: middle;"></span>`;
+                            }
+                        }
+
+                        let formattTxt = list.dfccy_phase_nm.length > 18 ? list.dfccy_phase_nm.substring(0, 18) + "..." : list.dfccy_phase_nm;
+
+                        var dashboardListHtml = `
+                        <div class="ris_item_wrap">
+                            <strong class="month" style="cursor:unset;" title="${list.dfccy_phase_nm}">
+                                ${formattTxt}
+                                <p style="margin: 0; font-size: small;">( ${list.bgn_date} ~ ${list.end_date} )</p>
+                            </strong>
+                            <dl class="dl_box ris_item" data-dfccy-phase-no="${list.dfccy_phase_no}">
+                                <dt class="ris_dt">{{ message('item.dfccy.005') }}</dt>
+                                <dd class="ris_dd" data-menu = "defectTracking">
+                                    <div class="dl_item">
+                                        <ul class="ul_list _dash" style="float: left;" data-keyword="myRplyYn">
+                                            <li data-params="">
+                                                <span class="r_name">{{ message('item.dfccy.006') }}</span>
+                                                <span class="r_quantity put_txt _braket _r"> ${list.total_count}</span>
+                                            </li>
+                                            <li data-params="Y">
+                                                <span class="r_name">{{ message('item.dfccy.007') }}</span>
+                                                <span class="r_quantity put_txt _braket _r"> ${list.my_count}</span>
+                                            </li>
+                                        </ul>
+                                        <div style="float: right; transform: translateY(0);">
+                                            ${status}
+                                        </div>
+                                    </div>
+                                </dd>
+                                <dt class="ris_dt">{{ message('item.dfccy.008') }}</dt>
+                                <dd class="ris_dd" data-menu = "responses">
+                                    <ul class="ul_list _dash" data-keyword="rplyCd">
+                                        <li data-params="0201">
+                                            <span class="r_name">{{ message('item.dfccy.009') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.reply_a_count}</span>
+                                        </li>
+                                        <li data-params="0202">
+                                            <span class="r_name">{{ message('item.dfccy.010') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.reply_d_count}</span>
+                                        </li>
+                                    </ul>
+                                </dd>
+                                <dt class="ris_dt">{{ message('item.dfccy.011') }}</dt>
+                                <dd class="ris_dd" data-menu = "verification">
+                                    <ul class="ul_list _dash" data-keyword="detail_qa_status">
+                                        <li data-params="0301">
+                                            <span class="r_name">{{ message('item.dfccy.012') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.qa_p_count}</span>
+                                        </li>
+                                        <li data-params="0302">
+                                            <span class="r_name">{{ message('item.dfccy.013') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.qa_h_count}</span>
+                                        </li>
+                                        <li data-params="0303">
+                                            <span class="r_name">{{ message('item.dfccy.004') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.qa_c_count}</span>
+                                        </li>
+                                    </ul>
+                                </dd>
+                                <dt class="ris_dt">{{ message('item.dfccy.014') }}</dt>
+                                <dd class="ris_dd" data-menu = "verification">
+                                    <ul class="ul_list _dash" data-keyword="detail_spvsCd">
+                                        <li data-params="0401">
+                                            <span class="r_name">{{ message('item.dfccy.012') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.spvs_p_count}</span>
+                                        </li>
+                                        <li data-params="0402">
+                                            <span class="r_name">{{ message('item.dfccy.013') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.spvs_h_count}</span>
+                                        </li>
+                                        <li data-params="0403">
+                                            <span class="r_name">{{ message('item.dfccy.004') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.spvs_c_count}</span>
+                                        </li>
+                                    </ul>
+                                </dd>
+                                <dt class="ris_dt">{{ message('item.dfccy.015') }}</dt>
+                                <dd class="ris_dd" data-menu = "termination">
+                                    <ul class="ul_list _dash"  data-keyword="edCd">
+                                        <li data-params="0501">
+                                            <span class="r_name">{{ message('item.dfccy.012') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.ed_p_count}</span>
+                                        </li>
+                                        <li data-params="0502">
+                                            <span class="r_name">{{ message('item.dfccy.004') }}</span>
+                                            <span class="r_quantity put_txt _braket _r"> ${list.ed_c_count}</span>
+                                        </li>
+                                    </ul>
+                                </dd>
+                            </dl>
+                        </div>`;
+                        $("#dashboardList").append(dashboardListHtml);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            })
+        },
+
+        updatePagination: function (currentPage, totalPages) {
+            // 페이지 번호 업데이트
+            $(".slick_paging").html('<b class="page">' + currentPage + '</b> / ' + totalPages);
+
+            // "이전" 버튼 비활성화 여부
+            if (currentPage === 1) {
+                $('.btn.prev').prop('disabled', true);
+            } else {
+                $('.btn.prev').prop('disabled', false);
+            }
+
+            // "다음" 버튼 비활성화 여부
+            if (currentPage === totalPages || totalPages === 0) {
+                $('.btn.next').prop('disabled', true);
+            } else {
+                $('.btn.next').prop('disabled', false);
+            }
+        },
+
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("M090101", "{{ message('item.dash.054') }}");
+                select.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+
+    // 메뉴 클릭 이벤트
+    $(document).on("click", "li", function () {
+        let menu = $(this).closest("dd").data("menu");
+        let dfccyPhaseNo = $(this).closest("dl").data("dfccy-phase-no");
+        let keyword = $(this).closest("ul").data("keyword");
+        let params = $(this).data("params");
+        let cntrctNo = $("#cntrctNo").val();
+
+        let rescIdParam;
+        switch (menu) {
+            case "defectTracking": rescIdParam = 'DT_DFCCY_R_01'; break;
+            case "responses": rescIdParam = 'DT_RESPONSE_R_01'; break;
+            case "verification": rescIdParam = 'DT_CONFIRM_R_02'; break;
+            case "termination": rescIdParam = 'DT_TERM_R_01'; break;
+            default: rescIdParam = null; break;
+        }
+
+
+        if(rescIdParam) {
+            if(gaiaCommon.me.isAdmin()) {
+                window.location.href = `${menu}?dfccyPhaseNo=${dfccyPhaseNo}&${keyword}=${params}&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`;
+            }
+            $.ajax({
+                url: '/api/access-Check',
+                method: "GET",
+                contentType: "application/json",
+                data: {
+                    rescId: rescIdParam
+                },
+                success: function (data) {
+                    data.details.authYn === 'Y' ? window.location.href = `${menu}?dfccyPhaseNo=${dfccyPhaseNo}&${keyword}=${params}&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`
+                                                : window.location.href = `/defectTracking/defectreport?dfccyPhaseNo=${dfccyPhaseNo}&${keyword}=${params}&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`
+                }
+            });
+        }
+
+    });
+
+    // "이전" 버튼 클릭 이벤트
+    $('.btn.prev').on('click', function () {
+        if (currentPage > 1) {
+            currentPage--;
+            page.list(currentPage);
+        }
+    });
+
+    // "다음" 버튼 클릭 이벤트
+    $('.btn.next').on('click', function () {
+        currentPage++;
+        page.list(currentPage);
+    });
+
+
+</script>
+{% endblock footer_script %}

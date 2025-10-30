@@ -1,0 +1,482 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+    .tui-grid-body-area a {
+        cursor: pointer;
+    }
+
+    .detail-view-cell {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        padding-left: 10px;
+    }
+
+    .detail-view-link {
+        flex-grow: 1;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .detail-view-icon {
+        opacity: 0;
+        position: relative;
+        right: 0;
+        padding-right: 10px;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section class="contents_wrap">
+	<div class="conts g-row" id="monthlyreport_page">
+		<div class="group">
+			<div class="conts_grid">
+				<div class="search_wrap">
+                    <span class="selectbox">
+                        <select name="apprvlStats" id="apprvlStats">
+                            <option value="" selected>{{ message('item.projectcost.047') }}</option>
+                            <option value="A">{{ message('btn.025') }}</option>
+                            <option value="R">{{ message('btn.026') }}</option>
+                            <option value="E">{{ message('btn.027') }}</option>
+                        </select>
+                    </span>
+					<div class="searchbox_wrap">
+						<input type="text" id="searchText" placeholder="{{ message('item.construction.002') }}, {{ message('item.construction.003') }}" onkeyup="if(window.event.keyCode == 13) reportGrid.search();">
+						<button type="submit" class="icon_btn search" onclick="reportGrid.search();">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+					</div>
+				</div>
+
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ btnHtml | raw }}
+						<button type="button" class="btn _outline" onclick="reportGrid.excel()" style="display: none;">Excel</button>
+					</div>
+				</div>
+
+				<div class="grid" id="monthlyReport_grid"></div>
+			</div>
+		</div>
+	</div>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    var BASEPATH = '/api/progress/monthlyreport';
+    var isDelAuth = "{{ isDelAuth }}"; 	// 삭제 권한 여부
+    let cntrctNo;
+
+    var monthlyreport = {
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            reportGrid.init();
+
+            gaiaCommon.makeCntrctSelectBox(
+                    "#monthlyreport_page",
+                    () => {
+                        $(".btn_area").hide();
+                    },
+                    (cntrctNo) => {
+                        reportGrid.reload(cntrctNo);
+                    },
+                    (cntrctNo) => {
+                        reportGrid.reload(cntrctNo);
+                    }
+            );
+
+            gaia.loaded = true;
+        },
+
+
+        delete() {
+            let selectedRow = [];
+            let goDelete = false;
+            let isApproved = false;
+
+            const checkedRows = reportGrid.monthlyreportGrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const apprvlStats = row.apprvlStats;
+
+				if (apprvlStats === '' || apprvlStats === null || apprvlStats === 'E') {
+					goDelete = true;
+					selectedRow.push({
+						cntrctChgId: row.cntrctChgId,
+						monthlyReportId: row.monthlyReportId,
+					});
+				} else {
+					isApproved = true;
+				}
+            });
+
+            if (isApproved) {
+                let msg = "{{ message('msg.monthlyreport.001') }}".replace("{text}", "{{ message('btn.002') }}");
+                gaiaCommon.customAlert(msg);
+                return;
+            }
+
+            if (selectedRow.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.monthlyreport.002') }}");
+                return;
+            }
+
+            if (goDelete) {
+                gaiaCommon.customConfirm(
+                        "{{ message('btn.002') }}",
+                        "{{ message('item.monthlyreport.025') }}",
+                        "{{ message('msg.009') }}",
+                        function () {
+                            let data = { ["updateReportList"]: selectedRow };
+                            $.ajax({
+                                url: BASEPATH + '/delete',
+                                method: 'POST',
+                                dataType: 'json',
+                                contentType: 'application/json; charset-utf-8',
+                                data: JSON.stringify(data),
+                                success: function (result) {
+                                    gaiaCommon.customAlert("{{ message('msg.006') }}", function () {
+                                        location.reload();
+                                    });
+                                },
+                                error: function (result) {
+                                    gaiaCommon.customAlert("{{ message('msg.monthlyreport.003') }} {{ message('msg.monthlyreport.004') }}");
+                                }
+                            });
+                        }
+                );
+            }
+        },
+
+        add() {
+            cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+            window.location.href = `/progress/monthlyreport/add?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+        },
+
+        modify() {
+            let checkedNos = []; // 체크된 행
+            const checkedRows = reportGrid.monthlyreportGrid.getCheckedRows();
+
+            let isApproval = false;
+            let isRequest = false;
+
+			checkedRows.forEach(row => {
+				const apprvlStats = row.apprvlStats;
+				checkedNos.push({
+					cntrctChgId: row.cntrctChgId,
+					monthlyReportId: row.monthlyReportId
+				});
+
+				if(apprvlStats === 'A'){
+					isApproval = true;
+				} else if(apprvlStats === 'E') {
+					isRequest = true;
+				}
+            });
+
+            if(checkedNos.length === 0) {
+                let setMsg = "{{ message('msg.035') }}".replace("{0}", "{{ message('btn.003') }}");
+                gaiaCommon.customAlert(setMsg);
+                return;
+            } else if (checkedNos.length > 1) {
+                let setMsg = "{{ message('msg.036') }}".replace("{0}", "{{ message('btn.003') }}");
+                gaiaCommon.customAlert(setMsg);
+                return;
+            }
+
+            if(isApproval) {
+                let msg = "{{ message('msg.monthlyreport.001') }}".replace("{text}", "{{ message('btn.003') }}");
+                gaiaCommon.customAlert(msg);
+                return;
+            }
+
+            if(isRequest) {
+                gaiaCommon.customAlert("{{ message('msg.monthlyreport.018') }}");
+                return;
+            }
+
+            const { cntrctChgId, monthlyReportId } = checkedNos[0];
+            cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+
+            window.location.href = `/progress/monthlyreport/edit?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&cntrctChgId=${cntrctChgId}&monthlyReportId=${monthlyReportId}`;
+        },
+
+
+        approval() {
+            const checkedRows = reportGrid.monthlyreportGrid.getCheckedRows();
+            let selectedRow = [];
+            let setMsg;
+
+			checkedRows.forEach(row => {
+				const apprvlStats = row.apprvlStats;
+				selectedRow.push({
+					cntrctChgId: row.cntrctChgId,
+					monthlyReportId: row.monthlyReportId,
+				});
+				if(apprvlStats === 'E') {
+					setMsg = "{{ message('msg.monthlyreport.005') }}";
+				} else if(apprvlStats === 'A') {
+					setMsg = "{{ message('msg.monthlyreport.006') }}";
+				} else if(apprvlStats === 'R') {
+					setMsg = "{{ message('msg.monthlyreport.007') }}";
+				}
+            });
+
+            if(selectedRow.length === 0) {
+                let msg = "{{ message('msg.035') }}".replace("{0}", "{{ message('btn.027') }}");
+                gaiaCommon.customAlert(msg);
+                return;
+            }
+
+            if(setMsg) {
+                gaiaCommon.customAlert(setMsg);
+                return;
+            }
+
+            cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+
+            gaiaCommon.customConfirm("{{ message('btn.027') }}", "{{ message('item.monthlyreport.026') }}", "{{ message('msg.monthlyreport.008') }}", function(){
+                let data = {
+                    ["updateReportList"] : selectedRow,
+                    cntrctNo: cntrctNo
+                };
+
+                gaiaCommon.LoadingOverlay('body', true);
+
+                $.ajax({
+                    url: BASEPATH+'/request-approval',
+                    method: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json; charset-utf-8',
+                    data: JSON.stringify(data),
+                    success: function(result){
+						gaiaCommon.LoadingOverlay('body', false);
+                        if(result.ok) {
+                            gaiaCommon.customAlert("{{ message('msg.monthlyreport.009') }}", function(){
+                                reportGrid.reload(cntrctNo);
+                            });
+                        } else if(result.errorCode === '1000') {
+                            gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+                        } else if(result.errorCode === '1003'){
+                            gaiaCommon.customAlert("{{ message('msg.app.050') }}");
+                        }
+                    },
+                    error: function(result) {
+						gaiaCommon.LoadingOverlay('body', false);
+                        gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}", function(){
+                            window.location.reload();
+                        });
+                    }
+                });
+            });
+        },
+}
+
+        // grid 함수
+    var reportGrid = {
+        init() {
+            let bodyHeight;
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                bodyHeight = window.innerHeight - 520;
+            } else if (isCAIROS()) {
+                bodyHeight = window.innerHeight - 440;
+            }
+            if(!this.monthlyreportGrid){
+				let dataSource = createDataSource({
+					readData: {
+						url: BASEPATH + '/list',
+						method: 'POST'
+					}
+				});
+				dataSource.initialRequest = false;
+
+				this.monthlyreportGrid = new tui.Grid({
+                    el: monthlyReport_grid,
+                    scrollX: true,
+                    scrollY: true,
+                    width: 'auto',
+                    bodyHeight: bodyHeight,
+                    data: dataSource,
+                    rowHeaders:[
+                        {
+                            type: 'checkbox',
+                            width: 80,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+									{
+										type:"checkbox",
+									},
+									{
+										type:"trash",
+										url: BASEPATH+'/delete',
+										gridId: "monthlyreportGrid",
+										auth: isDelAuth == "true",
+										idFields: "cntrctChgId,monthlyReportId", // 선택 고유 값
+										keyName: "updateReportList", // 배열 이름
+										msgList: {
+											confirmTit: "{{ message('btn.002') }}",
+											confirmSubTit: "{{ message('item.monthlyreport.025') }}",
+											confirmMsg: "{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										},
+										condition:function(rowData){
+											if (rowData.apprvlStats === "R" || rowData.apprvlStats === "A") {
+												gaiaCommon.customAlert("결재가 완료된 보고서는 삭제할 수 없습니다.");
+												return false;
+											}
+											return true;
+										},
+										success: function(rowData) {
+											location.reload();
+										}
+									}
+								]
+                            }
+                        }
+                    ],
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: "{{ message('item.monthlyreport.002') }}",
+                                name: "days",
+                                childNames: [
+                                    "lsmthPlanBohalRate",
+                                    "thismthPlanBohalRate",
+                                    "acmltPlanBohalRate"
+                                ],
+                            },
+                            {
+                                header: "{{ message('item.monthlyreport.003') }}",
+                                name: "cost",
+                                childNames: [
+                                    "lsmthArsltBohalRate",
+                                    "thismthArsltBohalRate",
+                                    "acmltArsltBohalRate"
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {name: "reportYm", 		        header: "{{ message('item.monthlyreport.004') }}", 	align: 'center', width:120,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [{
+									type:"note",
+									isHover:true,
+									align:"right",
+									absolute:true,
+                                    success:function(rowData){
+										cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+										window.location.href = `/progress/monthlyreport/detail` + `?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&cntrctChgId=${rowData.cntrctChgId}&monthlyReportId=${rowData.monthlyReportId}`
+									}
+                                }]
+                            }
+                        },
+						// {name: "monthlyReportDate", 	header: "{{ message('item.construction.002') }}", 	align: 'center'},
+						{name: "title",				 	header: "{{ message('item.doc.003') }}",		 	align: 'center', width: 210, ellipsis: true, resizable: true},
+                        {name: "rgstrNm", 		        header: "{{ message('item.construction.003') }}", 	align: 'center'},
+                        {name: "apprvlNm", 			    header: "{{ message('item.construction.004') }}", 	align: 'center'},
+                        {name: "apprvlStatsKrn",		header: "{{ message('item.projectcost.047') }}",    align: 'center'},
+                        {name: "lsmthPlanBohalRate", 	header: "{{ message('item.construction.204') }}", 	align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "thismthPlanBohalRate", 	header: "{{ message('item.com.047') }}",            align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "acmltPlanBohalRate", 	header: "{{ message('item.construction.043') }}",   align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "lsmthArsltBohalRate", 	header: "{{ message('item.construction.204') }}", 	align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "thismthArsltBohalRate", header: "{{ message('item.com.047') }}",            align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "acmltArsltBohalRate", 	header: "{{ message('item.construction.043') }}",   align: 'center',
+                            formatter: function(e){
+                                return e.value ? e.value.toFixed(2)+'%' : '0%';
+                            }
+                        },
+                        {name: "rmrkCntnts", 		    header: "{{ message('item.construction.023') }}",           align: 'center',    resizable: true, width: 150, ellipsis: true, },
+                    ],
+                    contextMenu: null,
+                })
+
+            } else {
+                this.monthlyreportGrid.resetData([]);
+            }
+            refreshGrid(this.monthlyreportGrid);
+        },
+        reload(selectedCntrctNo) {
+            let param = {
+                cntrctNo: selectedCntrctNo,
+                apprvlStats : $('#apprvlStats').val(),
+                searchText: $('#searchText').val()
+            }
+
+            const searchData = gaia.getSearchData(param);
+            if (searchData && Object.keys(searchData).length !== 0) {
+                param = searchData;
+
+                Object.entries(searchData).forEach(([key, value]) => {
+                    $(`#${key}`).val(value);
+                });
+            }
+
+            this.monthlyreportGrid.readData(1, param, true);
+        },
+        search() {
+            cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+
+            var searchParams = {
+                cntrctNo: cntrctNo,
+                apprvlStats : $('#apprvlStats').val(),
+                searchText: $('#searchText').val()
+            };
+
+            gaia.setSearchData(searchParams);
+
+            reportGrid.reload(cntrctNo);
+        },
+        excel() {
+            if(this.monthlyreportGrid.getData().length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.activityQdb.001') }}");
+                return
+            }
+            const options = {
+                includeHiddenColumns: false,
+                fileName: 'MonthlyReport',
+            };
+            this.monthlyreportGrid.export('xlsx', options);
+        }
+    }
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M02M0205", "{{ message('item.monthlyreport.001') }}");
+                monthlyreport.init();
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

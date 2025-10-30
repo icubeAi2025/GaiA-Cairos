@@ -1,0 +1,270 @@
+plugins {
+	id 'org.springframework.boot' version '3.3.1' apply false
+	id 'io.spring.dependency-management' version '1.1.5'
+	id 'java'
+	id 'java-library'
+	id "org.sonarqube" version "6.0.1.5171"
+	id "com.github.spotbugs" version "6.0.8" // 버전은 원하는 대로
+}
+
+allprojects {
+	group = 'kr.co.ideait'
+	version = '0.0.1-SNAPSHOT'
+	repositories {
+		mavenCentral()
+		maven { url "https://maven.egovframe.go.kr/maven/" }
+		maven { url "https://maven.egovframe.kr:8080/maven/" }
+		maven {
+			allowInsecureProtocol false
+			credentials {
+				username repoUsername
+				password repoPassword
+			}
+			url 'https://redmine.ideait.co.kr:9194/repository/gaia-cairos-release/'
+			authentication {
+				basic(BasicAuthentication)
+			}
+		}
+	}
+
+	tasks.withType(JavaCompile).configureEach {
+		options.compilerArgs.add("-parameters")
+	}
+}
+
+project('java'){
+	subprojects{
+		apply plugin: 'java'
+		apply plugin: 'java-library'
+		apply plugin: 'org.springframework.boot'
+		apply plugin: 'io.spring.dependency-management'
+
+		java {
+			toolchain {
+				languageVersion = JavaLanguageVersion.of(21)
+			}
+		}
+
+		tasks.named('test') {
+			useJUnitPlatform()
+		}
+
+		apply plugin: 'com.github.spotbugs'
+		spotbugs {
+			toolVersion = '4.8.3' // 원하는 버전 명시
+		}
+		tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+			reports {
+				xml.required.set(false)
+				html.required.set(true)
+				html.outputLocation.set(file("${rootDir}/spotbugs/${project.name}.html"))
+			}
+
+			// ✅ 필터 파일 적용
+			excludeFilter.set(file("${rootDir}/spotbugsExcludeFilter.xml"))
+		}
+
+		dependencies {
+			developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+			testImplementation 'org.springframework.boot:spring-boot-starter-test'
+			testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+			testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.3'
+			testImplementation 'org.springframework.security:spring-security-test'
+			testImplementation 'org.testcontainers:junit-jupiter'
+
+			runtimeOnly 'com.h2database:h2'
+			testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+			api 'org.projectlombok:lombok'
+			annotationProcessor 'org.projectlombok:lombok'
+			annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+			api 'org.mapstruct:mapstruct:1.5.5.Final'
+			annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+			api 'kr.co.ideait:i-framework:0.0.1'
+//			api 'kr.co.ideait:eii:1.7.5'
+			implementation 'kr.co.ideait:eii:1.7.5.0'
+
+			// spring boot 관련 라이브러리
+			api 'org.springframework.boot:spring-boot-starter-web'
+			api 'org.springframework.data:spring-data-commons'
+			api 'org.springframework.boot:spring-boot-starter-data-jdbc'
+			api 'org.springframework.boot:spring-boot-starter-data-jpa'
+			api 'org.springframework.boot:spring-boot-starter-security'
+			api 'org.springframework.boot:spring-boot-starter-actuator'
+			api 'org.springframework.boot:spring-boot-starter-amqp'
+			api 'org.springframework.boot:spring-boot-starter-cache'
+			api 'org.springframework.boot:spring-boot-starter-validation'
+
+			implementation 'org.springframework.boot:spring-boot-starter-webflux' //API통신을 위한 WebClient 추가
+
+			// mail config
+			implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+			implementation 'nl.basjes.parse.useragent:yauaa:7.31.0'
+
+			// solr
+			api "io.github.net-a-porter:spring-data-solr:5.1.5"
+//			api 'org.springframework.boot:spring-boot-starter-data-solr:2.4.13'
+			api 'org.codehaus.woodstox:stax2-api:4.2.1'
+
+			api 'io.pebbletemplates:pebble-spring-boot-starter:3.2.2' //pebble
+
+			// pdfbox
+			implementation 'org.apache.pdfbox:pdfbox:3.0.5'
+
+			implementation 'org.postgresql:postgresql:42.7.3'
+			api 'org.springframework.boot:spring-boot-starter-jdbc'
+			implementation("com.oracle.database.jdbc:ojdbc8:21.1.0.0")
+			implementation 'com.oracle.ojdbc:orai18n:19.3.0.0'
+
+			// mybatis
+			api 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+
+			implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' //2024 01 15 최신
+
+			//Redis
+			api 'org.springframework.boot:spring-boot-starter-data-redis:3.3.0'
+
+			implementation group: 'org.json', name: 'json', version: '20090211'
+			implementation 'com.googlecode.json-simple:json-simple:1.1'
+
+			// jwt
+			api 'io.jsonwebtoken:jjwt-impl:0.12.6'//2024 01 15 최신
+			api 'io.jsonwebtoken:jjwt-gson:0.12.6'
+
+			api 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+			// ehcache
+			api 'org.ehcache:ehcache'
+
+			// 설정파일 암호화 dependency
+			// https://mavenlibs.com/maven/dependency/com.github.ulisesbocchio/jasypt-spring-boot
+			api 'com.github.ulisesbocchio:jasypt-spring-boot:3.0.5'
+			// 암호 알고리즘 dependency
+			// https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15to18
+			api 'org.bouncycastle:bcprov-jdk15to18:1.71'
+
+			// jasypt
+			api 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'//2024 01 15 최신
+
+			// apache commons
+			api 'commons-validator:commons-validator:1.8.0'//2024 01 15 최신
+			api 'commons-io:commons-io:2.15.1'//2024 01 15 최신
+			api 'commons-fileupload:commons-fileupload:1.4' /* Apache Commons FileUpload */
+			api 'org.apache.commons:commons-collections4:4.4'//2024 01 15 최신
+			api 'org.apache.commons:commons-email:1.6.0'//2024 01 15 최신
+			api 'org.apache.commons:commons-lang3:3.14.0'//2024 01 15 최신
+			api 'org.apache.commons:commons-text:1.11.0'//2024 01 15 최신
+			api 'org.apache.commons:commons-compress:1.25.0'//2024 01 15 최신
+			api 'org.apache.httpcomponents.client5:httpclient5:5.2.3'//2024 01 15 최신
+			api 'org.apache.poi:poi-ooxml:4.1.2'// poi 5 로 하면 한셀에서 못읽네
+			api 'org.apache.tika:tika-core:2.9.1'//2024 02 27 최신
+			// google otp
+			api 'com.warrenstrange:googleauth:1.5.0'// 구글otp 2024 03 29
+
+			api "com.google.guava:guava:33.4.5-jre"
+
+			// etc
+			api 'com.opencsv:opencsv:5.9'//2024 01 15 최신
+			// api 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'// jackson 버전 맞춰야
+			api 'net.lingala.zip4j:zip4j:2.11.5'//2024 01 15 최신
+
+			// egov // SLF4J 2개 있으면 안됨 exclude apache.logging
+			// dataaccess 하면 whitelabel 안먹음
+			api 'org.egovframe.rte:org.egovframe.rte.ptl.mvc:4.2.0'
+			api 'org.egovframe.rte:org.egovframe.rte.psl.dataaccess:4.2.0'
+
+			// logback if 사용하게 하는 lib
+			implementation 'org.codehaus.janino:janino:3.1.9'
+
+
+			// C3RX 등록 관련 추가 - 20241114
+			implementation 'org.jdom:jdom:1.1'
+			implementation 'org.graalvm.js:js:24.1.1'
+			implementation 'org.graalvm.js:js-scriptengine:24.1.1'
+		}
+
+		sourceSets {
+			main {
+				java {
+					srcDirs = ['src/main/java']
+				}
+				resources {
+					srcDirs = ['src/main/java','src/main/resources']
+					exclude '**/*.java'
+					exclude '**/public/**'
+					exclude '/resources'
+				}
+			}
+		}
+
+		configurations.all {
+			all*.exclude group: 'org.apache.logging.log4j', module:	'log4j'
+			exclude group: 'commons-logging', module: 'commons-logging'
+			all*.exclude group: 'org.apache.commons', module: 'commons-email'
+			all*.exclude group: 'com.sun.mail', module: 'jakarta.mail'
+			all*.exclude group: 'com.sun.mail', module: 'javax.mail'
+		}
+
+		// processResources {
+		// 	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+		// }
+
+		// https://github.com/spring-projects/spring-framework/wiki/Upgrading-to-Spring-Framework-6.x#parameter-name-retention
+		tasks.withType(JavaCompile).configureEach {
+			options.compilerArgs.add("-parameters")
+		}
+	}
+}
+
+project("java:core"){
+	bootJar.enabled=false
+	dependencies {
+	}
+}
+
+project("java:comp"){
+	bootJar.enabled=false
+	dependencies {
+		implementation project(':java:core')
+	}
+}
+
+project("java:web"){
+	dependencies {
+		implementation project(':java:core')
+		implementation project(':java:comp')
+
+		// swagger
+		implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+		implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
+
+		// webjar
+		implementation 'org.webjars:webjars-locator-core:0.59' // webjars 버전이 필요없게 /webjars/jquery/jquery.min.js
+		implementation 'org.webjars:jquery:3.7.1'
+		implementation 'org.webjars:bootstrap:5.3.3'
+		implementation 'org.webjars:AdminLTE:3.2.0'
+		implementation 'org.webjars:jstree:3.3.16'
+		implementation 'org.webjars:jquery-ui:1.12.1'
+		implementation 'org.webjars:handlebars:4.7.7'
+	}
+	springBoot {
+		mainClass = 'kr.co.ideait.platform.gaiacairos.GaiaApplication'
+	}
+	bootJar {
+		archiveFileName = "${System.getProperty("platform")}.jar"
+	}
+}
+
+//sonar {
+//	properties {
+//		property("sonar.projectKey", "gaia-cairos")
+//		property("sonar.projectName", "gaia-cairos")
+//		property("sonar.host.url", "http://sonarqube.idea-platform.net:9000")
+//		property("sonar.token", "sqp_c6ea32ff1a13fcd83de2381c8d1f69bc844c7610")
+//		property("sonar.exclusions", "**/*.java")
+//		property("sonar.sources", "src")
+//	}
+//}
