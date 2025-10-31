@@ -1,0 +1,36 @@
+{% if isModal %}
+{% block head %}{% endblock %}
+{% block content %}{% endblock %}
+{% block footer_script %}{% endblock %}
+{% else %}
+<!DOCTYPE html>
+<html lang="ko">
+	<head>
+		{% include "sub/head" %} 
+		<style>
+			html, body {
+				min-width: 0 !important;
+			}
+			</style>
+		{% block head %}{% endblock %}
+	</head>
+
+	<body class="pop_open">
+		<div class="page_header" id="pageNav"></div>
+		<div class="popupContainer">
+		{% block content %}{% endblock %}
+		</div>
+		{% include "sub/pop_box" %}
+	</body>
+	{% block footer_script %}{% endblock %}
+</html>
+<script>
+	if(!isCAIROS()) {
+		$("body").attr("class", "gaia pop_open");
+		// $('.brand').children('a').text("GAIA");
+	}else {
+		$("body").attr("class", `cairos pop_open`);
+		// $('.brand').children('a').text("CMIS");
+	}
+</script>
+{% endif %}

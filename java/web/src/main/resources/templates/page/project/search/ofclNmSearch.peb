@@ -1,0 +1,384 @@
+<style>
+    .selectbox:not(.readonly)::after {
+        z-index: 1 !important;
+    }
+
+    #user-grid .tui-grid-cell-current-row {
+        background-color: var(--select-list-bg);
+    }
+    #user-grid  .tui-grid-body-area :not(p, textarea, select) {
+        line-height: 1;
+        cursor: pointer !important;
+    }
+
+    .jstree-icon.jstree-checkbox {
+        display: none;
+    }
+
+    .jstree-custom-checkbox {
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--component-bd);
+        vertical-align: middle;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 0;
+        margin-right: 3px;
+    }
+
+    .jstree-custom-checkbox.checked {
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        margin-right: 3px;
+        background-color: var(--color-point);
+        border-color: var(--default-color);
+    }
+
+    .jstree-custom-checkbox.checked:before {
+        content: "\e922";
+        color: var(--color-default);
+        font-family: 'gaia';
+        margin: 1px;
+        vertical-align: middle;
+    }
+
+    .jstree-custom-checkbox.checked::after {
+        display: block;
+        /* 체크된 상태에서 체크 표시 보이기 */
+    }
+</style>
+<div class="modal open">
+    <div class="pop_box _lg">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="code_cu_tit">{{ message('item.psearch.002') }}</h5>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">{{ message('item.com.038') }}</span>
+            </button>
+        </div>
+        <div class="pop_body">
+            <div class="group">
+                <div class="conts_grid">
+                    <!-- S: search wrap ---------------------------------------------- -->
+                    <div class="toolbar">
+                        <div class="search_wrap">
+                            <span class="selectbox has_clear">
+                                <span class="sty_ip" onclick="$('.dropdown').toggleClass('on')" id="departmentSelect"
+                                      style="min-width: 220px;">{{ message('item.dept.009') }}</span>
+                                <button class="icon_btn _clear" onclick="grid.clear()" style="display: none;">
+                                    <i class="ic ic-close"></i>
+                                    <span class="blind">{{ message('item.com.085') }}</span>
+                                </button>
+
+                                <div class="dropdown">
+                                    <div class="treeview_area">
+                                        <div class="treeview ty_pd0" id="jstree"></div>
+                                    </div>
+                                </div>
+                            </span>
+                            <!-- searchbox -->
+                            <div class="searchbox_wrap">
+                                <input type="text" id="searchText" placeholder="{{ message('item.com.024') }}, {{ message('item.com.027') }}, {{ message('item.com.026') }}, {{ message('item.user.007') }}"
+                                       onkeypress="if( event.keyCode == 13 ){grid.search();}">
+                                <button type="submit" class="icon_btn search" onclick="grid.search()">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">{{ message('btn.014') }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="selectbox sort">
+                            <select name="items-per-page" id="items-per-page" onchange="grid.changePerPage()">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="15">15</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid" id="user-grid">
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <input type="hidden" id="codeCheck" value="true">
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+                <button type="button" class="btn _fill" id="action-button" onclick="grid.save()">
+                    {{ message('btn.056') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script>
+    //회사 목록 그리드
+    var grid = {
+        init: function () {
+            let deptNoList = [];
+            this.makeDepartmentList();
+
+        },
+
+        save: function () {
+            const rowKey = this.userGrid.getFocusedCell()?.rowKey;
+            const rowData = this.userGrid.getRow(rowKey);
+
+            popup.data.ofclNm = gaiaCommon.decodeSafeText(rowData?.usr_nm?.trim());
+            popup.data.ofclId =gaiaCommon.decodeSafeText(rowData?.usr_id?.trim());
+            if (popup.data.ofclNm) {
+                popup.add();
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.068') }}");
+            }
+        },
+
+        // selectBox 생성
+        makeDepartmentList: function () {
+            const params = {
+                pjtNo: pjtInfo.pjtNo,
+                //Gaia 이면서 계약코드를 지정할 경우
+                cntrctNo: popup.data.cntrctNo ? popup.data.cntrctNo : pjtInfo.cntrctNo,
+                //Gaia 이면서 계약코드로 부르는게 아니면 안넣어도됨
+                cntrctYn: popup.data.cntrctNo ? "Y" : "N"
+            };
+
+            this.obj = $("#jstree").jstree({
+                plugins: ["checkbox"],
+                core: {
+                    data: function (obj, cb) {
+                        gaiaCommon.get("/api/project/admin-secondtree", params, function (result) {
+                            var data = [];
+                            let deptNoList = [];
+                            if (result.details?.departmentList) {
+                                result.details?.departmentList.forEach((item, index) => {
+                                    data.push({
+                                        id: item.dept_id,
+                                        parent: !!item.up_dept_id ? item.up_dept_id : "#",
+                                        text: item.dept_nm,
+                                        state: { opened: true },
+                                        data: item,
+                                        icons: 'fa-solid fa-caret-right',
+                                    });
+                                    deptNoList.push({ deptNo: item.dept_no });
+                                });
+                                cb.call(obj, data);
+                            }
+                            grid.makeUserGrid(deptNoList);
+
+                            $(document).on('click', function (event) {
+                                if (!$(event.target).closest('.selectbox.has_clear').length) {
+                                    $('.dropdown').removeClass('on');
+                                }
+                            });
+                        });
+                    },
+                    check_callback: true,
+                    themes: {
+                        "theme": "default",
+                        "dots": false,
+                        "responsive": false,
+                        "icons": false
+                    }
+                },
+                checkbox: {
+                    three_state: false,
+                    tie_selection: false
+                }
+            });
+
+            const jstreeNode = this.obj.jstree(true);
+
+            this.obj.on("click.jstree", function (e) {
+                grid.updateSelectBoxText();
+                $('.jstree-anchor').each(function () {
+                    const nodeId = $(this).parent().attr('id');
+                    const checkboxId = `${nodeId}_checkbox`;
+                    if (!$(this).find('.jstree-custom-checkbox').length) {
+                        $(this).prepend(`<span class="jstree-custom-checkbox" id="${checkboxId}"></span>`);
+                    }
+
+                    // 체크박스 상태에 따라 클래스 추가
+                    const checkboxId2 = `${nodeId}_checkbox`.replace(/\./g, '\\.');
+                    if (jstreeNode.get_node(nodeId).state.checked) {
+                        $(`#${checkboxId2}`).addClass('checked');
+                    } else {
+                        $(`#${checkboxId2}`).removeClass('checked');
+                    }
+                });
+            });
+
+            this.obj.on("redraw.jstree", function () {
+                $('.jstree-anchor').each(function () {
+                    const nodeId = $(this).parent().attr('id');
+                    const checkboxId = `${nodeId}_checkbox`;
+                    if (!$(this).find('.jstree-custom-checkbox').length) {
+                        $(this).prepend(`<span class="jstree-custom-checkbox" id="${checkboxId}"></span>`);
+                    }
+                });
+            });
+
+            this.obj.on("check_node.jstree", function (e, data) {
+                const checkboxId = `${data.node.id}_checkbox`.replace(/\./g, '\\.');
+                $(`#${checkboxId}`).addClass('checked');
+            });
+
+            this.obj.on("uncheck_node.jstree", function (e, data) {
+                const checkboxId = `${data.node.id}_checkbox`.replace(/\./g, '\\.');
+                $(`#${checkboxId}`).removeClass('checked');
+            });
+
+        },
+
+        // 그리드 생성
+        makeUserGrid: function (deptNoList, searchText) {
+            const Grid = tui.Grid;
+            let _this = this;
+
+            if (this.userGrid) {
+                this.userGrid.destroy();
+                this.userGrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/ofclNmSearch",
+                    method: "Get",
+                    initParams: {
+                        deptNoList: deptNoList,
+                        searchText: searchText
+                    },
+                },
+            });
+
+            if (!this.userGrid) {
+                this.userGrid = new Grid({
+                    el: document.getElementById("user-grid"),
+                    data: dataSource,
+                    scrollX: false,
+                    scrollY: true,
+                    draggable: false,
+                    contextMenu: null,
+                    minBodyHeight: 200,
+                    bodyHeight: 200,
+                    pageOptions: {
+                        perPage: 10,
+                    },
+                    columns: [
+                        {
+                            header: "{{ message('item.dept.009') }}",
+                            name: "dept_nm",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.com.024') }}",
+                            name: "usr_nm",
+                        },
+                        {
+                            header: "{{ message('item.com.027') }}",
+                            name: "ratng_nm",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.com.026') }}",
+                            name: "pstn_nm",
+                        },
+                        {
+                            header: "{{ message('item.user.007') }}",
+                            name: "email_adrs",
+                            align: "center",
+                        },
+                        { header: "", name: "usr_id", hidden: true },
+                    ],
+                });
+                this.userGrid.on("click", function (e) {
+                    const rowKey = e.rowKey;
+                    const clickedRowData = _this.userGrid.getRow(rowKey);
+
+                    if (!clickedRowData || !clickedRowData._attributes) {
+                        return;
+                    }
+
+                    clickedRowData._attributes.checked = !clickedRowData._attributes.checked;
+                    _this.userGrid.setRow(rowKey, clickedRowData);
+                });
+            }
+        },
+
+        // 검색
+        search: function () {
+            $('.dropdown').removeClass('on')
+            let deptNoList = [];
+            let searchText = $("#searchText").val();
+            const selectedNodes = $("#jstree").jstree("get_checked", true);
+            const allNodes = $("#jstree").jstree("get_json", "#", { flat: true });
+
+            selectedNodes.forEach(node => {
+                if (node.data && node.data.dept_no) {
+                    deptNoList.push({ deptNo: node.data.dept_no });
+                }
+            });
+
+            if (deptNoList.length === 0) {
+                allNodes.forEach(node => {
+                    if (node.data && node.data.dept_no) {
+                        deptNoList.push({ deptNo: node.data.dept_no });
+                    }
+                });
+            }
+            grid.makeUserGrid(deptNoList, searchText);
+        },
+
+
+        // selectBox 텍스트변경
+        updateSelectBoxText: function () {
+            const selectedNodes = $("#jstree").jstree("get_checked", true);
+
+            let displayText;
+
+            if (selectedNodes.length === 0) {
+                displayText = "{{ message('item.dept.009') }}";
+                $('.icon_btn._clear').css('display', 'none');
+            } else if (selectedNodes.length === 1) {
+                displayText = `${selectedNodes[0].text}`
+                $('.icon_btn._clear').css('display', 'block');
+            } else {
+                displayText = `${selectedNodes[0].text} 외 ${selectedNodes.length - 1} 건`;
+                $('.icon_btn._clear').css('display', 'block');
+            }
+
+            $("#departmentSelect").text(displayText);
+
+        },
+
+        clear: function () {
+            $("#jstree").jstree("uncheck_all");
+            $(".jstree-custom-checkbox").removeClass("checked")
+            grid.updateSelectBoxText();
+        },
+
+        changePerPage: function () {
+            var size = $('select[id="items-per-page"]').val();
+            this.userGrid.setPerPage(size); // 그리드의 페이지 수를 변경합니다.
+
+            // 페이지 매니저를 가져오고 설정합니다.
+            const pagination = this.userGrid.paginationManager.getPagination();
+            pagination.setItemsPerPage(size);
+            pagination.reset();
+        },
+    };
+
+    $(function(){
+                grid.init();
+                gaia.loaded = true;
+    })
+
+
+</script>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.auth">
+
+	<sql id="userInfoColumns">
+        USR_ID,
+        OCI_USR_ID,
+        NCP_USR_ID,
+        LOGIN_ID,
+        USR_NM,
+        RATNG_CD,
+        PSTN_CD,
+        PHONE_NO,
+        TEL_NO,
+        EMAIL_ADRS,
+        MNG_DIV,
+        USE_YN,
+        DLT_YN,
+        RGSTR_ID,
+        RGST_DT,
+        CHG_ID,
+        CHG_DT,
+        DLT_ID,
+        DLT_DT
+    </sql>
+
+	<!--사용자 존재여부 확인-->
+	<select id="selectUser" resultType="smUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.auth.selectUser][gwlee]  */
+        SELECT <include refid="userInfoColumns" />
+        FROM SM_USER_INFO A
+        <where>
+            <if test=' ociUsrId != null and ociUsrId != "" '>
+                AND A.OCI_USR_ID = #{ociUsrId}
+            </if>
+            <if test=' ncpUsrId != null and ncpUsrId != "" '>
+                AND A.NCP_USR_ID = #{ncpUsrId}
+            </if>
+            <if test=' loginId != null and loginId != "" '>
+                AND A.LOGIN_ID = #{loginId}
+            </if>
+            AND A.DLT_YN = 'N'
+        </where>
+    </select>
+
+	<!--사용자정보 조회-->
+	<select id="selectLoginUser" parameterType="UserLoginInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.portal.portal.selectLoginUser][gwLee]  */
+        SELECT  A.USR_ID AS USR_ID,
+                A.OCI_USR_ID AS OCI_USR_ID,
+                A.NCP_USR_ID AS NCP_USR_ID,
+                A.LOGIN_ID AS LOGIN_ID,
+                A.USR_NM AS USR_NM,
+                A.EMAIL_ADRS AS EMAIL_ADRS,
+                A.MNG_DIV,
+                (
+                    SELECT COUNT(1)
+                    FROM SM_ORGANIZATION S
+                    WHERE S.DLT_YN = 'N'
+                    AND S.USR_ID = A.USR_ID
+                    AND S.LOGIN_ID = A.LOGIN_ID
+                ) AS PROJECT_JOIN_COUNT,
+                (
+                    SELECT COUNT(1)
+                    FROM SM_ORGANIZATION S
+                    WHERE S.DLT_YN = 'N'
+                    AND S.USR_ID = A.USR_ID
+                    AND S.LOGIN_ID = A.LOGIN_ID
+                    AND S.FLAG != 'L'
+                ) AS CORRECT_STATUS_COUNT,
+                (
+                    SELECT COUNT(1)
+                    FROM SM_ORGANIZATION S
+                    WHERE S.DLT_YN = 'N'
+                    AND S.USR_ID = A.USR_ID
+                    AND S.LOGIN_ID = A.LOGIN_ID
+                    AND TO_CHAR(NOW(), 'YYYY-MM-DD') BETWEEN TO_CHAR(S.START_DT, 'YYYY-MM-DD') AND TO_CHAR(S.END_DT, 'YYYY-MM-DD')
+                ) AS CORRECT_PERIOD_COUNT,
+                (CASE   WHEN A.MNG_DIV = 'A'
+                        THEN 'ADMIN'
+                        ELSE 'NORMAL'
+                END) AS USER_TYPE,
+                (CASE   WHEN A.MNG_DIV = 'A' OR A.MNG_DIV = 'C' OR A.MNG_DIV = 'M'
+                        THEN 'Y'
+                        ELSE 'N'
+                END) AS PROJECT_ADD
+        FROM SM_USER_INFO A
+        <where>
+            AND A.USE_YN = 'Y'
+            AND A.DLT_YN = 'N'
+            AND A.USR_ID = #{usrId}
+        </where>
+        LIMIT 1
+    </select>
+
+	<!--사용자 현재 권한 그룹 목록 가져오기-->
+	<select id="selectMyAuthorityGroupList" parameterType="input" resultType="String">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.auth.selectMyAuthorityGroupList][gwLee]  */
+		SELECT 	A.RGHT_GRP_CD AS RGHT_GRP_CD
+		FROM 	SM_AUTHORITY_GROUP_USERS A,
+				SM_AUTHORITY_GROUP B,
+				SM_ORGANIZATION C,
+				SM_DEPARTMENT D
+		WHERE 	A.RGHT_GRP_CD = B.RGHT_GRP_CD
+		AND 	A.AUTH_NO = C.DEPT_NO
+		AND 	C.DEPT_NO = D.DEPT_NO
+		AND 	A.RGHT_GRP_USR_TY = 'D'
+		AND 	B.USE_YN = 'Y'
+		AND 	B.DLT_YN = 'N'
+		AND 	C.DLT_YN = 'N'
+		AND 	D.DLT_YN = 'N'
+		AND 	D.USE_YN = 'Y'
+		AND 	D.DEPT_YN = 'Y'
+		AND 	B.PJT_NO 	= #{pjtNo}
+		AND 	B.CNTRCT_NO = #{cntrctNo}
+		AND 	B.PJT_TYPE 	= #{pjtType}
+		AND 	C.USR_ID 	= #{usrId}
+		UNION ALL
+		SELECT 	A.RGHT_GRP_CD AS RGHT_GRP_CD
+		FROM 	SM_AUTHORITY_GROUP_USERS A,
+				SM_AUTHORITY_GROUP B,
+				SM_ORGANIZATION C
+		WHERE  A.RGHT_GRP_CD = B.RGHT_GRP_CD
+		AND 	A.AUTH_NO = C.ORG_NO
+		AND 	A.RGHT_GRP_USR_TY != 'D'
+		AND 	B.USE_YN = 'Y'
+		AND 	B.DLT_YN = 'N'
+		AND 	C.DLT_YN = 'N'
+		AND 	B.PJT_NO 	= #{pjtNo}
+		AND 	B.CNTRCT_NO = #{cntrctNo}
+		AND 	B.PJT_TYPE 	= #{pjtType}
+		AND 	C.USR_ID 	= #{usrId}
+	</select>
+
+	<!--접근 가능한 리소스 URL 가져오기 (권한 그룹이 있는 경우)-->
+	<select id="selectAuthResourceUriList" parameterType="input" resultType="String">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.auth.selectAuthResourceUriList][gwLee]  */
+		<if test="codeList != null and codeList.size() > 0">
+		<![CDATA[
+		SELECT 	REPLACE(REPLACE(B.RESC_URL ,'{}','*'), '&amp;', '&') AS RESC_URI
+		]]>
+		FROM 	SM_MENU_AUTHORITY_MAPPING A,
+				SM_RESOURCES B, 
+				SM_COM_CODE C
+		WHERE 	A.MENU_CD = B.MENU_CD 
+		AND  	A.RGHT_KIND  = B.RGHT_KIND
+		AND 	B.RGHT_KIND = C.CMN_CD
+		AND		A.RGHT_GRP_CD IN 
+		<foreach item="rghtGrpCd" collection="codeList" open="(" separator="," close=")">
+			#{rghtGrpCd}
+		</foreach>
+		AND 	B.USE_YN = 'Y'
+		AND 	B.DLT_YN = 'N'
+		AND 	C.CMN_GRP_CD = #{cmnGrpCd}
+		AND 	C.USE_YN = 'Y'
+		AND 	C.DLT_YN = 'N'
+		UNION ALL		
+		</if>
+		<![CDATA[
+		SELECT 	REPLACE(REPLACE(RESC_URL ,'{}','*'), '&amp;', '&') AS RESC_URI
+		]]>
+		FROM  	SM_RESOURCES
+		WHERE 	( 		NULLIF(TRIM(RGHT_KIND),'') IS NULL 
+					OR  NULLIF(TRIM(MENU_CD),'') IS NULL
+				)
+		AND 	USE_YN = 'Y'
+		AND 	DLT_YN = 'N'
+	</select>
+
+	<!--리소스 ID로 권한 유무 가져오기 (권한 그룹이 있는 경우)-->
+	<select id="selectAuthOne" parameterType="input" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.auth.selectAuthOne][gwLee]  */
+		SELECT 	CASE 
+					WHEN COUNT(A.*) <![CDATA[ > ]]> 0 
+						THEN 'Y' 
+					ELSE 'N' 
+				END AS AUTH_YN
+		FROM 	( 	
+					<if test="codeList != null and codeList.size() > 0">
+					SELECT 	B.RESC_ID AS RESC_ID
+					FROM 	SM_MENU_AUTHORITY_MAPPING A,
+							SM_RESOURCES B, 
+							SM_COM_CODE C
+					WHERE 	A.MENU_CD = B.MENU_CD 
+					AND  	A.RGHT_KIND  = B.RGHT_KIND
+					AND 	B.RGHT_KIND = C.CMN_CD
+					AND		A.RGHT_GRP_CD IN 
+					<foreach item="rghtGrpCd" collection="codeList" open="(" separator="," close=")">
+						#{rghtGrpCd}
+					</foreach>
+					AND 	B.USE_YN = 'Y'
+					AND 	B.DLT_YN = 'N'
+					AND 	C.CMN_GRP_CD = #{cmnGrpCd}
+					AND 	C.USE_YN = 'Y'
+					AND 	C.DLT_YN = 'N'
+					UNION ALL	
+					</if>
+					SELECT 	RESC_ID
+					FROM  	SM_RESOURCES
+					WHERE 	NULLIF(TRIM(RGHT_KIND),'') IS NULL 
+					OR  	NULLIF(TRIM(MENU_CD),'') IS NULL
+				) AS A
+		WHERE 	A.RESC_ID = #{rescId}
+	</select>
+
+</mapper>

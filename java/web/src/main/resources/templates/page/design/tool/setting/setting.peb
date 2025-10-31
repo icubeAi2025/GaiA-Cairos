@@ -1,0 +1,331 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+	<article class="conts g-row" id="container">
+		<div class="group">
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+{#						<button type="button" class="btn _outline" onclick="phase.delete();">{{ message('btn.002') }}</button>#}
+{#						<button type="button" class="btn _outline" onclick="phase.modify()">{{ message('btn.003') }}</button>#}
+{#						<button type="button" class="btn _fill" onclick="phase.add();">{{ message('btn.001') }}</button>#}
+					</div>
+				</div>
+
+				<div class="grid" id="phase_grid"></div>
+			</div>
+		</div>
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlCntrctNo = urlParams.get("cntrctNo");
+    var pjtNo = urlParams.get("pjtNo");
+
+    var BASEPATH = '/api/design/setting';
+
+    var isDelAuth = "true"
+    var isMoveAuth = "true"
+    //var isDelAuth = "{{ isDelAuth }}"; 	// 삭제 권한 여부
+
+    var phase = {
+        init(){
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            // 계약 콤보박스 생성
+            gaiaCommon.makeCntrctSelectBox(
+                "#container",
+                null,
+                (cntrctNo) => {
+                    phase.read(cntrctNo);
+                },
+                (cntrctNo) => {
+                    phase.read(cntrctNo);
+                },
+            );
+
+            gaia.loaded = true;
+        },
+        // 조회
+        read(cntrctNo){
+        	gaiaCommon.get(BASEPATH+'/list/'+cntrctNo,{},function(data){
+				var list = data.details.selectPhaseList;
+				phaseGrid.resetData(list);
+				refreshGrid(phaseGrid);
+			},function(error){
+				console.error(`설계 검토 툴 설계 검토 단계 목록 조회 실패, ${BASEPATH+'/list/'+cntrctNo}, PARAMS : {}`,error);
+			})
+        },
+        add(){
+            let cntrctNo = $('#cntrctNo').val() ?? urlCntrctNo;
+            window.location.href = `/design/setting/add?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d`;
+        },
+        modify(){
+            let chkLength = phaseGrid.getCheckedRows().length;
+
+            if(chkLength === 0) {
+                let setMsg = "{{ message('msg.035') }}".replace("{0}", "{{ message('btn.003') }}")
+                gaiaCommon.customAlert(setMsg);
+                return
+            } else if (chkLength > 1) {
+                let setMsg = "{{ message('msg.036') }}".replace("{0}", "{{ message('btn.003') }}")
+                gaiaCommon.customAlert(setMsg);
+                return
+            }
+
+
+            let rowData = phaseGrid.getCheckedRows()[0];
+            window.location.href = `/design/setting/edit?pjtNo=${pjtNo}&cntrctNo=${rowData.cntrct_no}&page=d&pNo=${rowData.dsgn_phase_no}`;
+        },
+        // 삭제
+        delete(){
+            let selectedRow = [];
+			phaseGrid.getCheckedRows().forEach((rowData) => {
+                selectedRow.push(rowData.dsgn_phase_no);
+            });
+
+            if(selectedRow.length === 0 ) {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+                return;
+            }
+
+            let cntrctNo = $('#cntrctNo').val() ?? urlCntrctNo;
+
+            gaiaCommon.customConfirm("{{ message('msg.009') }}", "{{ message('item.dsgn.026') }}", "{{ message('msg.009') }}", function(){
+                let data = {
+                    ["delPhaseList"] : selectedRow,
+                    "cntrctNo": cntrctNo
+                };
+                gaiaCommon.post(BASEPATH+'/delete',data,function(result){
+                    gaiaCommon.customAlert("{{ message('msg.006') }}", function(){
+						location.reload();
+					});
+				},function(result) {
+					console.error(`설계 검토 툴 설계 검토 단계 삭제 실패, ${BASEPATH+'/delete'}, PARAMS :`,data,error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}", function(){
+						location.reload();
+					});
+				})
+            })
+        },
+        convert(value) {
+            if (value === 'ing') {
+                return "{{ message('item.com.041') }}";  // 진행중
+            } else if (value === 'finish') {
+                return "{{ message('item.dfccy.004') }}"; // 종료
+            } else {
+                return "{{ message('item.dfccy.002') }}"; // 대기
+            }
+        }
+    }
+
+    var phaseGrid = new tui.Grid({
+        el: document.getElementById("phase_grid"),
+        scrollX: true,
+        scrollY: true,
+        width: 'auto',
+        bodyHeight: 480,
+        rowHeaders:[
+            {
+                type: 'checkbox',
+                header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                width: 100,
+                renderer: {
+                    type: window.IconRenderer,
+                    options: [
+						{
+							type:"checkBox"
+						},
+						{
+							type:"trash",
+							//휴지통 클릭 삭제 시 필요한 값 설정
+							url: BASEPATH+'/delete',
+							idField: "dsgn_phase_no", // 선택 고유 값
+							keyName: "delPhaseList", // 배열 이름
+							auth: `{{ isDelAuth | raw }}` == 'true',
+							msgList: {
+								confirmTit: "{{ message('item.dsgn.026') }}",
+								confirmMsg: "{{ message('msg.009') }}",
+								completeMsg: "{{ message('msg.006') }}"
+							},
+							success:(rowData) => {
+								let cntrctNo = $('#cntrctNo').val() ?? rowData.cntrct_no;
+								phase.read(cntrctNo);
+							}
+						},
+						{
+							type:"arrowUp",
+							auth: isMoveAuth == "true",
+							success:(rowData)=>{
+								changeOrder(rowData,"u");
+							}
+						},
+						{
+							type:"arrowDown",
+							auth: isMoveAuth == "true",
+							success:(rowData)=>{
+								changeOrder(rowData,"d");
+							}
+						}
+					]
+                }
+            }
+        ],
+        header: {
+            height: 120,
+            complexColumns: [
+                {
+                    header: "{{ message('item.dsgn.002') }}",
+                    name: 'review',
+                    childNames: ['review_bgn_date', 'review_end_date', 'review_status']
+                },
+                {
+                    header: "{{ message('item.dfccy.008') }}",
+                    name: 'response',
+                    childNames: ['response_bgn_date', 'response_end_date', 'response_status']
+                },
+                {
+                    header: "{{ message('item.dsgn.005') }}",
+                    name: 'evaluation',
+                    childNames: ['evalue_bgn_date', 'evalue_end_date', 'evalue_status']
+                },
+                {
+                    header: "{{ message('item.dsgn.006') }}",
+                    name: 'backcheck',
+                    childNames: ['backcheck_bgn_date', 'backcheck_end_date', 'backcheck_status']
+                },
+
+            ],
+        },
+        columns: [
+            {name: 'dsgn_phase_no', 		header: "설계단계번호", 	 hidden: 'true'},
+            {
+				name: 'dsgn_phase_nm',
+				header: "{{ message('item.dsgn.025') }}",
+				align: 'left',
+				resizable: true,
+				ellipsis: true,
+				width: 150,
+                renderer: {
+                    type: window.IconRenderer,
+                    options: [{
+						type:"newWindow",
+						isHover:true,
+						align:"right",
+                        open:{
+							url:`/design/setting/detail?pjtNo=${pjtNo}&cntrctNo={id1}&page=p&type=view&pNo={id2}`,
+							width:"1200",
+							height:"550",
+							target:"_blank",
+							mode:"p"
+						},
+                        idFields: "cntrct_no,dsgn_phase_no",
+                        gridId: "phase_grid",
+                    }]
+
+                }
+            },
+            {name: 'dsply_ordr', 		    header: "{{ message('item.com.082') }}", 	 	align: 'right', },
+            {name: 'review_bgn_date', 	    header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'review_end_date', 	    header: "{{ message('item.com.030') }}", 	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'review_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'response_bgn_date', 	header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'response_end_date', 	header: "{{ message('item.com.030') }}", 	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'response_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'evalue_bgn_date', 	    header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'evalue_end_date', 	    header: "{{ message('item.com.030') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'evalue_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+            {name: 'backcheck_bgn_date', 	header: "{{ message('item.com.029') }}", 		align: 'center', resizable: true, ellipsis: true},
+            {name: 'backcheck_end_date', 	header: "{{ message('item.com.030') }}", 	 	align: 'center', resizable: true, ellipsis: true},
+            {name: 'backcheck_status', 	    header: "{{ message('item.dfccy.045') }}",      align: 'center', resizable: true, ellipsis: true,
+                formatter: function(e){
+                    return phase.convert(e.value)
+                }
+            },
+        ],
+        contextMenu: null,
+    })
+
+	function changeOrder(rowData, moveType){
+		let rowKey = rowData.rowKey;
+		let currNo = rowData.dsgn_phase_no;
+		const currOrder = rowData.dsply_ordr;
+		let data = null;
+		if (moveType === 'u') {
+			// 윗 행
+			const prevRow = phaseGrid.getRow(rowKey-1);
+			if (!prevRow) {
+				gaiaCommon.customAlert("최상단 항목입니다.");
+				return;
+			}
+
+			let prevNo = prevRow.dsgn_phase_no;
+			let prevOrder = prevRow.dsply_ordr;
+
+			data = [
+				{ ["dsgnPhaseNo"]: currNo, dsplyOrdr: prevOrder },
+				{ ["dsgnPhaseNo"]: prevNo, dsplyOrdr: currOrder },
+			]
+		} else {
+			// 아래 행
+			let nextRow = phaseGrid.getRow(rowKey + 1);
+			if (!nextRow) {
+				gaiaCommon.customAlert("최하단 항목입니다.");
+				return;
+			}
+
+			let nextNo = nextRow.dsgn_phase_no;
+			let nextOrder = nextRow.dsply_ordr
+
+			data = [
+				{ ["dsgnPhaseNo"]: currNo, dsplyOrdr: nextOrder },
+				{ ["dsgnPhaseNo"]: nextNo, dsplyOrdr: currOrder },
+			]
+		}
+		$.ajax({
+			url: BASEPATH + '/move',
+			method: "POST",
+			contentType: "application/json",
+			dataType: "json",
+			data: JSON.stringify(data),
+			success: function (response) {
+				let cntrctNo = $('#cntrctNo').val() ?? rowData.cntrct_no;
+				phase.read(cntrctNo);
+			},
+			error: function (jqXHR, textStatus, errorThrown) {
+				gaiaCommon.customAlert("다시 시도해 주세요.");
+			}
+		});
+	}
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M080106", "{{ message('item.dsgn.024') }}");
+                phase.init();
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

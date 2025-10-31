@@ -1,0 +1,43 @@
+<h2 class="sec_tit" id="systemTitle">{{ message('msg.051') }}</h2>
+<article class="faq">
+    <h3 class="sec_s-tit">{{ message('msg.052') }}</h3>
+    <!-- S: TAB ----------------------------------------------------------------------- -->
+    <!-- TAB NAV -->
+    <div class="conts_tab">
+        <nav class="tab_nav" style="position: relative;">
+            <ul class="tab_list tab_round" id="category">
+            </ul>
+            <a href="javascript:void(0)" onclick="faqBoard.list()" class="more" style="right: 0; top: 28px;">{{ message('btn.039') }}</a>
+        </nav>
+
+        <!-- TAB Conts -->
+        <div class="tab_conts_wrap" id="boardList">
+
+        </div>
+    </div>
+    <!-- //E: TAB ----------------------------------------------------------------------- -->
+
+
+</article>
+
+<script>
+	$("#systemTitle").text(PLATFORM.CURRENT+' '+$("#systemTitle").text());
+
+    var faqBoard = {
+
+        list: function () {
+            const boardCategory = $(".tab_item.active").data("category");
+
+            const width = 1100;
+            const height = 700;
+            let left = Math.ceil((window.screen.width - width) / 2);
+            left += window.screenLeft; // 듀얼 모니터일 때
+            const top = Math.ceil((window.screen.height - height) / 2);
+
+            window.open(`/board/listReadMain?boardType=2&boardCategory=${boardCategory}`, '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+        },
+    }
+
+
+
+</script>

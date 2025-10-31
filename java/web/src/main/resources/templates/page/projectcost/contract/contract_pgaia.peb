@@ -1,0 +1,973 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+
+
+<section class="contents_wrap">
+	<article class="conts">
+		<div class="group">
+			<div class="conts_form">
+				<h3 class="conts_tit" id="conts_tit" hidden>{{ message("item.com.018") }}</h3>
+				<span class="selectbox" id="cntrct_no_select" hidden>
+					<select id="cntrctNo" style="line-height:1.1"></select>
+				</span>
+				<h3 class="conts_tit">{{ message("item.sub.040") }}</h3>
+				<span class="selectbox">
+					<select id="cntrctId" style="line-height:1.1"></select>
+			    </span>
+				<div class="btn_area s_default _outline">
+					<label class="form_check">
+						<input class="check_mark" type="checkbox" id="chgComp">
+						<span class="check_label">{{ message("item.projectcost.015") }}</span>
+					</label>
+				</div>
+			</div>
+
+			<div class="s_conts g-group">
+				<!-- S: TAB ----------------------------------------------------------------------- -->
+				<!-- TAB NAV -->
+				<div class="conts_tab">
+					<nav class="tab_nav">
+						<ul class="tab_list tab_default">
+							<li class="tab_item" data-id="tabs01">{{ message("item.projectcost.016") }}</li>
+							<li class="tab_item" data-id="tabs02">{{ message("item.projectcost.017") }}</li>
+						</ul>
+					</nav>
+
+					<!-- TAB Conts -->
+					<div class="tab_conts_wrap">
+						<div id="tabs01" class="tab_conts">
+							<article class="s_conts ty1 conts" style="height: unset;">
+								<span class="tree_route">CBS</span>
+								<div class="g-group g-col2 ty1">
+									<!-- S: TREE View ------------------------------------------------------------------------ -->
+									<div class="treeview_area">
+										<div class="treeview ty_pd0" id="jstree" style="overflow: auto; height:550px;">
+										</div>
+									</div>
+									<!-- // E: TREE View ------------------------------------------------------------------------ -->
+
+									<div class="conts_area">
+										<div class="conts_grid">
+											<!-- S: search wrap ---------------------------------------------- -->
+											<div class="search_wrap">
+												<!-- searchbox -->
+												<div class="searchbox_wrap">
+													<input type="text" id="searchForm" placeholder="{{ message('msg.projectcost.001') }}">
+													<button type="button" class="icon_btn search">
+														<i class="ic ic-search"></i>
+														<span class="blind">{{ message("btn.014") }}</span>
+													</button>
+												</div>
+
+												<label class="form_check">
+													<input class="check_mark" type="checkbox" id="mlgShow">
+													<span class="check_label">{{ message("item.projectcost.018") }}</span>
+												</label>
+											</div>
+											<!-- // E: search wrap ---------------------------------------------- -->
+											<div class="toolbar">
+											</div>
+											<div class="summary put_txt _unit_won">
+												<div class="row">
+													<div class="col">
+														<div class="summary-label">{{ message("item.projectcost.020") }}</div>
+														<div class="summary-data" id="contractDt"></div>
+													</div>
+													<div class="col">
+														<div class="summary-label">{{ message("item.projectcost.021") }}</div>
+														<div class="summary-data" id="contractAmt"></div>
+													</div>
+													<div class="col">
+														<div class="summary-label">{{ message("item.projectcost.022") }}</div>
+														<div class="summary-data" id="mlgTot"></div>
+													</div>
+												</div>
+											</div>
+
+											<div class="grid" id="contractDataGrid">
+											</div>
+										</div>
+									</div>
+								</div>
+							</article>
+						</div>
+
+						<div id="tabs02" class="tab_conts">
+							<article class="conts g-row">
+								<div class="conts_grid">
+									<div class="toolbar">
+										<div class="btn_area s_default _outline">
+											<button type="button" class="btn" id="calcExportExcel" style="display:none;">Excel</button>
+										</div>
+									</div>
+									<div class="summary put_txt _unit_won">
+										<div class="row">
+											<div class="col">
+												<div class="summary-label">{{ message("item.projectcost.020") }}</div>
+												<div class="summary-data" id="calcDt"></div>
+											</div>
+											<div class="col">
+												<div class="summary-label">{{ message("item.projectcost.021") }}</div>
+												<div class="summary-data" id="calcAmt"></div>
+											</div>
+											<div class="col">
+												<div class="summary-label">{{ message("item.projectcost.022") }}</div>
+												<div class="summary-data" id="calcCntrctAmt"></div>
+											</div>
+										</div>
+									</div>
+
+									<div class="grid" id="calcDataGrid">
+									</div>
+								</div>
+							</article>
+						</div>
+					</div>
+
+				</div>
+				<!-- //E: TAB ----------------------------------------------------------------------- -->
+			</div>
+		</div>
+	</article>
+</section>
+{% include "page/projectcost/contract/contract_detail" %}
+<input type="text" id="cntrct_chg_no_first" hidden/>
+<input type="text" id="chg_no" hidden/>
+<input type="text" id="cnsttySn_arr" hidden/>
+{% endblock content %}
+{% block footer_script %}
+<style>
+</style>
+
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script src="/assets/js/projectcost/contract.js"></script>
+<script>
+	//새창 아이콘 렌더러
+	const newModalRenderer = window.NewModalRenderer;
+	let SearchArr = new Array();
+	var urlParams = new URLSearchParams(location.search);
+	var spCntrct = urlParams.get('id') ? urlParams.get('id').split(".") : null;
+	var cntrctNo = spCntrct ? spCntrct[0]+"."+spCntrct[1] : null;
+	var cntrctId = urlParams.get('id');
+	var urlCntrctNo = spCntrct ? spCntrct[0]+"."+spCntrct[1] : null;
+	var urlCntrctId = urlParams.get('id');
+
+    /* EVENT BINDING */
+    /* 검색창 관련 함수 */
+    const searchEl = $(".search");
+
+    // 마우스 검색
+    let evtSearchMouse = function () {
+        let arr = new Array();
+        arr = $("#cnsttySn_arr").val().split(",");
+        contract.init(arr);
+    };
+
+
+    //엔터 검색
+    let evtSearchEnter = function(key){
+        if(key.keyCode==13) {
+            let arr = new Array();
+            arr = $("#cnsttySn_arr").val().split(",");
+            contract.init(arr);
+        }
+    };
+
+    $("#searchForm").on("keyup", evtSearchEnter);
+    $(".search").on("click", evtSearchMouse);
+
+
+    //재노경 보기 체크박스 이벤트
+    $("#mlgShow").change(function(){
+        contract.setGridColumn($("#chgComp").is(":checked"), $("#mlgShow").is(":checked"));
+    });
+
+	var init = function(){
+		$("#cntrctNo").change(function(e){
+			$("#cntrctId").empty();
+			cntrctNo = e.target.value;
+			cntrctId = null;
+			setTimeout(() => page.init(), 100);
+			contract.contractGrid.resetData([]);
+			$('#jstree').jstree(true).destroy();
+			sessionStorage.setItem('cCntrctNo', e.target.value);
+			//contract.init();
+		});
+
+		$("#depth_txt").text("{{ message('item.projectcost.016') }}");
+
+
+		//내역서 등록
+        $("#addCntrct").click(function(){
+            window.location.href = '/projectcost/contract/create?type=d&cntrctNo='
+                    + $("#cntrctNo").val()
+                    + "&no=" + $("#chg_no").val()
+                    + "&id=" + $("#cntrctId option:selected").val()
+                    + "&cd=" + $('#cntrctNo option:selected').data('major-cnstty-cd');
+        });
+
+		//엑셀
+		$("#contractExportExcel").click(function(){
+
+		});
+
+		var param = {
+			pjtNo: pjtNo
+		};
+
+		$.ajax({
+			url: BASEPATH + 'contract/contract-list',
+			method: 'POST',
+			dataType: 'json',
+			contentType: 'application/json; charset-utf-8',
+			data: JSON.stringify(param),
+			async: false,
+			success: function(data, status, xhr){
+				var list = data.details.contractList;
+				
+				if(list.length > 0) {
+					for(var i = 0; i < list.length; i++) {
+						var option = $("<option value="+list[i].cntrct_no+">["+list[i].cmn_cd_nm_krn+"] "+list[i].cntrct_nm+"</option>");
+                        // [srchoi] 20241119 C3R business 를 위해 추가
+                        option.data('major-cnstty-cd', list[i].major_cnstty_cd);
+                        $('#cntrctNo').append(option);
+					}
+				}
+				if(urlCntrctNo) {
+					$('#cntrctNo').val(urlCntrctNo).prop("selected", true);
+                    cntrctNo = urlCntrctNo;
+				} else if(cntrctNo){
+					$('#cntrctNo').val(cntrctNo).prop("selected", true);
+					
+					if($('#cntrctNo').val() == null){
+						$('#cntrctNo').eq(0).prop("selected", true);
+					}
+				}else{
+					cntrctNo = $('#cntrctNo').val();
+					sessionStorage.setItem('cCntrctNo', $('#cntrctNo').val());
+				}
+				page.init();
+			}
+		});
+		
+	};
+
+	let page = {
+		init: function () {
+			//차수 변경 이벤트
+			$("#cntrctId").change(function(e){
+				sessionStorage.setItem('cCntrctId', e.target.value);
+				let string = $("#cntrctId option:selected").text();
+				let chg_no = string.match(/\[.*\]/gi).toString();
+				chg_no = chg_no.replace(/[^0-9]/g, "");
+				$("#chg_no").val(chg_no);
+				cntrctId = null;
+				setChangeData();
+				if($(".tab_item").eq(0).hasClass('active')){	
+					$('[data-column-name="chkDetail"]').children()[0].innerHTML = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val())+")";
+					
+					$('#jstree').jstree(true).destroy();
+					setTimeout(() => contract.getTreeList(), 50);
+				}else{
+					
+					setTimeout(() => calc.init('chg'), 50);				
+				}
+			});
+			
+			var param = {
+				cntrctNo: cntrctNo
+			};
+	
+			$.ajax({
+				url: BASEPATH+'contract/contract-change-list',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function(data, status, xhr){
+					var list = data.details.contractChangeList;
+					if(list.length > 0) {
+						for(var i = 0; i < list.length; i++) {
+							var option = $("<option"
+							 + " value=" + list[i].cntrct_chg_id
+							 + " cntrct_chg_no=" + list[i].cntrct_chg_no
+							 + " dt=" + list[i].dt
+							 + " chg_amt=" + (list[i].chg_amt != null ? Number(list[i].chg_amt).toLocaleString() : 0)
+							 + " cntrct_amt=" + (list[i].cntrct_amt != null ? Number(list[i].cntrct_amt).toLocaleString() : 0)
+							 + " mlg_tot=" + (list[i].mlg_tot != null ? Number(list[i].mlg_tot).toLocaleString() : 0)
+							 + ">[" + "{{ message('item.projectcost.023') }}".replace('{0}', list[i].cntrct_chg_no)+"] "+list[i].dt+ list[i].txt +"</option>");
+							$('#cntrctId').append(option);
+							if(list[i].cntrct_chg_no == 1){
+								$("#cntrct_chg_no_first").val(list[i].cntrct_chg_id);
+							}
+						}
+
+						if(urlCntrctId) {
+						    // 계약 현황에서 공사비관리 페이지 오픈한 경우
+                            $('#cntrctId').val(urlCntrctId).prop("selected", true);
+                            cntrctId = urlCntrctId;
+						} else if(cntrctId){
+							$('#cntrctId').val(cntrctId).prop("selected", true);
+						}else{
+							cntrctId = $('#cntrctId').val();
+							sessionStorage.setItem('cCntrctId', $('#cntrctId').val());
+						}
+						setTimeout(() => setChangeData(), 100);
+					}
+					
+					
+					if($(".tab_item").eq(0).hasClass('active')){
+						contract.getTreeList();
+					}else{
+						calc.init();
+					}
+					
+				}, error : function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaPortal.customAlert("{{ message('msg.060') }}");
+                }
+			});
+		}
+	}
+	let contract = {
+		init: function () {
+			gaiaCommon.LoadingOverlay('body', true);
+
+            // 20250211 - 요청 pending 동안 Event Binding 해제
+            $("#searchForm").off("keyup", evtSearchEnter);
+            $(".search").off("click", evtSearchMouse);
+
+			let _this = this;
+	
+			//let Grid = tui.Grid;
+
+			if(!this.contractGrid){
+				this.contractGrid = new tui.Grid({
+					el: document.getElementById('contractDataGrid'),
+					bodyHeight: 380,
+					scrollX: true,
+					scrollY: true,
+					contextMenu: null,
+					header: {
+						height: 120,
+						complexColumns: [
+							{
+								header: '{{ message("item.projectcost.012") }}',
+								name: 'cntrctMtrlTotal',
+								childNames: ['cnt_mtrl_uprc', 'cnt_mtrl_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.013") }}',
+								name: 'cntrctLbrTotal',
+								childNames: ['cnt_lbr_uprc', 'cnt_lbr_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.014") }}',
+								name: 'cntrctGnrlexpnsTotal',
+								childNames: ['cnt_gnrlexpns_uprc', 'cnt_gnrlexpns_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.009") }}',
+								name: 'cntrctTotal',
+								childNames: ['cnt_uprc_total', 'cnt_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.012") }}',
+								name: 'chgMtrlTotal',
+								childNames: ['chg_mtrl_uprc', 'chg_mtrl_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.013") }}',
+								name: 'chgLbrTotal',
+								childNames: ['chg_lbr_uprc', 'chg_lbr_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.014") }}',
+								name: 'chgGnrlexpnsTotal',
+								childNames: ['chg_gnrlexpns_uprc', 'chg_gnrlexpns_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.009") }}',
+								name: 'chgTotal',
+								childNames: ['chg_uprc_total', 'chg_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.010") }}',
+								name: 'cntrctDetail',
+								childNames: ['cntrctMtrlTotal', 'cntrctLbrTotal', 'cntrctGnrlexpnsTotal', 'cntrctTotal', 'cnt_rsce_qty']
+							},
+							{
+								header: '{{ message("item.projectcost.011") }}' + $("#chg_no").val(),
+								name: 'chkDetail',
+								childNames: ['chgMtrlTotal', 'chgLbrTotal', 'chgGnrlexpnsTotal', 'chgTotal', 'chg_rsce_qty'],
+								renderer: CustomColumnHeader
+							}
+						],
+					},
+					columns : [
+						{header: '{{ message("item.projectcost.001") }}', name: 'rsce_cd', allowMerging: true, resizable: true, width: 180, align:'center',
+							/**
+							renderer: {
+							    type: newModalRenderer,
+							    options: {
+							        modalId: "detailModal",
+							        idFields: "rsce_cd, rsce_tp_cd, cntrct_chg_id",
+									display: "block",
+									width: "78%"
+							    },
+							},
+							*/
+													//, renderer: CustomColumnLink
+						},
+						{header: '{{ message("item.projectcost.002") }}', name: 'dtl_cnstty_nm', resizable: true, minWidth: 200},
+						{header: '{{ message("item.projectcost.003") }}', name: 'spec_nm', resizable: true, width: 150, height: 40},
+						{header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 50, align:'center'},
+						{header: '{{ message("item.projectcost.005") }}', name: 'cnt_rsce_qty', hidden: true, width: 50, align:'center', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'cnt_mtrl_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'cnt_mtrl_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'cnt_lbr_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'cnt_lbr_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'cnt_gnrlexpns_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'cnt_gnrlexpns_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'cnt_uprc_total', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'cnt_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.005") }}', name: 'chg_rsce_qty', width: 50, align:'center', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'chg_mtrl_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'chg_mtrl_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'chg_lbr_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'chg_lbr_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'chg_gnrlexpns_uprc', hidden: true, width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'chg_gnrlexpns_cost', hidden: true, width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.006") }}', name: 'chg_uprc_total', width: 100, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.007") }}', name: 'chg_cost', width: 150, align:'right', formatter: numberFormat},
+						{header: '{{ message("item.projectcost.008") }}', name: 'sp_cost', width: 150, align:'right', hidden: true,
+								formatter: function(e){
+									const price = e.value;
+									let result = 0;
+									if(price !== null){
+										result = price.toLocaleString();
+									} 
+									if(price < 0){
+										return '<div class="tui-grid-cell-content" style="color:red;">' + result + '</div>';
+									} else if(price > 0){
+										return '<div class="tui-grid-cell-content" style="color:blue;">' + result + '</div>';
+									} else {
+										return '<div class="tui-grid-cell-content">' + result + '</div>';
+									}							
+								}
+						},
+						{name: 'rsce_tp_cd', hidden: true},
+						{name: 'cntrct_chg_id', hidden: true}
+					]
+				});
+			}
+			let list = this.read();
+			
+			if (list) {
+				this.contractGrid.resetData(list);
+				refreshGrid(this.contractGrid);
+			}
+
+		},
+		read: function() {
+			let _this = this;
+		    let data;
+
+			let cnsttySnData = new Array();
+			cnsttySnData = $("#cnsttySn_arr").val().split(",");
+
+			if($("#cnsttySn_arr").val() == ""){
+				cnsttySnData = null;
+			}
+			
+			var param = {
+				cnsttySnList: cnsttySnData,
+				cntrctId: $("#cntrct_chg_no_first").val(),
+				chgId: $("#cntrctId option:selected").val(),
+				searchText: $("#searchForm").val()
+			};
+			
+			$.ajax({
+				url: BASEPATH+'contract/cbs-detail-list',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function(response){
+					data = response.details.cbsDetailList;
+					//_this.contractGrid.resetData([]);
+					//_this.contractGrid.resetData(data);
+
+                    // 20250211 - 재 Event Binding
+                    setTimeout(() => {
+                        $("#searchForm").on("keyup", evtSearchEnter);
+                        $(".search").on("click", evtSearchMouse);
+                    }, 300)
+				},
+				error: function(response) {
+					// console.log(response);
+				}
+			});
+			gaiaCommon.LoadingOverlay('body', false);
+		  	return data;
+		},
+		getTreeList(){
+			var param = {
+				cntrctId: $("#cntrct_chg_no_first").val(),
+				chgId: $("#cntrctId option:selected").val()
+			};
+			$.ajax({
+				url: BASEPATH+'contract/cbs-list',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function(data, status, xhr){
+					
+					$("#jstree").jstree({
+					    //"plugins": ["search"],
+					    'core': {
+					        'data': data.details.cbsList,
+					        "check_callback": true,		
+							"themes" : {
+								"theme" : "default",
+								"dots": false,
+								"responsive": false,
+								"icons" : false
+							}
+					    }
+					});
+					
+					if(data.details.cbsList.length > 0){
+						contract.setTreeFunc();
+						//setTimeout(() => $("#jstree").jstree(true).open_all(), 500);
+						$("#jstree").bind("loaded.jstree", function(event, dt){
+						    var depth = 2;
+						    dt.instance.get_container().find('li').each(function (i) {
+						        if (dt.instance.get_path($(this)).length <= depth) {
+						            dt.instance.open_node($(this));
+						        }
+						    });
+						});
+					}else{
+						contract.init();
+					}
+					
+				}
+			}).done(function(r){
+				var initArr = r.details.cbsList[0];
+				if($('#jstree').jstree(true).settings.core.data.length > 0){
+					setTimeout(() => $('#jstree').jstree(true).select_node(initArr.id), 300);
+				}
+				
+				//트리 토글 기능
+				//$('#jstree').on("click.jstree", function (e, data) {
+					//var node = $(e.target).closest("li");
+					//var nodeId = node[0].id;
+					//$('#jstree').jstree("toggle_node", nodeId);
+				//});
+			});
+			
+			
+		},
+		setTreeFunc(){
+			$('#jstree').bind('select_node.jstree', function(event, data){
+				var idArr = new Array();
+				if(data.node.parent == "#"){
+					idArr = data.node.children_d;
+				}else{
+					if(data.node.children.length < 1){
+						idArr.push(data.node.id);
+					}else{
+						idArr = data.node.children;
+					}
+				}
+				var ref = $('#jstree').jstree(true);
+				var allCategories = Object.values(ref._model.data);	
+
+				var filterArr = allCategories.filter((item) => idArr.some((i) => i === item.id));
+				var searchArr = new Array();
+				var searchTxt = "";
+				$.each(filterArr, function(index, element){
+					searchArr.push(element.original.cnstty_sn);
+					searchTxt += "," + element.original.cnstty_sn;
+				});
+				if(searchArr.length < 1){
+					searchArr.push(data.node.original.cnstty_sn);					
+				}
+				
+				
+				$("#cnsttySn_arr").val(searchArr);
+				//methods.getGridData(searchArr);
+				contract.init();
+			});
+		},
+		//Grid 컬럼 셋을 위한 체크박스 이벤트
+		setGridColumn(chgComp, mlgShow){
+			if(chgComp && mlgShow){
+				this.contractGrid.showColumn('cnt_rsce_qty');
+				this.contractGrid.showColumn('cnt_uprc_total');
+				this.contractGrid.showColumn('cnt_cost');
+				this.contractGrid.showColumn('sp_cost');
+				
+				this.contractGrid.showColumn('cnt_mtrl_uprc');
+				this.contractGrid.showColumn('cnt_mtrl_cost');
+				this.contractGrid.showColumn('cnt_lbr_uprc');
+				this.contractGrid.showColumn('cnt_lbr_cost');
+				this.contractGrid.showColumn('cnt_gnrlexpns_uprc');
+				this.contractGrid.showColumn('cnt_gnrlexpns_cost');
+				this.contractGrid.showColumn('chg_mtrl_uprc');
+				this.contractGrid.showColumn('chg_mtrl_cost');
+				this.contractGrid.showColumn('chg_lbr_uprc');
+				this.contractGrid.showColumn('chg_lbr_cost');
+				this.contractGrid.showColumn('chg_gnrlexpns_uprc');
+				this.contractGrid.showColumn('chg_gnrlexpns_cost');
+			}else if(!chgComp && mlgShow){
+				this.contractGrid.hideColumn('cnt_rsce_qty');
+				this.contractGrid.hideColumn('cnt_uprc_total');
+				this.contractGrid.hideColumn('cnt_cost');
+				this.contractGrid.hideColumn('sp_cost');
+
+				this.contractGrid.hideColumn('cnt_mtrl_uprc');
+				this.contractGrid.hideColumn('cnt_mtrl_cost');
+				this.contractGrid.hideColumn('cnt_lbr_uprc');
+				this.contractGrid.hideColumn('cnt_lbr_cost');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_uprc');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_cost');
+				this.contractGrid.showColumn('chg_mtrl_uprc');
+				this.contractGrid.showColumn('chg_mtrl_cost');
+				this.contractGrid.showColumn('chg_lbr_uprc');
+				this.contractGrid.showColumn('chg_lbr_cost');
+				this.contractGrid.showColumn('chg_gnrlexpns_uprc');
+				this.contractGrid.showColumn('chg_gnrlexpns_cost');
+			}else if(chgComp && !mlgShow){
+				this.contractGrid.showColumn('cnt_rsce_qty');
+				this.contractGrid.showColumn('cnt_uprc_total');
+				this.contractGrid.showColumn('cnt_cost');
+				this.contractGrid.showColumn('sp_cost');
+
+				this.contractGrid.hideColumn('cnt_mtrl_uprc');
+				this.contractGrid.hideColumn('cnt_mtrl_cost');
+				this.contractGrid.hideColumn('cnt_lbr_uprc');
+				this.contractGrid.hideColumn('cnt_lbr_cost');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_uprc');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_cost');
+				this.contractGrid.hideColumn('chg_mtrl_uprc');
+				this.contractGrid.hideColumn('chg_mtrl_cost');
+				this.contractGrid.hideColumn('chg_lbr_uprc');
+				this.contractGrid.hideColumn('chg_lbr_cost');
+				this.contractGrid.hideColumn('chg_gnrlexpns_uprc');
+				this.contractGrid.hideColumn('chg_gnrlexpns_cost');
+			}else{
+				this.contractGrid.hideColumn('cnt_rsce_qty');
+				this.contractGrid.hideColumn('cnt_uprc_total');
+				this.contractGrid.hideColumn('cnt_cost');
+				this.contractGrid.hideColumn('sp_cost');
+
+				this.contractGrid.hideColumn('cnt_mtrl_uprc');
+				this.contractGrid.hideColumn('cnt_mtrl_cost');
+				this.contractGrid.hideColumn('cnt_lbr_uprc');
+				this.contractGrid.hideColumn('cnt_lbr_cost');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_uprc');
+				this.contractGrid.hideColumn('cnt_gnrlexpns_cost');
+				this.contractGrid.hideColumn('chg_mtrl_uprc');
+				this.contractGrid.hideColumn('chg_mtrl_cost');
+				this.contractGrid.hideColumn('chg_lbr_uprc');
+				this.contractGrid.hideColumn('chg_lbr_cost');
+				this.contractGrid.hideColumn('chg_gnrlexpns_uprc');
+				this.contractGrid.hideColumn('chg_gnrlexpns_cost');
+			}
+		},
+		
+	}
+
+
+	let calc = {
+		init: function (type) {
+			gaiaCommon.LoadingOverlay('body', true);
+			let _this = this;
+			
+			if(this.calcGrid && type == "chg"){
+				this.calcGrid.resetData([]);
+			}
+			
+			if(!this.calcGrid){
+				this.calcGrid = new tui.Grid({
+						el: document.getElementById('calcDataGrid'),
+						//bodyHeight: 'fitToParent',
+						scrollX: true,
+						scrollY: true,
+						contextMenu: null,
+						//bodyHeight: 'fitToParent',
+						bodyHeight: 500,
+						treeColumnOptions: {
+						    name: "cst_calc_it_nm",
+						    useIcon: true,
+						    useCascadingCheckbox: true,
+						},
+						header: {
+							columns: [
+								{
+									name: 'cost_am', 
+									renderer: CustomColumnHeader2
+						      	},
+						    ]
+						},
+						columns : [
+							{header: '{{ message("item.projectcost.025") }}', name: 'cst_calc_it_nm', width: 300},
+							{header: '{{ message("item.projectcost.026") }}', name: 'cst_calc_mthd_nm', resizable: true, minWidth: 200},
+							{header: '{{ message("item.projectcost.027") }}', name: 'ovrhdcst_pt', resizable: true, width: 100, align:'right'},
+							{header: '{{ message("item.projectcost.028") }}', name: 'drcnstcost_cmpr_pt', width: 110, align:'right'},
+							{header: '{{ message("item.projectcost.029") }}', name: 'ori_cost_am', hidden: true, width: 120, align:'right', formatter: numberFormat},
+							{header: '{{ message("item.projectcost.030") }}(' + '{{ message("item.projectcost.023") }}'.replace('{0}', $("#chg_no").val())+')', name: 'cost_am', width: 120, align:'right', formatter: numberFormat},
+							{header: '{{ message("item.projectcost.008") }}', name: 'sp_cost', width: 100, align:'right', hidden: true,
+									formatter: function(e){
+										const price = e.value;
+										let result = 0;
+										if(price !== null){
+											result = price.toLocaleString();
+										} 
+										if(price < 0){
+											return '<div class="tui-grid-cell-content" style="color:red;">' + result + '</div>';
+										} else if(price > 0){
+											return '<div class="tui-grid-cell-content" style="color:blue;">' + result + '</div>';
+										} else {
+											return '<div class="tui-grid-cell-content">' + result + '</div>';
+										}							
+									}
+							}
+						]
+				});
+			}
+
+
+			let list = this.read();
+			
+			if (list) {
+				this.calcGrid.resetData(list);
+				refreshGrid(this.calcGrid);
+			}
+		},
+		read: function() {
+			let _this = this;
+		    let data;
+			let root;
+			
+			var param = {
+				chgId: $("#cntrctId option:selected").val(),
+				cntrctId: $("#cntrct_chg_no_first").val()
+			};
+			//let newArr = new array();
+			var newArr = {};
+			
+			$.ajax({
+				url: BASEPATH+'contract/cost-calculator-list',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function(response){
+					data = response.details.costCalculatorList;
+					
+					root = arrayToTree(data);
+					_this.calcGrid.resetData(root);
+				},
+				error: function(response) {
+					// console.log(response);
+				}
+			});
+
+			gaiaCommon.LoadingOverlay('body', false);
+		  	return root;
+		},
+		setGridColumn(chgComp){
+			if(chgComp){
+				this.calcGrid.showColumn('ori_cost_am');
+				this.calcGrid.showColumn('sp_cost');
+			}else{
+				this.calcGrid.hideColumn('ori_cost_am');
+				this.calcGrid.hideColumn('sp_cost');
+			}
+			
+		},
+		
+	}
+	
+	class CustomColumnHeader {
+		constructor(props) {
+		    const columnInfo = props.columnInfo;
+		    const el = document.createElement("div");
+		    this.el = el;
+			this.render(props);
+	  	}
+	
+		getElement() {
+			return this.el;
+		}
+	
+		render(props) {
+		  	this.el.textContent="{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val())+")";
+		}
+	}
+
+
+	class CustomColumnHeader2 {
+		constructor(props) {
+		    const columnInfo = props.columnInfo;
+		    const el = document.createElement("div");
+		    this.el = el;
+			columnInfo.header = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val())+")";
+			this.render(props);
+	  	}
+
+		getElement() {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.textContent="{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val())+")";
+		}
+	}
+	
+	class CustomColumnLink {
+		constructor(props) {
+		    const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+	  	}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.innerHTML = `<div>` + props.value + ` <i class='ic ic-sent-to-back' onclick='goLink("` + props.grid.getRow(props.rowKey).rsce_cd + `", "` + $("#cntrctId option:selected").val() + `", "` + props.grid.getRow(props.rowKey).rsce_tp_cd + `");'>` + `</i></div>`;
+		}
+	}
+
+	function goLink(code, id, type){
+		window.open("/projectcost/contract-detail?code=" + code + "&id=" + id + "&type=" + type,'targetWindow','scrollbars=yes,resizable=yes,width=1200,height=700');
+	}
+	
+	
+	function arrayToTree(items) {
+	    const map = {};
+	    let root = null;
+
+	    items.forEach(item => {
+	        map[item.cst_calc_it_cd] = { ...item, _children: [] };
+	    });
+
+	    items.forEach(item => {
+	        const node = map[item.cst_calc_it_cd];
+	        if (item.up_cst_calc_it_cd === "") {				
+				node._attributes = {expanded: true}
+	            root = node;				
+	        } else {
+				node._attributes = {expanded: true}
+	            map[item.up_cst_calc_it_cd]._children.push(node);
+	        }
+	    });
+
+		Object.values(map).forEach(item => {
+			if(item._children.length < 1 && item.a_menu_level != 1){
+				delete item._children;
+			}
+		});
+		
+		var result = Object.values(map).filter((row) => row.a_menu_level === 1);
+
+		var arr = new Array();
+		for(var key in result) {
+			arr.push(result[key]);
+		}
+		
+	    return arr;
+	}	
+
+	function chgCompCheck(id){
+		if($(".tab_item").eq(0).hasClass('active') || id == "tabs01"){
+			contract.setGridColumn($("#chgComp").is(":checked"), $("#mlgShow").is(":checked"));
+		}else{
+			calc.setGridColumn($("#chgComp").is(":checked"));
+		}
+	}
+
+	function setChangeData(){	
+		$("#chg_no").val($("#cntrctId option:selected").attr("cntrct_chg_no"));
+		$("#contractDt").text($("#cntrctId option:selected").attr("dt"));
+		$("#contractAmt").text($("#cntrctId option:selected").attr("chg_amt"));
+		$("#mlgTot").text($("#cntrctId option:selected").attr("mlg_tot").toLocaleString());
+		$("#calcDt").text($("#cntrctId option:selected").attr("dt"));
+		$("#calcAmt").text($("#cntrctId option:selected").attr("chg_amt"));
+		$("#calcCntrctAmt").text($("#cntrctId option:selected").attr("cntrct_amt").toLocaleString());
+	}
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+				if($("#userType").text().toLowerCase() == "admin" || isGAIA()){
+					$("#conts_tit").show();
+					$("#cntrct_no_select").show();
+				}
+				
+				if(isCAIROS()){
+					cntrctNo = cNo;
+					sessionStorage.setItem('cCntrctNo', cntrctNo);
+				}
+				
+				$("._unit_won").addClass(getCookie('lang'));
+				
+				gaiaPortal.navMenuInit('M0301', '{{ message("item.projectcost.902") }}');
+				$("#menuDepth").append('<li class=\"breadcrumb_item\" id=\"depth_txt\">{{ message("item.projectcost.016") }}</li>');
+			
+				var tabItem = $(".tab_item");
+				var tabConts = $(".tab_conts");
+			
+				$(tabItem).eq(0).addClass('active');
+				$(tabConts).eq(0).addClass('active');
+				
+				if(urlParams.get('id') != null){
+					sessionStorage.setItem('cCntrctId', urlParams.get('id'));
+				}
+				
+				cntrctNo = sessionStorage.getItem('cCntrctNo');
+				cntrctId = sessionStorage.getItem('cCntrctId');
+				init();
+			
+				$("#chgComp").change(function(){
+					chgCompCheck();
+				});
+				
+				$(tabItem).click(function(e){
+					$(tabItem).removeClass('active');
+					$(tabConts).removeClass('active');
+			
+					if(e.target.dataset.id == "tabs01"){
+						contract.init();
+						chgCompCheck("tabs01");
+						$("#depth_txt").text("{{ message('item.projectcost.016') }}");
+					}else{
+						calc.init();
+						chgCompCheck("tabs02");
+						$("#depth_txt").text("{{ message('item.projectcost.017') }}");
+					}
+			
+					$(this).addClass('active');
+					$("#"+$(this).data('id')).addClass('active');
+				});
+                
+                gaia.loaded = true;
+            }
+        });
+    })
+
+
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

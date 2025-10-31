@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information">
+
+    <select id="getInformationList" parameterType="informationListInput" resultType="informationOutput">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.getInformationList][jhkim] */
+		SELECT 	DISTINCT (C.PJT_NO) AS PJT_NO,
+              	C.PJT_NM AS PJT_NM,
+				C.PJT_NO AS CNTRCT_NO,
+				C.PJT_NM AS CNTRCT_NM,   
+				C.PJT_DIV AS PJT_DIV,     	
+               	COALESCE(NULLIF(C.DMINSTT_NM, ''), '미등록') AS DMINSTT_NM,
+                C.CNSTWK_TYPE AS CNSTWK_TYPE,
+                (	SELECT 	AA.CMN_CD_NM_KRN 
+					FROM 	SM_COM_CODE AA 
+					WHERE 	AA.CMN_GRP_CD = #{cmnGrpCdMajorCnstty}
+					AND 	AA.USE_YN = 'Y' 
+					AND 	AA.DLT_YN = 'N' 
+					AND 	AA.CMN_CD = C.CNSTWK_TYPE
+				) AS CNTRCT_TYPE_NM,
+                (	CASE
+                    	WHEN COALESCE ( C.PLC_LCT_ADRS,'') = ''
+                        	THEN '위치 정보 없음'
+                    	ELSE C.PLC_LCT_ADRS
+                	END
+				) AS PLC_LCT_ADRS,
+				<![CDATA[
+                (	CASE
+                    	WHEN COALESCE (C.PJT_BGN_DATE,'') <> '' AND COALESCE (C.PJT_END_DATE,'') <> ''
+                        	THEN CONCAT (TO_CHAR(C.PJT_BGN_DATE::TIMESTAMP ,'YYYY-MM-DD'),'~',TO_CHAR(C.PJT_END_DATE::TIMESTAMP ,'YYYY-MM-DD'), ' (',C.CNSTWK_DAYNUM,' 일)')
+                    	ELSE '미등록'
+                	END
+				) AS PERIOD_DATE,
+				]]>
+                C.CON_PSTATS AS CON_PSTATS,
+                (	SELECT 	BB.CMN_CD_NM_KRN 
+					FROM 	SM_COM_CODE BB 
+					WHERE 	BB.CMN_GRP_CD = #{cmnGrpCdConPstats}
+					AND 	BB.USE_YN = 'Y' 
+					AND 	BB.DLT_YN = 'N' 
+					AND 	BB.CMN_CD = C.CON_PSTATS
+				) AS CON_PSTATS_NM,
+                C.ETC_CNTNTS AS ETC_CNTNTS,
+                C.PJT_BGN_DATE AS PJT_BGN_DATE,
+                C.PJT_END_DATE AS PJT_END_DATE,
+                C.RGST_DT AS RGST_DT
+        FROM 	CN_PROJECT C
+		WHERE 	C.USE_YN = 'Y'
+		AND 	C.DLT_YN = 'N'
+		AND 	C.CON_PSTATS IN ('0602', '0603', '0604')
+		<choose>
+			<when test="searchType == 'pjtNo'">
+				AND C.PJT_NO ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'pjtNm'">
+				AND C.PJT_NM ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'plcLctAdrs'">
+				AND C.PLC_LCT_ADRS ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'dminsttNm' and (searchText.matches('.*(미|등|록).*'))">
+				AND C.DMINSTT_NM = ''
+			</when>
+			<when test="searchType == 'dminsttNm'">
+				AND C.DMINSTT_NM ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+		</choose>
+		<if test="searchTerm != null and searchTerm != '' and searchTerm != 'all'">
+			<![CDATA[
+				AND (
+					C.PJT_BGN_DATE BETWEEN #{startDate} AND #{endDate}
+					OR C.PJT_END_DATE BETWEEN #{startDate} AND #{endDate}
+					OR (pjt_bgn_date <= #{startDate} AND pjt_end_date >= #{endDate})
+				)  
+			]]>
+		</if>
+		ORDER BY C.RGST_DT DESC    
+    </select>
+
+    <select id="getGAIAInformationList" parameterType="informationListInput" resultType="informationOutput">
+     	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.getGAIAInformationList][jhkim] */
+		SELECT 	DISTINCT (C.PJT_NO) AS PJT_NO,
+              	C.PJT_NM AS PJT_NM,
+				<choose>
+					<when test="systemType == 'GAIA'">
+						C.PJT_NO AS CNTRCT_NO,
+              			C.PJT_NM AS CNTRCT_NM,
+					</when>
+					<otherwise>
+                        (	SELECT 	CC.CNTRCT_NO 
+							FROM 	CN_CONTRACT CC 
+							WHERE 	CC.PJT_NO = C.PJT_NO
+							AND 	CC.DLT_YN = 'N' 
+							ORDER BY RGST_DT ASC 
+							LIMIT 1
+						) AS CNTRCT_NO,
+						(	SELECT 	CC.CNTRCT_NM 
+							FROM 	CN_CONTRACT CC 
+							WHERE 	CC.PJT_NO = C.PJT_NO
+							AND 	CC.DLT_YN = 'N' 
+							ORDER BY RGST_DT ASC 
+							LIMIT 1
+						) AS CNTRCT_NM,
+                    </otherwise>
+				</choose>
+				C.PJT_DIV AS PJT_DIV,          	
+               	COALESCE(NULLIF(C.DMINSTT_NM, ''), '미등록') AS DMINSTT_NM,
+                C.CNSTWK_TYPE AS CNSTWK_TYPE,
+                (	SELECT 	AA.CMN_CD_NM_KRN 
+					FROM 	SM_COM_CODE AA 
+					WHERE 	AA.CMN_GRP_CD = #{cmnGrpCdMajorCnstty}
+					AND 	AA.USE_YN = 'Y' 
+					AND 	AA.DLT_YN = 'N' 
+					AND 	AA.CMN_CD = C.CNSTWK_TYPE
+				) AS CNTRCT_TYPE_NM,
+                (	CASE
+                    	WHEN COALESCE ( C.PLC_LCT_ADRS,'') = ''
+                        	THEN '위치 정보 없음'
+                    	ELSE C.PLC_LCT_ADRS
+                	END
+				) AS PLC_LCT_ADRS,
+				<![CDATA[
+                (	CASE
+                    	WHEN COALESCE (C.PJT_BGN_DATE,'') <> '' AND COALESCE (C.PJT_END_DATE,'') <> ''
+                        	THEN CONCAT (TO_CHAR(C.PJT_BGN_DATE::TIMESTAMP ,'YYYY-MM-DD'),'~',TO_CHAR(C.PJT_END_DATE::TIMESTAMP ,'YYYY-MM-DD'), ' (',C.CNSTWK_DAYNUM,' 일)')
+                    	ELSE '미등록'
+                	END
+				) AS PERIOD_DATE,
+				]]>
+                C.CON_PSTATS AS CON_PSTATS,
+                (	SELECT 	BB.CMN_CD_NM_KRN 
+					FROM 	SM_COM_CODE BB 
+					WHERE 	BB.CMN_GRP_CD = #{cmnGrpCdConPstats}
+					AND 	BB.USE_YN = 'Y' 
+					AND 	BB.DLT_YN = 'N' 
+					AND 	BB.CMN_CD = C.CON_PSTATS
+				) AS CON_PSTATS_NM,
+                C.ETC_CNTNTS AS ETC_CNTNTS,
+                C.PJT_BGN_DATE AS PJT_BGN_DATE,
+                C.PJT_END_DATE AS PJT_END_DATE,
+                C.RGST_DT AS RGST_DT
+        FROM 	SM_ORGANIZATION A, 
+				SM_DEPARTMENT B, 
+				CN_PROJECT C
+		WHERE 	A.USR_ID = #{usrId}
+		AND 	A.DEPT_NO = B.DEPT_NO 
+		AND 	B.PJT_NO = C.PJT_NO 
+		AND 	A.DLT_YN  = 'N'
+		AND 	B.PJT_TYPE = #{systemType}
+		AND 	B.DEPT_YN = 'Y'
+		AND 	B.USE_YN = 'Y'
+		AND 	B.DLT_YN = 'N'
+		AND 	C.USE_YN = 'Y'
+		AND 	C.DLT_YN = 'N'
+		AND 	C.CON_PSTATS IN ('0602', '0603', '0604')
+		<choose>
+			<when test="searchType == 'pjtNo'">
+				AND C.PJT_NO ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'pjtNm'">
+				AND C.PJT_NM ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'plcLctAdrs'">
+				AND C.PLC_LCT_ADRS ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+			<when test="searchType == 'dminsttNm' and (searchText.matches('.*(미|등|록).*'))">
+				AND C.DMINSTT_NM = ''
+			</when>
+			<when test="searchType == 'dminsttNm'">
+				AND C.DMINSTT_NM ILIKE CONCAT('%', #{searchText}, '%')
+			</when>
+		</choose>
+		<if test="searchTerm != null and searchTerm != '' and searchTerm != 'all'">
+			<![CDATA[
+				AND (
+					C.PJT_BGN_DATE BETWEEN #{startDate} AND #{endDate}
+					OR C.PJT_END_DATE BETWEEN #{startDate} AND #{endDate}
+					OR (pjt_bgn_date <= #{startDate} AND pjt_end_date >= #{endDate})
+				)  
+			]]>
+		</if>
+		ORDER BY C.RGST_DT DESC
+    </select>
+
+    <select id="getInformationDetail" parameterType="informationListInput"
+        resultType="informationOutput"> 
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.getInformationDetail][jhkim]*/
+        SELECT  CP.PJT_NM,
+                CP.CNSTWK_TYPE,
+                SCC1.CMN_CD_NM_KRN AS CNSTWK_TYPE_NM,
+                CP.PLC_LCT_ADRS,
+                CP.PLC_LCT_X,
+                CP.PLC_LCT_Y,
+                CP.RGN_CD,
+                SCC2.CMN_CD_NM_KRN AS RGN_CD_NM,
+                CP.PJT_BGN_DATE,
+                CP.PJT_END_DATE,
+                CP.APRVL_DATE,
+                CP.NTP_DATE,
+                CP.INSPTR_NM,
+                CP.CM_NM,
+                CP.SPVS_CORP_NM,
+                CP.CNTRCT_CORP_NM,
+                CP.ACRARCHLAW_USG_CD,
+                SCC3.CMN_CD_NM_KRN AS ACRARCHLAW_USG_CD_NM,
+                CP.CNTRCT_TYPE,
+                SCC4.CMN_CD_NM_KRN AS CNTRCT_TYPE_NM,
+                CP.CNSTWK_SCLE,
+                CP.PARKNG_PSBL_NUM,
+                CP.TOTAR_VAL,
+                CP.LANDARCHT_AREA_VAL,
+                CP.LND_AREA_VAL,
+                CP.ARCHTCT_AREA_VAL,
+                CP.BDTL_RATE,
+                CP.MEASRMT_RATE,
+                CP.BSS_FLOOR_HG_VAL,
+                CP.TOP_HG_VAL,
+                CP.MAIN_FCLTY_CNTNTS,
+                CP.DMINSTT_DIV,
+                CP.DMINSTT_CD,
+                COALESCE(SCC6.ATTRBT_CD3, CP.DMINSTT_NM, '-') AS DMINSTT_NM,
+                CP.CNSTWK_CST,
+                CP.CHG_CNTRCT_AMT,
+                CP.CON_PSTATS,
+                SCC5.CMN_CD_NM_KRN AS CON_PSTATS_NM,
+                CP.USE_YN,
+                CP.ETC_CNTNTS,
+                CP.GREEN_LEVEL,
+                CP.GREEN_LEVEL_DOC_ID,
+                CP.ENERGY_EFFECT_LEVEL,
+                CP.ENERGY_EFFECT_LEVEL_DOC_ID,
+                CP.ZERO_ENERGY_LEVEL,
+                CP.ZERO_ENERGY_LEVEL_DOC_ID,
+                CP.BF_LEVEL,
+                CP.BF_LEVEL_DOC_ID,
+                CP.EVIRONMENT_MTRL,
+                CP.CO2_MTRL,
+                CP.ECO_MTRL, 
+                CP.AIRVW_ATCH_FILE_NO
+        FROM
+                CN_PROJECT CP
+        LEFT JOIN SM_COM_CODE SCC1 ON CP.CNSTWK_TYPE = SCC1.CMN_CD AND SCC1.CMN_GRP_CD = #{cmnGrpCdMajorCnstty}
+        LEFT JOIN SM_COM_CODE SCC2 ON CP.RGN_CD = SCC2.CMN_CD AND SCC2.CMN_GRP_CD = #{cmnGrpCdRgnCd}
+        LEFT JOIN SM_COM_CODE SCC3 ON CP.ACRARCHLAW_USG_CD = SCC3.CMN_CD AND SCC3.CMN_GRP_CD = #{cmnGrpCdAcrarchlawUsgCd}
+        LEFT JOIN SM_COM_CODE SCC4 ON CP.CNTRCT_TYPE = SCC4.CMN_CD AND SCC4.CMN_GRP_CD = #{cmnGrpCdCntrctType}
+        LEFT JOIN SM_COM_CODE SCC5 ON CP.CON_PSTATS = SCC5.CMN_CD AND SCC5.CMN_GRP_CD = #{cmnGrpCdConPstats}
+        LEFT JOIN SM_COM_CODE SCC6 ON CP.DMINSTT_CD = SCC6.CMN_CD AND SCC6.CMN_GRP_CD  = #{cmnGrpCdDminsttCd}
+        WHERE   CP.PJT_NO = #{pjtNo}
+    </select>
+
+    <update id="updateDeleteInformation" parameterType="informationDeleteInput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.updateDeleteInformation][jhkim] */
+        UPDATE
+        	CN_PROJECT
+        SET
+        	DLT_ID = #{usrId} ,
+        	DLT_YN = 'Y',
+        	DLT_DT = NOW()
+        WHERE
+        	PJT_NO = #{pjtNo}
+    </update>
+
+    <update id="projectProcedure" parameterType="projectProcedure"> 
+    /*
+    [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.projectProcedure][jhkim]
+    */
+    CALL sm_department_dc_navigation_set
+    (
+        #{pInserttype},
+        #{pPjttype},
+        #{pPjtno},
+        #{pCntrctno},
+        #{pItemname},
+        #{pItemdesc},
+        #{pCorpno}
+    )
+    </update>
+
+    <select id="checkPgaiaPjt" parameterType="String" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.checkPgaiaPjt][choisr] */
+        SELECT EXISTS (
+            SELECT 1
+            FROM CN_PROJECT
+            WHERE PJT_NO = #{pjtNo}
+            AND PJT_DIV = 'P'
+        )
+    </select>
+
+    <select id="checkPgaiaPjtByCntrctNo" parameterType="String" resultType="boolean">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.checkPgaiaPjtByCntrctNo][choisr] */
+        SELECT EXISTS (
+            SELECT 1
+            FROM CN_PROJECT
+            WHERE PJT_NO = (
+                SELECT PJT_NO FROM CN_CONTRACT
+                WHERE CNTRCT_NO = #{cntrctNo}
+            )
+            AND PJT_DIV = 'P'
+        )
+   </select>
+
+    <update id="updateInformationConPstats" parameterType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.updateInformationConPstats][choisr] */
+        UPDATE CN_PROJECT
+        SET CON_PSTATS = '0602'
+        WHERE PLC_REQ_NO = #{plcReqNo}
+    </update>
+</mapper>

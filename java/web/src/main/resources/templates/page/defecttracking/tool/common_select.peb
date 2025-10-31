@@ -1,0 +1,74 @@
+<div id="container" style="margin-bottom: 2em;">
+</div>
+<!-- <span class="tree_route" id="dfccy_phase_path">
+    결함단계
+</span> -->
+
+<script>
+    let cntrctNo;
+    const selectParam = new URLSearchParams(window.location.search);
+    let paramCntrctNo = selectParam.get("cntrctNo");
+    let paramDfccyPhaseNo = selectParam.get("dfccyPhaseNo");
+
+    var select = {
+        init() {
+            const self = this;
+
+            pjtNo = pjtInfo.pjtNo;
+
+            // 콜백 함수
+            // 1. 계약X
+            const noCntrctCb = () => {
+                gaiaCommon.customConfirm(
+                    "{{ message('item.com.084') }}",
+                    "{{ message('msg.092') }}",
+                    "{{ message('msg.114') }}",
+                    () => { window.location.replace(`/project/contractstatus?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`); },
+                    () => { window.location.replace(`/dashboard?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`); }
+                );
+            };
+
+            // 2. 최초 계약 셀렉트 생성
+            const initCb = (initialCntrctNo) => {
+                // paramCntrctNo가 있으면 해당 값으로 설정
+                if (paramCntrctNo && paramCntrctNo !== pjtNo) {
+                    $("#cntrctNo").val(paramCntrctNo);
+                    cntrctNo = paramCntrctNo;
+                } else {
+                    cntrctNo = initialCntrctNo;
+                }
+
+                dfccyPhaseNo = paramDfccyPhaseNo ? paramDfccyPhaseNo : null;
+
+                // 페이지 초기화
+                if (typeof dfccyPhase !== "undefined") {
+                    dfccyPhase.tree.init();
+                } else {
+                    page.init();
+                }
+            };
+
+            // 3. 계약 변경 이벤트
+            const chgCb = (selectedCntrctNo) => {
+                cntrctNo = selectedCntrctNo;
+                dfccyPhaseNo = null;
+
+                if (typeof dfccyPhase !== "undefined") {
+                    dfccyPhase.tree.init();
+                } else {
+                    page.init();
+                }
+            };
+
+            // 셀렉트박스 생성
+            gaiaCommon.makeCntrctSelectBox(
+                "#container",
+                noCntrctCb,
+                initCb,
+                chgCb
+            );
+
+        },
+    }
+
+</script>

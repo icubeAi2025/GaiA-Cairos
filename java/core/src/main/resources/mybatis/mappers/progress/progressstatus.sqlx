@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.progressstatus">
+
+    <!-- (공통) - 최종 변경 리비전 가져오기 -->
+    <sql id="sql_geRevisionId">
+        SELECT REVISION_ID
+        FROM PR_REVISION PR
+        WHERE PR.CNTRCT_CHG_ID = #{cntrctChgId}
+        AND PR.LAST_REVISION_YN = 'Y'
+        AND PR.DLT_YN = 'N'
+    </sql>
+
+<select id="getActivityList" parameterType="map" resultType="ActivityOutput">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.progressstatus.getActivityList][leejw]  */
+    <![CDATA[
+        WITH THIS_WEEK AS (
+            SELECT  
+                #{cntrctChgId} AS CNTRCT_CHG_ID,
+            CASE 
+                WHEN #{weekType} = 0 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1), 'YYYY-MM-DD')
+                WHEN #{weekType} = 1 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                WHEN #{weekType} = 2 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) - INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                WHEN #{weekType} = 3 THEN
+                    #{startDate}
+            END AS THIS_S,
+            CASE 
+                WHEN #{weekType} = 0 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER), 'YYYY-MM-DD')
+                WHEN #{weekType} = 1 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                WHEN #{weekType} = 2 THEN
+                    TO_CHAR(TO_DATE(#{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) - INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                WHEN #{weekType} = 3 THEN
+                    #{endDate}
+            END AS THIS_E
+        ),
+        THIS_DATE AS (
+            SELECT
+                #{cntrctChgId} AS CNTRCT_CHG_ID,
+                THIS_S AS THIS_START,
+                THIS_E AS THIS_END,
+                TO_CHAR(TO_DATE(THIS_S, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD') AS NEXT_START,
+                TO_CHAR(TO_DATE(THIS_E, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD') AS NEXT_END,
+                TO_CHAR(TO_DATE(THIS_S, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD') AS PREV_START,
+                TO_CHAR(TO_DATE(THIS_E, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD') AS PREV_END,
+                TO_CHAR(TO_DATE(THIS_S, 'YYYY-MM-DD') + INTERVAL '2 WEEK', 'YYYY-MM-DD') AS NEXT_START2
+            FROM THIS_WEEK
+        )
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY PW.WBS_CD, PA.ACTIVITY_ID) AS SEQ_NUM,
+            PW.WBS_CD,
+            PW.WBS_NM,
+            PA.ACTIVITY_ID,
+            PA.ACTIVITY_NM,
+            PA.PLAN_START AS PLAN_BGN_DATE,
+            PA.PLAN_FINISH AS PLAN_END_DATE,
+            PA.ACTUAL_START AS ACTUAL_BGN_DATE,
+            PA.ACTUAL_FINISH AS ACTUAL_END_DATE
+        FROM PR_ACTIVITY PA
+        INNER JOIN THIS_DATE TD ON PA.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID
+        LEFT JOIN PR_WBS PW ON PA.CNTRCT_CHG_ID = PW.CNTRCT_CHG_ID AND PA.WBS_CD = PW.WBS_CD
+        JOIN PR_REVISION PR ON PA.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND PA.REVISION_ID = PR.REVISION_ID AND PR.LAST_REVISION_YN = 'Y'
+        WHERE PA.CNTRCT_CHG_ID = #{cntrctChgId}
+            AND (
+                PA.PLAN_START BETWEEN TD.THIS_START AND TD.THIS_END
+                OR PA.PLAN_FINISH BETWEEN TD.THIS_START AND TD.THIS_END
+                OR (PA.PLAN_START <= TD.THIS_START AND PA.PLAN_FINISH >= TD.THIS_END)
+            )
+        ORDER BY
+            PW.WBS_CD,
+            PA.ACTIVITY_ID
+    ]]>
+</select>
+
+<select id="getProcessRate" parameterType="map" resultType="processRateOutPut">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.progressstatus.getProcessRate][leejw]  */
+    WITH GET_REVISION AS (
+        <include refid="sql_geRevisionId"/>
+    )
+    <![CDATA[
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD) AS SEQ_NUM ,
+        CCB.UNIT_CNST_TYPE ,
+        CCB.CNSTTY_CD ,
+        CCB.CNSTTY_NM ,
+        CCB.CNT_COST ,
+        ROUND(SUM(PREV_PLAN_CUM),0) AS PREV_PLAN_CUM ,
+        ROUND(SUM(PREV_ACTUAL_CUM),0) AS PREV_ACTUAL_CUM  ,
+        ROUND(SUM(THIS_PLAN_AMT),0) AS THIS_PLAN_AMT ,
+        ROUND(SUM(ACTUAL_AMT),0) AS ACTUAL_AMT ,
+        ROUND(COALESCE(SUM(THIS_PLAN_AMT), 0) + COALESCE(SUM(PREV_PLAN_CUM), 0), 0) AS THIS_PLAN_CUM,
+        ROUND(COALESCE(SUM(PREV_ACTUAL_CUM),0) + COALESCE(SUM(ACTUAL_AMT),0),0) AS THIS_ACTUAL_CUM ,
+        ROUND(SUM(NEXT_PLAN_AMT),0) AS NEXT_PLAN_AMT
+    FROM (
+           SELECT
+                UNIT_CNST_TYPE ,
+                CNSTTY_CD ,
+                CNSTTY_SN,
+                CNSTTY_NM,
+                MTRL_AM + LBR_AM+GNRLEXPNS_AM AS CNT_COST
+           FROM CT_CBS
+           WHERE CNTRCT_CHG_ID  = #{cntrctChgId}) AS CCB
+    LEFT JOIN (
+        WITH THIS_WEEK AS(
+            SELECT CASE WHEN #{weekType} = 0 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1), 'YYYY-MM-DD')
+                        WHEN #{weekType}  =1 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                        WHEN #{weekType}  =2 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) - INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                        WHEN #{weekType}  =3 THEN
+                            #{startDate}
+                        END AS THIS_S,
+                        CASE WHEN  #{weekType}  = 0 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER), 'YYYY-MM-DD')
+                        WHEN #{weekType}  =1 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+                        WHEN #{weekType}  =2 THEN
+                            TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) - INTERVAL '1 WEEK' , 'YYYY-MM-DD')
+                        WHEN #{weekType}  =3 THEN
+                            #{endDate}
+                        END AS THIS_E
+        ),
+        THIS_DATE AS(
+                SELECT #{cntrctChgId} AS CNTRCT_CHG_ID
+                    , THIS_S AS THIS_START
+                    , THIS_E AS THIS_END
+                    , TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS NEXT_START
+                    , TO_CHAR(TO_DATE( THIS_E, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS NEXT_END
+                    , TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS PREV_START
+                    , TO_CHAR(TO_DATE( THIS_E, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS PREV_END
+                    , TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') + INTERVAL '2 WEEK', 'YYYY-MM-DD')  AS NEXT_START2
+                FROM THIS_WEEK
+            	)
+        SELECT CC.UNIT_CNST_TYPE 
+            , CC.CNSTTY_CD 
+            , CC.CNSTTY_SN
+            , CC.CNSTTY_NM 
+            , SUM(PREV_PLAN.PREV_PLAN_CUM) AS PREV_PLAN_CUM 
+            , SUM(PREV_ACT.PREV_ACTUAL) AS PREV_ACTUAL_CUM
+            , SUM(THIS_PLAN.THIS_PLAN_AMT) AS THIS_PLAN_AMT
+            , SUM(THIS_ACT.THIS_ACTUAL) AS ACTUAL_AMT
+            , SUM(NEXT_PLAN.NEXT_PLAN_AMT) AS NEXT_PLAN_AMT
+        FROM CT_CBS CC 
+            LEFT JOIN 
+            ( 
+                SELECT PPLAN.CNTRCT_CHG_ID, PPLAN.CNSTTY_SN, 
+                	SUM(PPLAN.RSCE_QTY/ PPLAN.DURATION *PPLAN.THIS_MONTH  * PPLAN.AMT) AS PREV_PLAN_CUM 
+                FROM
+                (SELECT 
+                    CCD.CNSTTY_SN,
+                    PA.CNTRCT_CHG_ID,  
+                    PQ.DTL_CNSTTY_SN, 
+                    PQ.RSCE_QTY, 
+                    PA.PLAN_START, 
+                    PA.PLAN_FINISH,  
+                    (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                    (TO_DATE(CASE WHEN PA.PLAN_FINISH > TD.PREV_END THEN TD.PREV_END  ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                    - TO_DATE(PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                    (CCD.MTRL_UPRC + CCD.LBR_UPRC + CCD.GNRLEXPNS_UPRC) AS AMT
+                FROM PR_ACTIVITY AS PA 
+                	INNER JOIN THIS_DATE  AS TD ON PA.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID
+                	INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                	INNER JOIN CT_CBS_DETAIL CCD ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1=1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId}
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  TD.THIS_START
+                    ) AS PPLAN GROUP BY PPLAN.CNTRCT_CHG_ID, PPLAN.CNSTTY_SN
+            ) AS PREV_PLAN ON CC.CNTRCT_CHG_ID = PREV_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = PREV_PLAN.CNSTTY_SN
+            LEFT JOIN 
+                (SELECT CCD.CNSTTY_SN,  
+                        SUM(CDRQ.WORK_QTY * (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) ) AS PREV_ACTUAL
+                FROM CW_DAILY_REPORT_QDB CDRQ 
+                INNER JOIN CT_CBS_DETAIL CCD ON  CDRQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND  CDRQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN AND CDRQ.RSCE_CD = CCD.RSCE_CD AND CCD.DLT_YN ='N'
+                INNER JOIN THIS_DATE  AS TD ON CCD.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID
+                WHERE CDRQ.DAILY_REPORT_ID  IN ( SELECT DAILY_REPORT_ID FROM CW_DAILY_REPORT CDR WHERE CDR.CNTRCT_NO = #{cntrctNo}
+                            AND CDR.DAILY_REPORT_DATE < TD.THIS_START
+                            AND CDRQ.DLT_YN ='N')
+                GROUP BY 
+                    CCD.CNSTTY_SN) AS PREV_ACT
+                ON CC.CNSTTY_SN  = PREV_ACT.CNSTTY_SN
+            LEFT JOIN
+            ( 
+               SELECT  TPLAN.CNTRCT_CHG_ID, TPLAN.CNSTTY_SN, 
+               SUM(TPLAN.RSCE_QTY/ TPLAN.DURATION * TPLAN.THIS_MONTH  * TPLAN.AMT) AS THIS_PLAN_AMT
+               FROM ( SELECT   
+               			CCD.CNSTTY_SN,
+                        PA.CNTRCT_CHG_ID,  
+                        PQ.DTL_CNSTTY_SN, 
+                        PQ.RSCE_QTY, 
+                        PA.PLAN_START, 
+                        PA.PLAN_FINISH,  
+                        (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                        (TO_DATE(CASE WHEN PA.PLAN_FINISH > TD.NEXT_START THEN TD.THIS_END  ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                        - TO_DATE(CASE WHEN PA.PLAN_START > TD.PREV_END THEN PA.PLAN_START ELSE TD.THIS_START END, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                        (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) AS AMT
+                FROM PR_ACTIVITY AS PA
+                    INNER JOIN THIS_DATE  AS TD ON PA.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID
+                    INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                    INNER JOIN CT_CBS_DETAIL CCD  ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1 = 1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId} 	-- cntrctChgId
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  TD.NEXT_START
+                    AND PA.PLAN_FINISH > TD.THIS_END
+                    ) AS TPLAN GROUP BY TPLAN.CNTRCT_CHG_ID, TPLAN.CNSTTY_SN
+            ) AS THIS_PLAN ON CC.CNTRCT_CHG_ID = PREV_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = THIS_PLAN.CNSTTY_SN
+            LEFT JOIN 
+                (SELECT CCD.CNSTTY_SN,  
+                        SUM(CDRQ.WORK_QTY * (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) ) AS THIS_ACTUAL
+                FROM CW_DAILY_REPORT_QDB CDRQ 
+                INNER JOIN CT_CBS_DETAIL CCD ON  CDRQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND  CDRQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN AND CDRQ.RSCE_CD = CCD.RSCE_CD AND CCD.DLT_YN ='N'
+                INNER JOIN THIS_DATE  AS TD ON CCD.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID
+                WHERE CDRQ.DAILY_REPORT_ID  IN ( SELECT DAILY_REPORT_ID FROM CW_DAILY_REPORT CDR WHERE CDR.CNTRCT_NO = #{cntrctNo}   -- cntrctNo
+                                                 AND CDR.DAILY_REPORT_DATE BETWEEN TD.THIS_START AND TD.THIS_END 
+                                                 AND CDRQ.DLT_YN ='N')
+                GROUP BY 
+                    CCD.CNSTTY_SN) AS THIS_ACT
+            ON CC.CNSTTY_SN  = THIS_ACT.CNSTTY_SN
+            LEFT JOIN
+            ( 
+               SELECT  NPLAN.CNTRCT_CHG_ID, NPLAN.CNSTTY_SN, 
+               SUM(NPLAN.RSCE_QTY/ NPLAN.DURATION *NPLAN.THIS_MONTH  * NPLAN.AMT) AS NEXT_PLAN_AMT
+               FROM ( SELECT  CCD.CNSTTY_SN, 
+                         PA.CNTRCT_CHG_ID,  
+                         PQ.DTL_CNSTTY_SN,
+                         PQ.RSCE_QTY, 
+                         PA.PLAN_START, 
+                         PA.PLAN_FINISH,  
+                         (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                         (TO_DATE(CASE WHEN PA.PLAN_FINISH > TD.NEXT_START2 THEN TD.NEXT_END  ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                         - TO_DATE(CASE WHEN PA.PLAN_START > TD.THIS_END THEN PA.PLAN_START ELSE TD.NEXT_START END, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                          (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) AS AMT
+                      FROM PR_ACTIVITY AS PA 
+                	INNER JOIN THIS_DATE  AS TD ON PA.CNTRCT_CHG_ID = TD.CNTRCT_CHG_ID    
+	                INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                    INNER JOIN CT_CBS_DETAIL CCD  ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1 = 1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId} 
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  TD.THIS_END
+                    AND PA.PLAN_FINISH > TD.NEXT_START2
+                    ) AS NPLAN GROUP BY NPLAN.CNTRCT_CHG_ID, NPLAN.CNSTTY_SN
+            ) AS NEXT_PLAN ON CC.CNTRCT_CHG_ID = NEXT_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = NEXT_PLAN.CNSTTY_SN
+        WHERE 1 = 1 
+        AND CC.CNTRCT_CHG_ID  = #{cntrctChgId} 
+        GROUP BY 
+            CC.UNIT_CNST_TYPE , CC.CNSTTY_CD , CC.CNSTTY_SN,  CC.CNSTTY_NM 
+    ) AS PLAN_C ON CCB.UNIT_CNST_TYPE = PLAN_C.UNIT_CNST_TYPE AND CCB.CNSTTY_CD = LEFT(PLAN_C.CNSTTY_CD, LENGTH(CCB.CNSTTY_CD))
+    GROUP BY 
+        CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD , CCB.CNSTTY_NM, CCB.CNT_COST
+    ORDER BY 
+        CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD
+    ]]>
+</select>
+
+<select id="getProcessRateBaseData" parameterType="map" resultType="map">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.progressstatus.getProcessRateBaseData][gwlee]  */
+    WITH THIS_WEEK AS(
+		SELECT CASE WHEN #{weekType} = 0 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1), 'YYYY-MM-DD')
+					WHEN #{weekType}  =1 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+					WHEN #{weekType}  =2 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE - (EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER - 1) - INTERVAL '1 WEEK', 'YYYY-MM-DD')
+					WHEN #{weekType}  =3 THEN
+						#{startDate}
+				END AS THIS_S,
+				CASE WHEN  #{weekType}  = 0 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER), 'YYYY-MM-DD')
+					WHEN #{weekType}  =1 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) + INTERVAL '1 WEEK', 'YYYY-MM-DD')
+					WHEN #{weekType}  =2 THEN
+						TO_CHAR(TO_DATE( #{startDate}, 'YYYY-MM-DD')::DATE + (7 - EXTRACT(ISODOW FROM TO_DATE(#{startDate}, 'YYYY-MM-DD'))::INTEGER) - INTERVAL '1 WEEK' , 'YYYY-MM-DD')
+					WHEN #{weekType}  =3 THEN
+						#{endDate}
+				END AS THIS_E
+        )
+    SELECT 	THIS_S AS THIS_START,
+            THIS_E AS THIS_END,
+			TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS NEXT_START,
+			TO_CHAR(TO_DATE( THIS_E, 'YYYY-MM-DD') + INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS NEXT_END,
+			TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS PREV_START,
+			TO_CHAR(TO_DATE( THIS_E, 'YYYY-MM-DD') - INTERVAL '1 WEEK', 'YYYY-MM-DD')  AS PREV_END,
+			TO_CHAR(TO_DATE( THIS_S, 'YYYY-MM-DD') + INTERVAL '2 WEEK', 'YYYY-MM-DD')  AS NEXT_START2
+    FROM 	THIS_WEEK
+</select>
+
+<select id="newTypeGetProcessRate" parameterType="map" resultType="processRateOutPut">
+/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.progressstatus.newTypeGetProcessRate][gwlee]  */
+    WITH GET_REVISION AS (
+        <include refid="sql_geRevisionId"/>
+    )
+    <![CDATA[
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD) AS SEQ_NUM ,
+        CCB.UNIT_CNST_TYPE ,
+        CCB.CNSTTY_CD ,
+        CCB.CNSTTY_NM ,
+        CCB.CNT_COST ,
+        ROUND(SUM(PREV_PLAN_CUM),0) AS PREV_PLAN_CUM ,
+        ROUND(SUM(PREV_ACTUAL_CUM),0) AS PREV_ACTUAL_CUM  ,
+        ROUND(SUM(THIS_PLAN_AMT),0) AS THIS_PLAN_AMT ,
+        ROUND(SUM(ACTUAL_AMT),0) AS ACTUAL_AMT ,
+        ROUND(COALESCE(SUM(THIS_PLAN_AMT), 0) + COALESCE(SUM(PREV_PLAN_CUM), 0), 0) AS THIS_PLAN_CUM,
+        ROUND(COALESCE(SUM(PREV_ACTUAL_CUM),0) + COALESCE(SUM(ACTUAL_AMT),0),0) AS THIS_ACTUAL_CUM ,
+        ROUND(SUM(NEXT_PLAN_AMT),0) AS NEXT_PLAN_AMT
+    FROM (
+           SELECT
+                UNIT_CNST_TYPE ,
+                CNSTTY_CD ,
+                CNSTTY_SN,
+                CNSTTY_NM,
+                MTRL_AM + LBR_AM+GNRLEXPNS_AM AS CNT_COST
+           FROM CT_CBS
+           WHERE CNTRCT_CHG_ID  = #{cntrctChgId}) AS CCB
+    LEFT JOIN (        
+        SELECT CC.UNIT_CNST_TYPE 
+            , CC.CNSTTY_CD 
+            , CC.CNSTTY_SN
+            , CC.CNSTTY_NM 
+            , SUM(PREV_PLAN.PREV_PLAN_CUM) AS PREV_PLAN_CUM 
+            , SUM(PREV_ACT.PREV_ACTUAL) AS PREV_ACTUAL_CUM
+            , SUM(THIS_PLAN.THIS_PLAN_AMT) AS THIS_PLAN_AMT
+            , SUM(THIS_ACT.THIS_ACTUAL) AS ACTUAL_AMT
+            , SUM(NEXT_PLAN.NEXT_PLAN_AMT) AS NEXT_PLAN_AMT
+        FROM CT_CBS CC 
+            LEFT JOIN 
+            ( 
+                SELECT PPLAN.CNTRCT_CHG_ID, PPLAN.CNSTTY_SN, 
+                	SUM(PPLAN.RSCE_QTY/ PPLAN.DURATION *PPLAN.THIS_MONTH  * PPLAN.AMT) AS PREV_PLAN_CUM 
+                FROM
+                (SELECT 
+                    CCD.CNSTTY_SN,
+                    PA.CNTRCT_CHG_ID,  
+                    PQ.DTL_CNSTTY_SN, 
+                    PQ.RSCE_QTY, 
+                    PA.PLAN_START, 
+                    PA.PLAN_FINISH,  
+                    (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                    (TO_DATE(CASE WHEN PA.PLAN_FINISH > #{prevEnd} THEN #{prevEnd}   ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                    - TO_DATE(PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                    (CCD.MTRL_UPRC + CCD.LBR_UPRC + CCD.GNRLEXPNS_UPRC) AS AMT
+                FROM PR_ACTIVITY AS PA 
+                	INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                	INNER JOIN CT_CBS_DETAIL CCD ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1=1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId}
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  #{thisStart}
+                    ) AS PPLAN GROUP BY PPLAN.CNTRCT_CHG_ID, PPLAN.CNSTTY_SN
+            ) AS PREV_PLAN ON CC.CNTRCT_CHG_ID = PREV_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = PREV_PLAN.CNSTTY_SN
+            LEFT JOIN 
+                (SELECT CCD.CNSTTY_SN,  
+                        SUM(CDRQ.WORK_QTY * (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) ) AS PREV_ACTUAL
+                FROM CW_DAILY_REPORT_QDB CDRQ 
+                INNER JOIN CT_CBS_DETAIL CCD ON  CDRQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND  CDRQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN AND CDRQ.RSCE_CD = CCD.RSCE_CD AND CCD.DLT_YN ='N'
+                WHERE CDRQ.DAILY_REPORT_ID  IN ( SELECT DAILY_REPORT_ID FROM CW_DAILY_REPORT CDR WHERE CDR.CNTRCT_NO = #{cntrctNo}
+                            AND CDR.DAILY_REPORT_DATE < #{thisStart}
+                            AND CDR.DLT_YN ='N')
+				AND CDRQ.DLT_YN ='N'
+                GROUP BY 
+                    CCD.CNSTTY_SN) AS PREV_ACT
+                ON CC.CNSTTY_SN  = PREV_ACT.CNSTTY_SN
+            LEFT JOIN
+            ( 
+               SELECT  TPLAN.CNTRCT_CHG_ID, TPLAN.CNSTTY_SN, 
+               SUM(TPLAN.RSCE_QTY/ TPLAN.DURATION * TPLAN.THIS_MONTH  * TPLAN.AMT) AS THIS_PLAN_AMT
+               FROM ( SELECT   
+               			CCD.CNSTTY_SN,
+                        PA.CNTRCT_CHG_ID,  
+                        PQ.DTL_CNSTTY_SN, 
+                        PQ.RSCE_QTY, 
+                        PA.PLAN_START, 
+                        PA.PLAN_FINISH,  
+                        (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                        (TO_DATE(CASE WHEN PA.PLAN_FINISH > #{nextStart} THEN #{thisEnd}  ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                        - TO_DATE(CASE WHEN PA.PLAN_START > #{prevEnd} THEN PA.PLAN_START ELSE #{thisStart} END, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                        (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) AS AMT
+                FROM PR_ACTIVITY AS PA
+                    INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                    INNER JOIN CT_CBS_DETAIL CCD  ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1 = 1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId} 	-- cntrctChgId
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  #{nextStart}
+                    AND PA.PLAN_FINISH > #{nextEnd}
+                    ) AS TPLAN GROUP BY TPLAN.CNTRCT_CHG_ID, TPLAN.CNSTTY_SN
+            ) AS THIS_PLAN ON CC.CNTRCT_CHG_ID = PREV_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = THIS_PLAN.CNSTTY_SN
+            LEFT JOIN 
+                (SELECT CCD.CNSTTY_SN,  
+                        SUM(CDRQ.WORK_QTY * (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) ) AS THIS_ACTUAL
+                FROM CW_DAILY_REPORT_QDB CDRQ 
+                INNER JOIN CT_CBS_DETAIL CCD ON  CDRQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND  CDRQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN AND CDRQ.RSCE_CD = CCD.RSCE_CD AND CCD.DLT_YN ='N'
+                WHERE CDRQ.DAILY_REPORT_ID  IN ( SELECT DAILY_REPORT_ID FROM CW_DAILY_REPORT CDR WHERE CDR.CNTRCT_NO = #{cntrctNo}   -- cntrctNo
+                                                 AND CDR.DAILY_REPORT_DATE BETWEEN #{thisStart} AND #{thisEnd}
+                                                 AND CDR.DLT_YN ='N')
+				AND CDRQ.DLT_YN ='N'
+                GROUP BY 
+                    CCD.CNSTTY_SN) AS THIS_ACT
+            ON CC.CNSTTY_SN  = THIS_ACT.CNSTTY_SN
+            LEFT JOIN
+            ( 
+               SELECT  NPLAN.CNTRCT_CHG_ID, NPLAN.CNSTTY_SN, 
+               SUM(NPLAN.RSCE_QTY/ NPLAN.DURATION *NPLAN.THIS_MONTH  * NPLAN.AMT) AS NEXT_PLAN_AMT
+               FROM ( SELECT  CCD.CNSTTY_SN, 
+                         PA.CNTRCT_CHG_ID,  
+                         PQ.DTL_CNSTTY_SN,
+                         PQ.RSCE_QTY, 
+                         PA.PLAN_START, 
+                         PA.PLAN_FINISH,  
+                         (TO_DATE(PA.PLAN_FINISH, 'YYYY-MM-DD') - TO_DATE( PA.PLAN_START, 'YYYY-MM-DD')::DATE + 1) AS DURATION, 
+                         (TO_DATE(CASE WHEN PA.PLAN_FINISH > #{nextStart2} THEN #{nextEnd}  ELSE PA.PLAN_FINISH END , 'YYYY-MM-DD' )
+                         - TO_DATE(CASE WHEN PA.PLAN_START > #{thisEnd} THEN PA.PLAN_START ELSE #{nextStart} END, 'YYYY-MM-DD')::DATE + 1)  AS THIS_MONTH, 
+                          (CCD.MTRL_UPRC +CCD.LBR_UPRC +CCD.GNRLEXPNS_UPRC) AS AMT
+                      FROM PR_ACTIVITY AS PA   
+	                INNER JOIN PR_QDB PQ ON PA.CNTRCT_CHG_ID = PQ.CNTRCT_CHG_ID AND PA.REVISION_ID = PQ.REVISION_ID AND PA.ACTIVITY_ID = PQ.ACTIVITY_ID 
+                    INNER JOIN CT_CBS_DETAIL CCD  ON PQ.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID AND PQ.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                WHERE 1 = 1
+                    AND PA.CNTRCT_CHG_ID  = #{cntrctChgId} 
+                    AND PA.REVISION_ID = (SELECT REVISION_ID FROM GET_REVISION)
+                    AND PA.DLT_YN ='N' 
+                    AND PA.EXPT_COST <> 0 
+                    AND PA.PLAN_START <  #{thisEnd}
+                    AND PA.PLAN_FINISH > #{nextStart2}
+                    ) AS NPLAN GROUP BY NPLAN.CNTRCT_CHG_ID, NPLAN.CNSTTY_SN
+            ) AS NEXT_PLAN ON CC.CNTRCT_CHG_ID = NEXT_PLAN.CNTRCT_CHG_ID  AND CC.CNSTTY_SN  = NEXT_PLAN.CNSTTY_SN
+        WHERE 1 = 1 
+        AND CC.CNTRCT_CHG_ID  = #{cntrctChgId} 
+        GROUP BY 
+            CC.UNIT_CNST_TYPE , CC.CNSTTY_CD , CC.CNSTTY_SN,  CC.CNSTTY_NM 
+    ) AS PLAN_C ON CCB.UNIT_CNST_TYPE = PLAN_C.UNIT_CNST_TYPE AND CCB.CNSTTY_CD = LEFT(PLAN_C.CNSTTY_CD, LENGTH(CCB.CNSTTY_CD))
+    GROUP BY 
+        CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD , CCB.CNSTTY_NM, CCB.CNT_COST
+    ORDER BY 
+        CCB.UNIT_CNST_TYPE , CCB.CNSTTY_CD
+    ]]>
+</select>
+
+</mapper>

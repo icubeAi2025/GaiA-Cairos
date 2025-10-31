@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.defectreport">
+    <select id="selectDefectReport" parameterType="defectReportListInput" resultType="defectReportListOutput">
+        /* ["kr.co.ideait.platform.gaiacairos.mybatis.mappers.defectreport.selectDefectReport][dhjung]  */
+		WITH activity_list AS (
+			SELECT dda.dfccy_no
+				 , STRING_AGG(DISTINCT pa.activity_nm, ' / ' ORDER BY pa.activity_nm) AS activity_ids
+			  FROM dt_deficiency_activity dda
+			  JOIN pr_activity pa ON dda.wbs_cd = pa.wbs_cd  
+			   AND dda.activity_id = pa.activity_id
+			   AND pa.dlt_yn = 'N'
+			   AND pa.revision_id = (SELECT pr.revision_id
+									   FROM pr_revision pr 
+									   JOIN cn_contract_change ccc ON ccc.cntrct_chg_id = pr.cntrct_chg_id 
+										AND ccc.last_chg_yn = 'Y' 
+										AND ccc.dlt_yn = 'N'
+									  WHERE pr.cntrct_chg_id LIKE #{cntrctNo}||'%'
+										AND pr.last_revision_yn = 'Y')
+			WHERE dda.cntrct_no = #{cntrctNo}
+			  AND dda.dlt_yn = 'N'
+		 GROUP BY dda.dfccy_no
+		),
+		dfccy_list AS (
+			<![CDATA[
+			SELECT DISTINCT 
+				   dd.dfccy_phase_no 
+				 , ddp.dfccy_phase_nm 
+				 , dd.dfccy_cd
+				 , scc.cmn_cd_nm_krn AS dfccy_cd_nm
+				 , dd.dfccy_no 
+				 , dd.cntrct_no 
+				 , dd.title 
+				 , dd.dfccy_cntnts
+				 , dd.crtc_isue_yn
+				 , dd.dfccy_lct
+				 , dd.atch_file_no
+				 , CASE WHEN da.file_no IS NOT NULL THEN 'Y'
+				        ELSE 'N' 
+				   END AS atch_yn
+		         , dd.rgst_dt AS rgst_date
+				 , to_char(dd.rgst_dt, 'YYYY-MM-DD') AS rgst_dt
+				 , dd.rgstr_id
+				 , sui.usr_nm AS rgstr_nm
+				 , COALESCE(al.activity_ids, '') AS activity_ids
+				 , CASE 
+				 		WHEN COALESCE(dd.rply_yn, '') != '' THEN 'ok'
+						WHEN COALESCE(dd.rply_yn, '') = '' AND rs.end_date <= CURRENT_DATE THEN 'end'
+						WHEN COALESCE(dd.rply_yn, '') = '' AND rs.bgn_date <= CURRENT_DATE AND rs.end_date >= CURRENT_DATE THEN 'ing'
+						ELSE 'wait'
+				 	END AS rply_status
+				 , drp.rply_cd
+				 , CASE WHEN #{lang} = 'en' THEN scc1.cmn_cd_nm_eng
+        				ELSE scc1.cmn_cd_nm_krn
+    				END AS rply_cd_nm
+				 , drp.rgstr_id AS rply_rgstr_id
+				 , CASE 
+				 		WHEN COALESCE(dd.qa_cd, '') != '' THEN 'ok'
+						WHEN COALESCE(dd.qa_cd, '') = '' AND qs.end_date <= CURRENT_DATE THEN 'end'
+						WHEN COALESCE(dd.qa_cd, '') = '' AND qs.bgn_date <= CURRENT_DATE AND qs.end_date >= CURRENT_DATE THEN 'ing'
+						ELSE 'wait'
+				   END AS qa_status
+				 , dd.qa_cd
+				 , CASE WHEN #{lang} = 'en' THEN scc2.cmn_cd_nm_eng
+        				ELSE scc2.cmn_cd_nm_krn
+    			   END AS qa_cd_nm
+				 , dd.qa_rgstr_id
+				 , CASE 
+						WHEN COALESCE(dd.spvs_cd, '') != '' THEN 'ok'
+						WHEN COALESCE(dd.spvs_cd, '') = '' AND qs.end_date <= CURRENT_DATE THEN 'end'  
+						WHEN COALESCE(dd.spvs_cd, '') = '' AND qs.bgn_date <= CURRENT_DATE AND qs.end_date >= CURRENT_DATE THEN 'ing'
+						ELSE 'wait'
+				   END AS spvs_status
+				 , dd.spvs_cd
+				 , CASE WHEN #{lang} = 'en' THEN scc3.cmn_cd_nm_eng
+        				ELSE scc3.cmn_cd_nm_krn
+    			   END AS spvs_cd_nm
+				 , dd.spvs_rgstr_id
+				 , dd.ed_cd
+				 , CASE WHEN #{lang} = 'en' THEN scc4.cmn_cd_nm_eng
+        				ELSE scc4.cmn_cd_nm_krn
+    			   END AS ed_cd_nm
+				 , dd.ed_rgstr_id
+                 , dd.priority_check
+			]]>
+			  FROM dt_deficiency dd
+		 LEFT JOIN activity_list al ON dd.dfccy_no = al.dfccy_no
+		 LEFT JOIN sm_user_info sui ON dd.rgstr_id = sui.usr_id 
+		      JOIN dt_deficiency_phase ddp ON dd.dfccy_phase_no = ddp.dfccy_phase_no
+		 	   AND dd.cntrct_no = ddp.cntrct_no 
+			   AND ddp.dlt_yn = 'N'
+		LEFT JOIN sm_com_code scc ON dd.dfccy_cd = scc.cmn_cd 
+				AND scc.cmn_grp_cd = '19a8bb53-74b4-405a-8d91-2b38555fc7d9' 
+			   AND scc.dlt_yn = 'N'
+		LEFT JOIN dt_deficienty_schedule rs ON rs.dfccy_phase_no = dd.dfccy_phase_no 
+			   AND rs.cntrct_no = dd.cntrct_no 
+			   AND rs.dlt_yn = 'N' and rs.dfccy_phase_cd = '0102'
+		LEFT JOIN dt_deficienty_schedule qs ON qs.dfccy_phase_no = dd.dfccy_phase_no 
+			   AND qs.cntrct_no = dd.cntrct_no 
+			   AND qs.dlt_yn = 'N' and qs.dfccy_phase_cd = '0103' 
+		LEFT JOIN dt_deficiency_reply drp ON dd.dfccy_no = drp.dfccy_no 
+				AND dd.cntrct_no = drp.cntrct_no AND drp.dlt_yn = 'N'
+		LEFT JOIN sm_com_code scc1 ON scc1.cmn_cd = drp.rply_cd 
+				AND scc1.cmn_grp_cd = '86bac69f-e72e-4612-8c70-546cf20c65fe'
+				AND scc1.dlt_yn = 'N'
+		LEFT JOIN sm_com_code scc2 ON scc2.cmn_cd = dd.qa_cd 
+				AND scc2.cmn_grp_cd = '06b4a117-f81a-49de-aa23-3a830981f090'
+				AND scc2.dlt_yn = 'N'
+		LEFT JOIN sm_com_code scc3 ON scc3.cmn_cd = dd.spvs_cd 
+				AND scc3.cmn_grp_cd = '9a35af2e-0af1-478d-bdd6-515f97f8854b'
+				AND scc3.dlt_yn = 'N'
+		LEFT JOIN sm_com_code scc4 ON scc4.cmn_cd = dd.ed_cd
+				AND scc4.cmn_grp_cd = '4668da91-ef9a-4c50-a383-74422735d2f5'
+				AND scc4.dlt_yn = 'N'
+		LEFT JOIN dt_attachments da ON da.file_no = dd.atch_file_no AND da.dlt_yn = 'N'
+				WHERE dd.cntrct_no = #{cntrctNo}
+				AND dd.dlt_yn = 'N'
+		)
+		SELECT *
+		FROM dfccy_list dl
+		WHERE 1=1
+		<if test="keyword != null and keyword != ''">
+			AND (dl.dfccy_no::text ILIKE '%'||#{keyword}||'%' OR dl.title ILIKE '%'||#{keyword}||'%' OR dl.activity_ids ILIKE '%'||#{keyword}||'%' OR dl.rgstr_nm ILIKE '%'||#{keyword}||'%')
+		</if>
+		<if test="dfccyCd != null and dfccyCd != ''">
+			AND dl.dfccy_cd = #{dfccyCd}
+		</if>
+		<if test="dfccyPhaseNoList != null and dfccyPhaseNoList.size > 0">
+			AND dl.dfccy_phase_no IN
+			<foreach item="phseNo" collection="dfccyPhaseNoList" open="(" separator="," close=")">
+				#{phseNo}
+			</foreach>
+		</if>
+		<if test="rgstrIdList != null and rgstrIdList.size > 0">
+			AND dl.rgstr_id IN
+			<foreach item="rgstrId" collection="rgstrIdList" open="(" separator="," close=")">
+				<if test="rgstrId == 'myDfccy'">
+					#{usrId}
+				</if>
+				<if test="rgstrId != 'myDfccy'">
+					#{rgstrId}
+				</if>
+			</foreach>
+		</if>
+		<if test="rgstrNm != null and rgstrNm != ''">
+			AND dl.rgstr_nm ILIKE '%'||#{rgstrNm}||'%'
+		</if>
+		<if test="myRplyYn != null and myRplyYn != ''">
+			AND (dl.qa_rgstr_id = #{usrId} OR dl.spvs_rgstr_id = #{usrId} OR dl.rply_rgstr_id = #{usrId} OR dl.ed_rgstr_id = #{usrId})
+		</if> 
+		<if test="startDfccyNo != null and startDfccyNo != ''">
+			AND dl.dfccy_no <![CDATA[>=]]> #{startDfccyNo}::TEXT
+		</if>
+		<if test="endDfccyNo != null and endDfccyNo != ''">
+			AND dl.dfccy_no <![CDATA[<=]]> #{endDfccyNo}::TEXT
+		</if>
+		<if test="activityNm != null and activityNm != ''">
+			AND dl.activity_ids ILIKE '%'||#{activityNm}||'%'
+		</if>
+		<if test="rplyStatus != null and rplyStatus != ''">
+			AND dl.rply_status = #{rplyStatus}
+		</if>
+		<if test="rplyCd != null and rplyCd != ''">
+			AND dl.rply_cd = #{rplyCd}
+		</if> 
+		<if test="qaStatus != null and qaStatus != ''">
+			AND dl.qa_status = #{qaStatus}
+		</if>
+		<if test="qaCd != null and qaCd != ''">
+			AND dl.qa_cd = #{qaCd}
+		</if>
+		<if test="spvsStatus != null and spvsStatus != ''">
+			AND dl.spvs_status = #{spvsStatus}
+		</if>
+		<if test="spvsCd != null and spvsCd != ''">
+			AND dl.spvs_cd = #{spvsCd}
+		</if>
+		<if test="edCd != null and edCd != ''">
+			AND dl.ed_cd = #{edCd}
+		</if>
+		<if test="startRgstDt != null and startRgstDt != ''">
+			AND DATE(dl.rgst_dt) <![CDATA[>=]]> #{startRgstDt}
+		</if>
+		<if test="endRgstDt != null and endRgstDt != ''">
+			AND DATE(dl.rgst_dt) <![CDATA[<=]]> #{endRgstDt}
+		</if>
+        <if test="priorityCheck != null and priorityCheck != ''">
+           AND dl.priority_check = #{priorityCheck}
+        </if>
+		<if test="crtcIsueYn != null and crtcIsueYn != ''">
+			AND dl.crtc_isue_yn = #{crtcIsueYn}
+		</if>
+		<if test='atachYn != null and atachYn == "Y"'>
+			AND dl.atch_yn = 'Y'
+		</if>
+        ORDER BY dl.rgst_date DESC;
+    </select>
+
+	<select id="selectDfccyReportDetail" parameterType="input" resultType="output">
+		/* ["kr.co.ideait.platform.gaiacairos.mybatis.mappers.defectreport.selectDfccyReportDetail][dhjung]  */
+		WITH activity_list AS (
+			SELECT dda.dfccy_no
+				 , STRING_AGG(DISTINCT pa.activity_nm, ' / ' ORDER BY pa.activity_nm) AS activity_ids
+			  FROM dt_deficiency_activity dda
+			  JOIN pr_activity pa ON dda.wbs_cd = pa.wbs_cd  
+			   AND dda.activity_id = pa.activity_id
+			   AND pa.dlt_yn = 'N'
+			   AND pa.revision_id = (SELECT pr.revision_id
+									   FROM pr_revision pr 
+									   JOIN cn_contract_change ccc ON ccc.cntrct_chg_id = pr.cntrct_chg_id 
+										AND ccc.last_chg_yn = 'Y' 
+										AND ccc.dlt_yn = 'N'
+									  WHERE pr.cntrct_chg_id LIKE #{cntrctNo}||'%'
+										AND pr.last_revision_yn = 'Y')
+			WHERE dda.cntrct_no = #{cntrctNo}
+			  AND dda.dlt_yn = 'N'
+		 GROUP BY dda.dfccy_no
+		)
+		<![CDATA[        
+		SELECT DISTINCT 
+			   dd.dfccy_phase_no 
+			 , dd.dfccy_cd
+			 , scc.cmn_cd_nm_krn AS dfccy_cd_nm
+			 , dd.dfccy_no 
+			 , dd.cntrct_no 
+			 , dd.title 
+			 , dd.dfccy_cntnts
+			 , dd.crtc_isue_yn
+			 , dd.dfccy_lct
+			 , dd.atch_file_no
+			 , to_char(dd.rgst_dt, 'YYYY-MM-DD') AS rgst_dt
+			 , sui.usr_nm AS rgstr_nm
+			 , COALESCE(al.activity_ids, '-') AS activity_ids
+			 , CASE WHEN COALESCE(dd.rply_yn, '') = '' AND dds.bgn_date <= CURRENT_DATE THEN 'ing'
+			 		WHEN COALESCE(dd.rply_yn, '') = '' AND dds.end_date >= CURRENT_DATE THEN 'end'
+			 		WHEN COALESCE(dd.rply_yn, '') != '' THEN 'ok'
+			 	END AS rply_status
+			 , drp.rply_cd
+			 , CASE WHEN #{lang} = 'en' THEN scc1.cmn_cd_nm_eng
+					ELSE scc1.cmn_cd_nm_krn
+				END AS rply_cd_nm
+			 , sui2.usr_nm AS rply_rgstr_nm
+			 , sui3.usr_nm AS rply_ok_nm
+			 , to_char(drp.rply_rgstr_dt, 'YYYY-MM-DD') AS rply_ok_dt
+			 , drp.rply_cntnts
+			 , to_char(drp.rgst_dt, 'YYYY-MM-DD HH24:MI') AS rply_rgst_dt
+			 , drp.rply_yn
+			 , drp.atch_file_no AS rply_atch_file_no
+			 , CASE WHEN COALESCE(qa_cd, '') = '' AND dds.bgn_date <= CURRENT_DATE THEN 'ing'
+			 		WHEN COALESCE(qa_cd, '') = '' AND dds.end_date >= CURRENT_DATE THEN 'end'
+			 		WHEN COALESCE(qa_cd, '') != '' THEN 'ok'
+			   END AS qa_status
+			 , dd.qa_cd
+			 , CASE WHEN #{lang} = 'en' THEN scc2.cmn_cd_nm_eng
+        			ELSE scc2.cmn_cd_nm_krn
+    			END AS qa_cd_nm
+			 , sui4.usr_nm AS qa_rgstr_nm
+			 , to_char(dd.qa_rgst_dt, 'YYYY-MM-DD') AS qa_rgst_dt
+			 , CASE WHEN COALESCE(spvs_cd, '') = '' AND dds.bgn_date <= CURRENT_DATE THEN 'ing'
+			 		WHEN COALESCE(spvs_cd, '') = '' AND dds.end_date >= CURRENT_DATE THEN 'end'
+			 		WHEN COALESCE(spvs_cd, '') != '' THEN 'ok' 
+			   END AS spvs_status
+			 , dd.spvs_cd
+			 , CASE WHEN #{lang} = 'en' THEN scc3.cmn_cd_nm_eng
+        			ELSE scc3.cmn_cd_nm_krn
+    			END AS spvs_cd_nm
+			 , sui5.usr_nm AS spvs_rgstr_nm
+			 , to_char(dd.spvs_rgst_dt, 'YYYY-MM-DD') AS spvs_rgst_dt
+			 , dd.ed_cd
+			 , CASE WHEN #{lang} = 'en' THEN scc4.cmn_cd_nm_eng
+        			ELSE scc4.cmn_cd_nm_krn
+    			END AS ed_cd_nm
+			 , sui6.usr_nm AS ed_rgstr_nm
+			 , to_char(dd.ed_rgst_dt, 'YYYY-MM-DD') AS ed_rgst_dt
+             , dd.priority_check
+		]]>
+		  FROM dt_deficiency dd
+	 LEFT JOIN activity_list al ON dd.dfccy_no = al.dfccy_no
+	 LEFT JOIN sm_user_info sui ON dd.rgstr_id = sui.usr_id 
+	 LEFT JOIN sm_com_code scc ON dd.dfccy_cd = scc.cmn_cd 
+	       AND scc.cmn_grp_cd = '19a8bb53-74b4-405a-8d91-2b38555fc7d9' 
+		   AND scc.dlt_yn = 'N'
+	 LEFT JOIN dt_deficienty_schedule dds ON dds.dfccy_phase_no = dd.dfccy_phase_no 
+	       AND dds.cntrct_no = dd.cntrct_no 
+		   AND dds.dlt_yn = 'N'
+	 LEFT JOIN dt_deficiency_reply drp ON dd.dfccy_no = drp.dfccy_no 
+		   AND dd.cntrct_no = drp.cntrct_no AND drp.dlt_yn = 'N'
+	 LEFT JOIN sm_user_info sui2 ON drp.rgstr_id = sui2.usr_id
+	 LEFT JOIN sm_user_info sui3 ON drp.rply_rgstr_id = sui3.usr_id
+	 LEFT JOIN sm_user_info sui4 ON dd.qa_rgstr_id = sui4.usr_id
+	 LEFT JOIN sm_user_info sui5 ON dd.spvs_rgstr_id = sui5.usr_id
+	 LEFT JOIN sm_user_info sui6 ON dd.ed_rgstr_id = sui6.usr_id
+	 LEFT JOIN sm_com_code scc1 ON scc1.cmn_cd = drp.rply_cd 
+	 	   AND scc1.cmn_grp_cd = '86bac69f-e72e-4612-8c70-546cf20c65fe'
+		   AND scc1.dlt_yn = 'N'
+	 LEFT JOIN sm_com_code scc2 ON scc2.cmn_cd = dd.qa_cd
+	       AND scc2.cmn_grp_cd = '06b4a117-f81a-49de-aa23-3a830981f090'
+		   AND scc2.dlt_yn = 'N'
+	 LEFT JOIN sm_com_code scc3 ON scc3.cmn_cd = dd.spvs_cd
+	       AND scc3.cmn_grp_cd = '9a35af2e-0af1-478d-bdd6-515f97f8854b'
+		   AND scc3.dlt_yn = 'N'
+	 LEFT JOIN sm_com_code scc4 ON scc4.cmn_cd = dd.ed_cd
+	       AND scc4.cmn_grp_cd = '4668da91-ef9a-4c50-a383-74422735d2f5'
+		   AND scc4.dlt_yn = 'N'
+	     WHERE dd.cntrct_no = #{cntrctNo}
+		   AND dd.dfccy_no = #{dfccyNo}
+		   AND dd.dlt_yn = 'N'
+		ORDER BY dd.dfccy_no, dd.dfccy_phase_no, dd.dfccy_cd
+	</select>
+
+    <select id="selectPhaseCd" parameterType="String" resultType="map">
+      /* ["kr.co.ideait.platform.gaiacairos.mybatis.mappers.defectreport.selectPhaseCd][dhjung]  */
+      SELECT dd.dfccy_phase_no
+           , ddp.dfccy_phase_nm 
+        FROM dt_deficiency dd
+        JOIN dt_deficiency_phase ddp ON dd.dfccy_phase_no = ddp.dfccy_phase_no 
+         AND dd.cntrct_no = ddp.cntrct_no 
+         AND ddp.dlt_yn = 'N'
+       WHERE dd.cntrct_no = #{cntrctNo}
+         AND dd.dlt_yn = 'N'
+    GROUP BY dd.dfccy_phase_no, ddp.dfccy_phase_nm, ddp.dsply_ordr
+    ORDER BY ddp.dsply_ordr;
+    </select>
+
+    <select id="selectRgstrNm" parameterType="String" resultType="map">
+      /* ["kr.co.ideait.platform.gaiacairos.mybatis.mappers.defectreport.selectRgstrNm][dhjung]  */
+      SELECT dd.rgstr_id 
+           , sui.usr_nm AS rgstr_nm
+        FROM dt_deficiency dd
+        JOIN sm_user_info sui ON DD.rgstr_id = sui.usr_id 
+       WHERE dd.cntrct_no = #{cntrctNo}
+         AND dd.dlt_yn = 'N'
+    GROUP BY dd.rgstr_id, sui.usr_nm
+    ORDER BY sui.usr_nm;
+    </select>
+</mapper>

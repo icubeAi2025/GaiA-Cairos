@@ -1,0 +1,13 @@
+<div class="modal" id="errorView">
+    <div class="pop_box">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="error_title"></h5>
+        </div>
+        <div class="pop_body">
+			<div class="login-container">
+				<h2 id="error_msg"></h2></h2>
+				<div id="message" style="text-align: center;"></div>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,397 @@
+<div class="modal open">
+	<div class="pop_box _lg">
+		<div class="pop_header">
+			<h5 class="" id="department_add_tit" style="margin: 0px;"></h5>
+			<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+		<div class="pop_body">
+			<div class="s_conts ty1">
+				<span class="tree_route" id="selected_grp"></span>
+				<section class="contents_wrap g-col2 ty1" style="height: auto;">
+					<!-- S: TREE View ------------------------------------------------------------------------ -->
+					<article class="treeview_area g-row2 ty1" style="grid-template-rows: auto;">
+						<div class="treeview_wrap">
+							<div class="treeview" id="jstree1">
+								<!--트리 영역-->
+							</div>
+						</div>
+					</article>
+					<!-- // E: TREE View ------------------------------------------------------------------------ -->
+
+					<article class="conts g-row">
+						<div class="group">
+							<h3 class="conts_tit">{{ message('item.authority.010') }}</h3>
+
+							<div class="conts_grid">
+								<div class="toolbar">
+									<div class="btn_area s_default">
+										<button type="button" class="btn _outline" onclick="popup.department.delete()">{{ message('btn.002') }}</button>
+										<button type="button" class="btn _fill" onclick="popup.department.save()">{{ message('btn.006') }}</button>
+									</div>
+								</div>
+								<div class="grid" id="rght_grp_depts_grid"></div>
+							</div>
+						</div>
+					</article>
+				</section>
+			</div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+  	var popup = {
+		mode: "",
+		data: {},
+		init: function () {
+			popup.data = page.authorityGroup.data;
+			popup.data.rghtGrp = page.authorityGroupUser.data;
+
+			this.jstree.init();
+			this.department.gridInit();
+
+			$("#department_add_tit").text("{{ message('item.authority.012') }}"); //그룹 사용자 추가 (부서)
+
+			$("#selected_grp").text(page.authorityGroupUser.data.selectedAuthorityGroup.rghtGrpNm);
+			
+		},
+
+		close() {
+			page.refresh(false, true);
+			page.popup.close();
+    	},
+
+		department: {
+			data: new Map(),
+			//그리드
+			grid: null,
+			gridInit: function() {
+				this.grid = new tui.Grid({
+					el: document.getElementById('rght_grp_depts_grid'),
+					scrollX: false,
+					scrollY: true,					
+					useClientSort: false,
+					bodyHeight: 300,
+					contextMenu: null,
+					rowHeaders: [
+						{
+							type: 'checkbox',
+							header: `
+								<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+							`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options:[
+									{
+										type:'checkBox'
+									},
+									{
+										type:'trash',
+										success:(rowData)=>{
+											popup.department.iconDel(rowData);
+										}
+									}
+								]
+							}
+						}						
+					],
+					columns:[
+						{ 
+							header: "{{ message('item.dept.002') }}",  // 부서코드
+							name: 'deptId',
+							align: 'center',
+						},
+						{ 
+							header: "{{ message('item.dept.009') }}", // 부서
+							name: 'deptNm',
+							align: 'center',
+						},
+						{ 
+							header: "{{ message('item.com.002') }}",
+							name: 'chgDt',
+							align: 'center'
+						},
+					],
+                });
+
+
+			},
+
+			// 그리드에 데이터를 추가하는 함수
+			addToGrid: function (dept) {
+				if(this.data){
+					// 중복 체크
+					// 이미 그룹 사용자에 저장되어 있는 부서인지 체크
+					const existData = page.authorityGroupUser.data.existAuthUsers;
+					if(existData.findIndex((item) => item.deptId == dept.deptId) > -1){
+                        gaiaCommon.customAlert("{{ message('msg.rght.001') }}"); //이미 권한이 존재합니다.
+						return;
+					}
+
+					//그리드에 이미 추가된 부서인지 체크
+					if (this.data.has(dept.deptId)) {
+                        gaiaCommon.customAlert("{{ message('msg.rght.002') }}"); // 이미 추가된 항목입니다.
+						return;
+					}
+				}
+				// Map의 값을 배열로 변환하여 그리드 데이터에 부서 추가
+				this.data.set(dept.deptId, dept);
+				this.grid.resetData(Array.from(this.data.values())); // 그리드를 새로고침
+			},
+
+			save: function (){
+				//필수 값 데이터 확인
+				const selectedAuthGrpData = page.authorityGroupUser.data.selectedAuthorityGroup; //트리에서 선택된 부서 정보
+				const rghtGrpCd = selectedAuthGrpData.rghtGrpCd;
+				const rghtGrpNo = selectedAuthGrpData.rghtGrpNo;
+				const rghtGrpTy = selectedAuthGrpData.rghtGrpTy;
+
+				if (rghtGrpCd && rghtGrpNo) {
+					//그리드에서 체크된 권한 사용자만 저장.
+					let authGrpDeptListData = [];
+					popup.department.grid.getCheckedRows().forEach(function(v){
+						let data = {
+							authNo: v.deptNo,
+							rghtGrpUsrTy: rghtGrpTy, //권한그룹 사용자 타입 (부서)
+							rghtGrpCd: rghtGrpCd,
+							rghtGrpNo: rghtGrpNo,
+						};
+						authGrpDeptListData.push(data);
+					});
+
+					if(authGrpDeptListData.length > 0){
+						gaiaCommon.post("/api/system/authority-group/users/create", {authorityGroupUserList : authGrpDeptListData},
+                            function (result) {
+                                if(result.ok){
+                                    gaiaCommon.customAlert("{{ message('msg.044') }}"); // 저장되었습니다.
+                                    popup.close();
+                                }else{
+                                    gaiaCommon.customAlert(result.message); // NO DATA.
+                                }
+						    },
+                            function (error) {
+                                console.error(error);
+                                gaiaCommon.customAlert(error.responseJSON?.message);
+                            }
+                        );
+					}else{
+                        gaiaCommon.customAlert("{{ message('msg.rght.003') }}"); //추가할 부서가 선택되지 않았습니다.
+						return;
+					}
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.rght.005') }}"); //권한그룹을 다시 선택해주세요.
+					popup.close();
+				}
+			},
+
+			iconDel: function(rowData) {
+				const deptId = rowData.deptId;
+
+				// 저장된 데이터에서 제거
+				if (this.data.has(deptId)) {
+					this.data.delete(deptId);
+
+					// Map의 값을 배열로 변환하여 그리드에 반영
+					this.grid.resetData(Array.from(this.data.values()));
+				} else {
+					console.error("해당 항목이 없습니다.");
+				}
+			},
+
+			delete() {
+				let deptIdList = [];
+
+
+                this.grid.getCheckedRows().forEach(function(v){
+					deptIdList.push(v.deptId);
+				});
+
+                if (deptIdList.length > 0) {
+                    gaiaCommon.customConfirm("{{ message('item.authority.014') }}", "{{ message('item.authority.014') }}", "{{ message('msg.rght.006') }}", function(){//선택된 부서를 제거하시겠습니까?
+						deptIdList.forEach(function(deptId){
+							popup.department.data.delete(deptId);// 저장된 데이터에서 제거
+						});
+
+						// Map의 값을 배열로 변환하여 그리드에 반영
+						popup.department.grid.resetData(Array.from(popup.department.data.values()));
+					});
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.rght.008') }}"); //제거할 부서를 선택해주세요.
+                }
+			}
+
+		},
+		
+		jstree: {
+			obj: null,
+			data: {
+				breadCrumb: "",
+				upBreadCrumb: "",
+			},
+			refresh: function (data) {
+				if (data) {
+					this.obj.jstree(true).settings.core.data = data;
+				}
+				this.obj.jstree(true).refresh();
+				this.applyTreeStylesAndActions();
+			},
+			getNode: function (id) {
+				return this.obj.jstree("get_node", id);
+			},
+			setBreadcrumb: function (node, sep) {
+				this.data.breadCrumb = this.getBreadcrumb(node, sep);
+				this.data.upBreadCrumb = this.getBreadcrumb(this.obj.jstree("get_node", node.parent), sep);
+			},
+			getBreadcrumb(node, sep) {
+				var breadCrumb = [];
+				while (node) {
+					breadCrumb.unshift(node.text);
+					if (node.parent && node.parent != "#") {
+						node = this.obj.jstree("get_node", node.parent);
+					} else {
+						node = "";
+					}
+				}
+				return sep ? breadCrumb.join(" " + sep + " ") : breadCrumb.join(" > ");
+			},
+			applyTreeStylesAndActions: function(){
+				// 모든 jstree-anchor 요소를 순회하며 nav 요소를 추가
+				$(".jstree-anchor").each(function() {
+					// 이미 nav 요소가 존재하는지 확인하여 중복 추가를 방지
+					if ($(this).next("nav.item_opt").length === 0) {
+						let iconEl = `<nav class="item_opt">
+										<button type="button" class="icon_btn" onclick="popup.jstree.addToGridFromNode($(this))">
+											<i class="ic ic-outgoing"></i>
+											<span class="tooltip">{{ message('btn.040') }}</span>
+										</button>
+									</nav>`;
+						// jstree-anchor 요소 바로 다음에 nav 요소를 삽입
+						//$(this).append(iconEl);
+						$(this).after(iconEl);
+
+					}
+				});
+
+			},
+			addToGridFromNode : function(button){
+				let nodeData = popup.jstree.obj.jstree(true).get_node($(button).parent().parent()[0].id).data.item;
+				
+				// 그리드에 추가
+				popup.department.addToGrid({
+					deptId: nodeData.dept_id,
+					deptNm: nodeData.dept_nm,
+					deptNo: nodeData.dept_no,
+					chgDt: nodeData.chg_dt
+				});
+			},
+			init: function () {
+				let url = "/api/system/department/authority-users/dept-list";
+				let pjtData = page.authorityGroupUser.data;
+
+				let param = {
+					pjtNo: pjtData.pjtNo,
+					cntrctNo: pjtData.cntrctNo,
+					pjtType : pjtData.pjtType
+				}
+				popup.jstree.obj = $("#jstree1").jstree({
+					plugins: ["search"],
+					core: {
+						data: function (obj, cb) {
+							gaiaCommon.get(url, param, function (result) {
+								var data = [];
+								if (result.details?.departmentList) {
+									result.details?.departmentList.forEach((item, index) => {
+										let text = item.dept_nm;
+										let maxLength = 15;  // 15자 이상이면 자름.
+										let displayText = text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+										data.push({
+											id: item.dept_id,
+											parent: item.up_dept_id ? item.up_dept_id : "#",
+											text: displayText,
+											state: { opened: true },
+											data: {item},
+											icons: 'fa-solid fa-caret-right',
+											li_attr: { 
+												title: text
+											},
+										});
+									});
+									cb.call(obj, data);
+
+								}
+							});
+						},
+						check_callback: true,
+						themes : {
+										"theme" : "default",
+										"dots": false,
+										"responsive": false,
+										"icons" : false
+						}
+					},
+				});
+				
+				this.obj.on("select_node.jstree", function (e, data) {
+
+					popup.jstree.applyTreeStylesAndActions();
+					$('.jstree-anchor').siblings('nav.item_opt').css('display', 'none');
+					$('.jstree-anchor.jstree-clicked').siblings('nav.item_opt').css('display', 'contents');
+
+				});
+			},
+
+		},
+
+  	};
+
+	// 그리드 커스텀 체크 박스
+	if (typeof window.DepartmentColumnCheckbox === 'undefined') { //클래스가 이미 선언되어 있는지 확인
+		class DepartmentColumnCheckbox {
+			constructor(props) {
+				const el = document.createElement("div");
+				this.el = el;
+				this.render(props);
+			}
+
+			getElement(props) {
+				return this.el;
+			}
+
+			render(props) {
+				let chk = "";
+				if(Boolean(props.value)){
+					chk = "checked";
+				}
+
+				this.el.innerHTML = `<div style="display: flex;align-items: center;justify-content: center;">
+					<input class="checkGroup" style="margin:0 10px 0 0;" type="checkbox" `+chk+` name="chk" deptNo="`+props.grid.getRow(props.rowKey).deptNo+`">
+					<i class='ic ic-delete' style="margin:0 10px 0 0;" onclick='popup.department.iconDel(`+props.rowKey+`);'></i></div>`;
+			}
+		}
+
+		window.DepartmentColumnCheckbox = DepartmentColumnCheckbox;
+	}
+	  
+	
+	$(function(){
+		gaia.create({
+			$init: function ($params) {
+				popup.init();
+                
+                gaia.loaded = true;
+            }
+        });
+    })    
+
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>

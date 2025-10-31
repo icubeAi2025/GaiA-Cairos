@@ -1,0 +1,838 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %} {% block head %}
+
+<style>
+    .shareName {
+        padding: 4.55px 8.45px;
+    }
+
+    .edtr_td {
+        background: #F2F2F2;
+    }
+
+    .table, tr, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+
+    td {
+        padding: 10px 8px;
+        color: black;
+        font-size: 13pt;
+    }
+
+    .edtr_center {
+        text-align: center;
+    }
+
+    .edtr_right {
+        text-align: right;
+    }
+
+    .doc_title {
+        word-break: break-word;
+        white-space: normal;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        display: block;
+    }
+
+    .sign_image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+</style>
+
+{% endblock %} {% block content %}
+
+<section class="contents_wrap">
+    <article class="conts">
+        <div class="group">
+            <h3 class="conts_tit" id="docTitle"></h3>
+            <div class="g-group g-col2 ty3">
+                <div class="group">
+                    <h4 class="conts_s-tit collapse_head">
+                        {{ message('item.app.039') }}
+                        <div class="btn_group iconbtns" style="display: none;">
+                            <button type="button" class="icon_btn" onclick="methods.openPDF()">
+                                <i class="ic ic-printer"></i>
+                                <span class="tooltip">PDF</span>
+                            </button>
+                        </div>
+
+                        <button type="button" class="icon_btn collapse_btn">
+                            <i class="ic ic-arrow"></i>
+                            <span class="blind">영역접기</span>
+                        </button>
+                    </h4>
+                    <div class="conts_form collapse show">
+                        <div class="form_box">
+                            <!-- 결재선 요약 row -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form_label">{{ message('item.app.008') }}</div>
+                                    <div class="form_data">
+                                        <ul class="list_sty sign_list" id="leftApLineList"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 결재문서 내용 -->
+                        <div class="box default doc_title">
+                            <div class="doc_header" id="apDocHeader"></div>
+                            <div class="doc_body" id="apDocBody">
+                                <div style="min-height: 360px;" id="docContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <div class="box no_bd">
+                        <!-- 결재선 -->
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                {{ message('item.app.003') }}
+                                <div class="btn_group iconbtns">
+                                    <button type="button" class="icon_btn" onclick="methods.modalOpen()">
+                                        <i class="ic ic-eyes"></i>
+                                        <span class="tooltip">{{ message('item.app.041') }}</span>
+                                    </button>
+                                </div>
+
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="blind">영역접기</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body scroll">
+                                <!-- 결재자가 있을 경우 -->
+                                <div class="doc_list" id="rightApLineList">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 공유자 -->
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                {{ message('item.app.004') }}
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="blind">영역접기</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body">
+                                <div class="conts_tab">
+                                    <!-- TAB NAV -->
+                                    <nav class="tab_nav">
+                                        <ul class="tab_list tab_btngroup">
+                                            <li class="tab_item" data-id="full_share" disabled>{{ message('item.app.005') }}</li>
+                                            <li class="tab_item" data-id="partial_share" disabled>{{ message('item.app.004') }}</li>
+                                        </ul>
+                                    </nav>
+                                    <!-- TAB Conts -->
+                                    <div class="tab_conts_wrap">
+                                        
+                                        <div id="partial_share" class="tab_conts">
+                                            <div class="search_wrap w-full">
+                                                <span class="selectbox" data-btn-toggle="dropdown" id="shareSelectbox">
+                                                    <span class="sty_ip" id="apCnrsRngBtn">{{ message('item.app.011') }}</span>
+                                                    <div class="dropdown" id="radioMenu">
+                                                        <ul class="list_sty dropdown_list">
+                                                            <li class="list_item">
+                                                                <label class="form_check">
+                                                                    <input class="check_mark" type="radio" name="apCnrsRng" value="cnrsUser" checked>
+                                                                    <span class="check_label">{{ message('item.app.011') }}</span>
+                                                                </label>
+                                                            </li>
+                                                            <li class="list_item">
+                                                                <label class="form_check">
+                                                                    <input class="check_mark" type="radio" name="apCnrsRng" value="cnrsDept">
+                                                                    <span class="check_label">{{ message('item.app.012') }}</span>
+                                                                </label>
+                                                                <div class="in_list">
+                                                                    <label class="form_check">
+                                                                        <input class="check_mark" type="checkbox" name="subDeptCheck" value="cnrsSub">
+                                                                        <span class="check_label">{{ message('item.app.013') }}</span>
+                                                                    </label>
+                                                                </div>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </span>
+
+                                                <div class="searchbox_wrap" id="sharedBox">
+                                                    <input type="text" id="nameSearhInput" placeholder="" oninput="eapproval.shared.search(event)" onkeyup="if(window.event.keyCode == 13) eapproval.shared.search(event)" disabled>
+                                                    <button type="button" class="btn icon_btn" id="searchBtn" disabled style="z-index: 10">
+                                                        <i class="ic ic-search"></i>
+                                                        <span class="tooltip">검색</span>
+                                                    </button>
+                                                    <div class="lay_pop filter_list" id="shareInputBox">
+                                                        <div class="filter_desc">
+                                                            <span id="inputTwo">{{ message('msg.app.033') }}</span>
+                                                        </div>
+
+                                                        <!-- 공유자 검색 목록 -->
+                                                        <div id="searchedList"></div>
+
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                            <!-- 공유자가 없을 경우 -->
+                                            <p class="data_info" id="noShared">{{ message('msg.app.007') }}</p>
+
+                                            <!-- 공유자가 있을 경우 -->
+                                            <p class="selected_list scroll" id="selectShareList"></p>
+
+                                        </div>
+                                        <div id="full_share" class="tab_conts"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 첨부파일 -->
+                        <div class="group">
+                            <h4 class="conts_s-tit collapse_head">
+                                첨부파일
+                                <button type="button" class="icon_btn collapse_btn">
+                                    <i class="ic ic-arrow"></i>
+                                    <span class="blind">영역접기</span>
+                                </button>
+                            </h4>
+                            <div class="collapse collapse_body scroll">
+                                <p class="data_info" style="display: none;">{{message('msg.029')}} </p>
+                                <ul class="file_list" style="display: none;">
+
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- 문서함 선택 -->
+                        <div class="group" id="docBoxGroup" style="display: none">
+                            <div class="box no_bd">
+                                <div class="group">
+                                    <h4 class="conts_s-tit collapse_head">
+                                        문서함
+                                        <button type="button" class="icon_btn collapse_btn">
+                                            <i class="ic ic-arrow"></i>
+                                            <span class="tooltip">문서함</span>
+                                        </button>
+                                    </h4>
+                                    <div class="collapse collapse_body scroll">
+                                        <!-- 문서함이 없을 경우 -->
+                                        <p class="data_info" id="noDocBox">선택된 문서함이 없습니다.</p>
+                                        <!-- 문서함이 있을 경우 -->
+                                        <span class="selected_item" id="select_neviId" style="display: none"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+{% include "page/eapproval/approval/approval_line_detail_modal" %}
+{% include "page/eapproval/draft/draft_dept_tree" %}
+{% include "page/eapproval/eapproval" %}
+
+{% endblock content %}
+
+{% block footer_script %}
+
+
+<script type="text/javascript">
+    const urlParams = new URLSearchParams(location.search);
+    const type = urlParams.get('type');
+    const selectApDocId = urlParams.get('apDocId');
+    const pjtNo = urlParams.get('pjtNo');
+    const cntrctNo = urlParams.get('cntrctNo');
+    const frmId = urlParams.get('frmId');
+    let imgDir = "{{ imgDir }}";
+    let selectApDocNo = null;
+    let apDoc = null;
+    let isPending = false;
+    let shareList = [];                                                   // 공유자 저장 변수
+    let delShareList = [];
+
+    var methods = {
+        init(){
+            eapproval.shared.tabActive();
+
+            methods.getDetail(selectApDocId);
+
+            if(frmId === "16") {
+                $("#docBoxGroup").show();
+                $('#docContent').css("height", "520px");
+            }
+
+            switch(type) {
+                case 'waiting': 
+                    gaiaPortal.navMenuInit("M060201", "{{ message('item.app.026') }}"); 
+                    $('#nameSearhInput').removeAttr('disabled');
+                    $('#searchBtn').removeAttr('disabled');
+                    $('.tab_item').removeAttr('disabled');
+                    break;
+                case 'progress': 
+                    gaiaPortal.navMenuInit("M060202", "{{ message('item.app.027') }}"); break;
+                case 'closed': 
+                    gaiaPortal.navMenuInit("M060203", "{{ message('item.app.047') }}"); break;
+                case 'rejected': 
+                    gaiaPortal.navMenuInit("M060204", "{{ message('item.app.048') }}"); break;
+                case 'shared': 
+                    gaiaPortal.navMenuInit("M060205", "{{ message('item.app.028') }}"); break;
+                case 'request': 
+                    gaiaPortal.navMenuInit("M060102", "{{ message('item.app.025') }}"); break;
+            }
+
+            eapproval.shared.updateIcon();
+
+            pageBindEvent();
+            gaia.loaded = true;
+        },
+        download(url){
+            if(url) {
+                gaiaCommon.download(url, function(error){
+                    if (error.status === 404) {
+                        gaiaCommon.customAlert("{{ message('msg.doc.128') }}");
+                    } else if (error.status === 400) {
+                        gaiaCommon.customAlert("{{ message('msg.059') }}");
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.doc.129') }}");
+                    }
+                })
+            }
+        },
+        getDetail(selectApDocId){
+            let params = {
+                apDocId: selectApDocId,
+                pjtNo: pjtNo,
+                cntrctNo: cntrctNo
+            }
+            gaiaCommon.post("/api/eapproval/approval/approval-details", params, function(data) {
+                //결재문서
+                let returnMap = data.details.returnMap;
+                apDoc = returnMap.apDoc;
+                selectApDocNo = apDoc.apDocNo;
+                const formatHTML = function (str) {
+                    const txt = document.createElement('textarea');
+                    txt.innerHTML = str;
+                    return txt.value;
+                }
+
+                $('#docTitle').text(apDoc.apDocTitle);
+
+                //첨부파일
+                let fileNamesHtml = '';
+                let apFileList = returnMap.apFileList;
+                if(apFileList != null && apFileList.length > 0) {
+                    $('.file_list').show();
+                    apFileList.forEach(file => {
+                        let url = encodeURI(`/api/eapproval/draft/${file.file_no}/${apDoc.apDocId}/file-download`);
+                        fileNamesHtml += `<li class="list_item" style="display:flex;">
+                                            <a class="icon_btn" href='javascript:methods.download("${url}");'>
+                                                <i class="ic ic-folder-open"></i>
+                                                <span class="blind">첨부파일</span>
+                                            </a>
+                                            <a class="f_name" href='javascript:methods.download("${url}");'>
+                                                ${file.file_nm}
+                                            </a>
+                                        </li>`;
+                    });
+                    $('.file_list').append(fileNamesHtml);
+                } else {
+                    $('.data_info').show();
+                }
+
+                //결재문서 본문
+                let docStatsTxt;
+                if(apDoc.apDocStats === 'W') {
+                    docStatsTxt = "{{ message('item.app.019') }}"
+                } else if (apDoc.apDocStats === 'I') {
+                    docStatsTxt = "{{ message('item.app.020') }}"
+                } else if (apDoc.apDocStats === 'R') {
+                    docStatsTxt = "{{ message('item.app.021') }}"
+                } else {
+                    docStatsTxt = "{{ message('btn.004') }}"
+                }
+
+                let apDocHeaderHtml = `<strong class="doc_tit">${gaiaCommon.safeText(apDoc.apDocTitle)}</strong>
+                                        <p class="doc_caption">
+                                            <span class="writer_info" onclick="methods.openDeptTree('drafter')" style="cursor: pointer;">
+                                                <span>${apDoc.usrNm}</span>
+                                                ${apDoc.deptNm === null ? '' : `<span>${apDoc.deptNm}</span>`}
+                                            </span>
+                                            <span class="update">${apDoc.apAppDt}</span>
+                                            <b>${docStatsTxt}</b>
+                                        </p>`
+                $('#apDocHeader').append(apDocHeaderHtml);
+                let apDocBodyHtml = `<p>
+                                        <storng class="doc_tit">{{ message('item.app.002') }}</storng>
+                                        <br />
+                                        ${formatHTML(apDoc.apDocEdtr)}
+                                        <p id="detail_link"></p>
+                                        <br />
+                                    </p>`
+                $('#docContent').append(apDocBodyHtml);
+
+                let linkParams = $('#linkParams').val();
+                if(linkParams){
+                    let url = window.location.origin + $('#linkParams').val();
+                    $('#detail_link').append(`<a href="${url}" target="_blank">${url}</a>`);
+                }
+                //결재라인 상세
+                apLineList = returnMap.apLineList;
+                if(apLineList.length > 0 && apLineList != null) {
+                    $.each(apLineList, function(index, apLine) {
+                        let apStatsTxt;
+                        if(apLine.ap_div === 'A'){
+                            if(apLine.ap_stats === 'I') {
+                                apStatsTxt = "{{ message('item.app.019') }}"
+                            } else if(apLine.ap_stats === 'A') {
+                                apStatsTxt = "{{ message('btn.025') }}"
+                            } else {
+                                apStatsTxt = "{{ message('btn.026') }}"
+                            }
+
+                            let signMarkHtml = '';
+                            let diskPath = '';
+                            let diskName = '';
+                            let signPadding = '';
+                            if (apLine.file_disk_path && apLine.ap_stats === 'A') {
+                                signPadding = 'style="padding: 0"';
+                                diskPath = apLine.file_disk_path.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload')
+                                diskName = diskPath + '/' + apLine.file_disk_nm;
+                                signMarkHtml = `<img src="${diskName}" alt="직인" class="sign_image">`;
+                            } else {
+                                signMarkHtml = apLine.ap_stats === 'I' ? '' : `<i class="mark">${apStatsTxt}</i>`;
+                            }
+
+                            let apLineHtml = `<li class="sign_item">
+                                                <span class="sign_label">{{ message('item.app.008') }} / ${apStatsTxt}</span>
+                                                <span class="sign_mark">
+                                                    ${signMarkHtml}
+                                                </span>
+                                                <b class="sign_name">${apLine.usr_nm}</b>
+                                            </li>`;
+                            $('#leftApLineList').append(apLineHtml);
+                        }
+                    })
+                }
+
+                // 로그인 유저 결재
+                let myApLineList = returnMap.myApLine;
+                let myApprovalLine;
+                // 참조자 확인 함수 추가
+                let refer = myApLineList.filter(item => item.ap_div === "R" && item.ap_stats === "I");
+                if(refer.length > 0) {
+                    methods.updateReference(refer);
+                }
+
+                if(myApLineList.length > 0) {
+                    myApprovalLine = myApLineList.filter(item => item.ap_div === "A" && item.ap_stats === "I" && item.is_curr_approval === "Y");
+                }
+
+                if(myApprovalLine && myApprovalLine.length > 0) {
+                    isPending = true;
+                    let maxLength = 1000;
+                    $.each(myApprovalLine, function(index, myApLine) {
+
+                        let myApLineHtml = `<div class="doc_item">
+                                                <p class="doc_item_header">
+                                                    <span class="label _primary s_small">{{ message('item.app.008') }}</span>
+                                                    <span class="writer_info">
+                                                        <span>${myApLine.usr_nm}</span>
+                                                        ${myApLine.dept_nm ? `<span> ${myApLine.dept_nm}</span>` : ''}
+                                                    </span>
+                                                </p>
+                                                <p class="doc_item_body" style="margin-bottom: 0;">
+                                                    <textarea name="" id="apUsrOpnin" placeholder="{{ message('msg.app.030') }}" maxlength=${maxLength}></textarea>
+                                                </p>
+                                                <div class="char-counter" style="display:flex; justify-content: end; padding: 3px; font-size: var(--font-xs); color: var(--color-gray);">
+                                                    <span class="current-count">0</span>/<span class="max-count">${maxLength}</span>
+                                                </div>
+                                                <div class="btn_area s_small jc_e" style="margin-top: 5px;">
+                                                    <button type="button" class="btn _outline" onclick="methods.approval('R')">{{ message('btn.026') }}</button>
+                                                    <button type="button" class="btn _fill" onclick="methods.approval('A')">{{ message('btn.025') }}</button>
+                                                </div>
+                                            </div>`
+                        $('#rightApLineList').prepend(myApLineHtml);
+
+                    })
+                } else {
+                    isPending = false;
+                }
+
+                // 결재선 상세
+                let apLineHtml='';
+                $.each(apLineList, function(index, apLine) {
+                    if(myApprovalLine && myApprovalLine.length > 0 && myApprovalLine[0].ap_usr_id === apLine.ap_usr_id){
+                        return;
+                    }
+                    let apDivClassType = apLine.ap_div === 'A' ? '_primary' : '_secondary';
+                    let apDivTxt = apLine.ap_div === 'A' ? "{{ message('item.app.008') }}" : "{{ message('item.app.009') }}"
+                    let apStatsTxt = "";
+
+                    if(apLine.ap_div === 'A' && apLine.ap_stats === 'I') {
+                        apStatsTxt = "[{{ message('item.app.019') }}]"
+                    } else if(apLine.ap_div === 'A' && apLine.ap_stats === 'A') {
+                        apStatsTxt = "[{{ message('btn.025') }}]"
+                    } else if(apLine.ap_div === 'A' && apLine.ap_stats === 'R') {
+                        apStatsTxt = "[{{ message('btn.026') }}]"
+                    }
+
+                    apLineHtml += `<div class="doc_item">
+                                        <p class="doc_item_header">
+                                            <span class="label ${apDivClassType} s_small">${apDivTxt}</span>
+                                            <span class="writer_info">
+                                                <span>${apLine.usr_nm}</span>
+                                                ${apLine.dept_nm ? `<span> ${apLine.dept_nm}</span>` : ''}
+                                            </span>
+                                            <b>${apStatsTxt}</b>
+                                            ${apLine.ap_stats !== 'I' ? `<span class="update">${apLine.chg_dt}</span>` : ''}
+                                        </p>
+                                        ${apLine.ap_usr_opnin ? `<p class="doc_item_body">${apLine.ap_usr_opnin}</p>` : ''}
+                                    </div>`
+                })
+                $('#rightApLineList').append(apLineHtml);
+
+                //공유자 상세
+                shareList = returnMap.apShareList;
+
+                $('.tab_item').removeClass('active');
+                if(shareList.length > 0 && shareList[0].apCnrsDiv === '01') {
+                    $('li[data-id="full_share"]').addClass('active');
+                    $('#full_share').addClass('active');
+                    $('#partial_share').removeClass('active');
+                } else {
+                    $('li[data-id="partial_share"]').addClass('active');
+                    $('#partial_share').addClass('active');
+                    $('#full_share').removeClass('active');
+                }
+
+                if(shareList?.length > 0) {
+                    $('#selectShareList').addClass('on');
+                    $('#noShared').hide();
+
+                    let apShareHtml = '';
+                    let rng = '';
+                    let nm = '';
+                    $.each(shareList, function(index, apShare){
+                        if(apShare.apCnrsRng === '03') {
+                            rng = `login_id="${apShare.loginId}"`;
+                            nm = `${apShare.usrNm}`;
+                        } else if(apShare.apCnrsRng === '02'){
+                            rng = `dept_no="${apShare.deptNo}"`;
+                            nm = `${apShare.deptNm}`;
+                        }
+
+                        apShareHtml = `<span class="selected_item" cnrs_id="${apShare.apCnrsId}" ${rng} type="OLD">
+                                        ${isPending || type === 'waitng'
+                                            ? `<span class="item">${nm}</span>
+                                                <button type="button" class="icon_btn" onclick="eapproval.shared.remove(this)">
+                                                    <i class="ic ic-close"></i>
+                                                    <span class="blind">삭제</span>
+                                                </button>`
+                                            : `<span class="item shareName">${nm}</span>`}
+                                        </span>`
+                        $('#selectShareList').append(apShareHtml);
+                    })
+                }
+
+                // 문서함 세팅
+                if(returnMap.dcNavigation) {
+                    $('#noDocBox').hide();
+                    $('#select_neviId').empty().show();
+                    let path = returnMap.dcNavigation.naviPath + ' > ' + returnMap.dcNavigation.naviNm;
+                    $('#select_neviId').append(`<span class="item">${path}</span>`);
+                }
+            })
+        },
+        approval(apStats){
+            event.preventDefault();
+            let setBtn = apStats === 'A' ? "{{ message('btn.025') }}" : "{{ message('btn.026') }}";
+            let setMsg = "{{ message('msg.app.029') }}".replace("{text}", setBtn);
+            gaiaCommon.customConfirm("{{ message('item.app.010') }}", setMsg, "", function(){
+                methods.update(apStats);
+            });
+        },
+        // 결재 진행
+        update(apStats){
+            let updateParam = {
+                apStats : apStats,
+                apShareList: shareList,
+                delShareList: delShareList,
+                apLine: {
+                    apDocNo: selectApDocNo, 
+                    apDocId: selectApDocId, 
+                    apUsrOpnin: $('#apUsrOpnin').val()
+                },
+                cntrctNo: cntrctNo
+            }
+            let resultType;
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post("/api/eapproval/approval/updateOne", updateParam, function(result) {
+                let apDocStats = result.details.apDoc.apDocStats;
+                if(apDocStats === 'R') {
+                    resultType = 'rejected'
+                } else if(apDocStats === 'C') {
+                    resultType = 'closed'
+                } else {
+                    resultType = 'progress'
+                }
+
+                gaiaCommon.customAlert("{{ message('msg.034') }}", function(){
+                    location.href = `/eapproval/approval/detail?type=${resultType}&frmId=${apDoc.frmId}&apDocId=${selectApDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d`;
+                });
+            }, function(error) {
+                gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}");
+            })
+        },
+        // 참조자 상태변경
+        updateReference(refer){
+            let updateReperParam = {
+                apUsrId: refer[0].ap_usr_id,
+                apDocId: selectApDocId
+            }
+            gaiaCommon.post("/api/eapproval/approval/updateReference", updateReperParam, function(result) {
+
+            })
+        },
+        // 결재선 모달오픈
+        modalOpen(){
+            $('#detailModalBody').empty();
+            $('#apLineDetailModal').addClass('open');
+            if(apLineList.length > 0 && apLineList != null) {
+                $.each(apLineList, function(index, apLine){
+                    let apDivClassType = apLine.ap_div === 'A' ? '_primary' : '_secondary';
+                    let apDivTxt = apLine.ap_div === 'A' ? "{{ message('item.app.008') }}" : "{{ message('item.app.009') }}"
+                    let apStatsTxt;
+
+                    if(apLine.ap_div === 'A' && apLine.ap_stats === 'I') {
+                        apStatsTxt = "{{ message('item.app.019') }}"
+                    } else if(apLine.ap_div === 'A' && apLine.ap_stats === 'A') {
+                        apStatsTxt = "{{ message('btn.025') }}"
+                    } else if(apLine.ap_div === 'R' && apLine.ap_stats === 'I'){
+                        apStatsTxt = "{{ message('item.app.043') }}"
+                    } else if(apLine.ap_div === 'R' && apLine.ap_stats === 'A'){
+                        apStatsTxt = "{{ message('item.app.042') }}"
+                    } else {
+                        apStatsTxt = "{{ message('btn.026') }}"
+                    }
+
+                    apLineModal = `<div class="doc_item">
+                                        <p class="doc_item_header">
+                                            <span class="label ${apDivClassType} s_small">${apDivTxt}</span>
+                                            <span class="writer_info">
+                                                <span>${apLine.usr_nm}</span>
+                                                ${apLine.dept_nm ? `<span> ${apLine.dept_nm}</span>` : ''}
+                                            </span>
+                                            <b>[${apStatsTxt}]</b>
+                                            ${apLine.ap_stats !== 'I' ? `<span class="update">${apLine.chg_dt}</span>` : ''}
+                                        </p>
+                                        ${apLine.ap_usr_opnin ? `<p class="doc_item_body">${apLine.ap_usr_opnin}</p>` : ''}
+                                    </div>`
+                    $('#detailModalBody').append(apLineModal);
+                })
+            }
+        },
+        openDeptTree(modalType){
+            $('#deptTreeModal').addClass('open');
+            $('#modalEmpList').empty();
+            methods.deptTree.init(modalType);
+            if(modalType === 'dept') {
+                $('#deptTreeModal .pop_tit').text("{{ message('item.dept.001') }}");
+                if(type === 'waiting') {
+                    $('#deptTreeModal .pop_footer').show();
+                }
+            } else {
+                $('#deptTreeModal .pop_tit').text("{{ message('item.app.049') }}");
+                $('#deptTreeModal .pop_footer').hide();
+                let infoHtml = `<div class="person_info">
+                                    <strong data-item="name">${apDoc.usrNm}</strong>
+                                    <span data-item="affiliation">
+                                        ${apDoc.deptNm ? `<span>${apDoc.deptNm}</span>` : ''}
+                                    </span>
+                                    ${apDoc.phoneNo ? `<span data-item="tel">${apDoc.phoneNo}</span>` : `<span data-item="tel">{{ message('item.app.046') }}</span>`}
+                                    ${apDoc.emailAdrs
+                                        ? `<a href="mailto:${apDoc.emailAdrs}" data-item="email">${apDoc.emailAdrs}</a>`
+                                        : `<a href="mailto:" data-item="email">{{ message('item.app.046') }}</a>` }
+                                </div>`
+                $('#modalEmpList').append(infoHtml);
+            } 
+            
+        },
+        closeDeptTree(){
+            $('#deptTreeModal').removeClass('open');
+        },
+        deptTree: {
+            treeObj: null,
+            nodeData: null,
+            refresh: function () {
+				this.treeObj.jstree(true).refresh();
+			},
+
+            getNode: function (id) {
+				return this.treeObj.jstree("get_node", id);
+			},
+            init: function(modalType) {
+                if (this.treeObj) {
+                    this.treeObj.jstree(true).destroy(); 
+                    $('#deptTree').empty(); 
+                }
+                this.treeObj = $("#deptTree").jstree({
+					plugins: ["search"],
+                    core: {
+						data: function (obj, cb) {
+                            
+							gaiaCommon.get('/api/eapproval/approval/search-deptInfo', "", function (result) {
+								var data = [];
+                                if (result.details?.deptInfo) {
+                                    
+                                    result.details?.deptInfo.forEach((item, index) => {
+                                        let isOpend = item.dept_lvl < 2 ? true : false;
+                                        data.push({
+                                            id: item.dept_id,
+                                            parent: item.up_dept_id,
+                                            text: item.dept_nm,
+                                            state: { opened: isOpend },
+                                            data: item,
+                                            icons: 'fa-solid fa-caret-right',
+                                        });
+                                    });
+                                    cb.call(obj, data);
+                                }
+							});
+						},
+						check_callback: true, 
+						themes : {
+								"theme" : "default",
+								"dots": false,
+								"responsive": false,
+								"icons" : false
+						}
+					},
+				});
+
+                this.treeObj.on("ready.jstree", () => {
+                    if(modalType === 'dept') {
+                        let deptNode = this.treeObj.jstree("get_node", "#").children[0];
+                        this.nodeData = this.treeObj.jstree("get_node", deptNode).data;
+                        this.treeObj.jstree("select_node", deptNode);
+                        methods.searchEmp(modalType, this.nodeData.dept_id);
+                    }
+                })
+
+                this.treeObj.on("select_node.jstree", function (e, data) {
+                    this.nodeData = data.node.data;
+                    if(this.nodeData) {
+                        methods.searchEmp(modalType, this.nodeData.dept_id);
+                    }
+                });
+            },
+        },
+        // 조직트리에서 부서별 직원 조회
+        searchEmp(modalType, selectedDeptId){
+            let searchEmpParam = {
+                deptId: selectedDeptId,
+            }
+            gaiaCommon.get('/api/eapproval/approval/search-emp', searchEmpParam, function (data) {
+                let empList = data.details.empList;
+                $('#modalEmpList').empty();
+                $('#modalEmpList').removeClass('no_result');
+                if(empList && empList.length > 0) {
+                    $.each(empList, function(index, obj){
+                        let jsonObj = JSON.stringify(obj).replace(/"/g, '&quot;');
+
+                        let html = `<div class="person_info">
+                                        <strong data-item="name">${obj.usr_nm}</strong>
+                                        <span data-item="affiliation">
+                                            <span>${obj.dept_nm}</span>
+                                        </span>
+                                        ${obj.phone_no ? `<span data-item="tel">${obj.phone_no}</span>` : `<span data-item="tel">{{ message('item.app.046') }}</span>`}
+                                        ${obj.email_adrs
+                                            ? `<a href="mailto:${obj.email_adrs}" data-item="email">${obj.email_adrs}</a>`
+                                            : `<a href="mailto:''" data-item="email">{{ message('item.app.046') }}</a>`}
+                                    </div>`
+                        $('#modalEmpList').append(html);
+                    })
+                } else {
+                    $('#modalEmpList').addClass('no_result');
+                    $('#modalEmpList').append(`<p class="data_info" id="info_msg">소속된 사용자가 없습니다.</p>`);
+                }
+            })
+        },
+        // 조직 트리에서 부서 추가
+        addDept(){
+            if(deptTree.nodeData) {
+                let selectDeptId = deptTree.nodeData.dept_id;
+                let selectDeptNo = deptTree.nodeData.dept_no;
+                let selectDeptNm = deptTree.nodeData.dept_nm;
+
+
+                let isDuplicate = shareList.some(item => item.apCnrsId === selectDeptId);
+                if (isDuplicate) {
+                    gaiaCommon.customAlert("{{ message('msg.app.026') }}");
+                    return;
+                }
+
+                let isSubDeptChecked = $("input[name='subDeptCheck']").is(":checked");
+                if(isSubDeptChecked) {
+                    shareList.push({apDocId:selectApDocId, apDocNo:selectApDocNo, apCnrsDiv:'02', apCnrsRng:'02', apCnrsId:selectDeptId,  apSubYn:'Y'});
+                } else {
+                    shareList.push({apDocId:selectApDocId, apDocNo:selectApDocNo, apCnrsDiv:'02', apCnrsRng:'02', apCnrsId:selectDeptId});
+                }
+    
+                let appendHtml = `<span class="selected_item" cnrs_id="${selectDeptId}" dept_no="${selectDeptNo}" type="NEW">
+                                        <span class="item">${selectDeptNm} ${isSubDeptChecked ? "({{ message('item.app.013') }})" : ''}</span>
+                                        <button type="button" class="icon_btn" onclick="eapproval.shared.remove(this)">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                    </span>`
+                $('#selectShareList').addClass('on').append(appendHtml);
+                $('#noShared').hide();
+                methods.closeDeptTree();
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.app.034') }}");
+                return;
+            }
+        }, 
+        modalClose(){
+            $('.modal').removeClass('open');
+        },
+        openPDF(){
+
+        }
+    }
+
+    $(document).on('input', '#apUsrOpnin', function(){
+        let maxLength = $(this).attr('maxlength');
+        let inputLength = $(this).val().length;
+        let msg = "{{ message('msg.app.045') }}".replace("{0}", maxLength);
+
+        $('.max-count').text(maxLength);
+
+        if(inputLength >= maxLength) {
+            gaiaCommon.customAlert(msg);
+        }
+
+        $('.current-count').text(inputLength);
+    })
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+                methods.init();
+            }
+        });
+    })
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+
+{% endblock footer_script %}

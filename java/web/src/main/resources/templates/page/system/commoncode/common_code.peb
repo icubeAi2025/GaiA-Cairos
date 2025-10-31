@@ -1,0 +1,582 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+	.treeview_area {
+		height: calc(100dvh - 115px);
+	}
+
+	.treeview_area .treeview {
+		height: calc(100dvh - 115px);
+		overflow: auto;
+	}
+
+	.custom-tree-anchor {
+		max-width: 100px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		display: inline-block;
+	}
+</style>
+{% endblock %} {% block content %}
+<section class="contents_wrap g-col2 ty1">
+	<!-- S: TREE View ------------------------------------------------------------------------ -->
+	<div class="treeview_area">
+		<div class="treeview ty_pd0" id="jstree" style="padding: 1em;"></div>
+	</div>
+	<article class="conts g-row">
+		<div class="group">
+			<h3 class="conts_tit">{{ message('item.commonCode.012') }}</h3>
+			<div class="conts_form">
+				<div class="btn_area s_default">
+					{{ grpBtnHtml | raw}}
+				</div>
+				<div class="form_box">
+					<!-- row -->
+					<div class="row cols2">
+						<div class="col">
+							<div class="form_label">{{ message('item.commonCode.002') }}</div>
+							<div class="form_data">
+								<input type="text" id="mainCmnCd" required readonly>
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.commonCode.005') }}</div>
+							<div class="form_data">
+                                <textarea name="cmnCdDscrpt" readonly id="mainCmnCdDscrpt" maxlength="4000" style="pointer-events: auto;"></textarea>
+								<!--<div style="word-break: break-all; padding: .25em 1em; line-height: 1.45;" id="mainCmnCdDscrpt"></div>-->
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols2">
+						<div class="col">
+							<div class="form_label">{{ message('item.commonCode.014') }}</div>
+							<div class="form_data">
+								<div style="word-break: break-all; padding: .25em 1em; line-height: 1.45;"
+									id="mainCmnCdNmKrn"></div>
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.com.003') }}</div>
+							<div class="form_data">
+								<input type="text" id="useYn" required readonly>
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols2">
+						<div class="col">
+							<div class="form_label">{{ message('item.com.002') }}</div>
+							<div class="form_data">
+								<input type="text" id="chgDt" required readonly>
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.com.036') }}</div>
+							<div class="form_data">
+								<input type="text" id="chgId" required readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="group" id="btn_list">
+			<div class="conts_grid">
+				<h3 class="conts_tit">{{ message('item.commonCode.013') }}</h3>
+				<div class="toolbar">
+					<div class="searchbox_wrap">
+						<input type="text" id="searchText" name="searchText"
+							onkeypress="if( event.keyCode == 13 ){page.code.search()}"
+							placeholder="{{ message('item.commonCode.002') }}, {{ message('item.commonCode.014') }}" />
+                        <button type="button" class="icon_btn search" onclick="page.code.search()"><i class="ic ic-search"></i><span class="blind">검색</span></button>
+					</div>
+				</div>
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ cdBtnHtml | raw}}
+					</div>
+
+					<div class="selectbox sort">
+						<select name="items-per-page" id="items-per-page" onchange="page.code.changePerPage()">
+							<option selected disabled value="">
+								{{ message("item.com.004") }}
+							</option>
+							<option value="5">5</option>
+							<option value="10">10</option>
+							<option value="15">15</option>
+						</select>
+					</div>
+
+				</div>
+				<div class="grid" id="codeList-grid"></div>
+			</div>
+		</div>
+
+	</article>
+	<div id="popup" class="popup_overlay modal_base" style="display: none;">
+		<!-- 모달창 내용 -->
+	</div>
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+
+	let pjtNo;
+	let cntrctNo;
+    let isDelAuth = "{{ isDelAuth }}";
+
+	var page = {
+		//모달창
+		popup: {
+			groupCode: [],
+			close: function () {
+				$("#popup").empty();
+				page.codeGroupTree.clear();
+			},
+		},
+
+		//코드 트리 생성
+		codeGroupTree: {
+			obj: null,
+
+			clear: function () {
+				this.obj.jstree(true).refresh();
+				// $("#details").html("");
+			},
+
+			getNode: function (id) {
+				return this.obj.jstree("get_node", id);
+			},
+
+			applyTreeStylesAndActions: function () {
+				const treeBtnHtml = `{{ treeBtnHtml | raw }}`;
+
+				$(".jstree-anchor:not(#M_anchor)").each(function () {
+					if ($(this).next("nav.item_opt").length === 0) {
+						let iconEl = `<nav class="item_opt">
+									          ${treeBtnHtml}
+									        </nav>`;
+						$(this).after(iconEl);
+					}
+				});
+			},
+
+			//current class추가
+			addClassToNodeAndParents: function (node) {
+				$(".jstree-anchor").removeClass("current");
+				$("#" + node.id + "_anchor").addClass("current");
+
+				while (node.parent && node.parent !== "#") {
+					node = page.codeGroupTree.getNode(node.parent);
+					$("#" + node.id + "_anchor").addClass("current");
+				}
+			},
+			init: function () {
+				pjtNo = pjtInfo.pjtNo;
+				cntrctNo = pjtInfo.cntrctNo;
+
+				this.obj = $("#jstree").jstree({
+
+					core: {
+						data: function (obj, cb) {
+							gaiaCommon.get("/api/system/common-code/group/list", {}, function (result) {
+								var data = [];
+								if (result.details?.groupCodeList) {
+									result.details?.groupCodeList.forEach((item, index) => {
+										data.push({
+											id: item.cmnGrpNo,
+											parent: item.upCmnGrpNo == "0" ? "#" : item.upCmnGrpNo,
+											text: item.cmnCdNmKrn,
+											state: { opened: false },
+											data: item,
+											icons: 'fa-solid fa-caret-right',
+											a_attr: { class: "custom-tree-anchor" }
+										});
+									});
+									cb.call(obj, data);
+								}
+							});
+						},
+						check_callback: true, // 요거이 없으면, create_node 안먹음
+						themes: {
+							"theme": "default",
+							"dots": false,
+							"responsive": false,
+							"icons": false
+						}
+					},
+				});
+
+				// JsTree가 완전히 초기화된 후 `ul`에 클래스 추가
+				this.obj.on("loaded.jstree", function () {
+					page.codeGroupTree.applyTreeStylesAndActions();
+				});
+
+				this.obj.on("select_node.jstree", function (e, data) {
+					// page.codeDetail(data.node);
+					page.codeGroupTree.addClassToNodeAndParents(data.node);
+					page.codeGroupTree.applyTreeStylesAndActions();
+					$('.jstree-anchor').siblings('nav.item_opt').css('display', 'none');
+					$('.jstree-anchor.jstree-clicked.current').siblings('nav.item_opt').css('display', 'contents');
+					page.groupCode.details(data.node?.data);
+					$("#subMenuAddButton").show();
+				});
+			}
+		},
+
+		//코드그룹 테이블
+		groupCode: {
+			data: {
+				list: [],
+			},
+
+			// 코드그룹 정보
+			details(data) {
+				this.data.details = data;
+				page.popup.groupCode = data;
+				if (data) {
+					$("#mainCmnCd").val(gaiaCommon.decodeSafeText(data.cmnCd));
+					$("#mainCmnCdNmKrn").text(gaiaCommon.decodeSafeText(data.cmnCdNmKrn));
+					$("#useYn").val(data.useYn);
+					$("#mainCmnCdDscrpt").text(gaiaCommon.decodeSafeText(data.cmnCdDscrpt));
+					$("#chgDt").val(data.chgDt);
+					$("#chgId").val(data.chgId);
+					const params = {
+						cmnGrpCd: data.cmnGrpCd,
+					};
+					page.codeListGrid.init();
+					page.codeListGrid.obj.methods.readData(params);
+				} else {
+					$("#mainCmnCd").val('');
+					$("#mainCmnCdNmKrn").text('');
+					$("#useYn").val('');
+					$("#mainCmnCdDscrpt").text('');
+					$("#chgDt").val('');
+					$("#chgId").val('');
+					const params = {
+						cmnGrpCd: null,
+					};
+					page.codeListGrid.init();
+					page.codeListGrid.obj.methods.readData(params);
+
+				}
+			},
+
+			// 코드그룹 추가
+			create: function () {
+				if (this.data.details?.cmnGrpCd) {
+					page.popup.groupCode.cmnGrpNo = this.data.details?.cmnGrpNo
+					if (this.data.details.cmnLevel > 1) {
+                        gaiaCommon.customAlert("{{ message('msg.047') }}");
+					} else {
+						page.popup.mode = "create";
+
+                        gaiaCommon.checkAuth("COMCODE_C_01", () => {
+                            $("#popup").load(`/system/common-code/GroupForm?mode=create&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            $("#popup").css({ "display": "flex" });
+                        });
+					}
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.048') }}");
+				}
+			},
+
+			// 코드그룹 수정
+			update: function () {
+				if (this.data.details?.cmnGrpNo) {
+					page.popup.groupCode.cmnGrpCd = this.data.details?.cmnGrpCd
+					page.popup.mode = "update";
+
+                    gaiaCommon.checkAuth("COMCODE_C_01", () => {
+                        $("#popup").load(`/system/common-code/GroupForm?mode=update&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        $("#popup").css({ "display": "flex" });
+                    });
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.commonCode.001') }}");
+				}
+			},
+
+			// 코드그룹 삭제
+			delete: function () {
+				var cmnGrpCdList = this.data.details?.cmnGrpCd
+				if (cmnGrpCdList) {
+                    gaiaCommon.customConfirm("{{ message('item.commonCode.016') }}", "{{ message('item.commonCode.016')}}", "{{ message('msg.009') }},", function () {
+						var data = {
+							cmnGrpCdList: [cmnGrpCdList],
+						};
+						gaiaCommon.post("/api/system/common-code/group/delete", data, function (result) {
+							page.codeGroupTree.clear();
+							page.groupCode.details();
+                            gaiaCommon.customAlert("{{ message('msg.006') }}");
+						});
+					});
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.commonCode.001') }}");
+				}
+			},
+
+			// 코드그룹 위로이동
+			up: function () {
+				const url = '/api/system/common-code/group/move-up'
+
+				let data = {
+					cmnGrpNo: this.data.details.cmnGrpNo,
+					upCmnGrpNo: this.data.details.upCmnGrpNo,
+				}
+
+				gaiaCommon.post(url,data,(response)=>{
+					if (response.ok) {
+						page.codeGroupTree.clear();
+						gaiaCommon.customAlert("{{ message('msg.049') }}"); //이동되었습니다.
+					} else {
+						gaiaCommon.customAlert(response.message);
+					}
+				}, (response) => {
+					gaiaCommon.customAlert(response.message);
+				})
+			},
+
+			// 코드그룹 아래로 이동
+			down: function () {
+				const url = '/api/system/common-code/group/move-down'
+
+				let data = {
+					cmnGrpNo: this.data.details.cmnGrpNo,
+					upCmnGrpNo: this.data.details.upCmnGrpNo,
+				}
+
+				gaiaCommon.post(url,data,(response)=>{
+					if (response.ok) {
+						page.codeGroupTree.clear();
+						gaiaCommon.customAlert("{{ message('msg.049') }}"); //이동되었습니다.
+					} else {
+						gaiaCommon.customAlert(response.message);
+					}
+				}, (response) => {
+					gaiaCommon.customAlert(response.message);
+				})
+			},
+		},
+
+
+		//코드 목록 그리드
+		codeListGrid: {
+			obj: null,
+			init() {
+				if (this.obj) {
+					return;
+				}
+				this.obj = $("#codeList-grid").setGrid({
+					scrollX: false,
+					scrollY: false,
+					draggable: false,
+					contextMenu: null,
+					useClientSort: false,
+					rowHeaders: [
+						{
+							type: "checkbox",
+							header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:'checkBox',
+									},
+									{
+										type:"trash",
+										url: "/api/system/common-code/code/delete",
+										idFields:
+											"cmnGrpCd,cmnCdNo",
+										keyName: "cmnCdList",
+										auth: isDelAuth === "true",
+										gridId: "codeList-grid",
+										msgList: {
+											confirmTit: "{{ message('item.commonCode.017') }}",
+											confirmMsg: "{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										}
+									}
+								],
+							},
+						}
+					],
+					columns: [
+						{
+							header: "{{ message('item.commonCode.002') }}",
+							name: 'cmnCd',
+							align: 'center',
+							resizable: true,
+							ellipsis: true,
+						},
+						{
+							header: "{{ message('item.commonCode.014') }}",
+							name: 'cmnCdNmKrn',
+							renderer: {
+								type: window.IconRenderer,
+								options: [
+									{
+										type:'newWindow',
+										isHover:true,
+										align:'right',
+										absolute:true,
+										gridId: "codeList-grid",
+										open:{
+											mode:'m', //modal
+											url:`/system/common-code/readCode?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`,
+											key:'employee',
+										},
+									}
+								]
+							},
+							align: 'center',
+							resizable: true,
+							ellipsis: true,
+						},
+						{
+							header: "{{ message('item.commonCode.005') }}",
+							name: 'cmnCdDscrpt',
+							align: 'center',
+							resizable: true,
+							ellipsis: true,
+						},
+						{
+							header: "{{ message('item.com.003') }}",
+							name: 'useYn',
+							align: 'center',
+							resizable: true,
+						},
+						{
+							header: "{{ message('item.commonCode.006') }}",
+							name: 'cmnCdDsplyOrder',
+							align: 'center',
+							resizable: true,
+						},
+						{
+							header: "{{ message('item.com.002') }}",
+							name: 'chgDt',
+							align: 'center',
+							resizable: true,
+							formatter: ({row}) => {
+								const date = new Date(row.chgDt);
+								return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+							}
+						},
+
+					],
+					readUrl: "/api/system/common-code/codeList",
+					gridElement: "codeList-grid",
+				});
+			},
+		},
+		code: {
+			//코드 검색
+			search() {
+				const searchText = $("#searchText").val();
+				const params = {
+					searchText: searchText,
+				};
+				page.codeListGrid.obj.methods.readData(params);
+			},
+
+			//코드 페이징
+			changePerPage() {
+				const size = $('select[id="items-per-page"]').val();
+				const param = {
+					size: size,
+				};
+				page.codeListGrid.obj.methods.itemPerPageChange(param);
+			},
+
+			//코드 추가
+			create: function () {
+				if (page.groupCode.data.details) {
+					const { cmnGrpCd } = page.groupCode.data.details;
+					if (cmnGrpCd || cmnGrpCd === null) {
+						page.popup.groupCode.cmnGrpCd = page.groupCode.data.details.cmnGrpCd
+						page.popup.groupCode.cmnCdNo = page.groupCode.data.details.cmnCdNo
+						page.popup.mode = "create";
+
+                        gaiaCommon.checkAuth("COMCODE_C_02", () => {
+                            $("#popup").load(`/system/common-code/createCode?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            $("#popup").css({ "display": "flex" });
+                        });
+					} else {
+                        gaiaCommon.customAlert("{{ message('msg.commonCode.001') }}");
+					}
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.commonCode.001') }}");
+				}
+
+			},
+
+			//코드 수정
+			update: function () {
+				const checkedRows = page.codeListGrid.obj.grid.getCheckedRows();
+
+				if (checkedRows.length == 1) {
+					const rowData = checkedRows[0];
+					page.popup.code = rowData;
+					page.popup.mode = "update";
+
+					gaiaCommon.checkAuth("COMCODE_U_01", () => {
+						$("#popup").load(`/system/common-code/updateCode?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=u`);
+						$("#popup").css({ "display": "flex" });
+					});
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.020') }}");
+				}
+
+			},
+
+			//코드 삭제
+			delete: function () {
+				const url = "/api/system/common-code/code/delete";
+				const listName = "cmnCdList";
+				let checked = [];
+
+				const checkedRows = page.codeListGrid.obj.grid.getCheckedRows();
+				checkedRows.forEach((rowData) => {
+					const cmnGrpCd = rowData.cmnGrpCd;
+					const cmnCd = rowData.cmnCd;
+					const cmnCdNo = rowData.cmnCdNo;
+					checked.push({ cmnGrpCd, cmnCd, cmnCdNo });
+				})
+
+				if (checked.length > 0) {
+                    gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('item.commonCode.017') }}", "{{ message('msg.009') }}", function () {
+						let data = { [listName]: checked };
+						gaiaCommon.post(url,data,(response) => {
+							gaiaCommon.customAlert("{{ message('msg.006') }}");
+							page.codeListGrid.obj.grid.reloadData();
+						}, (xhr) => {
+							console.error(
+									"Error deleting data:",
+									xhr.responseText
+							);
+
+						})
+					});
+				} else {
+                    gaiaCommon.customAlert("{{ message('msg.021') }}");
+				}
+			},
+		}
+	}
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				gaiaPortal.navMenuInit('SYSTEM07', '{{ message("item.commonCode.011") }}');
+
+				page.codeGroupTree.init();
+				$("#subMenuAddButton").hide();
+
+				gaia.loaded = true
+			},
+		});
+	})
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+{% endblock footer_script %}

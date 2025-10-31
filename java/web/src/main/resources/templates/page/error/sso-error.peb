@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    {% include "sub/head" %}
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- 토스트 메세지 : 활성화:'on'추가, 수초 후 'on'제거-->
+    <div class="pop_box toast on" id="popBoxToast" style="display:none;position:absolute;z-index:50">
+        <span class="toast_msg">
+        </span>
+        <button type="button" class="icon_btn pop_close">
+            <i class="ic ic-close"></i>
+            <span class="blind">창닫기</span>
+        </button>
+    </div>
+    <script>
+
+        gaiaPortal.customAlert("로그인 정보를 확인해주세요.", function() {
+            window.close()
+        });
+
+        /**
+         * FIXME
+         * @date: 2025-01-10-Fri
+         * 기존 GAIA/CMIS -  if(opener) ... 를 활용하는
+         * 업무 Side Effect 로 인한 주석 처리
+         *
+         * 추후 sub domain 구성시 로직구성 재확인 필요
+         */
+
+        // alert("로그인 정보를 확인해주세요.");
+
+        /**
+         * Uncaught SecurityError: Failed to read a named property 'origin' from 'Location':
+         * Blocked a frame with origin "https://www.idea-platform.net:8101" from accessing a cross-origin frame.
+         */
+        //opener.location.href = opener.location.href + '/ssoLogin';
+
+        // 부모 창에 메시지 전송
+        // if (window.opener) {
+        //     window.opener.postMessage({
+        //         type: 'sso-login',
+        //         message: 'No login information found'
+        //     }, 'https://www.idea-platform.net');  // 부모 창의 URL을 명시적으로 지정
+        // }
+        // setTimeout(window.close, 10);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1006 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+{% include 'sub/grid' %}
+
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            <div class="conts_form">
+
+                <!-- row -->
+                <div class="row">
+                    <div class="col">
+                        <div class="form_label">{{ message('btn.021') }}</div> <!-- 파일첨부 -->
+                        <div class="form_data">
+
+                            <div class="attach_wrap">
+                                <div class="attach_toolbar">
+                                    <div class="btn_area s_small">
+                                        <div class="attach_btn">
+                                            <input type="file" id="fileInput" name="files" accept=".bid">
+                                            <button type="button" class="btn _fill" id="addFileButton">
+                                                <!-- {{ message('btn.021') }}  -->
+                                                {{ message('btn.048') }}
+                                            </button> <!-- 파일첨부 -->
+                                        </div>
+                                        <button type="button" class="btn _outline" id="removeAllButton">
+                                            {{ message('btn.020') }}
+                                        </button> <!-- 모두삭제 -->
+                                        <button type="button" class="btn _outline" id="save">{{ message('btn.006')
+                                            }}</button> <!-- 저장 -->
+                                        <button type="button" class="btn _outline" id="close">{{ message('btn.007')
+                                            }}</button> <!-- 닫기 -->
+                                        <div class="btn_group iconbtns">
+                                            <button class="icon_btn" id="newWindow">
+                                                <i class="ic ic-sent-to-back"></i>
+                                                <span class="tooltip">{{ message('item.com.017') }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="attach_info">
+                                        <span class="attach_result">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                                <b class="num" id="uploadedFileCount">0</b>
+                                            </span>
+                                            <span class="fail">
+                                                <i class="ic ic-close"></i>
+                                                <b class="num" id="failedFileCount">0</b>
+                                            </span>
+                                        </span>
+                                        <span class="attach_capacity">
+                                            <span class="item" id="uploadedFileSize">0 KB</span>
+                                            <span class="item">25 MB</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="attach_area" style="height: 70px;">
+                                    <!-- 첨부파일 미등록 시 -->
+                                    <p class="data_info">
+                                        {{ message('msg.pinstall.003') }}
+                                    </p>
+
+                                    <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                    <div class="attach_list hide">
+                                        <ul class="file_header">
+                                            <li class="header_item">
+                                                <button type="button" class="icon_btn">
+                                                    <i class="ic ic-close"></i>
+                                                    <span class="blind">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </button>
+                                                <span class="f_name">{{ message('item.com.020') }}</span>
+                                                <!-- 파일명 -->
+                                                <span class="f_progress">
+                                                    {{ message('item.info.036') }}</span> <!-- 진행상태 -->
+                                                <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                                <!-- 크기 -->
+                                            </li>
+                                        </ul>
+                                        <ul class="file_list" id="fileList"></ul>
+                                    </div>
+                                </div> <!-- END .attach_area -->
+                            </div> <!-- END .attach_wrap -->
+                        </div> <!-- END .form_data -->
+                    </div> <!-- END .col -->
+                </div> <!-- END .row -->
+
+                <div class="form_box">
+                    <!-- Search -->
+                    <div class="toolbar">
+                        <div class="search_wrap" style="padding: 1em;">
+                            <div class="searchbox_wrap">
+                                <input type="text" id="searchInput" placeholder="{{ message('msg.contract.023') }}">
+                                <button type="button" class="icon_btn search">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">{{ message("btn.014") }}</span> <!--검색-->
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- END Search -->
+                    <!-- GRID -->
+                    <div class="grid" id="contractBidGrid"></div>
+                    <!-- END GRID -->
+                </div>
+
+            </div>
+        </div>
+
+    </article>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    /* 페이지 글로벌 변수 */
+    let SearchArr = new Array();
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo');
+    var type = urlParams.get('type');
+    var bidType = null;
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                var title = "{{ message('btn.049') }}" // 계약내역서
+                gaiaPortal.navMenuInit('M010201', title);
+                $("#menuDepth").append(`<li class=\"breadcrumb_item\">${title}</li>`);
+
+                file.init();
+                initEventBinding();
+                contractBidGrid.init();
+
+                gaia.loaded = true;
+            }
+        });
+    });
+
+
+    const beforeUnloadHandler = function (event) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    let contractBidGrid = {
+        init: function (type = 'bid') {
+            let _this = this;
+
+            if (!this.contractBidGrid) {
+                this.contractBidGrid = new tui.Grid({
+                    el: document.getElementById('contractBidGrid'),
+                    bodyHeight: 600,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    rowHeight: 10,
+                    treeColumnOptions: {
+                        name: "prdnm",
+                        useIcon: true,
+                        useCascadingCheckbox: true,
+                    },
+                    header: {
+                        height: 80,
+                        complexColumns: [
+                            {
+                                header: "{{ message('item.projectcost.012') }}", // 재료비
+                                name: 'mtrlTotal',
+                                childNames: ['mtrlcst_uprc', 'mtrlcst_amt']
+                            },
+                            {
+                                header: "{{ message('item.projectcost.013') }}", // 노무비
+                                name: 'lbrTotal',
+                                childNames: ['lbrcst_uprc', 'lbrcst_amt']
+                            },
+                            {
+                                header: "{{ message('item.projectcost.014') }}", // 경비
+                                name: 'gnrlexpnsTotal',
+                                childNames: ['gnrlexpns_uprc', 'gnrlexpns_amt']
+                            },
+                            {
+                                header: "{{ message('item.projectcost.009') }}", // 합계
+                                name: 'cntrctTotal',
+                                childNames: ['sum_uprc', 'sum_amt']
+                            },
+                        ],
+                    },
+                    columns: [
+                        {
+                            header: "내역 순번", // 내역 순번
+                            name: 'cbs_sno', align: 'center', width: 70
+                        },
+                        {
+                            header: "세부 공종", // 세부 공종
+                            name: 'prdnm', resizable: true, minWidth: 330
+                        },
+                        {
+                            header: "{{ message('item.projectcost.003') }}", // 규격
+                            name: 'spec', resizable: true, width: 250
+                        },
+                        {
+                            header: "{{ message('item.projectcost.004') }}", // 단위
+                            name: 'unit', width: 50, align: 'center'
+                        },
+                        {
+                            header: "{{ message('item.projectcost.005') }}", // 수량
+                            name: 'qty', width: 60, align: 'center',
+                        },
+                        {
+                            header: "{{ message('item.projectcost.006') }}", // 단가
+                            name: 'mtrlcst_uprc', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.007') }}", // 금액
+                            name: 'mtrlcst_amt', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.006') }}", // 단가
+                            name: 'lbrcst_uprc', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.007') }}", // 금액
+                            name: 'lbrcst_amt', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.006') }}", // 단가
+                            name: 'gnrlexpns_uprc', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.007') }}", // 금액
+                            name: 'gnrlexpns_amt', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.006') }}", // 단가
+                            name: 'sum_uprc', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            header: "{{ message('item.projectcost.007') }}", // 금액
+                            name: 'sum_amt', align: 'right',
+                            formatter: function (e) {
+                                return e.value.toLocaleString();
+                            }
+                        },
+                        { header: "{{ message('item.com.022') }}", name: 'rmrk' }	//비고
+                    ]
+                })
+            }
+
+            // 검색
+            $('.icon_btn.search').on('click', function () {
+                const searchValue = $('#searchInput').val();
+                let list = _this.get(searchValue);
+                if (list) {
+                    _this.contractBidGrid.resetData(list);
+                }
+            });
+
+            // 엔터키 검색
+            $(document).ready(function () {
+                $('#searchInput').on('keypress', function (event) {
+                    if (event.which === 13) {
+                        const searchValue = $('#searchInput').val();
+                        let list = _this.get(searchValue);
+                        if (list) {
+                            _this.contractBidGrid.resetData(list);
+                        }
+                    }
+                });
+            });
+
+            // let list = this.get(false, type);
+            // if (list) {
+            //     this.contractBidGrid.resetData(list);
+            // }
+        },
+        get: function (...args) {
+            if (!this.contractBidGrid) {
+                return;
+            }
+            let _this = this;
+            let data = [];
+            let root = [];
+            const systemType = document.body.className.trim().toLowerCase();
+
+            let searchValue = args[0];
+            let type = args[1] !== undefined ? args[1] : 'history';
+
+            if (gaiaCommon.me.info.admin && systemType === "cmis") {
+                cntrctNo = pjtInfo.pjtNo || initialCntrctNo;
+            }
+
+            var param = {
+                cntrctNo: cntrctNo,
+            };
+
+            let url = searchValue ?
+                `/api/project/contractstatus/bid/contractBidSearch` :
+                `/api/project/contractstatus/bid/contractBidList/${cntrctNo}?type=${type}`;
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+                param.type = 'history';
+            }
+
+            gaiaCommon.post(url, param, function (response) {
+                if (response && response.details) {
+                    if (searchValue) {
+                        if (response.details.contractBidSearch) {
+                            data = response.details.contractBidSearch;
+                            _this.contractBidGrid.resetData(data);
+                        } else {
+                            _this.contractBidGrid.resetData([]);
+                        }
+                    } else {
+                        data = response.details.contractBidList;
+                        const totalSumAmt = data.reduce((sum, item) => {
+                            if (item.a_menu_level === 1) {
+                                return sum + item.sum_amt;
+                            }
+                            return sum;
+                        }, 0);
+
+                        $("#bidTotalCost").text(totalSumAmt.toLocaleString());
+
+                        root = bidArrayToTree(data);
+                        _this.contractBidGrid.resetData(root);
+                    }
+                } else {
+                    _this.contractBidGrid.resetData([]);
+                }
+            });
+            return searchValue ? data : root;
+        },
+        exportToExcel: function () {
+            const options = {
+                includeHiddenColumns: false,
+                onlySelected: true,
+                fileName: "{{ message('item.projectcost.016') }}",
+            };
+
+            this.contractBidGrid.export("xlsx", options);
+        },
+    }
+
+    let bidArrayToTree = function (items) {
+        const map = {};
+        let root = [];
+
+        // 각 아이템을 map에 저장하고 _children 배열을 추가
+        items.forEach(item => {
+            map[item.cntrct_dcnstty_sno] = { ...item, _children: [] };
+        });
+
+        // 부모-자식 관계를 트리로 설정
+        items.forEach(item => {
+            const node = map[item.cntrct_dcnstty_sno];
+            if (item.up_cntrct_dcnstty_sno === "" || !map[item.up_cntrct_dcnstty_sno]) {
+                // 상위 항목이 없으면 최상위 노드로 설정
+                node._attributes = { expanded: true }; // 트리에서 펼쳐진 상태로 표시
+                root.push(node);
+            } else {
+                // 상위 항목이 있으면 상위 항목의 _children에 추가
+                node._attributes = { expanded: true };
+                map[item.up_cntrct_dcnstty_sno]._children.push(node);
+            }
+        });
+
+        // 자식이 없는 항목 중 a_menu_level이 1이 아닌 항목은 _children을 삭제
+        Object.values(map).forEach(item => {
+            if (item._children.length === 0) {
+                delete item._children;
+            }
+        });
+
+        var result = Object.values(map).filter((row) => row.a_menu_level === 1);
+
+        result.sort((a, b) => a.cbs_sno - b.cbs_sno); // cbs_sno 기준으로 정렬
+
+        var arr = new Array();
+        for (var key in result) {
+            arr.push(result[key]);
+        }
+        return arr;
+    }
+
+    const MAX_FILE_COUNT = 1;
+    let file = {    // 파일 첨부 관련
+        uploadedFileCount: null,
+        failedFileCount: null,
+        uploadedFileSize: null,
+        maxTotalFileSize: 25 * 1024 * 1024, // 25 MB
+        totalFileSize: 0,
+        existingFiles: [],
+        allRemovedFiles: [],
+        removedFiles: {},
+        failedFileCounts: 0,
+        successfulFileCount: 0,
+
+        init() {
+                this.cacheElements();
+                this.addEventListeners();
+        },
+
+        cacheElements() {
+            this.addFileButton = document.getElementById('addFileButton');
+            this.removeAllButton = document.getElementById('removeAllButton');
+            this.fileInput = document.getElementById('fileInput');
+            this.fileList = document.getElementById('fileList');
+            this.uploadedFileCount = document.getElementById('uploadedFileCount');
+            this.failedFileCount = document.getElementById('failedFileCount');
+            this.uploadedFileSize = document.getElementById('uploadedFileSize');
+        },
+
+        addEventListeners() {
+            document.querySelectorAll('.file-item .remove-button').forEach(button => {   // 파일 목록 단일 삭제(x) 버튼
+                button.addEventListener('click', (event) => this.removeFile(event));
+            });
+
+            // 드래그 앤 드롭
+            this.attachArea = document.querySelector('.attach_area');
+            this.attachArea.addEventListener('dragover', (event) => this.dragOver(event));
+            this.attachArea.addEventListener('dragleave', () => this.dragLeave());
+            this.attachArea.addEventListener('drop', (event) => this.handleDrop(event));
+
+            this.addFileButton.addEventListener('click', (event) => this.fileInput.click()); // 파일 첨부
+            this.fileInput.addEventListener('change', (event) => {  // 파일 목록 업데이트
+
+                // 20241127-파일 대화상자 [취소] 버튼이 아닐 때
+                if (this.fileInput.value !== '') {
+                    this.updateFileListFromInput()
+                }
+            });
+            this.removeAllButton.addEventListener('click', () => this.removeAllFiles()); // 파일 모두 삭제
+        },
+
+        // 파일 드래그 앤 드롭
+        dragOver(event) {
+            event.preventDefault();
+            this.attachArea.classList.add('dragging');
+        },
+        dragLeave() {
+            this.attachArea.classList.remove('dragging');
+        },
+        handleDrop(event) {
+            event.preventDefault();
+            this.attachArea.classList.remove('dragging');
+
+            const newFiles = event.dataTransfer.files;
+            const uploadedFileCount = Number(document.getElementById('uploadedFileCount').textContent);
+
+            //최대 첨부파일 갯수 체크
+            if (newFiles.length + uploadedFileCount > MAX_FILE_COUNT) {
+                gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', MAX_FILE_COUNT));
+                return;
+            } else {
+                this.existingFiles = this.existingFiles.concat(newFiles); // 기존 파일 목록에 새 파일 추가
+
+                // 20241209 추가
+                let $fileInput = document.querySelector('#fileInput');
+                if ($fileInput.files.length === 0) $fileInput.files = newFiles;
+                this.updateFileList(newFiles);
+            }
+        },
+
+        updateFileListFromInput() { // '파일첨부'로 첨부된 파일 추가
+
+            //최대 첨부파일 갯수 체크
+            if (this.existingFiles.length >= MAX_FILE_COUNT) {
+                gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', MAX_FILE_COUNT));
+                return;
+            }
+
+            const newFiles = this.fileInput.files;
+            this.existingFiles = this.existingFiles.concat(newFiles);
+            if (newFiles.length > 0) {
+                this.updateFileList(newFiles);
+            }
+        },
+
+        // 파일 삭제(단일)
+        removeFile(event) {
+            const fileItem = event.target.parentElement;
+            const fileNo = fileItem.getAttribute('data-file-no');
+            const sno = fileItem.getAttribute('data-sno');
+
+            this.allRemovedFiles.push({ fileNo, sno });
+            fileItem.remove();
+        },
+
+        removeAllFiles() { // '모두삭제'
+            const fileItems = document.querySelectorAll('.file_list .list_item');
+            fileItems.forEach(fileItem => {
+                const fileNo = fileItem.dataset.fileNo;
+                const sno = fileItem.dataset.sno;
+                this.allRemovedFiles.push({ fileNo, sno });
+            });
+            this.updateFileSizeSummary();
+            this.clearFileList();
+            this.fileInput.value = '';
+        },
+
+        clearFileList() {  // 파일 목록 초기화
+            this.fileList.innerHTML = '';
+            this.totalFileSize = 0;
+            this.successfulFileCount = 0;
+            this.failedFileCounts = 0;
+            this.existingFiles = [];
+            this.updateFileSizeSummary();
+            this.updateFileCount();
+            this.updateFailedFileCount();
+
+            // 파일 목록이 비었을 때 메시지 표시
+            const dataInfo = document.querySelector('.data_info');
+            const attachList = document.querySelector('.attach_list');
+
+            if (this.fileList.querySelectorAll('.list_item').length === 0) {
+                dataInfo.classList.remove('hide');
+                attachList.classList.add('hide');
+            }
+        },
+
+        removeFileFromProject(fileNo, sno) {   // 파일 삭제 처리 함수
+            if (!this.removedFiles[this.currentProjectNo]) {
+                this.removedFiles[this.currentProjectNo] = [];
+            }
+            this.removedFiles[this.currentProjectNo].push({ fileNo, sno });
+        },
+
+        updateFileSizeSummary() {  // 파일 크기 업데이트
+            const totalSizeText = this.formatFileSize(this.totalFileSize);
+            document.getElementById('uploadedFileSize').textContent = `${totalSizeText}`;
+        },
+
+        formatFileSize(size) { // 파일 크기 포맷팅
+            if (size >= 1024 * 1024) {
+                return (size / (1024 * 1024)).toFixed(2) + ' MB';
+            } else if (size >= 1024) {
+                return (size / 1024).toFixed(2) + ' KB';
+            } else {
+                return size + ' bytes';
+            }
+        },
+
+        updateFileList(files) { // 파일 목록 업데이트
+            const existingFileNames = this.existingFiles.map(file => file.name);
+            const fileListElement = document.getElementById('fileList');
+            const dataInfo = document.querySelector('.data_info');
+            const attachList = document.querySelector('.attach_list');
+            this.totalFileSize = this.existingFiles.reduce((sum, file) => sum + (file.size || 0), 0);
+
+            if (files.length === 0 && this.existingFiles.length === 0) {
+                dataInfo.classList.remove('hide');
+                attachList.classList.add('hide');
+            } else {
+                dataInfo.classList.add('hide');
+                attachList.classList.remove('hide');
+
+                const allFiles = [...this.existingFiles, ...files];
+
+                allFiles.forEach(file => {
+                    if (!existingFileNames.includes(file.name)) {
+                        const fileItem = this.createFileItem(file, fileListElement);
+                        this.handleFileItemClick(fileItem, file, fileListElement, dataInfo, attachList);
+                    }
+                });
+
+                this.updateFileCount();
+                this.updateFailedFileCount();
+            }
+        },
+
+        createFileItem(file, fileListElement) {
+            const fileItem = document.createElement('li');
+            fileItem.classList.add('list_item');
+            fileItem.dataset.filename = file.name;
+            fileItem.dataset.fileNo = file.fileNo || '';
+            fileItem.dataset.sno = file.sno || '';
+
+            const fileName = document.createElement('span');
+            fileName.classList.add('f_name');
+            fileName.textContent = file.name;
+
+            const fileSizeText = this.formatFileSize(file.size);
+            const fileSize = document.createElement('span');
+            fileSize.classList.add('f_capacity');
+            fileSize.textContent = fileSizeText;
+
+            const progressContainer = document.createElement('span');
+            progressContainer.classList.add('f_progress');
+
+            // 기존 progress
+            // const progress = document.createElement('span');
+            // progress.classList.add('progress');
+            // if (file.size > this.maxTotalFileSize) {
+            //     progress.innerHTML = `<span class="bar" style="width: 100%;"></span>`;
+            //     progress.classList.add('fail');
+            //     this.failedFileCounts++;
+            // } else {
+            //     progress.innerHTML = `<span class="bar" style="width: 0%;"></span>`;
+            //     progress.classList.add('ing');
+            // }
+
+            const progress = document.createElement('span');
+            progress.classList.add('loader');
+            progress.style.marginRight = '15px';
+
+            const successIndicator = document.createElement('span');
+            successIndicator.classList.add(file.size > this.maxTotalFileSize ? 'fail' : 'sucess');
+            successIndicator.innerHTML = file.size > this.maxTotalFileSize ? '<i class="ic ic-close"></i>' : '<i class="ic ic-check"></i>';
+            successIndicator.style.display = 'none';
+            successIndicator.style.marginRight = '15px';
+
+
+            progressContainer.appendChild(progress);
+            progressContainer.appendChild(successIndicator);
+
+            fileItem.appendChild(this.createRemoveButton(file, fileListElement));
+            fileItem.appendChild(fileName);
+            fileItem.appendChild(progressContainer);
+            fileItem.appendChild(fileSize);
+
+            fileListElement.appendChild(fileItem);
+            this.totalFileSize += file.size;
+            this.updateFileSizeSummary();
+
+            if (file.size <= this.maxTotalFileSize) {
+                this.successfulFileCount++;
+                this.existingFiles.push(file);
+                this.uploadFile(file, fileItem);
+            }
+
+            return fileItem;
+        },
+
+        createRemoveButton(file, fileListElement) {
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.classList.add('icon_btn');
+            removeButton.innerHTML = '<i class="ic ic-close"></i><span class="blind">삭제</span>';
+
+            if (this.currentProject && this.currentProject.openPstats !== '01') {
+                removeButton.style.visibility = 'hidden';
+            }
+
+            return removeButton;
+        },
+
+        handleFileItemClick(fileItem, file, fileListElement, dataInfo, attachList) {
+            const removeButton = fileItem.querySelector('.icon_btn');
+            removeButton.addEventListener('click', () => {
+                this.removeFileFromProject(file.fileNo, file.sno);
+                fileItem.remove();
+                this.totalFileSize -= file.size;
+                this.updateFileSizeSummary();
+
+                if (file.size <= this.maxTotalFileSize) {
+                    this.successfulFileCount--;
+                    this.updateFileCount();
+                } else {
+                    this.failedFileCounts--;
+                    this.updateFailedFileCount();
+                }
+
+                this.existingFiles = this.existingFiles.filter(f => f.fileNo !== file.fileNo || f.sno !== file.sno);
+
+                if (fileListElement.querySelectorAll('.list_item').length === 0) {
+                    dataInfo.classList.remove('hide');
+                    attachList.classList.add('hide');
+                }
+                document.querySelector('#fileInput').value = '';
+            });
+        },
+
+        updateFileCount() { // 파일 개수 업데이트
+            const uploadedFileCountElement = document.getElementById('uploadedFileCount');
+            uploadedFileCountElement.textContent = this.successfulFileCount > 0 ? this.successfulFileCount : '0';
+        },
+
+        updateFailedFileCount(failedCount) { // 실패한 파일 개수 업데이트
+            const failedFileCountElement = document.getElementById('failedFileCount');
+            failedFileCountElement.textContent = this.failedFileCounts > 0 ? this.failedFileCounts : '0';
+        },
+
+        uploadFile(file, fileItem) { // 파일 업로드 상태 확인
+
+            /*
+                'bidFile': document.querySelector('#fileInput').files[0],
+                'cntrctNo': cntrctNo,
+                'type': 'bid',
+             */
+            const formData = new FormData();
+            formData.append('bidFile', file);
+            formData.append('cntrctNo', cntrctNo);
+            formData.append('type', 'history');
+
+            //const URL = '/upload';
+            const URL = '/api/project/contractstatus/bid/registCnContractBid';
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $('span.loader').show();
+            $('span.sucess, span.fail').hide();
+
+            // Fetch API로 multipart/form-data 요청을 보낼 때, Content-Type 헤더를 직접 설정하면 안된다.
+            fetch(URL, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (!response.ok) {
+                    $('span.loader').hide();
+                    $('span.fail').show();
+                    return response.json().then(error => {
+                        gaiaCommon.customAlert(error.message);
+                        throw new Error(error.message);
+                    });
+                }
+
+                return response.json();
+            })
+                .then(data => {
+                    $('span.loader').hide();
+                    $('span.sucess').show();
+
+                    //this.updateProgress(file.name, xhr.status === 200 ? 100 : 0, fileItem, xhr.status === 200);
+                    contractBidGrid.get(false, 'history');
+                    gaiaCommon.LoadingOverlay('body', false);
+
+                    /**
+                     * 이력을 불러온 후, 사용자가 페이지 이동을 하려할때 Confirm()
+                     *
+                     * "계약내역서 정보가 저장되지 않았습니다.
+                     *  페이지를 나가시겠습니까?"
+                     */
+                    //addEventBeforeUnload();
+                    window.addEventListener("beforeunload", beforeUnloadHandler);
+                })
+                .catch(error => {
+                    $('span.loader').hide();
+                    $('span.fail').show();
+                    console.error('error', error.message);
+                    gaiaCommon.LoadingOverlay('body', false);
+                });
+
+            // const xhr = new XMLHttpRequest();
+            // xhr.open('POST', URL, true);
+            //
+            // xhr.upload.onprogress = (event) => {
+            //     // if (event.lengthComputable) {
+            //     //     const percentComplete = Math.round((event.loaded / event.total) * 100);
+            //     //     this.updateProgress(file.name, percentComplete, fileItem);
+            //     // }
+            //     $('span.loader').show();
+            //     gaiaCommon.LoadingOverlay('body', true);
+            //
+            // };
+            // xhr.onload = () => {
+            //
+            //     $('span.loader').hide();
+            //     $('span.sucess').show();
+            //
+            //     //this.updateProgress(file.name, xhr.status === 200 ? 100 : 0, fileItem, xhr.status === 200);
+            //     contractBidGrid.get(false, 'history');
+            //     gaiaCommon.LoadingOverlay('body', false);
+            //
+            //     /**
+            //      * 이력을 불러온 후, 사용자가 페이지 이동을 하려할때 Confirm()
+            //      *
+            //      * "계약내역서 정보가 저장되지 않았습니다.
+            //      *  페이지를 나가시겠습니까?"
+            //      */
+            //     //addEventBeforeUnload();
+            //     window.addEventListener("beforeunload", beforeUnloadHandler);
+            //
+            // };
+            // xhr.onerror = () => {
+            //     this.updateProgress(file.name, 0, fileItem, false);
+            // };
+            // xhr.send(formData);
+        },
+
+
+        formatFileSize(size) { // 파일 크기 포맷
+            return size < 1024 ? `${size} bytes` : size < 1048576 ? `${(size / 1024).toFixed(2)} KB` : `${(size / 1048576).toFixed(2)} MB`;
+        },
+    };
+
+
+
+    let bidList = {
+        init: function (...args) {
+            let url = "/api/project/contractstatus/bid/registerCtrDtlstt";
+            let params = {
+                "bidFile": document.querySelector('#fileInput').files[0],
+                "cntrctNo": cntrctNo
+            }
+
+            gaiaCommon.postForm(url, params, function (result) {
+                // callback
+                console.log(result);
+                updateGridWithBidData(result.data);
+            })
+        }
+    }
+
+    /*
+    let addEventBeforeUnload = function() {
+        $(window).on('beforeunload', function(event) {
+            event.preventDefault();
+
+            const msg2 = "{{ message('msg.contract.201') }}";
+            const msg3 = "{{ message('msg.contract.202') }}";
+            const cb = function () { return true; }
+            const reject_callback = function (event) {
+                event.preventDefault();
+            }
+            gaiaCommon.customConfirm("Message", msg2, msg3, cb, reject_callback);
+        });
+
+        window.addEventListener('beforeunload', (event) => {
+            // 메시지를 설정하지 않으면 기본 confirm 창이 뜨지 않습니다.
+            const customEvent = new CustomEvent("customBeforeUnload", {
+                detail: { message: "페이지를 떠나려 합니다." }
+            });
+            window.dispatchEvent(customEvent);
+
+            // 어떤 메시지나 리턴값을 설정하지 않습니다.
+        });
+
+        window.addEventListener("customBeforeUnload", (event) => {
+            console.log(event.detail.message);
+            // 페이지를 떠나기 전 수행할 작업들
+            const msg2 = "{{ message('msg.contract.201') }}";
+            const msg3 = "{{ message('msg.contract.202') }}";
+            const cb = function () { return true; }
+            const reject_callback = function (event) {
+                event.preventDefault();
+            }
+            gaiaCommon.customConfirm("Message", msg2, msg3, cb, reject_callback);
+        });
+    }
+    */
+
+    let initEventBinding = function () {
+
+        /******************
+         * EVENT BINDING
+         ******************/
+
+        //닫기
+        $("#close").click(function () {
+            if (type == "d") {
+                window.location.href = '/project/contractstatus';
+            } else {
+                window.open('', '_self').close();
+            }
+        });
+
+        //새창 이벤트
+        $("#newWindow").click(function () {
+            window.open("/project/contractstatus/bidform?type=p&cntrctNo=" + cntrctNo, 'targetWindow', 'scrollbars=yes,resizable=yes,width=1300,height=800');
+            window.history.back();
+        });
+
+        // BID 파일 선택 이벤트
+        $("#selectFile").click(function () {
+            $("#fileInput").click();  // 숨겨진 파일 선택창 열기
+        });
+
+        /**
+         * 파일 선택 후 처리
+         * 20241112 미사용
+        $("#fileInput").change(function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const fileContents = e.target.result;
+                    // BID 파일을 파싱하여 그리드에 데이터를 추가
+                    const parsedData = parseBidFile(fileContents);
+                    updateGridWithBidData(parsedData);
+                };
+                reader.readAsText(file);
+            }
+        });
+        */
+
+
+        $('#save').click((event) => {
+
+            // validation
+            if (document.querySelector('#fileInput').files.length === 0) {
+                // 등록된 첨부파일이 없습니다.
+                gaiaCommon.customAlert("{{ message('msg.029') }}");
+                return false;
+            }
+
+            let url = "/api/project/contractstatus/bid/registCnContractBid";
+            let params = {
+                'bidFile': document.querySelector('#fileInput').files[0],
+                'cntrctNo': cntrctNo,
+                'type': 'bid',
+            }
+
+            $('span.sucess, span.sucess').hide();
+            $('span.loader').show();
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.postForm(url, params, function (result) {
+                // callback
+                $('span.loader').hide();
+                gaiaCommon.LoadingOverlay('body', false);
+
+                if (result.ok) {
+                    $('span.sucess').show();
+                    gaiaCommon.customAlert("{{ message('msg.005') }}");    // 추가되었습니다.
+
+                    // 팝업일 경우 추가 - 20250211
+                    if (type === 'p') {
+                        window.removeEventListener("beforeunload", beforeUnloadHandler);
+                        opener.location.href = `/project/contractstatus/bid?cntrctNo=${cntrctNo}`
+                        setTimeout(() => {
+                            window.close();
+                        }, 2000);
+                    }
+
+                    setTimeout(() => {
+                        window.removeEventListener("beforeunload", beforeUnloadHandler);
+                        window.location.href = `/project/contractstatus/bid?cntrctNo=${cntrctNo}`
+                    }, 2000);
+                } else {
+                    $('span.fail').show();
+                    console.trace(result);
+                    gaiaCommon.customAlert("{{ message('msg.contract.203') }}");
+                    file.updateFailedFileCount(c3rFiles.length);
+                }
+            })
+        });
+
+        var methods = {
+            init() {
+                if (type == "d") {
+                    $("#newWindow").show();
+                } else {
+                    $("#newWindow").hide();
+                }
+            },
+        };
+
+        methods.init();
+    };
+
+    /**
+     * BID 파일 파싱 함수
+     * @param data
+     * 20241112 미사용
+    function parseBidFile(fileContents) {
+        // CSV 형식
+        const rows = fileContents.split('\n');
+        const data = rows.map(row => {
+            const cols = row.split(',');
+            return {
+                rsce_cd: cols[0],
+                dtl_cnstty_nm: cols[2],
+                spec_nm: cols[3],
+                unit: cols[4],
+                rsce_qty: cols[5],
+                mtrl_uprc: cols[6],
+                mtrl_cost: cols[10],
+                lbr_uprc: cols[7],
+                lbr_cost: cols[11],
+                gnrlexpns_uprc: cols[8],
+                gnrlexpns_cost: cols[12],
+                uprc_total: cols[9],
+                cost: cols[13]
+            };
+        });
+        return data;
+    }
+    */
+
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

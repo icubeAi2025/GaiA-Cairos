@@ -1,0 +1,191 @@
+<div class="modal open">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="code_cu_tit"></h5>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">{{ message('item.com.038') }}</span>
+            </button>
+        </div>
+        <div class="pop_body" style="">
+            <div class="form_box" id="CodeForm">
+                <div class="group">
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.001') }}</div>
+                            <div class="form_data" id="cmnGrpCdNmKrn">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.002') }}</div>
+                            <div class="form_data" id="cmnCd">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.003') }}</div>
+                            <div class="form_data" id="cmnCdNmKrn">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.004') }}</div>
+                            <div class="form_data" id="cmnCdNmEng">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.005') }}</div> <!-- 설명 -->
+                            <div class="form_data" id="cmnCdDscrpt" style="line-height: 1.45;">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성1</div> <!-- 속성1 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd1" id="attrbtCd1" readonly maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성2</div> <!-- 속성2 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd2" id="attrbtCd2" readonly maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성3</div> <!-- 속성3 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd3" id="attrbtCd3" readonly maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성4</div> <!-- 속성4 -->
+                            <div class="form_data" >
+                                <textarea name="attrbtCd4" id="attrbtCd4" readonly maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">속성5</div> <!-- 속성5 -->
+                            <div class="form_data">
+                                <textarea name="attrbtCd5" id="attrbtCd5" readonly maxlength="4000" style="pointer-events: auto;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.commonCode.006') }}</div> <!-- 순번 -->
+                            <div class="form_data" id="cmnCdDsplyOrder">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message("item.com.003") }}</div>
+                            <div class="form_data" id="useYn">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close()">
+                    {{ message('btn.007') }}
+                </button>
+                {{ cdBtnHtml | raw }}
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/assets/js/validation.js"></script>
+<script>
+
+    var popup = {
+        code: page.popup.code,
+        groupCode: page.popup.groupCode,
+
+        init: async function () {
+            this.updateLoadData();
+            $("#code_cu_tit").text("{{ message('item.commonCode.015') }}");
+        },
+        enableInputs: function () {
+            gaiaCommon.checkAuth("COMCODE_U_01", () => {
+                $("#popup").load(`/system/common-code/updateCode?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=r`);
+            });
+        },
+
+        close: function () {
+            $("#popup").empty();
+        },
+
+        updateLoadData: function () {
+            var codeData = $("#popup").data("employee-info");
+            var cmnCdNo = this.code ? this.code.cmnCdNo : codeData.cmnCdNo;
+            $.ajax({
+                url: `/api/system/common-code/code/${cmnCdNo}`,
+                method: "Get",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    popup.code = data.details.code
+                    console.log(popup.code)
+                    $("#CodeForm #cmnGrpCdNmKrn").text(gaiaCommon.decodeSafeText(page.groupCode.data.details.cmnCdNmKrn));
+                    $("#CodeForm #cmnCd").text(gaiaCommon.decodeSafeText(popup.code.cmnCd));
+                    $("#CodeForm #cmnCdNmKrn").text(gaiaCommon.decodeSafeText(popup.code.cmnCdNmKrn));
+                    $("#CodeForm #cmnCdNmEng").text(gaiaCommon.decodeSafeText(popup.code.cmnCdNmEng));
+                    $("#CodeForm #cmnCdDscrpt").text(gaiaCommon.decodeSafeText(popup.code.cmnCdDscrpt));
+                    $("#CodeForm #attrbtCd1").text(gaiaCommon.decodeSafeText(popup.code.attrbtCd1));
+                    $("#CodeForm #attrbtCd2").text(gaiaCommon.decodeSafeText(popup.code.attrbtCd2));
+                    $("#CodeForm #attrbtCd3").text(gaiaCommon.decodeSafeText(popup.code.attrbtCd3));
+                    $("#CodeForm #attrbtCd4").text(gaiaCommon.decodeSafeText(popup.code.attrbtCd4));
+                    $("#CodeForm #attrbtCd5").text(gaiaCommon.decodeSafeText(popup.code.attrbtCd5));
+                    $("#CodeForm #cmnCdDsplyOrder").text(popup.code.cmnCdDsplyOrder);
+                    if (popup.code.useYn === "Y") {
+                        $("#CodeForm #useYn").text('{{ message("item.com.015") }}');
+                    } else {
+                        $("#CodeForm #useYn").text('{{ message("item.com.016") }}');
+                    }
+                },
+                error: function (error) {
+                    console.error(error);
+                },
+            });
+
+        },
+
+    }
+
+    $(function () {
+        popup.init();
+
+        gaia.loaded = true
+    })
+
+</script>

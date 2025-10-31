@@ -1,0 +1,768 @@
+<!-- 폴더 생성 팝업 -->
+<div class="modal" id="insertFolder">
+    <div class="pop_box">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="folder_c_tit">{{ message('btn.032') }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('addFolder')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.008') }}</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="addFolderNm" onchange="page.popup.changeValid('folderNm')" required maxlength="255">
+                                <input type="hidden" id="folderNmValid">
+								<button type="button" class="btn _fill s_small" onclick="page.document.checkFolderExist()">{{ message('btn.028') }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+            </div>
+            <span style="display: inline-block; width: 99%; text-align: right; padding-top: 5px;"><strong>{{ message('msg.doc.001') }} [ <font color="red">\ / : * ? " < > . |</font> ]</strong></span>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('addFolder')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.document.addFolder()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 네비게이션 경로 추가 팝업 -->
+<div class="modal" id="insertNavi">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="insert_navi_tit">{{ message('item.doc.009') }}</h5> <!-- 경로 추가-->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('addNavi')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.010') }}</div> <!-- 경로-->
+						<div class="form_data">
+							<span id="addNaviPath"></span>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.011') }}</div> <!-- 경로 이름-->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="addNaviNm" onchange="page.popup.changeValid('addNaviNm')" required maxlength="255">
+                                <input type="hidden" id="addNaviNmValid">
+								<button type="button" class="btn _fill s_small" onclick="page.navigation.naviExist('add')">{{ message('btn.028') }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.012') }}</div> <!-- 경로 종류-->
+						<div class="form_data">
+							<span class="selectbox" id="addNaviType_box" style="z-index: 1;">
+								<!-- <select id="addNaviType">
+									<option selected disabled value="">선택</option>
+									<option value="F">폴더형</option>
+									<option value="I">아이템형</option>
+								</select> -->
+							</span>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">폴더 종류</div> <!-- 폴더 종류-->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="hidden" id="checkHasFolderType">
+								<span class="selectbox" id="naviFolderType_box" style="z-index: 1;">
+								</span>
+								<button type="button" class="btn _fill s_small" onclick="page.navigation.checkHasFolderType()">{{ message('btn.028') }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+            </div>
+            <span style="display: inline-block; width: 99%; text-align: right; padding-top: 5px;"><strong>{{ message('msg.doc.001') }} [ <font color="red">\ / : * ? " < > . |</font> ]</strong></span>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('addNavi')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.navigation.addNavi()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 네비게이션 경로 수정 팝업 -->
+<div class="modal" id="updateNavi">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="update_navi_tit">{{ message('item.doc.013') }}</h5> <!--경로 수정-->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('updateNavi')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.010') }}</div>
+						<div class="form_data">
+							<span id="updateNaviPath"></span>
+						</div>
+					</div>
+				</div><div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.014') }}</div> <!--기존경로이름-->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="orgNaviNm" readonly>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.015') }}</div> <!--신규경로이름-->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="updateNaviNm" onchange="page.popup.changeValid('updateNaviNm')" maxlength="255">
+                                <input type="hidden" id="orgNaviType">
+                                <input type="hidden" id="updateNaviNo">
+                                <input type="hidden" id="updateNaviNmValid">
+								<button type="button" class="btn _fill s_small" onclick="page.navigation.naviExist('update')">{{ message('btn.028') }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.012') }}</div>
+						<div class="form_data">
+							<span class="selectbox readonly">
+								<select id="updateNaviType">
+									<option selected disabled value="">{{ message('item.com.005') }}</option> <!--선택-->
+									<option value="FOLDR">{{ message('item.doc.016') }}</option> <!--폴더형-->
+									<option value="ITEM">{{ message('item.doc.017') }}</option> <!--아이템형-->
+								</select>
+							</span>
+						</div>
+					</div>
+				</div>
+            </div>
+            <span style="display: inline-block; width: 99%; text-align: right; padding-top: 5px;"><strong>{{ message('msg.doc.001') }} [ <font color="red">\ / : * ? " < > . |</font> ]</strong></span>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('updateNavi')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.navigation.updateNavi()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 권한 설정 팝업 -->
+<div class="modal" id="authority">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="set_authority_tit">{{ message('item.doc.066') }}</h5> <!-- 권한 설정 -->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('authority')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="table-scroll grid">
+				<table class="table ta_c" id="list-grid">
+					<colgroup>
+						<col width="70px">
+						<col>
+						<col>
+						<col width="150px">
+					</colgroup>
+					<thead>
+						<tr>
+							<th>
+								<label class="form_check">
+									<input type="checkbox" id="authorityAllCheckbox" onclick="page.popup.allCheckSet()" class="check_mark">
+									<span class="check_label blind">{{ message('item.com.005') }}</span> <!--선택-->
+								</label>
+							</th>
+							<th>{{ message('item.doc.018') }}</th> <!--그룹명-->
+							<th>{{ message('item.doc.019') }}</th> <!--그룹설명-->
+							<th>{{ message('item.doc.020') }}</th> <!--권한구분-->
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+            </div>
+            <label class="form_check" id="sync_all_sub_docAuth" style="margin-top: 10px;">
+                <input type="checkbox" class="check_mark" id="set_sync_sub_docAuth">
+                <span>하위 문서 권한 일괄 적용</span>
+            </label>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('authority')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" id="setAuthority">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 네비게이션 속성 추가 팝업 -->
+<div class="modal" id="insertProperty">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="property_cu_tit">{{ message('item.doc.027') }}</h5> <!--속성추가-->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="popup.closeModal()">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.com.052') }}</div> <!--종류-->
+						<div class="form_data" id="attrbtCdType_form">
+							<span class="selectbox" style="z-index: 1;">
+								<select id="attrbtCdType" onchange="popup.modal.enableAttrbtCd()">
+									<!-- <option selected disabled value="">선택</option>
+									<option value="DCN">DCN</option>
+									<option value="UDC">UDC</option>
+									<option value="STEP">STEP</option> -->
+								</select>
+							</span>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required" id="attrbtCd_req">{{ message('item.doc.021') }}</div> <!--속성코드-->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="attrbtCd" onchange="popup.modal.changeValid()" disabled maxlength="20">
+                                <input type="hidden" id="addAttrbtCdVaild">
+								<button type="button" id="attrbtCdExist" class="btn _fill s_small" onclick="popup.modal.existAttbtCd()" style="display: none;">{{ message('btn.028') }}</button>
+							</div>
+							<span style="display: inline-block; width: 99%; text-align: right; padding-top: 5px;"><span>{{ message('msg.doc.001') }} [ <font color="red">\ / : * ? " < > . |</font> ]</span></span>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.022') }}</div> <!--이름(한)-->
+						<div class="form_data">
+							<input type="text" class="" id="attrbtNmKrn" name="attrbtNmKrn" required maxlength="50">
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.023') }}</div> <!--이름(영)-->
+						<div class="form_data">
+							<input type="text" class="" id="attrbtNmEng" name="attrbtNmEng" maxlength="50">
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.024') }}</div>  <!--타입-->
+						<div class="form_data">
+							<div id="attrbtType_form">
+								<span class="selectbox" style="z-index: 1;">
+									<select id="attrbtType" onchange="popup.modal.enableAttrbtTypeSel()">
+										<!-- <option selected disabled value="">선택</option>
+										<option value="TXT">Text</option>
+										<option value="DAT">DateTime</option>
+										<option value="NUM">Number</option>
+										<option value="SEL">Select</option>
+										<option value="POU">Popup</option> -->
+									</select>
+								</span>
+							</div>
+							<div id="attrbtTypeSel_form" style="display: none;">
+								<span class="selectbox" style="z-index: 1;">
+									<select id="attrbtTypeSel">
+										<!-- <option selected disabled value="">선택</option>
+										<option value="08798bce-ecc0-48c7-97f7-d11fcb206fb6">결재 상태</option>
+										<option value="f2ddc3aa-bba7-4021-a68c-f73b9b16321e">결재 문서 상태</option>
+										<option value="0e7c65be-60ee-4362-8c1b-b18eff238bd2">결재 구분</option> -->
+									</select>
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.025') }}</div> <!--표시여부-->
+						<div class="form_data">
+							<div class="item_group" role="group" aria-label="Basic radio group">
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="dsplyY" name="attrbtDsplyYn" value="Y" checked>
+									<span class="check_label">{{ message('btn.008') }}</span>
+								</label>
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="dsplyN" name="attrbtDsplyYn" value="N">
+									<span class="check_label">{{ message('btn.009') }}</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.026') }}</div> <!--수정여부-->
+						<div class="form_data">
+							<div class="item_group" role="group" aria-label="Basic radio group">
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="chgY" name="attrbtChgYn" value="Y" checked>
+									<span class="check_label">{{ message('btn.008') }}</span>
+								</label>
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="chgN" name="attrbtChgYn" value="N">
+									<span class="check_label">{{ message('btn.009') }}</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.com.082') }}</div> <!--순서-->
+						<div class="form_data">
+							<input type="text" id="attrbtDsplyOrder" class="number" name="attrbtDsplyOrder" required  max="32767">
+						</div>
+					</div>
+				</div>
+				<input type="hidden" id="attrbtNo">
+            </div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.closeModal()">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="popup.modal.save()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 문서(아이템형) 추가 팝업 -->
+<div class="modal" id="insertItem">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="item_cu_tit">{{ message('item.doc.030') }}</h5> <!-- 아이템 추가 -->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('addItem')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<form id="newRequestForm">
+					<div class="row">
+						<div class="col">
+							<div class="form_label required">{{ message('item.doc.003') }}</div> <!-- 제목 -->
+							<div class="form_data">
+								<input type="text" id="item_docNm" name="item_docNm" required >
+							</div>
+						</div>
+					</div>
+					<!-- 동적으로 생성 부분을 위한 컨테이너 -->
+					<div id="dynamicFieldsContainer"></div>
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.pinstall.002') }}</div> <!-- 자료첨부 -->
+							<div class="form_data">
+
+								<div class="attach_wrap">
+									<div class="attach_toolbar">
+										<div class="btn_area s_small">
+											<button type="button" class="btn _outline" id="insert_removeAllButton">{{message('btn.020') }}</button> <!-- 모두삭제 -->
+											<div class="attach_btn">
+												<input type="file" id="insert_fileInput" name="files" multiple>
+												<button type="button" class="btn _fill" id="insert_addFileButton">{{message('btn.021') }}</button> <!-- 파일첨부 -->
+											</div>
+										</div>
+										<div class="attach_info">
+											<span class="attach_result">
+												<span class="sucess">
+													<i class="ic ic-check"></i>
+													<b class="num" id="insert_uploadedFileCount">0</b>
+												</span>
+												<span class="fail">
+													<i class="ic ic-close"></i>
+													<b class="num" id="insert_failedFileCount">0</b>
+												</span>
+											</span>
+											<span class="attach_capacity">
+												<span class="item" id="insert_uploadedFileSize">0 KB</span>
+												<span class="item">100 MB</span>
+											</span>
+										</div>
+									</div>
+
+									<div class="attach_area">
+										<!-- 첨부파일 미등록 시 -->
+										<p class="data_info">
+											{{ message('msg.029') }} <!-- 등록된 첨부파일이 없습니다. -->
+										</p>
+										<!-- 첨부파일 등록 시 활성화 'hide'제거-->
+										<div class="attach_list hide">
+											<ul class="file_header">
+												<li class="header_item file-item">
+													<button type="button" class="icon_btn remove-button">
+														<i class="ic ic-close"></i>
+														<span class="blind">{{ message('item.com.020') }}</span>
+													</button>
+													<span class="f_name">{{ message('item.com.020') }}</span>
+													<!-- 파일명 -->
+													<span class="f_progress">{{ message('item.info.036')
+														}}</span> <!-- 진행상태 -->
+													<span class="f_capacity">{{ message('item.com.021') }}</span>
+													<!-- 크기 -->
+												</li>
+											</ul>
+											<ul class="file_list" id="insert_fileList"></ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+            </div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('addItem')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.item.addDocItem()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 문서 이름 변경 팝업 -->
+<div class="modal" id="updateDocName">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="doc_u_tit">{{ message('item.doc.031') }}</h5> <!-- 이름 변경 -->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('updateDocNm')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<span class="tree_route" id="doc_breadcrumb" style="visibility:visible;"></span>
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.032') }}</div> <!-- 문서 명 -->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="before_doc_nm" readonly >
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.doc.033') }}</div> <!-- 변경할 문서 명 -->
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="after_doc_nm" onchange="page.popup.changeValid('reDocNm')" required>
+								<button type="button" class="btn _fill s_small" onclick="page.document.reDocNmExist()">{{ message('btn.028') }}</button>
+                                <input type="hidden" id="docNmValid">
+							</div>
+						</div>
+					</div>
+				</div>
+            </div>
+            <span style="display: inline-block; width: 99%; text-align: right; padding-top: 5px;"><strong>{{ message('msg.doc.001') }} [ <font color="red">\ / : * ? " < > . |</font> ]</strong></span>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('updateDocNm')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.document.docRename()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 문서 속성 정보 수정 팝업 -->
+<div class="modal" id="updateProperty">
+    <div class="pop_box _lg">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="doc_property_u_tit">{{ message('item.doc.034') }}</h5> <!-- 속성 정보 수정 -->
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('updateProperty')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.037') }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="pop_body">
+			<div class="form_box">
+				<form id="updateForm">
+					<div class="row">
+						<div class="col">
+							<div class="form_label">{{ message('item.doc.002') }}</div> <!-- 이름 -->
+							<div class="form_data">
+								<input type="text" id="p_docNm" name="p_docNm" required readonly>
+							</div>
+						</div>
+					</div>
+					<!-- 동적으로 생성 부분을 위한 컨테이너 -->
+					<div id="dynamicFieldsContainer_update"></div>
+					<!-- row -->
+					<div class="row" id="item_update_files" style="display: none;">
+						<div class="col">
+							<div class="form_label">{{ message('item.pinstall.002') }}</div> <!-- 자료첨부 -->
+							<div class="form_data">
+
+								<div class="attach_wrap">
+									<div class="attach_toolbar">
+										<div class="btn_area s_small">
+											<button type="button" class="btn _outline" id="update_removeAllButton">{{message('btn.020') }}</button> <!-- 모두삭제 -->
+											<div class="attach_btn">
+												<input type="file" id="update_fileInput" name="files" multiple>
+												<button type="button" class="btn _fill" id="update_addFileButton">{{message('btn.021') }}</button> <!-- 파일첨부 -->
+											</div>
+										</div>
+										<div class="attach_info">
+											<span class="attach_result">
+												<span class="sucess">
+													<i class="ic ic-check"></i>
+													<b class="num" id="update_uploadedFileCount">0</b>
+												</span>
+												<span class="fail">
+													<i class="ic ic-close"></i>
+													<b class="num" id="update_failedFileCount">0</b>
+												</span>
+											</span>
+											<span class="attach_capacity">
+												<span class="item" id="update_uploadedFileSize">0 KB</span>
+												<span class="item">100 MB</span>
+											</span>
+										</div>
+									</div>
+
+									<div class="attach_area">
+										<!-- 첨부파일 미등록 시 -->
+										<p class="data_info">
+											{{ message('msg.029') }} <!-- 등록된 첨부파일이 없습니다. -->
+										</p>
+										<!-- 첨부파일 등록 시 활성화 'hide'제거-->
+										<div class="attach_list hide">
+											<ul class="file_header">
+												<li class="header_item">
+													<button type="button" class="icon_btn">
+														<i class="ic ic-close"></i>
+														<span class="blind">{{ message('item.com.020') }}</span>
+													</button>
+													<span class="f_name">{{ message('item.com.020') }}</span>
+													<!-- 파일명 -->
+													<span class="f_progress">{{ message('item.info.036')}}</span>
+													<!-- 진행상태 -->
+													<span class="f_capacity">{{ message('item.com.021') }}</span>
+													<!-- 크기 -->
+												</li>
+											</ul>
+											<ul class="file_list" id="update_fileList"></ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+            </div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('updateProperty')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.document.updateProperty()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!--문서 파일 정보 팝업-->
+<div class="modal" id="docFileInfo">
+	<div class="pop_box _lg">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="doc_info_tit">{{ message('item.doc.035') }}</h5> <!-- 파일 정보 -->
+			<button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('fileInfo')">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span> <!-- 창닫기 -->
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<div class="s_conts">
+				<!-- <span class="tree_route" id="dept-breadcrumb"></span> -->
+				<div class="group">
+					<h4 class="conts_s-tit"></h4>
+					<div class="form_box readonly" id="doc_file_info">
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.036') }}</div> <!-- 파일 경로 -->
+								<div class="form_data">
+									<input type="text" id="doc_file_path" value="">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.037') }}</div> <!-- 파일 명 -->
+								<div class="form_data">
+									<input type="text" id="doc_file_nm" value="">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.038') }}</div> <!-- 파일 형식 -->
+								<div class="form_data">
+									<input type="text" id="doc_file_type" value="">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.039') }}</div> <!-- 파일 크기 -->
+								<div class="form_data">
+									<input type="text" id="doc_file_size" value="">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.040') }}</div> <!-- 작성자 -->
+								<div class="form_data">
+									<input type="text" id="doc_rgstr_id" value="">
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.006') }}</div> <!-- 수정자 -->
+								<div class="form_data">
+									<input type="text" id="doc_chg_id" value="">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.041') }}</div> <!-- 작성일시 -->
+								<div class="form_data">
+									<input type="text" id="doc_rgst_dt" value="">
+								</div>
+							</div>
+							<div class="col">
+								<div class="form_label">{{ message('item.doc.007') }}</div> <!-- 수정일시 -->
+								<div class="form_data">
+									<input type="text" id="doc_chg_dt" value="">
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('fileInfo')">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!--문서 이동 복사 팝업-->
+<div class="modal" id="docMoveCopy">
+	<div class="pop_box _lg">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="doc_chg_tit">{{ message('item.doc.042') }}</h5> <!-- 문서 이동 -->
+			<button type="button" class="icon_btn pop_close" onclick="page.popup.closePopup('docMoveCopy')">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span> <!-- 창닫기 -->
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<div class="form_box readonly">
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.doc.044') }}</div> <!-- 현재 문서 경로 -->
+						<div class="form_data">
+							<input type="text" id="current_doc_path" value="">
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label" id="path_nm">{{ message('item.doc.045') }}</div> <!-- 이동할 문서 경로 -->
+						<div class="form_data">
+							<input type="text" id="chg_doc_path" value="">
+						</div>
+					</div>
+				</div>
+				<input type="text" id="source_item_id" hidden>
+				<input type="text" id="source_item_no" hidden>
+				<input type="text" id="source_item_kind" hidden>
+			</div>
+			<div class="s_conts" style="grid-template-columns: 50% auto;">
+				<!-- S: TREE View ------------------------------------------------------------------------ -->
+				<article class="treeview_area conts g-row">
+					<div class="treeview_wrap">
+						<div class="treeview" id="full_tree">
+							<!--트리 영역-->
+						</div>
+					</div>
+				</article>
+				<!-- // E: TREE View ------------------------------------------------------------------------ -->
+			</div>
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="page.popup.closePopup('docMoveCopy')">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="page.document.saveDocMoveCopy()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>

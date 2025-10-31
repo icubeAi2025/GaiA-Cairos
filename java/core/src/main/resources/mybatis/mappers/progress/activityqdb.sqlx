@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb">
+<!-- 작업일보 (공통) - 최종 변경 리비전 가져오기 -->
+	<sql id="sql_geRevisionId">
+        SELECT REVISION_ID
+        FROM PR_REVISION PR
+        WHERE PR.CNTRCT_CHG_ID = #{cntrctChgId}
+        AND PR.LAST_REVISION_YN = 'Y'
+        AND PR.DLT_YN = 'N'
+    </sql>
+
+	<select id="selectActivityWbsList" parameterType="activityWbsListInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityWbsList][dhjung]  */
+		WITH RECURSIVE PR_WBS_LIST AS (
+            SELECT
+                A.CNTRCT_CHG_ID,
+                A.REVISION_ID,
+                A.WBS_CD,
+                A.WBS_PATH,
+                A.WBS_NM,
+                A.UP_WBS_CD,
+                A.WBS_LEVEL,
+                A.EARLY_START,
+                A.EARLY_FINISH,
+                A.ACTUAL_START,
+                A.ACTUAL_FINISH,
+                A.RMRK,
+                1 AS DEPTH,
+                ARRAY[A.WBS_CD::TEXT] AS PATH,
+                FALSE AS CYCLE
+            FROM PR_WBS A
+            WHERE A.CNTRCT_CHG_ID = #{cntrctChgId}
+                <if test="wbsCd != ''">
+                    AND A.WBS_CD = #{wbsCd}
+                </if>
+                <if test="wbsCd == ''">
+                    AND A.WBS_CD = (SELECT DISTINCT C.WBS_CD FROM PR_WBS C WHERE WBS_LEVEL = 0 AND C.CNTRCT_CHG_ID = #{cntrctChgId})
+                </if>
+                AND A.DLT_YN = 'N'
+            UNION ALL
+            SELECT
+                A.CNTRCT_CHG_ID,
+                A.REVISION_ID,
+                A.WBS_CD,
+                A.WBS_PATH,
+                A.WBS_NM,
+                A.UP_WBS_CD,
+                A.WBS_LEVEL,
+                A.EARLY_START,
+                A.EARLY_FINISH,
+                A.ACTUAL_START,
+                A.ACTUAL_FINISH,
+                A.RMRK,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, A.WBS_CD::TEXT),
+                A.WBS_CD = ANY(B.PATH)
+            FROM PR_WBS A
+            JOIN PR_WBS_LIST B ON A.UP_WBS_CD = B.WBS_CD
+            WHERE A.DLT_YN = 'N'
+            AND NOT B.CYCLE
+        ),
+        PR_ACTIVITY_SUM AS (
+            SELECT
+                A.WBS_CD,
+                SUM(A.INTL_DURATION) AS TOTAL_INTL_DURATION,
+                SUM(A.REMNDR_DURATION) AS TOTAL_REMNDR_DURATION,
+                SUM(A.EXPT_COST) AS TOTAL_EXPT_COST,
+                SUM(A.REMNDR_COST) AS TOTAL_REMNDR_COST
+            FROM PR_ACTIVITY A
+            WHERE A.CNTRCT_CHG_ID = #{cntrctChgId}
+                    AND 1=1
+                <if test="searchText != null and searchText != ''">
+                    AND ((SELECT B.WBS_NM FROM PR_WBS B WHERE B.WBS_CD = A.WBS_CD AND B.CNTRCT_CHG_ID = #{cntrctChgId}) ILIKE CONCAT('%',#{searchText},'%')
+                    OR A.ACTIVITY_ID ILIKE CONCAT('%',#{searchText},'%')
+                    OR A.ACTIVITY_NM ILIKE CONCAT('%',#{searchText},'%'))
+                </if> 
+            GROUP BY WBS_CD
+        )
+        SELECT
+            DISTINCT
+            B.WBS_CD AS WBS_CD,  
+            B.WBS_NM AS WBS_NM,
+            A.ACTIVITY_ID AS ACTIVITY_ID,
+            A.ACTIVITY_NM AS ACTIVITY_NM,
+            A.ACTIVITY_KIND_KRN AS ACTIVITY_KIND_KRN,
+            A.INTL_DURATION,
+            A.REMNDR_DURATION,
+            A.EXPT_COST,
+            A.REMNDR_COST,
+            A.PLAN_START AS PLAN_START,
+            A.PLAN_FINISH AS PLAN_FINISH,
+            A.ACTUAL_START AS ACTUAL_START,
+            A.ACTUAL_FINISH AS ACTUAL_FINISH,
+            B.DEPTH,
+            B.path,
+            A.WBS_LEVEL
+        FROM (
+            SELECT
+                A.WBS_LEVEL,
+                A.WBS_NM,
+                A.WBS_CD,
+                A.WBS_CD AS ACTIVITY_ID,
+                A.WBS_NM AS ACTIVITY_NM,
+                '' AS ACTIVITY_KIND_KRN,
+                -- WBS와 하위 활동들의 총 기간 계산 (NULL일 경우 하위 레벨 합계 사용)
+                COALESCE(
+                    (SELECT SUM(TOTAL_INTL_DURATION)
+                    FROM PR_ACTIVITY_SUM PAS
+                    JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                    WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                    ), 0
+                ) AS INTL_DURATION,
+                COALESCE(
+                    (SELECT SUM(TOTAL_REMNDR_DURATION)
+                    FROM PR_ACTIVITY_SUM PAS
+                    JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                    WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                    ), 0
+                ) AS REMNDR_DURATION,
+                COALESCE(
+                    (SELECT SUM(TOTAL_EXPT_COST)
+                    FROM PR_ACTIVITY_SUM PAS
+                    JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                    WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                    ), 0
+                ) AS EXPT_COST,
+                COALESCE(
+                    (SELECT SUM(TOTAL_REMNDR_COST)
+                    FROM PR_ACTIVITY_SUM PAS
+                    JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                    WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                    ), 0
+                ) AS REMNDR_COST,
+                A.EARLY_START AS PLAN_START,
+		        A.EARLY_FINISH AS PLAN_FINISH,
+		        A.ACTUAL_START AS ACTUAL_START,
+		        A.ACTUAL_FINISH AS ACTUAL_FINISH,
+                A.CNTRCT_CHG_ID
+            FROM PR_WBS A
+            RIGHT JOIN PR_WBS_LIST B ON A.WBS_CD = B.WBS_CD AND B.CNTRCT_CHG_ID = #{cntrctChgId}
+            UNION ALL
+            SELECT
+                null AS WBS_LEVEL,
+                B.WBS_NM,
+                A.WBS_CD,
+                A.ACTIVITY_ID,
+                A.ACTIVITY_NM,
+                (SELECT CMN_CD_NM_KRN FROM SM_COM_CODE WHERE CMN_GRP_CD = #{actkindGroupCode} AND CMN_CD = A.ACTIVITY_KIND) AS ACTIVITY_KIND_KRN,
+                A.INTL_DURATION,
+                A.REMNDR_DURATION,
+                A.EXPT_COST,
+                A.REMNDR_COST,
+                A.PLAN_START,
+                A.PLAN_FINISH,
+                A.ACTUAL_START,
+                A.ACTUAL_FINISH,
+                A.CNTRCT_CHG_ID
+            FROM PR_ACTIVITY A
+            LEFT JOIN PR_WBS B ON B.WBS_CD = A.WBS_CD
+            WHERE A.CNTRCT_CHG_ID = #{cntrctChgId}
+                    AND EXISTS (
+                        SELECT 1
+                        FROM PR_WBS B
+                        WHERE B.WBS_CD = A.WBS_CD) 
+                    <if test="searchText != null and searchText != ''">
+                        AND (B.WBS_NM ILIKE CONCAT('%',#{searchText},'%')
+                        OR A.ACTIVITY_ID ILIKE CONCAT('%',#{searchText},'%')
+                        OR A.ACTIVITY_NM ILIKE CONCAT('%',#{searchText},'%'))
+                    </if> 
+        ) A
+        RIGHT JOIN PR_WBS_LIST B ON A.WBS_CD = B.WBS_CD
+        WHERE A.CNTRCT_CHG_ID = #{cntrctChgId}
+        ORDER BY B.PATH, B.DEPTH, A.ACTIVITY_ID;
+	</select>
+
+	<select id="selectActivityWbsQdbList" parameterType="activityWbsQdbListInput" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityWbsQdbList][dhjung]  */
+        WITH qdb_list AS (
+			SELECT cntrct_chg_id
+                 , activity_id
+                 , cnstty_cd
+                 , dtl_cnstty_sn
+                 , rsce_tp_cd
+                 , rsce_cd
+                 , rsce_qty
+                 , orgnl_rsce_cd 
+			  FROM pr_qdb 
+			 WHERE cntrct_chg_id = #{cntrctChgId}
+			   AND activity_id = #{activityId}
+			   AND dlt_yn = 'N'
+			ORDER BY dtl_cnstty_sn
+		)
+		SELECT A.cntrct_chg_id
+             , C.cnstty_cd
+             , C.cnstty_nm
+	         , A.DTL_CNSTTY_SN
+		     , A.rsce_tp_cd
+		     , A.rsce_cd
+		     , A.dtl_cnstty_nm								
+		     , A.spec_nm									
+		     , A.unit									
+		     , ql.rsce_qty					      				
+		     , to_char(A.mtrl_uprc, 'FM999,999,999,990') AS mtrl_uprc					 				
+		     , to_char((ql.rsce_qty * A.mtrl_uprc), 'FM999,999,999,990') AS mtrl_cost			
+		     , to_char(A.lbr_uprc, 'FM999,999,999,990') AS	lbr_uprc				  				
+		     , to_char((ql.rsce_qty * A.lbr_uprc), 'FM999,999,999,990') AS lbr_cost				
+		     , to_char(A.gnrlexpns_uprc, 'FM999,999,999,990') AS gnrlexpns_uprc								
+		     , to_char((ql.rsce_qty * A.gnrlexpns_uprc),'FM999,999,999,990') AS gnrlexpns_cost
+		     , to_char((A.mtrl_uprc+A.lbr_uprc+A.gnrlexpns_uprc), 'FM999,999,999,990') AS total_uprc
+		     , to_char(trunc((ql.rsce_qty * A.mtrl_uprc)) + trunc((ql.rsce_qty * A.lbr_uprc)) + trunc((ql.rsce_qty * A.gnrlexpns_uprc)), 'FM999,999,999,990') AS total_cost
+		  FROM ct_cbs_detail A
+		  JOIN qdb_list ql ON ql.rsce_cd = A.rsce_cd AND ql.cntrct_chg_id = A.cntrct_chg_id
+          JOIN ct_cbs C ON C.cntrct_chg_id = A.cntrct_chg_id AND C.cnstty_sn = A.cnstty_sn 
+		 WHERE A.dlt_yn = 'N'
+           AND A.DTL_CNSTTY_SN IN (ql.DTL_CNSTTY_SN)
+        <if test="searchText != null and searchText != ''">
+           AND A.rsce_cd LIKE '%'||#{searchText}||'%'
+		   OR  A.dtl_cnstty_nm LIKE '%'||#{searchText}||'%'
+        </if>
+	</select>
+
+    <select id="selectActivityCbsList" parameterType="activityCbsListInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityCbsList][dhjung]  */
+        WITH cbs_list AS (	
+            SELECT cntrct_chg_id,
+                   cnstty_sn,
+                   cnstty_nm, 
+                   cnstty_cd,
+                   unit_cnst_type,
+                   cnstty_lvl_num,
+                   up_cnstty_cd 
+              FROM ct_cbs 
+             WHERE cntrct_chg_id = #{cntrctChgId}
+               AND dlt_yn = 'N'
+               AND unit_cnst_type = #{unitCnstType}
+               AND (cnstty_cd LIKE #{cnsttyCd}||'%' OR up_cnstty_cd = #{cnsttyCd}||'%')
+        ) SELECT  
+                A.cntrct_chg_id,
+                B.cnstty_sn, 
+                A.dtl_cnstty_sn,
+                B.cnstty_nm,
+                B.cnstty_cd, 
+                A.rsce_tp_cd,
+                A.rsce_cd,
+                A.dtl_cnstty_nm,									
+                A.spec_nm, 											
+                A.unit,												
+                ql.rsce_qty,						      				
+                to_char(A.mtrl_uprc, 'FM999,999,999,990') AS mtrl_uprc,						 				
+                to_char((ql.rsce_qty*A.mtrl_uprc), 'FM999,999,999,990') AS mtrl_cost,				
+                to_char(A.lbr_uprc, 'FM999,999,999,990') AS	lbr_uprc,						  				
+                to_char((ql.rsce_qty*A.lbr_uprc), 'FM999,999,999,990') AS lbr_cost,				
+                to_char(A.gnrlexpns_uprc, 'FM999,999,999,990') AS gnrlexpns_uprc,									
+                to_char((ql.rsce_qty*A.gnrlexpns_uprc),'FM999,999,999,990') AS gnrlexpns_cost,	
+                to_char((A.mtrl_uprc+A.lbr_uprc+A.gnrlexpns_uprc), 'FM999,999,999,990') AS total_uprc,
+                to_char(trunc((ql.rsce_qty * A.mtrl_uprc)) + trunc((ql.rsce_qty * A.lbr_uprc)) + trunc((ql.rsce_qty * A.gnrlexpns_uprc)), 'FM999,999,999,990') AS total_cost
+            FROM ct_cbs_detail A
+            JOIN pr_qdb ql ON ql.rsce_cd = A.rsce_cd AND ql.cntrct_chg_id = A.cntrct_chg_id
+            JOIN cbs_list B ON A.cntrct_chg_id = B.cntrct_chg_id AND A.cnstty_sn = B.cnstty_sn
+           WHERE A.cntrct_chg_id = #{cntrctChgId}
+             AND A.dlt_yn = 'N'
+            <if test="searchText != null and searchText != ''">
+             AND (B.cnstty_nm LIKE '%'||#{searchText}||'%' OR B.cnstty_cd LIKE '%'||#{searchText}||'%' OR A.dtl_cnstty_nm LIKE '%'||#{searchText}||'%' OR A.rsce_cd LIKE '%' ||#{searchText}|| '%')
+            </if>
+            ORDER BY A.cnstty_sn;
+    </select>
+
+    <select id="selectActivityCbsQdbList" parameterType="activityCbsQdbListInput" resultType="map">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityCbsQdbList][dhjung]  */
+        WITH cbs_list AS (
+            SELECT  cbsA.cntrct_chg_id,
+                    cbsA.cnstty_sn,
+                    cbsA.dtl_cnstty_sn,
+                    cbsB.cnstty_cd,
+                    cbsB.cnstty_nm,
+                    cbsA.rsce_cd,
+                    cbsA.dtl_cnstty_nm,
+                    cbsA.rsce_tp_cd,
+                    cbsA.rsce_qty,
+                    cbsA.orgnl_rsce_cd
+            FROM    ct_cbs_detail cbsA
+            JOIN    ct_cbs cbsB ON cbsA.cntrct_chg_id = cbsB.cntrct_chg_id
+                AND cbsA.cnstty_sn = cbsB.cnstty_sn
+            WHERE   cbsA.cntrct_chg_id = #{cntrctChgId}
+                AND cbsA.cnstty_sn = #{cnsttySn}::numeric
+                AND cbsA.dtl_cnstty_sn = #{dtlCnsttySn}::numeric
+                AND cbsA.dlt_yn = 'N'
+        ),
+        qdb_list AS (
+            SELECT  qdb.cntrct_chg_id,
+                    qdb.activity_id,
+                    qdb.cnstty_cd,
+                    qdb.dtl_cnstty_sn,
+                    cbs.cnstty_nm
+            FROM    pr_qdb qdb
+            JOIN    cbs_list cbs
+                ON  qdb.cntrct_chg_id = cbs.cntrct_chg_id
+                AND qdb.cnstty_cd::numeric = cbs.cnstty_sn
+                AND qdb.dtl_cnstty_sn = cbs.dtl_cnstty_sn
+            WHERE   qdb.dlt_yn = 'N'
+            AND qdb.REVISION_ID = (<include refid="sql_geRevisionId" />)
+        ),
+        DAILY_REPORT_COST AS (
+            SELECT
+                CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, SUM(COST) AS ACMTL_COST
+            FROM (
+                SELECT DR.CNTRCT_CHG_ID,
+                    DR.REVISION_ID,
+                    DR.ACTIVITY_ID,
+                    DR.CNSTTY_CD,
+                    DR.DTL_CNSTTY_SN,
+                    DR.RSCE_TP_CD,
+                    DR.RSCE_CD,
+                    DR.RSCE_QTY,
+                    TRUNC(DR.RSCE_QTY * (CCD.MTRL_UPRC + CCD.LBR_UPRC + CCD.GNRLEXPNS_UPRC)) AS COST
+                FROM (
+                    SELECT CNTRCT_CHG_ID,
+                        REVISION_ID,
+                        ACTIVITY_ID,
+                        CNSTTY_CD,
+                        DTL_CNSTTY_SN,
+                        RSCE_TP_CD,
+                        RSCE_CD,
+                        SUM(WORK_QTY) AS RSCE_QTY
+                    FROM CW_DAILY_REPORT_QDB
+                    WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+                    AND REVISION_ID = (<include refid="sql_geRevisionId" />)
+                    AND DLT_YN = 'N'
+                    GROUP BY CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, RSCE_TP_CD, RSCE_CD
+                ) DR
+                INNER JOIN CT_CBS_DETAIL CCD
+                ON DR.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID
+                AND DR.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                ORDER BY DR.DTL_CNSTTY_SN
+            ) ACT
+            GROUP BY CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID
+        )
+        SELECT DISTINCT
+                A.cntrct_chg_id,
+                B.cnstty_nm,
+                A.wbs_cd,
+                C.wbs_nm,
+                A.activity_id,
+                A.activity_nm,
+                A.activity_kind,
+                S.cmn_cd_nm_krn AS activity_kind_krn,
+                A.intl_duration,
+                A.remndr_duration,
+                A.EXPT_COST,
+                COALESCE(D.ACMTL_COST, 0) AS ACMTL_COST,
+                A.early_start,
+                A.early_finish,
+                A.late_start,
+                A.late_finish,
+                A.plan_start,
+                A.plan_finish
+        FROM    pr_activity A
+        JOIN    qdb_list B ON A.cntrct_chg_id = B.cntrct_chg_id
+            AND A.activity_id = B.activity_id
+        LEFT JOIN pr_wbs C ON A.cntrct_chg_id = C.cntrct_chg_id
+            AND A.wbs_cd = C.wbs_cd
+        LEFT JOIN sm_com_code S ON S.cmn_grp_cd = #{actkindGroupCode}
+            AND S.cmn_cd = A.activity_kind
+        LEFT JOIN DAILY_REPORT_COST D
+        ON A.CNTRCT_CHG_ID = D.CNTRCT_CHG_ID
+        AND A.REVISION_ID = D.REVISION_ID
+        AND A.ACTIVITY_ID = D.ACTIVITY_ID
+
+
+        <if test="searchText != null and searchText != ''">
+        WHERE A.wbs_cd LIKE '%'||#{searchText}||'%' 
+            OR A.activity_id LIKE '%'||#{searchText}||'%' 
+            OR A.activity_nm LIKE '%'||#{searchText}||'%';
+        </if>
+    </select>
+
+    <select id="selectActivityQdbContractList" parameterType="activityQdbContractListInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityQdbContractList][dhjung]  */
+        SELECT 
+		    A.cntrct_no, 
+		    A.cntrct_nm,
+		    A.major_cnstty_cd,
+		    B.cmn_cd_nm_eng AS major_cnstty_nm_eng,
+    		B.cmn_cd_nm_krn AS major_cnstty_nm_krn
+		FROM 
+		    cn_contract A
+		LEFT JOIN
+			sm_com_code B ON B.cmn_cd = A.major_cnstty_cd AND b.cmn_grp_cd = #{majorCnsttyGroupCode}
+		WHERE 
+		    A.pjt_no = #{pjtNo}
+		AND A.dlt_yn = 'N'
+		ORDER BY
+		    cmn_cd_nm_krn
+    </select>
+    
+    <select id="selectActivityQdbCntrctChgList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectActivityQdbCntrctChgList][dhjung]  */
+        SELECT
+            A.cntrct_chg_date, 
+			A.cntrct_no,
+			A.cntrct_chg_id,
+			CONCAT(A.cntrct_chg_no, '차') AS cntrct_chg_no,
+            to_char(A.rgst_dt, 'yyyy-mm-dd') AS rgst_dt,
+			CASE WHEN A.last_chg_yn = 'Y' THEN '최종'
+				 WHEN A.last_chg_yn = 'N' THEN ''
+			END AS last_chg_yn
+		FROM 
+			cn_contract_change A
+		WHERE 
+			A.cntrct_no = #{cntrctNo}
+		AND A.dlt_yn = 'N'
+		ORDER BY
+            A.last_chg_yn DESC,
+			A.cntrct_chg_no DESC
+    </select>
+
+	<select id="selectWbsTreeList" parameterType="activityTreeListInput" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectWbsTreeList][dhjung]  */
+		SELECT pw.cntrct_chg_id
+             , pw.wbs_cd
+             , pw.wbs_path
+             , pw.wbs_nm
+             , CASE WHEN pw.up_wbs_cd IS NULL OR pw.up_wbs_cd = '' THEN '#'
+                    ELSE pw.up_wbs_cd
+               END AS up_wbs_cd
+             , pr.revision_id 
+          FROM pr_wbs pw
+          JOIN pr_revision pr ON pw.cntrct_chg_id = pr.cntrct_chg_id AND pw.revision_id = pr.revision_id AND pr.last_revision_yn = 'Y' AND pr.dlt_yn = 'N'
+         WHERE pw.cntrct_chg_id = #{cntrctChgId}
+           AND pw.dlt_yn = 'N';
+	</select>
+
+    <!--
+        ACTIVITY 내역관리 - CBS TREE
+        20251013 작업일보 수동내역 제외
+    -->
+	<select id="selectCbsTreeList" parameterType="activityTreeListInput" resultType="map">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activityqdb.selectCbsTreeList][dhjung]  */
+        SELECT  cntrct_chg_id,
+                cnstty_sn,
+			    cnstty_nm, 
+			    cnstty_cd,
+			    unit_cnst_type,
+			    unit_cnst_type||cnstty_cd AS code, 
+			    CASE    WHEN    up_cnstty_cd = '' 
+                        THEN '#'
+				        ELSE unit_cnst_type||up_cnstty_cd 
+			    END AS upcode,
+			    cnstty_lvl_num
+		FROM    ct_cbs 
+		WHERE   cntrct_chg_id = #{cntrctChgId}
+		AND     dlt_yn = 'N'
+		AND     CNSTTY_SN != 0
+		ORDER BY cnstty_sn;
+	</select>
+</mapper>

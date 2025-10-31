@@ -1,0 +1,1273 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+{% include 'sub/grid' %}
+
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    <button type="button" class="btn _fill" id="save">{{ message("btn.006") }}</button>
+                    <button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+                </div>
+
+                <form id='inputForm'>
+                    <!--개요 S-->
+                    <div id="overviewDiv" class="s_conts">
+                        <span class="tree_route">{{ message("item.construction.012") }}</span>
+                        <div class="form_box">
+                            <div class="group">
+                                <!-- row -->
+                                <div class="row cols2">
+                                    <div class="col">
+                                        <!-- 보고일자 -->
+                                        <div class="form_label required">{{ message("item.construction.002") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" class="date w-md dDate" id="repoDt"
+                                                   name="repoDt" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 보고서번호 -->
+                                        <div class="form_label required">{{ message("item.construction.001") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" id="repoNo" name="repoNo" class="maxlength" maxlength="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 제목 -->
+                                        <div class="form_label">{{ message("item.app.001") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" id="title" name="title" class="maxlength" maxlength="100">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- row -->
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="form_label">{{ message("item.construction.013") }}</div>
+                                        <div class="form_data">
+                                            <div class="form_box in_formbox" style="border-top: 0;">
+                                                <div class="row cols2">
+                                                    <div class="col">
+                                                        <div class="form_label">{{ message("item.construction.005") }} :
+                                                        </div>
+                                                        <div class="form_data">
+                                                            <div class="item_group">
+                                                                <!-- 날씨(오전) -->
+																<span class="item_wrap">
+																	{{ message("item.construction.006") }} <input
+                                                                        type="text" class="w-md" id="forcAm"
+                                                                        name="forcAm">
+																</span>
+                                                                <!-- 날씨(오후) -->
+                                                                <span class="item_wrap">
+																	{{ message("item.construction.007") }} <input
+                                                                        type="text" class="w-md" id="forcPm"
+                                                                        name="forcPm">
+																</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col">
+                                                        <div class="form_label">{{ message("item.construction.014") }} :
+                                                        </div>
+                                                        <div class="form_data">
+                                                            <div class="item_group">
+                                                                <!-- 기온(최저)-->
+																<span class="item_wrap put_txt _celsius">
+																	{{ message("item.construction.010") }} <input
+                                                                        type="text" class="w-md cost" id="taMin"
+                                                                        name="taMin">
+																</span>
+                                                                <!-- 기온(최고) -->
+                                                                <span class="item_wrap put_txt _celsius">
+																	{{ message("item.construction.009") }} <input
+                                                                        type="text" class="w-md cost" id="taMax"
+                                                                        name="taMax">
+																</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- row -->
+                                <div class="row" id="laborDiv">
+                                    <div class="col">
+                                        <!-- 근로자 수 -->
+                                        <div class="form_label">
+                                            {{ message("item.safetydiary.010") }}
+                                            <button class="btn icon_btn _outline" id="btn_getDailyReportResource">
+                                                <i class="fa fa-refresh"></i><span class="tooltip">작업일보 동기화</span>
+                                            </button>
+                                        </div>
+                                        <div class="form_data">
+
+                                            <table class="table ta_c" style="width:100%;">
+                                                <thead>
+                                                <tr>
+                                                    <!-- 사무직 -->
+                                                    <th scope="col" colspan="3">{{ message("item.safetydiary.002") }}</th>
+                                                    <!-- 노무직 -->
+                                                    <th scope="col" colspan="3">{{ message("item.safetydiary.003") }}</th>
+                                                    <!-- 장비인원 -->
+                                                    <th scope="col" colspan="3">{{ message("item.safetydiary.004") }}</th>
+                                                    <!-- 금일출역인원 -->
+                                                    <th scope="col" colspan="3">{{ message("item.safetydiary.005") }}</th>
+                                                    <!-- 연간누계(장비인원포함) -->
+                                                    <th scope="col" rowspan="3">
+                                                        {{ message("item.safetydiary.011") }}<br>
+                                                        ({{ message("item.safetydiary.006") }})
+                                                    </th>
+                                                </tr>
+                                                <tr>
+                                                    <th>{{ message("item.safetydiary.007") }}</th>
+                                                    <th>{{ message("item.safetydiary.008") }}</th>
+                                                    <th>{{ message("item.safetydiary.009") }}</th>
+                                                    <th>{{ message("item.safetydiary.007") }}</th>
+                                                    <th>{{ message("item.safetydiary.008") }}</th>
+                                                    <th>{{ message("item.safetydiary.009") }}</th>
+                                                    <th>{{ message("item.safetydiary.007") }}</th>
+                                                    <th>{{ message("item.safetydiary.008") }}</th>
+                                                    <th>{{ message("item.safetydiary.009") }}</th>
+                                                    <th>{{ message("item.safetydiary.007") }}</th>
+                                                    <th>{{ message("item.safetydiary.008") }}</th>
+                                                    <th>{{ message("item.safetydiary.009") }}</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <tr>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="officeM"
+                                                               name="officeM" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="officeF"
+                                                               name="officeF" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="officeSum"
+                                                               name="officeSum" value="0" disabled></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="laborM"
+                                                               name="laborM" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="laborF"
+                                                               name="laborF" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="laborSum"
+                                                               name="laborSum" value="0" disabled></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="equipM"
+                                                               name="equipM" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="equipF"
+                                                               name="equipF" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="equipSum"
+                                                               name="equipSum" value="0" disabled></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="todayM"
+                                                               name="todayM" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="todayF"
+                                                               name="todayF" value="0"></td>
+                                                    <td><input type="text" class="w-sm calc labor-count"
+                                                               style="text-align:right;" id="todaySum"
+                                                               name="todaySum" value="0" disabled></td>
+                                                    <!-- 인원누계 / 연간누계 -->
+                                                    <td><input
+                                                            type="text" class="w-md"
+                                                            style="text-align:right;" id="cusum"
+                                                            name="cusum" value="0" disabled></td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+                    <!--개요 E-->
+
+                    <!--교육현황 S-->
+                    <div class="s_conts" id="safetyTrainingDiv">
+                        <span class="tree_route">{{ message("item.safetydiary.012") }}</span>
+
+                        <div class="conts_grid">
+                            <div class="form_box edu_form_box">
+                                <div class="group">
+                                    <!-- row -->
+                                    <div class="row cols3">
+                                        <div class="col">
+                                            <!-- 1. 신규 채용자 교육 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox new_edu" type="checkbox" name="checkbox" disabled>
+                                                1. 신규 채용자 교육
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <!-- 2. 작업내용 변경시교육 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox job_edu" type="checkbox" name="checkbox" disabled>
+                                                2. 작업내용 변경시교육
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <!-- 3. 안전보건 특별교육 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox saf_edu" type="checkbox" name="checkbox" disabled>
+                                                3. 안전보건 특별교육
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- row -->
+                                    <div class="row cols3">
+                                        <div class="col">
+                                            <!-- 4. 정기 교육 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox reg_edu" type="checkbox" name="checkbox" disabled>
+                                                4. 정기 교육
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <!-- 5. 관리 감독자 교육 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox mgn_edu" type="checkbox" name="checkbox" disabled>
+                                                5. 관리 감독자 교육
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <!-- 6. 기타 -->
+                                            <div class="form_data" style="position: relative;">
+                                                <input class="check_mark training_checkbox etc_edu" type="checkbox" name="checkbox" disabled>
+                                                6. 기타
+                                                <i class="ic ic-sent-to-onoff viewEduDetail"
+                                                   style="opacity: 0; position: absolute; padding: 0px 15px; right: 40%; cursor: pointer">
+                                                </i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                    </div>
+                    <!--교육현황 E-->
+
+                    <!--작업현황 S-->
+                    <div class="s_conts" id="safetyWorkDiv">
+                        <span class="tree_route">{{ message("item.safetydiary.013") }}</span>
+
+                        <div class="conts_grid">
+                            <div class="conts_grid">
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <button id="addWorkStatus" class="btn icon_btn _outline" ><i class="ic ic-plus"></i><span class="tooltip">작업현황 추가</span></button>
+                                    <button id="deleteWorkStatus" class="btn icon_btn _outline" ><i class="ic ic-delete"></i><span class="tooltip">작업현황 삭제</span></button>
+                                </div>
+                                <table class="table ta_c">
+                                <colgroup>
+                                    <col style="width:2%">
+                                    <col style="width:23%">
+                                    <col style="width:35%">
+                                    <col style="width:20%">
+                                    <col style="width:20%">
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th><input class="check_mark" id="workAllCheck" type="checkbox" name="check"></th>
+                                    <th>작업항목</th>
+                                    <th>작업시 점검사항</th>
+                                    <th>점검결과</th>
+                                    <th>확인</th>
+                                </tr>
+                                </thead>
+                                <tbody id="workBody">
+                                    <tr id="workDefaultContent">
+                                        <td colspan="5">조회된 데이터가 없습니다.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!--작업현황 E-->
+
+                    <!--안전현황 S-->
+                    <div class="s_conts" id="safetyDiv">
+                        <span class="tree_route">{{ message("item.safetydiary.014") }}</span>
+
+                        <div class="conts_grid">
+
+                            <!-- 안전현황 테이블 -->
+                            <div class="conts_grid">
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <button id="addSafetyStatus" class="btn icon_btn _outline" ><i class="ic ic-plus"></i><span class="tooltip">안전현황 추가</span></button>
+                                    <button id="deleteSafetyStatus" class="btn icon_btn _outline" ><i class="ic ic-delete"></i><span class="tooltip">안전현황 삭제</span></button>
+                                </div>
+                            </div>
+                            <table class="table safetyTable ta_c">
+                                <colgroup>
+                                    <col style="width:2%">
+                                    <col style="width:23%">
+                                    <col style="width:35%">
+                                    <col style="width:20%">
+                                    <col style="width:20%">
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th><input class="check_mark" id="safetyAllCheck" type="checkbox" name="check"></th>
+                                    <th scope="col">점검자</th>
+                                    <th scope="col">순회 / 점검 시간</th>
+                                    <th scope="col">순회 / 점검 활동</th>
+                                    <th scope="col">조치 / 예정 결과</th>
+                                </tr>
+                                </thead>
+                                <tbody id="safetyBody">
+                                    <tr id="safetyDefaultContent">
+                                        <td colspan="5">조회된 데이터가 없습니다.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="form_box">
+                                <div class="group">
+                                    <!-- 전일 재해자수, 금일 재해자수, 누계 재해자수 -->
+                                    <div class="row cols">
+                                        <div class="col">
+                                            <div class="form_label">안전보건총괄<br>책임자의견</div>
+                                            <div class="form_data">
+                                                <input type="text" id="gmRevOpin" name="gmRevOpin" class="" value="결재 완료 시 결재자 의견이 반영됩니다." disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row cols">
+                                        <div class="col">
+                                            <div class="form_label">첨부파일</div>
+                                            <div id="batchUploaderApp" class="form_data" data-atch-file-no></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--안전현황 E-->
+
+                    <!--재해현황 S-->
+                    <div class="s_conts" id="accidentDiv">
+                        <span class="tree_route">{{ message("item.safetydiary.015") }}</span>
+
+                        <div class="conts_form">
+                            <!-- 재해현황 상단 정보 -->
+                            <div class="form_box">
+                                <div class="group">
+                                    <!-- 전일 재해자수, 금일 재해자수, 누계 재해자수 -->
+                                    <div class="row cols3">
+                                        <div class="col">
+                                            <div class="form_label">전일 재해자수</div>
+                                            <div class="form_data">
+                                                <input type="text" id="yesterdayAccidents" name="yesterdayAccidents" class="w-sm" value="0" style="text-align: right;" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">금일 재해자수</div>
+                                            <div class="form_data">
+                                                <input type="text" id="todayAccidents" name="todayAccidents" class="w-sm" value="0" style="text-align: right;" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">누계 재해자수</div>
+                                            <div class="form_data">
+                                                <input type="text" id="totalAccidents" name="totalAccidents" class="w-sm" value="0"  style="text-align: right;" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="display: none;">
+                                        <div class="col">
+                                            <div class="form_label">재해현황 점검</div>
+                                            <div class="form_data">
+                                                <!-- 재해현황 테이블 -->
+                                                <div class="conts_grid" style="width: 100%;">
+
+                                                    <table class="table">
+                                                        <colgroup>
+                                                            <col style="width:2%">
+                                                            <col style="width:32%">
+                                                            <col style="width:32%">
+                                                            <col style="width:34%">
+                                                        </colgroup>
+                                                        <!-- 첫 번째 헤더 행 -->
+                                                        <tr>
+                                                            <th scope="col">
+                                                                <label class="form_check" style="padding: 0.75em;">
+                                                                    <input type="checkbox" class="check_mark" id="accidentCheckAll">
+                                                                </label>
+                                                            </th>
+                                                            <th scope="col">재해부위</th>
+                                                            <th scope="col">재해원인</th>
+                                                            <th scope="col">재해내용</th>
+                                                        </tr>
+                                                        <!-- 첫 번째 데이터 행 -->
+                                                        <tr>
+                                                            <td>
+                                                                <div>
+                                                                    <input type="checkbox" class="check_mark accident_check" name="accidentCheck" value="1">
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <textarea name="accidentContent" class="w-full" rows="2" placeholder="재해부위"></textarea>
+                                                            </td>
+                                                            <td>
+                                                                <textarea name="accidentContent" class="w-full" rows="2" placeholder="재해원인"></textarea>
+                                                            </td>
+                                                            <td>
+                                                                <textarea name="accidentContent" class="w-full" rows="2" placeholder="재해내용"></textarea>
+                                                            </td>
+                                                        </tr>
+
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--재해현황 E-->
+
+                    <!--무재해운동 S-->
+                    <div class="s_conts" id="noAccidentDiv">
+                        <span class="tree_route">무재해운동</span>
+
+                        <div class="conts_form">
+                            <!-- 무재해 운동 섹션 -->
+                            <div class="form_box" style="margin-top: 20px;">
+                                <div class="group">
+                                    <div class="row cols2">
+                                        <div class="col">
+                                            <div class="form_label">무재해 운동 <br>게시일</div>
+                                            <div class="form_data">
+                                                <input type="text" class="date w-md" id="sftyAcdntDt"
+                                                       name="sftyAcdntDt"
+                                                       onkeydown="return false;"
+                                                       style="cursor: pointer; background-color: lightyellow;" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label">무재해 운동 <br> 목표시간</div>
+                                            <div class="form_data">
+                                                <input type="text" id="accFreTargTm" name="accFreTargTm" class="w-sm text-center text-right acc-count" value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row cols3">
+                                        <div class="col">
+                                            <div class="form_label text-center">전일 (H)</div>
+                                            <div class="form_data">
+                                                <input type="text" id="accFreYdayTm" name="accFreYdayTm" class="w-sm text-center text-right acc-count" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label text-center">금일 (H)</div>
+                                            <div class="form_data">
+                                                <input type="text" id="accFreTdayTm" name="accFreTdayTm" class="w-sm text-center text-right acc-count" value="8">
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label text-center">연간누계 (H)</div>
+                                            <div class="form_data">
+                                                <input type="text" id="accFreYearCu" name="accFreYearCu" class="w-sm text-center text-right acc-count" value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--무재해운동 E-->
+                </form>
+            </div>
+        </div>
+    </article>
+</section>
+<link rel="stylesheet" href="/assets/css/all.min.css">
+<input type="text" id="oriAmt" hidden />
+<input type="text" id="oriType" hidden />
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+    .text-right { text-align: right; }
+
+    .form_box { border-top: 1px solid var(--tb-bd); }
+
+    .slider-container {
+        max-width: 100vw;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .training_checkbox { margin-right: 10px; }
+    .trainingTable { border-collapse: collapse; }
+    .innerTrainingTable,
+    .innerTrainingTable tr td:nth-child(1),
+    .innerTrainingTable tr th:nth-child(1) { border: none; }
+    .eduAttd { width: 49% !important; }
+</style>
+<script src="/assets/js/construction/construction.js"></script>
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script>
+    /************************************************************
+     * 페이지 글로벌 변수
+     ***********************************************************/
+    var SearchArr = new Array();
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo');
+    var diaryId = urlParams.get('diaryId');
+    var today = DateUtils.getCurrentDateTime('today');  // 금일
+    var PREV_CUSUM = 0;
+
+    var page = {};
+    var OverviewStatus = {};  // 1. 개요 관련 모듈
+    var TrainingStatus = {};  // 2. 교육현황 관련 모듈
+    var WorkStatus = {};      // 3. 작업현황 관련 모듈
+    var SafetyStatus = {};    // 4. 안전현황 관련 모듈
+    var AccidentStatus = {};  // 5. 재해현황 관련 모듈
+
+    var userName = '';
+    /**
+     * 파일 업로드
+     */
+    const limitSize = 1024 * 1024 * 25;
+    var uploader ;  // page load 시점 정의
+    var attachments = [];
+
+    /************************************************************
+     * 페이지 사용 함수
+     ***********************************************************/
+
+    /**
+     * 1. 개요 관련 함수 모음
+     *
+     * @typedef {Object} OverviewStatusType
+     * @property {function(): void} initValue - 값 초기화
+     * @property {function(): void} callJsonApi - 기상청 API 호출 함수
+     * @property {function(): void} getDailyReportResource - 보고일자 기준 작업일보 근로자 조회
+     * @property {function(): void} calculateLaborCount - 근로자 count 계산
+     */
+    OverviewStatus = {
+        initValue: function() {
+            $('#officeM').val(0);
+            $('#laborM').val(0);
+            $('#equipM').val(0);
+        },
+        callJsonApi: function (event) {
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.customAlert("{{ message('msg.dailyreport.001') }}");
+
+            const URL = '/api/util/kma-weather';
+            let params = {
+                pjtNo: pjtInfo.pjtNo
+                , tm: $("#repoDt").val().replaceAll("-", "")
+            }
+            let callbackFn = function (response) {
+                let kma = response.details.kma;
+                if (kma) {
+                    $("#forcAm").val(kma.am_wf);    // 오전 날씨
+                    $("#forcPm").val(kma.pm_wf);    // 오후 날씨
+                    $("#taMin").val(kma.ta_min);    // 최저 기온
+                    $("#taMax").val(kma.ta_max);    // 최고 기온
+                } else {
+                    $("#forcAm").val('');    // 오전 날씨
+                    $("#forcPm").val('');    // 오후 날씨
+                    $("#taMin").val('');     // 최저 기온
+                    $("#taMax").val('');     // 최고 기온
+                    gaiaCommon.customAlert("기상청 데이터를 조회중입니다. 잠시 후 다시 시도하거나 수동입력하세요.");
+                }
+
+            }
+            let errorCallbackFn = function (error) {
+                console.log(error)
+                gaiaCommon.customAlert("{{ message('msg.construction.002') }}");
+                return false;
+            }
+
+            gaiaCommon.post(URL, params, callbackFn, errorCallbackFn, function () {
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        },
+        getDailyReportResource: function (event) {
+            gaiaCommon.LoadingOverlay('body', true);
+            // yyyy-MM-dd 형태로 날짜 추출
+            let repoDt = $('#repoDt').val();
+            // 보고일자 선택 validation
+            if (repoDt == '' || repoDt == undefined) {
+                gaiaCommon.customAlert("보고일자를 선택해 주세요.");
+                gaiaCommon.LoadingOverlay('body', false);
+                return false;
+            }
+
+            const URL = '/api/safety/safety-diary/daily-report-exists';
+            let params = {
+                cntrctNo: cntrctNo,
+                dailyReportDate: repoDt
+            };
+            let callbackFn = function (response) {
+                let data = response.details.data;
+                // TODO Q.작업일보가 없다면 알려줘야될까요?
+
+                if (data.isExists) {
+                    // 사무직
+                    if (data.hasOwnProperty('LS')) {
+                        $('#officeM').val(data['LS']);
+                    } else {
+                        $('#officeM').val(0);
+                    }
+                    // 노무직
+                    if (data.hasOwnProperty('L')) {
+                        $('#laborM').val(data['L']);
+                    } else {
+                        $('#laborM').val(0);
+                    }
+                    // 장비인원
+                    if (data.hasOwnProperty('E')) {
+                        $('#equipM').val(data['E']);
+                    } else {
+                        $('#equipM').val(0);
+                    }
+
+                }
+                // 3-2. 근로자수 계산
+                OverviewStatus.calculateLaborCount();
+            }
+            let errorCallbackFn = function (error) {
+                console.log(error)
+                gaiaCommon.customAlert("{{ message('msg.contract.203') }}");
+                return false;
+            }
+            gaiaCommon.post(URL, params, callbackFn, errorCallbackFn, function () {
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        },
+        calculateLaborCount: function () {
+
+            // 1. 사무, 노무, 장비 각 소계 계산
+            let officeSum = Number($('#officeM').val()) + Number($('#officeF').val());
+            let laborSum = Number($('#laborM').val()) + Number($('#laborF').val());
+            let equipSum = Number($('#equipM').val()) + Number($('#equipF').val());
+
+            $('#officeSum').val(officeSum);
+            $('#laborSum').val(laborSum);
+            $('#equipSum').val(equipSum);
+
+            // 2. 금일 출역인원 계산
+            let todayMaleSum = Number($('#officeM').val()) + Number($('#laborM').val()) + Number($('#equipM').val());
+            let todayFemaleSum = Number($('#officeF').val()) + Number($('#laborF').val()) + Number($('#equipF').val());
+
+            $('#todayM').val(todayMaleSum);
+            $('#todayF').val(todayFemaleSum);
+            $('#todaySum').val(todayMaleSum + todayFemaleSum);
+
+            // 3. 누계 계산
+            $('#cusum').val(PREV_CUSUM + Number($('#todaySum').val()));
+
+
+        }
+    }
+
+    /**
+     * 2. 교육현황 관련 함수 모음
+     */
+    TrainingStatus = {
+        initValue: function() {
+            $('.training_checkbox').prop('checked', false);
+        },
+        loadValue: function(educationStatus) {
+            if(educationStatus.length != 0) {
+                educationStatus.forEach(elem => {
+                    // 체크박스 Event
+                    const eduSelector = '.' + elem['cmn_cd'].toLowerCase();
+                    const eduCheckbox = document.querySelector(eduSelector);
+                    if (eduCheckbox) eduCheckbox.checked = true;
+
+                    // 상세보기 Event
+                    const detailViewSelector = $(eduCheckbox).siblings('.viewEduDetail');
+                    detailViewSelector.css('opacity', 1);
+                    detailViewSelector.attr('data-diary-id', elem.edu_id);
+                });
+            }
+        },
+        viewEduDetail: function(event) {
+            let edu_id = $(this).data('diary-id');
+
+            const URL = `/safety/educationdiary/read/${edu_id}?type=i`;
+
+            const _width = '1300';
+            const _height = '1000';
+            const _top = Math.ceil((window.screen.height - _height)/2);
+
+            let _left = Math.ceil((window.screen.width - _width)/2);
+            _left += window.screenLeft; // 듀얼 모니터일 때
+
+            window.open(URL, "교율일지 상세", 'width='+_width+', height='+_height+',left='+_left+',top='+_top+', scrollbars=yes, resizable=yes');
+        }
+
+    }
+
+    /**
+     * 3. 작업현황 관련 함수 모음
+     *
+     * @typedef {Object} WorkStatus
+     * @property {Array} deletedWorkIds                 - 삭제 현황 Ids
+     * @property {function(): void} addWorkStatus       - 작업현황 추가
+     * @property {function(): void} deleteWorkStatus    - 작업현황 삭제
+     */
+    WorkStatus = {
+        deletedWorkIds: [],
+        load: function(dataList) {
+            if (dataList != null && dataList.length > 0) {
+                $('#workDefaultContent').remove();
+                dataList.forEach((elem, idx) => {
+                    let newRow = `
+                        <tr class="workContent" data-work-id="${elem.work_id}">
+                            <td><input class="check_mark" type="checkBox" name="check"></td>
+                            <td><textarea name="workItem" cols="30" rows="6" placeholder="작업항목을 입력하세요.">${elem.work_item}</textarea></td>
+                            <td><textarea name="workCheck" cols="30" rows="6" placeholder="작업시 점검사항을 입력하세요.">${elem.work_check}</textarea></td>
+                            <td><textarea name="workResult" cols="30" rows="6" placeholder="점검결과를 입력하세요.">${elem.work_result}</textarea></td>
+                            <td><textarea name="worker" cols="30" rows="6" placeholder="확인자 성명을 기입하세요.">${elem.worker}</textarea></td>
+                        </tr>
+                    `;
+                    $("#workBody").append(newRow);
+                });
+            }
+        },
+        addWorkStatus: function () {
+            $('#workDefaultContent').remove();
+            let newRow = `
+                <tr class="workContent">
+                    <td><input class="check_mark" type="checkBox" name="check"></td>
+                    <td><textarea name="workItem" cols="30" rows="6" placeholder="작업항목을 입력하세요."></textarea></td>
+                    <td><textarea name="workCheck" cols="30" rows="6" placeholder="작업시 점검사항을 입력하세요."></textarea></td>
+                    <td><textarea name="workResult" cols="30" rows="6" placeholder="점검결과를 입력하세요."></textarea></td>
+                    <td><textarea name="worker" cols="30" rows="6" placeholder="확인자 성명을 기입하세요.">${userName}</textarea></td>
+                </tr>
+            `;
+            $("#workBody").append(newRow);
+            $("#workAllCheck").prop("checked", false);
+        },
+        deleteWorkStatus: function () {
+            $("#workBody").find("input[type=checkbox]:checked").each(function () {
+                const $row = $(this).closest("tr");
+                const docId = $row.data("work-id"); // data-doc-id 읽기
+
+                if (docId) {
+                    WorkStatus.deletedWorkIds.push({workId: docId});
+                }
+
+                $row.remove();
+            });
+
+            if ($("#workBody tr").length === 0) {
+                let emptyRow = `
+                    <tr id="workDefaultContent">
+                        <td colspan="7">조회된 데이터가 없습니다.</td>
+                    </tr>
+                `;
+                $("#workBody").append(emptyRow);
+                $("#workAllCheck").prop("checked", false);
+            }
+        },
+        allcheck: function () {
+            const $items = $("#workBody input[name='check']");
+            const allNow = $items.length > 0
+                && $items.filter(":checked").length === $items.length;
+            $("#workAllCheck").prop("checked", allNow);
+        },
+    };
+    /**
+     * 4. 안전현황 관련 함수 모음
+     *
+     * @typedef {Object} SafetyStatus
+     * @property {Array} deletedSafetyIds                 - 삭제 현황 Ids
+     * @property {function(): void} addSafetyStatus       - 작업현황 추가
+     * @property {function(): void} deleteSafetyStatus    - 작업현황 삭제
+     */
+    SafetyStatus = {
+        deletedSafetyIds: [],
+        load: function(dataList) {
+            if (dataList != null && dataList.length > 0) {
+                $('#safetyDefaultContent').remove();
+                dataList.forEach((elem, idx) => {
+                    let newRow = `
+                        <tr class="safetyContent" data-check-id="${elem.check_id}">
+                            <td><input class="check_mark" type="checkBox" name="check"></td>
+                            <td><textarea name="checker" cols="30" rows="6" placeholder="점검자를 입력하세요">${elem.checker}</textarea></td>
+                            <td><textarea name="checkTm" cols="30" rows="6" placeholder="순회/점검시간 내용을 입력하세요">${elem.check_tm}</textarea></td>
+                            <td><textarea name="checkAction" cols="30" rows="6" placeholder="교육/점검 활동 내용을 입력하세요">${elem.check_action}</textarea></td>
+                            <td><textarea name="checkResult" cols="30" rows="6" placeholder="조치/예정결과를 입력하세요">${elem.check_result}</textarea></td>
+                        </tr>
+                    `;
+                    $("#safetyBody").append(newRow);
+                });
+            }
+        },
+        addSafetyStatus: function () {
+            $('#safetyDefaultContent').remove();
+            let newRow = `
+               <tr class="safetyContent">
+                    <td><input class="check_mark" type="checkBox" name="check"></td>
+                    <td><textarea name="checker" cols="30" rows="6" placeholder="점검자를 입력하세요">${userName}</textarea></td>
+                    <td><textarea name="checkTm" cols="30" rows="6" placeholder="순회/점검시간 내용을 입력하세요"></textarea></td>
+                    <td><textarea name="checkAction" cols="30" rows="6" placeholder="교육/점검 활동 내용을 입력하세요"></textarea></td>
+                    <td><textarea name="checkResult" cols="30" rows="6" placeholder="조치/예정결과를 입력하세요"></textarea></td>
+                </tr>
+            `;
+            $("#safetyBody").append(newRow);
+            $("#safetyAllCheck").prop("checked", false);
+        },
+        deleteSafetyStatus: function () {
+            $("#safetyBody").find("input[type=checkbox]:checked").each(function () {
+                const $row = $(this).closest("tr");
+                const docId = $row.data("check-id"); // data-doc-id 읽기
+
+                if (docId) {
+                    SafetyStatus.deletedSafetyIds.push({checkId: docId});
+                }
+
+                $row.remove();
+            });
+
+            if ($("#safetyBody tr").length === 0) {
+                let emptyRow = `
+                    <tr id="safetyDefaultContent">
+                        <td colspan="7">조회된 데이터가 없습니다.</td>
+                    </tr>
+                `;
+                $("#safetyBody").append(emptyRow);
+                $("#safetyAllCheck").prop("checked", false);
+            }
+        },
+        allcheck: function () {
+            const $items = $("#safetyBody input[name='check']");
+            const allNow = $items.length > 0
+                && $items.filter(":checked").length === $items.length;
+            $("#safetyAllCheck").prop("checked", allNow);
+        }
+    };
+    /**
+     * 5. 재해현황 관련 함수 모음
+     *
+     * @typedef {Object} AccidentStatus
+     * @property {Array} editSftyAcdntDt                 - Deprecated) 무재해운동 게재일 수정
+     */
+    AccidentStatus = {
+        loadZeroAccidentCampaign: function(campaign) {
+            if (Object.keys(campaign).length !== 0) {
+                // 무재해운동 게시일
+                $('#sftyAcdntDt').val(campaign['sfty_acdnt_dt']);
+                // 무재해운동 목표시간
+                $('#accFreTargTm').val(campaign['acc_fre_targ_tm']);
+                // 무재해운동 전일
+                $('#accFreYdayTm').val(campaign['acc_fre_current_tm']);
+                // 무재해운동 연간누계 (전일 + 금일)
+                const value = Number($('#accFreYdayTm').val()) + Number($('#accFreTdayTm').val());
+                $('#accFreYearCu').val(value);
+
+            }
+        },
+        loadDisasterStatus: function(status) {
+            if (Object.keys(status).length !== 0) {
+                // 재해현황 - 전일
+                $('input[name=yesterdayAccidents]').val(status['yesterday_accidents']);
+                // 재해현황 - 금일
+                $('input[name=todayAccidents]').val(status['today_accidents']);
+                // 재해현황 - 누계
+                $('input[name=totalAccidents]').val(status['total_accidents']);
+            }
+        },
+    };
+
+    page = {
+        // 기존 첨부파일을 uploader 형식으로 변환
+        convertAttachmentsToUploaderFormat: function(attachments) {
+            if (!attachments || attachments.length === 0) {
+                return [];
+            }
+
+            return attachments.map(attachment => ({
+                fileKey: attachment.fileKey || `${attachment.fileNo}_${attachment.sno}`,
+                fileName: attachment.fileDiskNm,
+                originalFilename: attachment.fileNm,
+                orgSize: attachment.fileSize,
+                dirPath: attachment.fileDiskPath,
+                filePath: `${attachment.fileDiskPath}/${attachment.fileDiskNm}`,
+                fileNo: attachment.fileNo,
+                mode: null,
+                isExisting: true, // 기존 파일임을 표시
+                downloadUrl: `/api/safety/safety-diary/${attachment.fileNo}/${attachment.sno}/file-download`
+            }));
+        },
+
+
+        // 페이지 데이터 로드
+        load: function() {
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.get(`/api/safety/safety-diary/detail`,{
+                diaryId: diaryId,
+                cntrctNo: cntrctNo
+            }, async function(response){
+                gaiaCommon.LoadingOverlay('body', false);
+                console.log(response);
+
+                // 1. 무재해 운동 데이터
+                const campaign = response.details.zeroAccidentCampaign;
+                AccidentStatus.loadZeroAccidentCampaign(campaign);
+
+                // 2. 전일 근로자 누계
+                PREV_CUSUM = response.details.prevCusum;
+                if(PREV_CUSUM == null) PREV_CUSUM = 0;
+
+                const safeDiary = response.details.data.safeDiary;
+                const workList = response.details.data.workList;
+                const patrolList = response.details.data.patrolList;
+                const educationStatus = response.details.educationStatus;
+                const disasterStatus = response.details.disasterStatus;
+                const originalAttachments = response.details.data.fileList || [];
+                attachments = page.convertAttachmentsToUploaderFormat(originalAttachments);
+
+
+
+                /* 작업현황 */
+                if (workList != null) WorkStatus.load(workList);
+                /* 안전/순회점검 현황 */
+                if (patrolList != null) SafetyStatus.load(patrolList);
+                /* 교육현황 */
+                TrainingStatus.loadValue(educationStatus);
+                /* 재해현황 */
+                AccidentStatus.loadDisasterStatus(disasterStatus);
+
+                /* 첨부파일 */
+                uploader = await gaia.utils.createUploader({
+                    mode: 'U',
+                    type: 'batch',
+                    wrapId: 'batchUploaderApp',
+                    limitFileSize: limitSize,
+                    files: attachments,
+                    url: '/resource/upload',
+                    params: {cntrctNo: cntrctNo},
+                    callbackHandler: (data) => {
+                        console.log('callback()', data)
+                        page.save(data);
+                    }
+                });
+
+
+
+                if (safeDiary != null ) {
+                    /* 개요정보 */
+                    $('#batchUploaderApp').attr('data-atch-file-no', safeDiary['atch_file_no']);
+
+                    repoDt =
+                        safeDiary['repo_dt'].substring(0,4) + "-"
+                        + safeDiary['repo_dt'].substring(4,6) + "-"
+                        + safeDiary['repo_dt'].substring(6,8);
+
+                    $("#repoDt").val(repoDt);
+                    $("#repoNo").val(safeDiary['repo_no']);
+                    $("#title").val(safeDiary['title']);
+
+                    $("#forcAm").val(safeDiary['forc_am']);
+                    $("#forcPm").val(safeDiary['forc_pm']);
+                    $("#taMin").val(safeDiary['ta_min']);
+                    $("#taMax").val(safeDiary['ta_max']);
+
+                    $("#officeM").val(safeDiary['office_m']);
+                    $("#officeF").val(safeDiary['office_f']);
+                    $("#laborM").val(safeDiary['labor_m']);
+                    $("#laborF").val(safeDiary['labor_f']);
+                    $("#equipM").val(safeDiary['equip_m']);
+                    $("#equipF").val(safeDiary['equip_f']);
+
+
+                    // 1. 사무, 노무, 장비 각 소계 계산
+                    let officeSum = Number($('#officeM').val()) + Number($('#officeF').val());
+                    let laborSum = Number($('#laborM').val()) + Number($('#laborF').val());
+                    let equipSum = Number($('#equipM').val()) + Number($('#equipF').val());
+
+                    $('#officeSum').val(officeSum);
+                    $('#laborSum').val(laborSum);
+                    $('#equipSum').val(equipSum);
+
+                    // 2. 금일 출역인원 계산
+                    let todayMaleSum = Number($('#officeM').val()) + Number($('#laborM').val()) + Number($('#equipM').val());
+                    let todayFemaleSum = Number($('#officeF').val()) + Number($('#laborF').val()) + Number($('#equipF').val());
+
+                    $('#todayM').val(todayMaleSum);
+                    $('#todayF').val(todayFemaleSum);
+                    $('#todaySum').val(todayMaleSum + todayFemaleSum);
+
+                    // 연간누계 - 전일 누계 + 금일 근로자 합
+                    $("#cusum").val(Number(safeDiary['cusum']) + todayMaleSum + todayFemaleSum);
+
+
+                    /* 무재해운동 */
+                    $('#accFreTargTm').val(safeDiary['acc_fre_targ_tm']);
+                    $('#accFreYdayTm').val(safeDiary['acc_fre_yday_tm']);
+                    $('#accFreTdayTm').val(safeDiary['acc_fre_tday_tm']);
+                    $('#accFreYearCu').val(safeDiary['acc_fre_year_cu']);
+                }
+
+            });
+
+        },
+
+        save: function(fileData) {
+
+            let repoNo = $('#repoNo').val();
+            if (!repoNo) {
+                gaiaCommon.customAlert('보고서 번호를 입력해주세요');
+                $('#repoNo').focus();
+                return;
+            }
+
+            // 1-1. [params] 작업정보
+            const workList = [];
+            $('#workBody .workContent').each(function () {
+                const $row = $(this);
+                const workId = $row.data('work-id') ?? null;
+                const workItem = $row.find('textarea[name=workItem]').val();
+                const workCheck = $row.find('textarea[name=workCheck]').val();
+                const workResult = $row.find('textarea[name=workResult]').val();
+                const worker = $row.find('textarea[name=worker]').val();
+
+                workList.push({
+                    workId: workId,
+                    workItem: workItem,
+                    workCheck: workCheck,
+                    workResult: workResult,
+                    worker: worker
+                });
+            });
+
+            // 1-2. [params] 안전현황
+            const safetyList = [];
+            $('#safetyBody .safetyContent').each(function () {
+                const $row = $(this);
+                const checkId = $row.data('check-id') ?? null;
+                const checkTm = $row.find('textarea[name=checkTm]').val();
+                const checkAction = $row.find('textarea[name=checkAction]').val();
+                const checkResult = $row.find('textarea[name=checkResult]').val();
+                const checker = $row.find('textarea[name=checker]').val();
+
+                safetyList.push({
+                    checkId: checkId,
+                    checkTm: checkTm,
+                    checkAction: checkAction,
+                    checkResult: checkResult,
+                    checker: checker
+                });
+            });
+
+            const params = {
+                safetyDiary: {
+                    /* 개요정보 */
+                    cntrctNo: cntrctNo,
+                    safeDiaryId: diaryId,
+                    atchFileNo: $('#batchUploaderApp').data('atch-file-no') || null,
+                    repoDt:   $("#repoDt").val().replaceAll("-", ""),
+                    repoNo:   $("#repoNo").val(),
+                    title:    $("#title").val(),
+
+                    forcAm:   $("#forcAm").val(),
+                    forcPm:   $("#forcPm").val(),
+                    taMin:    $("#taMin").val(),
+                    taMax:    $("#taMax").val(),
+
+                    officeM:  $("#officeM").val(),
+                    officeF:  $("#officeF").val(),
+                    officeSum:$("#officeSum").val(),
+                    laborM:   $("#laborM").val(),
+                    laborF:   $("#laborF").val(),
+                    laborSum: $("#laborSum").val(),
+                    equipM:   $("#equipM").val(),
+                    equipF:   $("#equipF").val(),
+                    equipSum: $("#equipSum").val(),
+                    todayM:   $("#todayM").val(),
+                    todayF:   $("#todayF").val(),
+                    todaySum: $("#todaySum").val(),
+                    cusum:    $("#cusum").val(),
+
+                    /* 무재해운동 */
+                    accFreTargTm: $('#accFreTargTm').val(),
+                    accFreYdayTm: $('#accFreYdayTm').val(),
+                    accFreTdayTm: $('#accFreTdayTm').val(),
+                    accFreYearCu: $('#accFreYearCu').val()
+                } ,
+                /* 작업정보 */
+                workList: workList,
+                /* 안전점검정보 */
+                safetyList: safetyList,
+
+                /* 작업정보 (삭제) */
+                deletedWorkList: WorkStatus.deletedWorkIds,
+                /* 안전점검정보 (삭제) */
+                deletedSafetyList: SafetyStatus.deletedSafetyIds,
+
+                /* 첨부파일 정보 */
+                fileList: fileData
+            };
+
+            gaiaCommon.LoadingOverlay('body', true);
+            const URL = '/api/safety/safety-diary/update';
+            let callbackFn = function (response) {
+                if (response.ok) {
+                    gaiaCommon.customAlert('{{ message("msg.044") }}', function () { // 저장되었습니다
+                        // dsgnInput.formBoxReset(); // 폼 초기화
+                        gaiaCommon.LoadingOverlay('body', false);
+                        window.location.href = "/safety/safety-diary?cntrctNo=" + cntrctNo +`&pjtNo=${pjtInfo.pjtNo}`;
+                    });
+                } else {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                }
+            }
+            let errorCallbackFn = function (error) {
+                console.log(error)
+                gaiaCommon.customAlert("{{ message('msg.contract.203') }}");
+                return false;
+            }
+            gaiaCommon.post(URL, params, callbackFn, errorCallbackFn, function () {
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        }
+    }
+
+    /************************************************************
+     * 페이지 이벤트 바인딩
+     ***********************************************************/
+
+    // [닫기] 버튼 이벤트 바인딩
+    $("#cancel").click(function () {
+        window.location.href = "/safety/safety-diary" + `?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+    });
+
+    // [저장] 버튼 이벤트 바인딩
+    $("#save").click(function() {
+        if (uploader) {
+            uploader.upload(); // uploader의 upload 메서드가 콜백으로 page.save 호출
+        } else {
+            page.save(); // uploader가 없는 경우 직접 호출
+        }
+    });
+
+    // 1. 개요 - [작업일보 동기화] 버튼 이벤트 바인딩
+    $('#btn_getDailyReportResource').on('click', OverviewStatus.getDailyReportResource);
+
+    // 1. 개요 - 보고일자 변경 시 이벤트 바인딩
+    $("#repoDt").change(function (e) {
+        OverviewStatus.callJsonApi(e);
+        OverviewStatus.getDailyReportResource(e);
+    });
+
+    // 1. 개요 - 근로자들은 정수만 받게 이벤트 바인딩 및 자동 계산
+    $(".labor-count").on("input", function () {
+        this.value = this.value.replace(/[^0-9]/g, ""); // 숫자만
+        OverviewStatus.calculateLaborCount(); // 입력할 때마다 자동 계산
+    });
+
+    // 2. 교육현황 - 상세보기 팝업 이벤트
+    $('.viewEduDetail').on('click', TrainingStatus.viewEduDetail);
+
+    // 3. 작업현황 - 현황 항목 추가
+    $('#addWorkStatus').on('click', WorkStatus.addWorkStatus);
+
+    // 3. 작업현황 - 현황 항목 삭제
+    $('#deleteWorkStatus').on('click', WorkStatus.deleteWorkStatus);
+
+    // 3. 작업현황 - 체크박스 전체선택 이벤트
+    $("#workAllCheck").on("change", function () {
+        $("#workBody input[name='check']").prop("checked", this.checked);
+    });
+
+    // 3. 작업현황 - 체크박스 개별 선택 이벤트
+    $(document).on("change", "#workBody input[name='check']", function () {
+        WorkStatus.allcheck();
+    });
+
+    // 4. 안전현황 - 현황 항목 추가
+    $('#addSafetyStatus').on('click', SafetyStatus.addSafetyStatus);
+
+    // 4. 안전현황 - 현황 항목 삭제
+    $('#deleteSafetyStatus').on('click', SafetyStatus.deleteSafetyStatus);
+
+    // 4. 안전현황 - 체크박스 전체선택 이벤트
+    $("#safetyAllCheck").on("change", function () {
+        $("#safetyBody input[name='check']").prop("checked", this.checked);
+    });
+
+    // 4. 안전현황 - 체크박스 개별 선택 이벤트
+    $(document).on("change", "#safetyBody input[name='check']", function () {
+        SafetyStatus.allcheck();
+    });
+
+    // 5. 무재해운동 - 무재해운동 게시일 업데이트처리 - 재해현황에 맞춰 업데이트처리
+    // $('#sftyAcdntDt').on('click', AccidentStatus.editSftyAcdntDt);
+
+    // 5. 무재해운동 - 시간 숫자만 입력
+    $('.acc-count').on("input", function () {
+        this.value = this.value.replace(/[^0-9]/g, ""); // 숫자만
+    });
+
+
+    /************************************************************
+     * 페이지 로드
+     ***********************************************************/
+    $(document).ready(() => {
+        gaia.create({
+            $init: function ($params) {
+                // 메뉴 정보 init
+                gaiaPortal.navMenuInit('M1003', "안전일지 수정");
+
+                // 달력 최대 선택 가능일 제한
+                document.getElementById("repoDt").setAttribute("max", today);
+
+                userName = decodeURI(gaiaCommon.me.info.name);
+
+                page.load();
+
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

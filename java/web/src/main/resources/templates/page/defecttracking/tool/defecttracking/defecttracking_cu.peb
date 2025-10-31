@@ -1,0 +1,785 @@
+
+<h3 class="conts_tit" id="dfccy_cu_tit">{{ message('item.dfccy.076') }}</h3>
+<div class="btn_area s_default">
+<!--    {{ cuBtnHtml | raw }}-->
+    <button type="button" class="btn _outline" id="action-button" onclick="dfccyInput.save()">{{ message('btn.006') }}</button>
+    <button type="button" class="btn _outline" id="close-popup" onclick="dfccyInput.close()">{{ message('btn.007') }}</button>
+    <div class="btn_group iconbtns">
+        <button class="icon_btn" id="open-new-window" onclick="dfccyInput.open()">
+            <i class="fa-solid fa-up-right-from-square"></i>
+            <span class="tooltip">{{ message('item.com.017') }}</span>
+        </button>
+    </div>
+</div>
+<div class="form_box" id="dfccy_cu_form">
+    <div class="container" style="display: flex; align-items: center;">
+        <span class="caption">
+            <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+        </span>
+    </div>
+    <div class="group">
+        <div class="row">
+            <div class="col">
+                <div class="form_label required">{{ message("item.com.060") }}</div>
+                <div class="form_data">
+                    <input type="text" class="maxlength" id="cu_title" name="title" required maxlength="255">
+                </div>
+            </div>
+        </div>
+        <!-- row -->
+        <div class="row">
+            <div class="col">
+                <div class="form_label required">{{ message("item.dfccy.017") }}</div>
+                <div class="form_data">
+                    <div class="selectbox sort" style="margin-left: 0;">
+                        <select name="dfccyType" id="cu_selectbox_dfccy">
+                            <option selected disabled value="">{{ message('item.dfccy.017') }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="form_label">{{ message("item.dfccy.034") }}</div>
+                <div class="form_data">
+                    <input type="text" class="maxlength" id="cu_dfccyLct" name="dfccyLct" required maxlength="1024">
+                </div>
+            </div>
+        </div>
+        <!-- row -->
+        <div class="row cols">
+            <div class="col">
+                <div class="form_label">{{ message("item.construction.052") }}</div>
+                <!-- Activity 명 -->
+                <div class="form_data">
+                    <span class="item_wrap">
+                        <textarea name="cu_activity_nm" id="cu_activity_nm" class="form-control"
+                            style="pointer-events: auto;" readonly required></textarea>
+                        <button type="button" class="btn icon_btn _fill" onclick="dfccyInput.getActivity()">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">{{ message('btn.015') }}</span> <!-- 조회 -->
+                        </button>
+                        <input type="hidden" name="cu_wbs_cd" id="cu_wbs_cd">
+                        <input type="hidden" name="cu_activity_id" id="cu_activity_id">
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="form_label"></div>
+                <div class="form_data detailSearch">
+                    <!-- 중요 -->
+                    <label class="form_check">
+                        <input class="check_mark" type="checkbox" name="checkbox" id="cu_priorityCheck" value="Y">
+                        <span class="check_label">
+                            {{ message("item.dfccy.083") }}
+                        </span>
+                    </label>
+
+                    <!-- 생명/보건/안전 관련 -->
+                    <label class="form_check">
+                        <input class="check_mark" type="checkbox" name="checkbox" id="cu_crtcIsueYn" value="Y">
+                        <span class="check_label">
+                            {{ message("item.dfccy.026") }}
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="form_label required">{{ message("item.dfccy.035") }}</div>
+                <div class="form_data">
+                    <textarea class="maxlength" id="cu_dfccy_cntnts" maxlength="1025"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- row -->
+        <div class="row" id="formAttach">
+            <div class="col">
+                <div class="form_label">{{ message('btn.021') }}</div> <!-- 파일첨부 -->
+                <div class="form_data">
+
+                    <div class="attach_wrap">
+                        <div class="attach_toolbar">
+                            <div class="btn_area s_small">
+                                <div class="attach_btn">
+                                    <input class="file" id="chooseFile" type="file" style="display:none;" multiple="multiple" onchange="dfccyInput.attach.handleFiles(this.files)">
+                                    <button type="button" class="btn _fill" onclick="dfccyInput.attach.add();">{{message('btn.021') }}</button>
+                                </div>
+                                <button type="button" class="btn _outline" onclick="dfccyInput.attach.deleteAll();">{{message('btn.020') }}</button>
+                            </div>
+                            <div class="attach_info" id="attachInfo">
+                            </div>
+                        </div>
+
+                        <div class="attach_area upload-box fileContents drag-file">
+                            <!-- 첨부파일 미등록 시 -->
+                            <p class="data_info" id="uploadMsg">
+                                {{ message('msg.pinstall.003') }}
+                            </p>
+
+                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                            <div class="attach_list" id="attach_list" style="display: none;">
+                                <ul class="file_header">
+                                    <li class="header_item">
+                                        <button type="button" class="icon_btn" onclick="dfccyInput.attach.deleteAll()">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">{{ message('item.com.020') }}</span>
+                                            <!-- 파일명 -->
+                                        </button>
+                                        <span class="f_name">{{ message('item.com.020') }}</span>
+                                        <!-- 파일명 -->
+                                        <span class="f_progress">{{ message('item.info.036') }}</span>
+                                        <!-- 진행상태 -->
+                                        <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                        <!-- 크기 -->
+                                    </li>
+                                </ul>
+                                <ul class="file_list" id="fileList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var maxFilecount = 10;
+    var uploadSize = 100;
+    var maxUploadSize = 100;
+
+    // 새창 모드일 경우,
+    var dfccyCuPopup;
+
+    var dfccyInput = {
+        mode: null,
+        dfccyNo: null,
+        init: function (mode, dfccyNo) {
+            this.mode = mode;
+            this.dfccyNo = dfccyNo;
+            let title;
+            if(this.mode === "create"){
+                title = "{{ message('item.dfccy.076') }}";
+            }
+
+            if(this.mode === "update"){
+                title = "{{ message('item.dfccy.077') }}";
+                this.updateInputSet();
+            }
+
+            $("#dfccy_cu_tit").text(title);
+        },
+
+        close: function() {
+            this.formBoxReset(); // 입력한 값 초기화
+            // page.dfccy.gridInit(true);
+            $("#dfccy_list").show();
+            $("#dfccy_cu").hide();
+        },
+
+        //새창 오픈
+        open: function () {
+            let dfccyNo;
+            if(this.mode === "update"){
+                dfccyNo = this.dfccyNo;
+            }
+
+            // 프로젝트, 계약 정보
+            const pjtData = commonJs.getSessionStorage("pageCommonData");
+
+            if(!cntrctNo || !dfccyPhaseNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.028') }}");
+                return;
+            }else if(this.mode === "update" && !dfccyNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.030') }}");
+                return;
+            }
+
+            let url = this.mode === "update" ? `/defectTracking/defectTracking/form?mode=update&cntrctNo=${cntrctNo}&dfccyPhaseNo=${dfccyPhaseNo}&dfccyNo=${dfccyNo}&pjtNo=${pjtData.pjtNo}`
+                                            : `/defectTracking/defectTracking/form?mode=create&cntrctNo=${cntrctNo}&dfccyPhaseNo=${dfccyPhaseNo}&pjtNo=${pjtData.pjtNo}`;
+
+            const _width = 1150;
+            const _height = 750;
+
+            let _left = Math.ceil((window.screen.width - _width)/2);
+            _left += window.screenLeft; // 듀얼 모니터일 때
+            const _top = Math.ceil((window.screen.height - _height)/2);
+
+            dfccyCuPopup = window.open(url, "dfccyCuPopup", `width=${_width}, height=${_height},left=${_left},top=${_top}, scrollbars=yes, resizable=yes`);
+            this.close();
+        },
+
+        save: function () {
+            if (this.mode == "create") {
+                this.create();
+            } else if (this.mode == "update") {
+                this.update();
+            }
+        },
+
+        create: function () {
+            if(!cntrctNo || !dfccyPhaseNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.033') }}"); // 저장할 결함 단계 정보가 없습니다.
+                return false;
+            }
+
+            // 필수 값 유효성 확인
+            if (!this.vaildateData()) return false;
+
+            const activity = $('input[name="cu_activity_id"]').val();
+			const wbsCdValues = $('input[name="cu_wbs_cd"]').val().split(',');
+			const activityIdValues = $('input[name="cu_activity_id"]').val().split(',');
+
+            let activities = [];
+            if (activity && wbsCdValues && activityIdValues) {
+                // activity 객체 리스트를 생성
+                activities = wbsCdValues.map((wbsCd, index) => ({
+                    wbsCd: wbsCd.trim(),
+                    activityId: activityIdValues[index] ? activityIdValues[index].trim() : null
+                }));
+			}
+
+            let dfccyData = {
+                cntrctNo: cntrctNo,
+                dfccyPhaseNo: dfccyPhaseNo,
+                title: $("#cu_title").val(),
+                dfccyCd: $("#cu_selectbox_dfccy").val(),
+                dfccyLct: $("#cu_dfccyLct").val(),
+                priorityCheck: $("#cu_priorityCheck").prop('checked') ? 'Y' : 'N', // 중요 체크 여부 확인
+                crtcIsueYn: $("#cu_crtcIsueYn").prop('checked') ? 'Y' : 'N', // 생명/보건/안전 체크 여부 확인
+                dfccyCntnts: $("#cu_dfccy_cntnts").val(),
+                activity: activities,
+            }
+
+            const formData = new FormData();
+
+			formData.delete('files');
+			dfccyInput.attach.fileList.forEach(file => {
+				formData.append('files', file);
+			});
+
+			formData.append('dfccy', new Blob([JSON.stringify(dfccyData)], { type: 'application/json' }));
+
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.post('/api/defecttraking/tool/defectTracking/dfccy/create', formData, function (response) {
+                if (response.ok) {
+                    gaiaCommon.customAlert('{{ message("msg.044") }}', function () { // 저장되었습니다
+                        // dfccyInput.formBoxReset(); // 폼 초기화
+                        dfccyInput.close(); // 기존 close() 호출
+                        dfccyPhase.tree.init();
+                        gaiaCommon.LoadingOverlay('body', false);
+                    });
+                }
+            }, function (xhr, status, error) {
+                gaiaCommon.LoadingOverlay('body', false);
+                gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+            });
+
+        },
+
+        update: function () {
+            const dfccyNo = dfccyInput.dfccyNo;
+
+            if(!cntrctNo || !dfccyPhaseNo || !dfccyNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.034') }}");
+                return false;
+            }
+
+            // 필수 값 유효성 확인
+            if (!this.vaildateData()) return false;
+
+            const activity = $('input[name="cu_activity_id"]').val();
+			const wbsCdValues = $('input[name="cu_wbs_cd"]').val().split(',');
+			const activityIdValues = $('input[name="cu_activity_id"]').val().split(',');
+
+            let activities = [];
+            if (activity && wbsCdValues && activityIdValues) {
+                // activity 객체 리스트를 생성
+                activities = wbsCdValues.map((wbsCd, index) => ({
+                    wbsCd: wbsCd.trim(),
+                    activityId: activityIdValues[index] ? activityIdValues[index].trim() : null
+                }));
+            }
+
+            let dfccyData = {
+                cntrctNo: cntrctNo,
+                dfccyPhaseNo: dfccyPhaseNo,
+                dfccyNo: dfccyNo,
+                title: $("#cu_title").val(),
+                dfccyCd: $("#cu_selectbox_dfccy").val(),
+                dfccyLct: $("#cu_dfccyLct").val(),
+                priorityCheck: $("#cu_priorityCheck").prop('checked') ? 'Y' : 'N', // 중요 체크 여부 확인
+                crtcIsueYn: $("#cu_crtcIsueYn").prop('checked') ? 'Y' : 'N', // 체크 여부 확인
+                dfccyCntnts: $("#cu_dfccy_cntnts").val(),
+                activity: activities,
+                delFileList: dfccyInput.attach.delFileList
+            }
+
+            const formData = new FormData();
+
+			formData.delete('files');
+			dfccyInput.attach.fileList.forEach(file => {
+				formData.append('files', file);
+			});
+
+			formData.append('dfccy', new Blob([JSON.stringify(dfccyData)], { type: 'application/json' }));
+
+
+            console.log("결함 수정 입력데이터: ", dfccyData);
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post('/api/defecttraking/tool/defectTracking/dfccy/update', formData, function (response) {
+                if (response.ok) {
+                    gaiaCommon.customAlert('{{ message("msg.007") }}', function () { // 수정되었습니다
+                        // dfccyInput.formBoxReset(); // 폼 초기화
+                        dfccyInput.close(); // 기존 close() 호출
+                        page.dfccy.search();
+                        gaiaCommon.LoadingOverlay('body', false);
+                    });
+                }
+            }, function (xhr, status, error) {
+                gaiaCommon.LoadingOverlay('body', false);
+                gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+            });
+        },
+
+        updateInputSet(){
+            const dfccyNo = dfccyInput.dfccyNo;
+            if(!cntrctNo || !dfccyPhaseNo || !dfccyNo){
+                gaiaCommon.customAlert("{{ message('msg.dfccy.030') }}");
+                return false;
+            }
+
+            gaiaCommon.get(`/api/defecttraking/tool/defectTracking/dfccy/${cntrctNo}/${dfccyPhaseNo}/${dfccyNo}`, {}, function(result){
+                if(result.ok){
+                    let returnMap = result.details.returnMap;
+                    let inputData = returnMap.dfccy;
+                    let activityData = returnMap.activitys;
+                    let attachments = returnMap.attachments;
+                    let $this = dfccyInput.attach;
+
+                    // 결함 데이터 설정
+                    $("#cu_title").val(gaiaCommon.decodeSafeText(inputData.title));
+                    $("#cu_selectbox_dfccy").val(inputData.dfccyCd);
+                    $("#cu_dfccyLct").val(gaiaCommon.decodeSafeText(inputData.dfccyLct));
+                    $("#cu_dfccy_cntnts").val(gaiaCommon.decodeSafeText(inputData.dfccyCntnts));
+                    if(inputData.crtcIsueYn === "Y"){
+                        $("#cu_crtcIsueYn").prop('checked', true);
+                    }else{
+                        $("#cu_crtcIsueYn").prop('checked', false);
+                    }
+
+                    if(inputData.priorityCheck === "Y"){
+                        $("#cu_priorityCheck").prop('checked', true);
+                    }else{
+                        $("#cu_priorityCheck").prop('checked', false);
+                    }
+
+                    //activity 데이터 설정
+                    let activityNames = activityData.map(item => item.activityNm).join(", ");
+                    let wbsCds = activityData.map(item => item.wbsCd).join(", ");
+                    let activityIds = activityData.map(item => item.activityId).join(", ");
+
+                    $('textarea[name="cu_activity_nm"]').val(activityNames);    // Activity 명
+                    $('input[name="cu_wbs_cd"]').val(wbsCds);                   // WBS 코드
+                    $('input[name="cu_activity_id"]').val(activityIds);         // Activity ID
+
+                    //첨부파일 데이터 설정
+                    if (attachments && attachments.length > 0) {
+                        $('#attachInfo').show();
+                        $("#uploadMsg").hide();
+                        $('#attach_list').show();
+
+                        let fileListHtml = attachments.map(file => {
+                            let html = '';
+                            $this.fileList.push(file.fileNm);
+                            $this.fileSizeList.push(file.fileSize);
+                            $this.fileNameList.push(file.fileNm);
+
+                            html += `<li class="list_item attach_item" data-status="OLD" data-fileNo="${file.fileNo}" data-sno="${file.sno}">
+                                        <button type="button" id="delFile" class="icon_btn" onclick="dfccyInput.attach.deletefile(event, ${$this.fileIndex})">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                        <span class="f_name">${file.fileNm}</span>
+                                        <span class="f_progress">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                            </span>
+                                        </span>
+                                        <span class="f_capacity">${$this.getFileSize(file.fileSize)}</span>
+                                    </li>`;
+
+                            $this.fileIndex++;
+                            return html;
+                        }).join("");
+
+                        // 업로드 파일 개수 & 용량 표시
+                        $this.totalFileSize = attachments.reduce((acc, file) => acc + file.fileSize, 0);
+                        $this.fileListCnt = attachments.length;
+                        $this.setFilesInfo();
+                        $('#formAttach .file_list').append(fileListHtml);
+                    }
+                }
+            });
+        },
+
+        // 입력된 값 모두 초기화.
+        formBoxReset: function() {
+            // `form_box` 클래스 하위의 모든 입력 요소 선택
+            const formBoxElements = document.querySelector("#dfccy_cu_form");
+
+            if (formBoxElements) {
+                // 모든 input 요소 초기화
+                formBoxElements.querySelectorAll("input").forEach(input => {
+                    if (input.type === "checkbox" || input.type === "radio") {
+                        input.checked = false; // 체크박스 및 라디오 버튼 초기화
+                    } else {
+                        input.value = ""; // 일반 입력 필드 초기화
+                    }
+                });
+
+                // 모든 select 요소 초기화
+                formBoxElements.querySelectorAll("select").forEach(select => {
+                    select.selectedIndex = 0; // 첫 번째 옵션으로 설정
+                });
+
+                // 모든 textarea 요소 초기화
+                formBoxElements.querySelectorAll("textarea").forEach(textarea => {
+                    textarea.value = "";
+                });
+
+                dfccyInput.attach.reset();
+                dfccyInput.attach.listReset();
+            }
+        },
+
+
+        // 필수 값 유효성 확인
+        vaildateData: function(){
+            // let addRegex = /^(?!\s)[^\/:*?"<>|]+$/;
+            let isValid = true;
+
+            $(".required").each(function () {
+                const inputElement = $(this).closest(".row").find("input, select, textarea");
+                if (!inputElement.val()) {
+                    gaiaCommon.customAlert("{{ message('msg.008') }}"); // 필수 값이 누락되었습니다.
+                    inputElement.focus();
+                    console.log(inputElement);
+                    isValid = false;
+                    return false;
+                }
+            });
+
+            if (!isValid) return false; // 필수 값 체크에서 실패한 경우 종료
+
+            // 유효성 검사 대상 필드 리스트
+            const fieldsToValidate = ['#cu_title', '#cu_dfccyLct', '#cu_dfccy_cntnts'];
+
+            // 각 필드에 이벤트 리스너 추가
+            fieldsToValidate.forEach(selector => {
+                const value = $(selector).val();
+
+                // 값이 없는 경우 유효성 검사 패스
+                if (!value || value === "") return;
+
+            });
+
+            return isValid;
+        },
+
+        // Activity 리스트 가져오기
+        getActivity: function () {
+			const width = 1200;
+			const height = 500;
+			let left = Math.ceil((window.screen.width - width) / 2);
+			left += window.screenLeft;
+			const top = Math.ceil((window.screen.height - height) / 2);
+			window.open(`/defectTracking/selectActivity?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`, 'activityListPopup', `scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`);
+		},
+
+        // 결함분류 콤보박스 생성
+		// 셀렉트박스 호출
+        makeSelectBox: function (cmnGrpCd, selectBoxId, elementId, ckeckedValue) {
+            let initText = "{{ message('item.dfccy.017') }}";
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+                ckeckedValue: ckeckedValue,
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "this.value",
+                funtype: "onchange",
+            };
+
+            gaiaCommon.post('/api/util/make-selectBox', [requestData], function(data){
+                let returnMap = data.details.returnMap;
+
+                // 메인 화면 결함분류 콤보박스 업데이트
+                let addAppLineContent = document.getElementById(elementId);
+                addAppLineContent.innerHTML = returnMap[selectBoxId];
+            });
+        },
+
+        initializeSelectBoxes(ckeckedValue) {
+            dfccyInput.makeSelectBox(
+                "19a8bb53-74b4-405a-8d91-2b38555fc7d9",
+                "cu_dfccyCd",
+                "cu_dfccyCd_box",
+				ckeckedValue
+            );
+        },
+        getDfccySelectbox(){
+            gaiaCommon.get('/api/defecttracking/verification/dfccy-selectbox', "", function(data){
+                let dfccyCdList = data.details.dfccySelectbox;
+                $.each(dfccyCdList, function (index, obj) {
+                    $('#cu_selectbox_dfccy').append(`<option value="${obj.cmn_cd}">${obj.cmn_cd_nm_krn}</option>`);
+                })
+            });
+        },
+
+        // 파일 첨부 관련
+        attach: {
+            fileIndex: 0,                       // 파일 리스트 번호
+            totalFileSize: 0,                   // 등록할 전체 파일 사이즈
+            fileListCnt: 0,                     // 업로드할 파일 수
+            fileList: [],                       // 파일 리스트
+            fileSizeList: [],                   // 파일 사이즈 리스트
+            fileNameList: [],                   // 파일명 리스트
+            delFileList: [],
+            newFileList: [],
+
+            // 초기화
+            reset(resetType){
+                // 파일첨부 변수 초기화
+                Object.keys(this).forEach((key) => {
+                    if (Array.isArray(this[key])) {
+                        if(!resetType || (key !== 'delFileList' && key !== 'newFileList'))
+                        this[key] = [];
+                    } else if (typeof this[key] === "number") {
+                        this[key] = 0;
+                    }
+                });
+            },
+            // 목록 초기화
+            listReset(){
+                $('#fileList').empty();
+                $('#attach_list').hide();
+                $('#uploadMsg').show();
+                $('#attachInfo').children().remove();
+            },
+            // 파일 사이즈 형식 변경
+            getFileSize(filesize){
+                if (filesize >= 1024 * 1024) {
+                    return (filesize / (1024 * 1024)).toFixed(2) + ' MB';
+                } else if (filesize >= 1024) {
+                    return (filesize / 1024).toFixed(2) + ' KB';
+                } else {
+                    return filesize + ' bytes';
+                }
+            },
+            //업로드 파일 갯수 및 용량 셋팅
+            setFilesInfo() {
+                $('#attachInfo').children().remove();
+                this.fileListCnt = this.fileList.filter(item => item !== 'undefined').length;
+                let fileSize = !this.totalFileSize ? 0 : this.getFileSize(this.totalFileSize);
+                let spanClass = this.fileListCnt > 0 ? 'sucess' : 'fail';
+                let iClass = this.fileListCnt > 0 ? 'ic-check' : 'ic-close';
+                if(this.fileListCnt > 0) {
+                    let resultHtml = `
+                                    <span class="attach_result">
+                                        <span class="${spanClass}">
+                                            <i class="ic ${iClass}"></i>
+                                            <b class="num">${this.fileListCnt}</b>
+                                        </span>
+                                    </span>
+                                    <span class="attach_capacity">
+                                        <span class="item" id="fileSize">${fileSize}</span>
+                                        <span class="item">${maxUploadSize}MB</span>
+                                    </span>
+                                    `
+                    $('#attachInfo').append(resultHtml);
+                }
+            },
+            handleFiles(files) {
+                files = [...files];
+
+                //최대 첨부파일 갯수 체크
+                if(maxFilecount < files.length + this.fileIndex) {
+                    gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', maxFilecount));
+                    return;
+                }
+
+                //동일 파일명 업로드 여부 체크
+                if(this.fileIndex > 0) {
+                    if(this.fileNameList.filter(item => files.some(i => i.name === item)).length > 0) {
+                        gaiaCommon.customAlert("{{ message('msg.app.011') }}");
+                        return;
+                    }
+                }
+
+                //최대 업로드 용량 체크
+                let attFileSize = 0;
+                files.forEach(file => attFileSize += file.size);
+                if(1024 * 1024 * maxUploadSize < this.totalFileSize + attFileSize) {
+                    gaiaCommon.customAlert("{{ message('msg.app.012') }}".replace('{0}', maxUploadSize));
+                    return;
+                }
+
+                //개별 파일 용량 체크
+                var returnValue = false;
+                files.forEach(function(files) {
+                    if(files.size > 1024 * 1024 * uploadSize) {
+                        gaiaCommon.customAlert("{{ message('msg.app.013') }}".replace('{0}', uploadSize));
+                        returnValue = true;
+                        return;
+                    }
+                    if(files.size <= 0) {
+                        gaiaCommon.customAlert("{{ message('msg.app.014') }}");
+                        returnValue = true;
+                        return;
+                    }
+                });
+
+                if(returnValue) {
+                    return;
+                }
+                // 파일선택 값 초기화
+                $('#chooseFile').val(null);
+                // 초기 업로드 안내 요소 삭제
+                if(this.fileListCnt < 1) {
+                    $("#uploadMsg").hide();
+                }
+                //파일 리스트 처리
+                files.forEach(file => {
+                    this.previewFile(file)
+                    this.newFileList.push(file);
+                });
+                //업로드 파일 정보 셋팅
+                this.setFilesInfo();
+            },
+            previewFile(file) {
+                $('#uploadMsg').hide();
+                $('#attachInfo').show();
+                if(this.fileListCnt < 1) {
+                    $('#attach_list').show();
+                }
+                let attachListHtml = `<li class="list_item attach_item" data_status="NEW">
+                                        <button type="button" id="delFile" class="icon_btn" onclick="dfccyInput.attach.deletefile(event, ${this.fileIndex})">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                        <span class="f_name">${file.name}</span>
+                                        <span class="f_progress">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                            </span>
+                                        </span>
+                                        <span class="f_capacity">${this.getFileSize(file.size)}</span>
+                                    </li>`
+                $('#fileList').append(attachListHtml);
+
+                this.fileList[this.fileIndex] = file;
+                this.fileSizeList[this.fileIndex] = file.size;
+                this.fileNameList[this.fileIndex] = file.name;
+                this.fileIndex = this.fileIndex + 1;
+                this.totalFileSize = this.totalFileSize + file.size;
+            },
+            // 업로드 파일 삭제
+            deletefile(event, index) {
+                this.totalFileSize -= this.fileSizeList[index];     // 전체 파일 사이즈 수정
+                delete this.fileList[index];                        // 파일 배열에서삭제
+                delete this.fileSizeList[index];                    // 파일 사이즈 배열 삭제
+                delete this.fileNameList[index];                    // 파일 이름 배열 삭제
+
+                // 업로드 파일 삭제목록에 추가
+                let li = $(event.target).closest('li');
+                if(li.data('status') === 'OLD') {
+                    this.delFileList.push({fileNo: li.data('fileno'), sno: li.data('sno')});
+                }
+
+                // 업로드 파일 목록에서 삭제
+                li.remove();
+
+                this.setFilesInfo();
+
+                this.fileListCnt = this.fileList.filter(item => item !== 'undefined').length;
+
+                if(this.fileListCnt < 1) {
+                    // 파일 목록 초기화
+                    this.listReset('delete');
+                    // 파일 변수 초기화
+                    this.reset('delete');
+                }
+
+            },
+            // 업로드 파일 전체 삭제
+            deleteAll(){
+                if(this.fileListCnt === 0) {
+                    gaiaCommon.customAlert("{{ message('msg.app.020') }}");
+                    return false;
+                }
+
+                gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.app.021') }}", "", () => {
+                    $('#fileList .attach_item').map(function() {
+                        if($(this).data('status') === 'OLD') {
+                            dfccyInput.attach.delFileList.push({fileNo: $(this).data('fileno'), sno: $(this).data('sno')});
+                        };
+                    })
+
+                    $('#formAttach .attach_item').remove();
+
+                    // 파일 목록 초기화
+                    this.listReset('delete');
+                    // 파일 변수 초기화
+                    this.reset('delete');
+                })
+            },
+            add(){
+                $('#chooseFile').click();
+            }
+        },
+    };
+
+    $(document).ready(function () {
+        dfccyInput.getDfccySelectbox();
+        // dfccyInput.file.init();
+
+        // 드래그 오버 이벤트
+        $(document).on('dragover', '.attach_area', function (event) {
+            event.preventDefault();
+            $(this).addClass('dragging');
+        });
+
+        // 드래그 리브 이벤트
+        $(document).on('dragleave', '.attach_area', function () {
+            $(this).removeClass('dragging');
+        });
+
+        // 드롭 이벤트
+        $(document).on('drop', '.attach_area', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            $(this).removeClass('dragging');
+
+            const newFiles = event.originalEvent.dataTransfer.files;
+            if (newFiles.length > 0) {
+                dfccyInput.attach.handleFiles(newFiles);
+            }
+        });
+        gaia.loaded = true;
+    });
+
+
+
+</script>

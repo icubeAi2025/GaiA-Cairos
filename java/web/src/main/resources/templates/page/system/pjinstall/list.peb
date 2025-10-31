@@ -1,0 +1,744 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+    .search_group {
+        border: solid 1px #EAEAEA;
+        border-radius: 10px;
+        padding: 15px;
+    }
+    .search_row {
+        display: flex;
+        gap: 16px; /* 항목 간 간격 */
+        align-items: center;
+        justify-content: space-between; /* 아이템 사이 동일 간격 */
+        padding-bottom: 10px;
+    }
+
+    .search_col {
+        flex: 1;                /* 모든 항목 동일 너비로 */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;           /* 줄어들 수 있게 설정 */
+    }
+    .search_col.search_col2 {
+        flex: 2;                /* 모든 항목 동일 너비로 */
+    }
+
+    .search_label {
+        white-space: nowrap;
+        font-weight: 500;
+        width: 80px;
+    }
+
+    .search_data {
+        flex: 1;                /* 나머지 공간 차지 */
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .search_btn_wrap {
+        display: flex;
+        gap: 8px;
+        justify-content: center; /* 우측 정렬 */
+        margin-top: 12px;
+    }
+    .calender_wrap{
+        display: flex;
+        gap:4px;
+        flex:1;
+        align-items: center;
+    }
+    #pjInstallGrid .plcNm{
+        cursor:pointer;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row">
+<article class="conts_area">
+	<div class="conts">
+		<div class="conts_grid">
+			<!-- S: search wrap ---------------------------------------------- -->
+			<div class="search_group">   <!-- 검색 조건 박스-->
+                <div class="search_row">   <!-- 검색 조건 1번째 줄 -->
+                    <div class="search_col">
+                        <div class="search_label">주 공종</div>
+                        <div class="search_data">
+                            <div class="selectbox">
+                                <select name="workType" id="workType">
+                                    <option selected value="">전체</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="search_col">
+                        <div class="search_label">수요기관</div>
+                        <div class="search_data">
+                            <div class="selectbox">
+                                <select name="dminsttType" id="dminsttType">
+                                    <option selected value="">전체</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="search_row">   <!-- 검색 조건 2번째 줄 -->
+                    <div class="search_col">
+                        <div class="search_label">계약 구분</div>
+                        <div class="search_data">
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="cntrctType" name="cntrctType" value="" checked>
+                                <span class="check_label">전체</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="cntrctType0101" name="cntrctType" value="0101">
+                                <span class="check_label">단년도계약</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="cntrctType0102" name="cntrctType" value="0102">
+                                <span class="check_label">계속비계약</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="cntrctType0103" name="cntrctType" value="0103">
+                                <span class="check_label">장기계속계약(총체)</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="cntrctType0104" name="cntrctType" value="0104">
+                                <span class="check_label">장기계속계약(차수)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="search_col">
+                        <div class="search_label">진행 상태</div>
+                        <div class="search_data">
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="openPstats" name="openPstats" value="" checked>
+                                <span class="check_label">전체</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="openPstats01" name="openPstats" value="0701">
+                                <span class="check_label">개설요청</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="openPstats02" name="openPstats" value="0702">
+                                <span class="check_label">개설요청확인</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="openPstats03" name="openPstats" value="0703">
+                                <span class="check_label">개설중</span>
+                            </label>
+                            <label class="form_check">
+                                <input class="check_mark" type="radio" id="openPstats04" name="openPstats" value="0704">
+                                <span class="check_label">개설완료</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="search_row">   <!-- 검색 조건 3번째 줄 -->
+                    <div class="search_col col">
+                        <div class="search_label">키워드</div>
+                        <div class="search_data">
+                            <input type="text" id="searchText" placeholder="{{message('msg.004')}}">
+                        </div>
+                    </div>
+                    <div class="search_col search_col2">
+                        <div class="search_label">기간</div>
+                        <div class="search_data">
+                            <div class="calender_wrap">
+                                <input type="date" name="pjtBgnDate" class="date" id="pjtBgnDate" placeholder="날짜 입력">
+                                <span class="range-separator">~</span>
+                                <input type="date" name="pjtEndDate" class="date" id="pjtEndDate" placeholder="날짜 입력">
+                            </div>
+                            <div class="date_btn_wrap btn_area">
+                                <button type="button" class="btn _outline" onclick="page.searchBox.setStartDateByOffset('7d')">7일</button>
+                                <button type="button" class="btn _outline" onclick="page.searchBox.setStartDateByOffset('1m')">1개월</button>
+                                <button type="button" class="btn _outline" onclick="page.searchBox.setStartDateByOffset('3m')">3개월</button>
+                                <button type="button" class="btn _outline" onclick="page.searchBox.setStartDateByOffset('6m')">6개월</button>
+                                <button type="button" class="btn _outline" onclick="page.searchBox.setStartDateByOffset('1y')">1년</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="search_btn_wrap">
+                    <button type="button" class="btn _fill" onclick="page.searchBox.search()">검색</button>
+                    <button type="button" class="btn _outline" onclick="page.searchBox.reset()">초기화</button>
+                </div>
+            </div>
+			<div class="toolbar">
+				<div class="btn_area s_default">
+<!--				    <button type="button" class="btn _outline" onclick="page.userLog.deleteUserLogList()">{{ message('btn.002') }}</button> -->
+				<div class="total-count">
+					총 <strong id="totalCnt">0</strong>건
+				</div>
+			    </div>
+				<span class="selectbox" style="margin-left: inherit; width: inherit;">
+					<!-- <select name="items-per-page" id="items-per-page" onchange="page.changePerPage()"> -->
+					<select name="items-per-page" id="items-per-page">
+					  <option selected disabled value="">{{ message('item.com.004') }}</option>
+					  <option value="5">5</option>
+					  <option value="10">10</option>
+					  <option value="15">15</option>
+					</select>
+				</span>
+			</div>
+            <div class="grid" id="pjInstallGrid"></div>
+		</div>
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+	//새창 아이콘 렌더러
+	const newWindowViewRenderer = window.NewWindowViewRenderer;
+	// const customColumnCheckbox = window.CustomColumnCheckbox;
+
+	const BASEPATH = '/api/system/';
+	let pjtNo;
+	let cntrctNo;
+    let logType;
+    let user;
+    let startDt;
+    let endDt;
+
+    const pstatsMap = {
+        "0701":"개설요청",
+        "0702":"개설요청확인",
+        "0703":"개설중",
+        "0704":"개설완료"
+    }
+
+	var page ={
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+        workTypeMap:{},
+        pjInstallList:[],
+        workTypeList:[],
+        dminsttTypeList:[],
+        init() {
+			//프로젝트 정보 설정
+			const urlParams = new URLSearchParams(window.location.search);
+			pjtNo = urlParams.get('pjtNo');
+			cntrctNo = urlParams.get('cntrctNo');
+
+			gaiaPortal.navMenuInit('CS01', '현장 개설 요청 관리');
+
+            gaiaCommon.get(`/api/system/pjinstall/main`,{},function(result){
+                page.pjInstallList = result.details?.pjInstallList
+                page.workTypeList = result.details?.workTypeList;
+                page.dminsttTypeList = result.details?.dminsttTypeList;
+                page.searchBox.init();
+    			page.grid.init();
+            })
+
+			// 'items-per-page' 셀렉트박스 변경 이벤트 리스너 추가
+			$('#items-per-page').on('change', (event) => {
+				const newPerPage = parseInt(event.target.value, 10);
+				if (this.project.grid) {
+					this.project.grid.setPerPage(newPerPage); // 그리드의 perPage 설정 업데이트
+				}
+			});
+
+            $("#pjInstallGrid .plcNm").click(function(e){
+                e.preventDefault();
+                const el = e.target;
+                const plcReqNo = el.href;
+                console.log("PLCREQNO :",plcReqNo);
+            })
+		},
+        grid:{
+            obj:null,
+            init:function(){
+                //그리드 만들기
+                tui.Grid.setLanguage('ko', {
+                    display: {
+                        noData: '데이터가 없습니다'
+                    }
+                });
+                page.grid.obj = new tui.Grid({
+                    el: document.getElementById('pjInstallGrid'),
+                    data:page.pjInstallList,
+                    scrollX: true,
+                    scrollY: true,
+                    bodyHeight: window.innerHeight - 265,
+                    minBodyHeight: 400, // 최소 높이 : row 1개
+                    width: 'auto',
+                    rowHeaders: [
+                        // {
+                        //     type: 'checkbox',
+                        //     header: `
+						// 		<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+						// 	`,
+                        //     width: 100,
+                        //     renderer: {
+                        //         type: window.GridTrashIconRenderer,
+                        //         options: { //휴지통 클릭 삭제 시 필요한 값 설정
+                        //             url: '/api/system/pjinstall/delete',
+                        //             idField:'plcReqNo',
+                        //             keyName: 'plcReqNoList',
+                        //             msgList: {
+                        //                 deleteConfirm: "{{ message('msg.009') }}", 		 	// 정말 삭제하시겠습니까?
+                        //                 deleteConfirmTit: "요청 삭제",  // 문서 삭제
+                        //                 deleteCompleteAlert: "{{ message('msg.006') }}" 	// 삭제되었습니다.
+                        //             },
+                        //             condition:function(rowData){ //단일 조건인 경우에는 삭제하기 전 검사해야 하는 조건식을 return에 달아주기(조건 없으면 return true)
+                        //                 //아래는 예시 코드입니다
+                        //                 console.log("ROWDATA.DELETENO",rowData.deleteNo);
+                        //                 //if(rowData.deleteNo == "90_D0015_01_P202405006.A1"){
+                        //                 //	gaiaPortal.customAlert("90_D0015_01_P202405006.A1번은 삭제할 수 없습니다.");
+                        //                 //	return false;
+                        //                 //}
+                        //                 //else{
+                        //                 //	return true;
+                        //                 //}
+                        //                 return true;
+                        //             },
+                        //             success:function(rowData) { //사후처리를 위한 rowData 반환 후 콜백
+                        //                 page.grid.redraw();
+                        //             },
+                        //             fail:function(rowData){ //사후처리를 위한 rowData 반환 후 콜백
+                        //             }
+                        //
+                        //         }
+                        //     }
+                        // }
+                    ],
+                    columns: [
+                        {
+                            header: 'GAIA/PGAIA', //GAIA/PGAIA
+                            name: 'pltReqType',
+                            align: 'center',
+                            resizable: true,
+                            width: 100,
+                            formatter:function({row}){
+                                return `${row.pltReqType !== 'G' ? 'P' : ''}GAIA`
+                            }
+                        },
+                        {
+                            header: '현장명', //현장명'
+                            name: 'plcNm',
+                            align: 'left',
+                            resizable: true,
+                            width: 300,
+                            sortable:true,
+                            sortingType:'asc',
+                            renderer:{
+                                init(props){
+                                    const el = document.createElement("a");
+                                    el.href = `javascript:page.goDetail('${props.plcReqNo}')`;
+                                    el.innerText = props.plcNm;
+                                    el.style.textDecoration = 'under'
+                                }
+                            },
+                            formatter:function({row}){
+                                return `<a class="plcNm" data-plcreqno="${row.plcReqNo}" data-openpstats="${row.openPstats}">${row.plcNm}</a>`
+                            },
+                            whiteSpace:'normal',
+                            escapeValue:false
+                        },
+                        {
+                            header: '공사구분', //주공종
+                            name: 'workType',
+                            align: 'center',
+                            resizable: true,
+                            width: 150,
+                            formatter:function({row}){
+                                return page.workTypeMap[row.majorCnsttyCd]||'미지정';
+                            }
+                        },
+                        {
+                            header: '주요시설', //주요시설
+                            name: 'mainFcltyCntnts',
+                            align: 'left',
+                            width: 300,
+                            sortable:true,
+                            sortingType:'asc',
+                            formatter:function({row}){
+                                return row.mainFcltyCntnts || '미지정';
+                            }
+                        },
+                        // {
+                        //     header: '현장위치주소내용', //현장위치주소내용
+                        //     name: 'plcLctAdrsCntnts',
+                        //     align: 'left',
+                        //     width: 300,
+                        //     sortable:true,
+                        //     sortingType:'asc',
+                        //     formatter:function({row}){
+                        //         return row.plcLctAdrsCntnts || '미지정';
+                        //     }
+                        // },
+                        {
+                            header: '진행상태', //수정일시
+                            name: 'openPstats',
+                            align: 'center',
+                            minWidth: 70,
+                            formatter: function({ row }) {
+                                return pstatsMap[row.openPstats];
+                            }
+                        },
+                        {
+                            header:"프로젝트번호",
+                            name:'pjtNo',
+                            align:'center',
+                            minWidth: 70,
+                            formatter:function({row}){
+                                if(row.openPstats == "0704") {
+                                    return `<a class="pjtNo" style="text-decoration: underline; cursor: pointer" data-prjno="${row.pjtNo}">${row.pjtNo}</a>`
+                                }
+                                return '개설 전'
+                            },
+                        },
+                        {
+                            header: '등록자', //등록자
+                            name: 'rgstrNm',
+                            align: 'center',
+                            minWidth: 70,
+                            formatter:function({row}){
+                                return row.rgstrNm || '미지정';
+                            }
+                        },
+                        {
+                            header: '등록일시', //등록일시
+                            name: 'rgstDt',
+                            align: 'center',
+                            minWidth: 120,
+                            formatter:function({row}){
+                                return dayjs(row.rgstDt).format('YYYY-MM-DD HH:mm:ss');
+                            }
+                        }
+                    ],
+                });
+                page.grid.obj.on("click", (ev) => { //체크박스 상태 설정
+                    if(ev.columnName == "_checked" && ev.rowKey >= 0){
+                        let temp = page.grid.obj.getRow(ev.rowKey);
+                        temp._attributes.checked = page.grid.obj.getRow(ev.rowKey)._attributes.checked ? false : true;
+                        page.grid.obj.setRow(ev.rowKey, temp);
+                    }
+                });
+                // 'beforeSort' 이벤트 핸들러 설정(정렬 ui 멀티 컬럼 정렬로 나타나는 문제 해결)
+                page.grid.obj.on("beforeSort", (ev) => {
+                    // 'columns' 데이터 가져오기 및 멀티 컬럼 정렬 방지 처리
+                    const { columns } = ev.instance.store.data.sortState;
+                    if (columns.length > 1) {
+                        columns.shift();
+                    }
+                });
+
+                page.grid.obj.on("afterSort", (ev) => {
+                    // 정렬된 상태에서 다른 컬럼을 정렬하려고 할 때 정렬 초기화 진행.
+                    if(page.grid.obj.getSortState().columns.length > 1){
+                        page.grid.obj.unsort(page.grid.obj.getSortState().columns[0].columnName);
+                    }
+                });
+                page.grid.obj.on("onGridMounted", () => {
+                    document.querySelector('#pjInstallGrid').addEventListener('click', function (e) {
+                        const target = e.target;
+                        if (target.classList.contains('plcNm')) {
+                            const plcReqNo = target.dataset.plcreqno;
+                            const openPstats = target.dataset.openpstats;
+                            page.goDetail(plcReqNo,openPstats);
+                        }
+                        else if(target.classList.contains('pjtNo')){
+                            const pjtNo = target.dataset.prjno;
+                            window.open(`/project/information/read?pjtNo=${pjtNo}&type=d`, '_blank');
+                        }
+                    });
+
+                })
+
+
+
+            },
+            redraw:function(pjInstallList){
+                console.log("redraw 진입",performance.now())
+                if(pjInstallList){
+                    page.pjInstallList = pjInstallList;
+                }
+                page.grid.obj.resetData(page.pjInstallList);
+                document.getElementById("totalCnt").innerHTML = page.pjInstallList.length;
+                console.log("redraw 끝",performance.now())
+            }
+        },
+        searchBox:{
+            URL:"/api/system/pjinstall/list",
+            criteria:{
+                workType:null,
+                dminsttType:null,
+                cntrctType:null,
+                openPstats:null,
+                pjtBgnDate:null,
+                pjtEndDate:null,
+                searchText:null,
+                flag:false
+            },
+            init:function(){
+                // Timepicker 날짜 초기화
+                // page.searchBox.setTodayToInput('pjtBgnDate');
+                // page.searchBox.setTodayToInput('pjtEndDate');
+                this.criteria = {
+                    workType:null,
+                    dminsttType:null,
+                    cntrctType:null,
+                    openPstats:null,
+                    pjtBgnDate:null,
+                    pjtEndDate:null,
+                    searchText:null,
+                    flag:false
+                };
+
+                this.createDropdown();
+                this.reset();
+            },
+            search:function(){
+                const workType = $("#workType").val();
+                if(workType){
+                    this.criteria.workType = workType;
+                }
+                const dminsttType = $("#dminsttType").val();
+                if(dminsttType){
+                    this.criteria.dminsttType = dminsttType;
+                }
+                const cntrctType = $("[name=cntrctType]:checked").val();
+                if(cntrctType){
+                    this.criteria.cntrctType = cntrctType;
+                }
+                const openPstats = $("[name=openPstats]:checked").val();
+                if(openPstats){
+                    this.criteria.openPstats = openPstats;
+                }
+                const searchText = $("#searchText").val();
+                if(searchText){
+                    this.criteria.searchText = searchText;
+                }
+                console.log("DATE : ",$("#pjtBgnDate").val(), $("#pjtEndDate").val());
+                if(page.searchBox.validateDates()){
+                    const pjtBgnDate = $("#pjtBgnDate").val();
+                    if(pjtBgnDate){
+                        this.criteria.pjtBgnDate = pjtBgnDate.replaceAll("-","");
+                    }
+                    const pjtEndDate = $("#pjtEndDate").val();
+                    if(pjtEndDate){
+                        this.criteria.pjtEndDate = pjtEndDate.replaceAll("-","");
+                    }
+                }
+                this.criteria.flag = true;
+                console.log("CRITERIA :",this.criteria);
+
+                gaiaCommon.get(this.URL,this.criteria,function(result){
+                    if(result.details?.pjInstallList){
+                        page.grid.redraw(result.details.pjInstallList);
+                    }
+                },function(error){
+                    console.log(`현장 개설 요청 리스트 조회 실패, ${page.searchBox.URL}, PARAMS :`,page.searchBox.criteria,error)
+                })
+            },
+            // 초기화 버튼 클릭할 경우 실행
+            reset:function() {
+                document.getElementById('workType').selectedIndex = 0;
+                document.getElementById('dminsttType').selectedIndex = 0;
+
+                document.getElementById("cntrctType").checked = true;
+                document.getElementById("openPstats").checked = true;
+
+                document.getElementById('searchText').value = '';
+
+                // 날짜 입력 초기화
+                // const now = new Date();
+                document.getElementById('pjtBgnDate').value = null;
+                document.getElementById('pjtEndDate').value = null;
+
+                const dateBtns = document.querySelectorAll(".date_btn_wrap button");
+                for(const dateBtn of dateBtns){
+                    dateBtn.classList.remove("_fill");
+                    dateBtn.classList.add("_outline");
+                }
+                this.criteria = {
+                    workType:null,
+                    dminsttType:null,
+                    cntrctType:null,
+                    openPstats:null,
+                    pjtBgnDate:null,
+                    pjtEndDate:null,
+                    searchText:null,
+                    flag:false
+                }
+                gaiaCommon.get(this.URL,this.criteria,function(result){
+                    if(result.details?.pjInstallList){
+                        page.grid.redraw(result.details.pjInstallList);
+                    }
+                },function(error){
+                    console.log(`현장 개설 요청 검색 취소 실패, ${page.searchBox.URL}, PARAMS :`,page.searchBox.criteria)
+                })
+            },
+            // Timepicker 유효성 확인
+            validateDates() {
+                const startEl = document.getElementById('pjtBgnDate');
+                const endEl = document.getElementById('pjtEndDate');
+
+                if (startEl.value && endEl.value) {
+                    const startDate = new Date(startEl.value);
+                    const endDate = new Date(endEl.value);
+                    const today = new Date();
+                    today.setHours(23, 59, 59, 999); // 오늘 마지막 시간으로 설정: 날짜 비교할 때 시간 기준으로 비교함
+
+                    // 종료일이 시작일보다 이전
+                    if (endDate < startDate) {
+                        alert("검색 종료 시점은 시작 시점보다 뒤에 있어야 합니다.");
+                        return false;
+                    }
+
+                    // 날짜 범위가 1년 초과
+                    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+                    if ((endDate - startDate) > oneYearMs) {
+                        alert("날짜 검색 범위는 최대 1년입니다.");
+                        return false;
+                    }
+                }
+                return true;
+            },
+            createDropdown:function(){
+                const workTypeList = page.workTypeList;
+                const workTypeSelect = document.querySelector("#workType");
+                for(const workType of workTypeList){
+                    const option = document.createElement("option")
+                    option.value = workType.cmnCd;
+                    option.innerHTML = workType.cmnCdNmKrn;
+                    workTypeSelect.appendChild(option);
+                    page.workTypeMap[workType.cmnCd] = workType.cmnCdNmKrn;
+                }
+
+                const dminsttTypeList = page.dminsttTypeList;
+                const dminsttTypeSelect = document.querySelector("#dminsttType");
+                for(const dminsttType of dminsttTypeList){
+                    const option = document.createElement("option")
+                    option.value = dminsttType.value;
+                    option.innerHTML = dminsttType.name;
+                    dminsttTypeSelect.appendChild(option);
+                }
+            },
+            // 검색 날짜 종료 기준으로부터 클릭한 버튼만큼 이전 일자로 시작 날짜 설정
+            setStartDateByOffset(offsetStr) {
+                const btn = window.event.target;
+                const dateBtns = document.querySelectorAll(".date_btn_wrap button");
+                for(const dateBtn of dateBtns){
+                    dateBtn.classList.remove("_fill");
+                    dateBtn.classList.add("_outline");
+                }
+                btn.classList.remove("_outline")
+                btn.classList.add("_fill")
+
+                const endEl = document.getElementById('pjtEndDate');
+                const startEl = document.getElementById('pjtBgnDate');
+
+                if(!endEl.value){
+                    endEl.value = page.formatDate(new Date());
+                }
+                const endDate = new Date(endEl.value);
+
+                let startDate = new Date(endDate);
+                const unit = offsetStr.slice(-1);
+                const amount = parseInt(offsetStr.slice(0, -1), 10);    // 마지막 글자 빼고 10진수로 변환
+
+                switch (unit) {
+                    case 'd': startDate.setDate(startDate.getDate() - amount); break;
+                    case 'm': startDate.setMonth(startDate.getMonth() - amount); break;
+                    case 'y': startDate.setFullYear(startDate.getFullYear() - amount); break;
+                }
+
+                // 날짜를 YYYY-MM-DD 형식으로 변환
+                // const yyyy = startDate.getFullYear();
+                // const mm = String(startDate.getMonth() + 1).padStart(2, '0');
+                // const dd = String(startDate.getDate()).padStart(2, '0');
+                // const formatted = `${yyyy}-${mm}-${dd}`;
+
+                startEl.value = page.formatDate(startDate);
+
+                // startEl.value = formatted;
+
+            },
+            // 선택한 Timepicker formatToday 함수 실행
+            setTodayToInput(id) {
+                const el = document.getElementById(id);
+                if (el && !el.value) {
+                    el.value = page.formatDate(new Date());
+                }
+            },
+        },
+        goDetail:function(plcReqNo,openPstats){
+            if(openPstats == "0702"){
+                location.href = `/system/pjinstall/${plcReqNo}`;
+                return;
+            }
+            else if(openPstats == "0701"){
+                const params = {openPstats:"0702"};
+                gaiaCommon.post(`/api/system/pjinstall/update/${plcReqNo}`,params,function(result){
+                    console.log("확인중...");
+                    location.href = `/system/pjinstall/${plcReqNo}`;
+                },function(error){
+                    console.log(`개설 요청 확인으로 변경 실패, /api/system/pjinstall/update/${page.plcReqNo}, PARAMS :`,params,error)
+                    gaiaPortal.customAlert("개설 요청 확인 실패.")
+                })
+            }
+            else{
+                location.href =  `/system/pjinstall/${plcReqNo}`;
+                return;
+            }
+        },
+
+		//알림창 기능
+		customAlert(msg){
+			$('.pop_box.toast').show();
+			$('.toast_msg').text(msg);
+			$('.pop_box.toast').addClass('on');
+
+			// 일정 시간 후에 'on' 클래스 제거
+			setTimeout(function() {
+				$('.pop_box.toast').removeClass('on');
+				$('.pop_box.toast').hide();
+			}, 1500); // 1500ms = 1.5초
+		},
+
+		//Date 객체 / Date 형태의 문자열 포매팅 함수
+        formatDate:function(date) {
+            if(date instanceof Date){
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            else if(date instanceof String){
+                const dateObj = new Date(date);
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+        },
+
+  	};
+
+	$(document).ready(function() {
+		gaia.create({
+			$init: function ($params) {
+				page.init();
+            }
+        });
+
+
+		$('.pop_box.toast').hide();
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function() {
+			$('.pop_box.toast').removeClass('on');
+			$('.pop_box.toast').hide();
+		});
+	});
+
+
+</script>
+
+{% endblock footer_script %}

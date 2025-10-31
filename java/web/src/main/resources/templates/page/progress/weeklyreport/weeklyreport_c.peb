@@ -1,0 +1,259 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+    .selectbox select {
+        -webkit-appearance: menulist; /* Safari, Chrome */
+        -moz-appearance: menulist;    /* Firefox */
+        appearance: menulist;         /* Standard */
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+
+    .check_box_style {
+        display: flex;
+        justify-content: center;
+    }
+
+    .align_center {
+        text-align: center;
+    }
+    .align_right {
+        text-align: right;
+    }
+
+    .sticky_box tr{
+        border-bottom: 1px solid var(--tb-bd);
+    }
+
+    .blue_css {
+        color: blue;
+        font-family: unset !important;
+        font-size: unset !important;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section class="contents_wrap">
+	<article class="conts_area">
+        <div class="conts">
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    <button type="button" class="btn _outline" onclick="page.save()">{{ message("btn.006") }}</button>
+					<button type="button" class="btn _outline" onclick="page.close()">{{ message("btn.007") }}</button>
+                </div>
+
+                <!--개요 S-->
+                <div class="group">
+                    <div class="s_conts">
+                        <span class="tree_route">{{ message("item.construction.012") }}</span>
+                        <div class="form_box">
+                            <div class="group">
+                                <!-- row 1 -->
+                                <div class="row cols2">
+                                    <div class="col">
+                                        <!-- 보고기준일 -->
+                                        <div class="form_label required">{{ message("item.weeklyreport.004") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" id="reportDate" name="" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 보고일자 -->
+                                        <div class="form_label required">{{ message("item.construction.002") }}</div>
+                                        <div class="form_data">
+                                            <input type="date" class="date w-md" id="weeklyReportDate" name="">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 2 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 제목 -->
+                                        <div class="form_label">{{ message("item.doc.003") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" class="form-control maxlength" id="title" name="title" maxlength="100" required="">
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                                <!-- row 3 -->
+                                <!-- FIXME 컬럼에 맞추어 변경 (ID, NAME) -->
+                                <div class="row cols2">
+                                    <div class="col">
+                                        <!-- 금주추진사항 -->
+                                        <div class="form_label">{{ message("item.weeklyreport.020") }}</div>
+                                        <div class="form_data">
+                                            <div style="width: 100%; margin-bottom: 5px;">
+                                                <input type="date" class="date w-md" id="thisWeekStartDay" name="thisWeekStartDay"> ~
+                                                <input type="date" class="date w-md" id="thisWeekEndDay" name="thisWeekEndDay">
+                                            </div>
+                                            <textarea id="thisWeekPromotion" class="ht-200" name="thisWeekPromotion" style="height: 200px;"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 차주추진계획 -->
+                                        <div class="form_label">{{ message("item.weeklyreport.021") }}</div>
+                                        <div class="form_data">
+                                            <div style="width: 100%; margin-bottom: 5px;">
+                                                <input type="date" class="date w-md" id="nextWeekStartDay" name="nextWeekStartDay"> ~
+                                                <input type="date" class="date w-md" id="nextWeekEndDay" name="nextWeekEndDay">
+                                            </div>
+                                            <textarea id="nextWeekPlan" class="ht-200" name="nextWeekPlan" style="height: 200px;"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 4 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 주요안건 -->
+                                        <div class="form_label">{{ message("item.construction.023") }}</div>
+                                        <div class="form_data">
+                                            <textarea class="maxlength" id="rmrkCntnts" maxlength="2000"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--개요 E-->
+            </div>
+        </div>
+	</article>
+</section>
+
+{% include "page/progress/monthlyreport/monthlyreport_u_modal" %}
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var urlCntrctNo = urlParams.get('cntrctNo');
+    var BASEPATH = '/api/progress/weeklyreport';
+    var addList = []; 
+    var mReport = {};
+
+    var page = {
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+    	    cntrctNo = pjtInfo.cntrctNo;
+
+            let today= new Date().toISOString().slice(0, 10);
+            $('#weeklyReportDate').val(today);
+            $('#weeklyReportDate').trigger('change');
+
+            gaia.loaded = true;
+        },
+        save(){
+
+            let reportDate = $('#reportDate').val();
+            let weeklyReportDate = $('#weeklyReportDate').val();
+
+            if(!reportDate || !weeklyReportDate) {
+                gaiaCommon.customAlert('{{ message("msg.weeklyreport.001") }}');
+                return;
+            }
+
+            let data = {
+                cntrctNo: urlCntrctNo,
+                prWeeklyReport: {
+                    reportDate: reportDate,
+                    weeklyReportDate: weeklyReportDate,
+                    rmrkCntnts: $('#rmrkCntnts').val(),
+                    title: $('#title').val(),
+                    thisWeekStartDay: $('#thisWeekStartDay').val(),
+                    thisWeekEndDay: $('#thisWeekEndDay').val(),
+                    nextWeekStartDay: $('#nextWeekStartDay').val(),
+                    nextWeekEndDay: $('#nextWeekEndDay').val(),
+                    thisWeekPromotion: $('#thisWeekPromotion').val(),
+                    nextWeekPlan: $('#nextWeekPlan').val()
+                }
+            }
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            $.ajax({
+                url: BASEPATH+'/create',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(data),
+                success: function(result){
+                    if(result.ok) {
+                        let report = result.details.report;
+                        gaiaCommon.customAlert('{{ message("msg.044") }}', function(){
+                            window.location.href = `/progress/weeklyreport/detail?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&cntrctChgId=${report.cntrctChgId}&weeklyReportId=${report.weeklyReportId}`;
+                        });
+                    } else {
+                        gaiaCommon.customAlert('{{ message("msg.weeklyreport.002") }}');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                },
+                complete: function() {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            })
+        },
+        
+        close(){
+            window.location.href = `/progress/weeklyreport?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`;
+        },
+
+        
+    }
+
+
+    /* ==================================================================================================================
+     * 날짜 변경 Event
+     * ==================================================================================================================
+     */
+    $('#weeklyReportDate').on('change', function() {
+
+        if(!$(this).val()) {
+            $('#reportDate').val('');
+        }
+
+        const selectedDate = new Date($(this).val());
+        const day = selectedDate.getDay(); // 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+
+        // selectedDate에서 (day - 1)일을 빼야 월요일이 됨
+        // 주의: 만약 day가 0 (일요일)이면 6일 빼야 전주 월요일
+        const diff = day === 0 ? -6 : 1 - day;
+
+        const monday = new Date(selectedDate);
+        monday.setDate(selectedDate.getDate() + diff);
+
+        // yyyy-MM-dd 포맷으로 변환
+        const formattedMonday = monday.toISOString().slice(0, 10);
+
+        $('#reportDate').val(formattedMonday);
+    });
+
+    // FIXME - 날짜관련 확인
+    // const startInput = document.querySelector('#thisWeekStart');
+    // const endInput = document.querySelector('#thisWeekEnd');
+    //
+    // startInput.addEventListener('change', () => {
+    //     syncWeekDates(startInput, endInput, 'start');
+    // });
+    //
+    // endInput.addEventListener('change', () => {
+    //     syncWeekDates(endInput, startInput, 'end');
+    // });
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit('M0206', '{{ message("item.weeklyreport.019") }}');
+                $('#menuDepth').append(`<li class="breadcrumb_item">{{ message("item.weeklyreport.019") }}</li>`);
+                page.init();
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

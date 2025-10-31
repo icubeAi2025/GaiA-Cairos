@@ -1,0 +1,886 @@
+<style>
+    #attach_save {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px
+    }
+    .cfrm_his {
+        position: absolute;
+        right: 20px;
+        color: #e35c4d;
+    }
+
+    .cfrm_his span {
+        cursor: pointer;
+    }
+
+    .cfrm_his button {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        color: #e35c4d;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .file_header .header_item, .file_list .list_item {
+        grid-template-columns: min-content auto 50px 80px;
+    }
+
+    #detail {
+        display: inline-block;
+        padding: 10px;
+    }
+
+    .cfrm_list {
+        padding-top: 15px;
+        margin-bottom: 20px;
+    }
+
+    .cfrm_list p {
+        margin: 0;
+    }
+    .cfrm_rgst_div {
+        display: flex;
+    }
+    .cfrm_opnin {
+        margin: 10px 0;
+    }
+
+    .cfrm_attach_list ul {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+    }
+
+    .cfrm_attach_list li {
+        padding-bottom: 5px;
+    }
+
+    .info {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+
+<div id="input" style=" position: sticky; top: 20px;">
+    <div class="group">
+        <h4 class="conts_s-tit collapse_head">
+            {{ message('item.com.087') }}
+            <div class="btn_group iconbtns" style="margin-right: 7px;" id="confirmDate">
+                <div id="dateStatus"></div>
+            </div>
+            <button type="button" class="icon_btn collapse_btn">
+                <!-- <button type="button" class="icon_btn collapse_btn" style="position: unset;"> -->
+                <i class="ic ic-arrow"></i>
+                <span class="tooltip">{{ message('item.dfccy.038') }}</span>
+            </button>
+            <button type="button" class="icon_btn collapse_btn" style="position: absolute; right: 10px;" onclick="confirmPage.closeForm()">
+                <i class="ic ic-close"></i>
+                <span class="tooltip">닫기</span>
+            </button>
+        </h4>
+        <div class="collapse collapse_body" style="max-height: 600px; overflow-y: auto;">
+            <div class="form_box">
+                <div class="group">
+                    <!-- detail -->
+                    <div class="row" id="detail" hidden></div>
+
+                    <!-- input -->
+                    <div id="inputForm" hidden>
+                        <div class="row" id="">
+                            <div class="col">
+                                <div class="form_label">{{ message('item.dfccy.058') }}</div>
+                                <div class="form_data" style="display: flex;justify-content: right;">
+                                    <textarea id="cnfrmOpnin" maxlength="1024"></textarea>
+                                    <div class="char-counter" style="display:flex; justify-content: end; padding: 3px; font-size: var(--font-xs); color: var(--color-gray);">
+                                        <span class="current-count">0</span>/<span class="max-count">1024</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row" id="cnfrmAttach">
+                            <div class="col">
+                                <div class="form_label">{{ message('item.com.062') }}</div> <!-- 첨부파일 -->
+                                <div class="form_data">
+                                    <div class="attach_wrap">
+                                        <div class="attach_toolbar">
+                                            <div class="btn_area s_small" style="margin-top: unset;">
+                                                <div class="attach_btn">
+                                                    <input class="file" id="chooseFile" type="file" style="display:none;" multiple="multiple" onchange="confirmPage.attach.handleFiles(this.files)">
+                                                    <button type="button" class="btn _fill" onclick="confirmPage.attach.add();">{{message('btn.021') }}</button>
+                                                </div>
+                                                <button type="button" class="btn _outline" onclick="confirmPage.attach.deleteAll();">{{message('btn.020') }}</button>
+                                            </div>
+                                            <!-- 첨부파일 업로드 정보 -->
+                                            <div class="attach_info" id="attachInfo"></div>
+                                        </div>
+
+                                        <div class="attach_area upload-box fileContents drag-file">
+                                            <!-- 첨부파일 미등록 시 -->
+                                            <p class="data_info" id="uploadMsg">
+                                                {{ message('msg.029') }}
+                                            </p>
+                                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                            <div class="attach_list" id="attach_list" style="display: none;">
+                                                <ul class="file_header">
+                                                    <li class="header_item">
+                                                        <button class="icon_btn" class="icon_btn" onclick="confirmPage.attach.deleteAll()">
+                                                            <i class="ic ic-close" id="fileIcon"></i>
+                                                            <span class="blind">{{ message('item.com.020') }}</span>
+                                                            <!-- 파일명 -->
+                                                        </button>
+                                                        <span class="f_name">{{ message('item.com.020') }}</span>
+                                                        <span class="f_progress">{{ message('item.info.036') }}</span>
+                                                        <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                                    </li>
+                                                </ul>
+                                                <ul class="file_list" id="fileList">
+
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- <div class="attach_toolbar"> -->
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <div class="btn_area s_default" style="margin-top: 10px;">
+                                                <button type="button" class="btn _outline" id="cancelBtn" style="display: none;" onclick="confirmPage.cancelModify();">취소</button>
+                                            </div>
+                                            <div class="btn_area" id="attach_save">
+                                                {{ saveBtnHtml | raw }}
+                                                <!-- <button type="button" class="btn _fill" onclick="confirmPage.save()">
+                                                    {{ message('btn.006') }}
+                                                </button> -->
+                                            </div>
+                                        </div>
+                                        <!-- </div> -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- history -->
+                    <div class="row">
+                        <div class="col" id="qa_check">
+                            <div class="form_label required">{{ message('item.dfccy.011') }}</div>
+                            <div class="form_data">
+                                <input type="hidden" id="result_qa_cd" value="">
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="qa_cd" value="0301">
+                                    <span class="check_label">{{ message('item.dfccy.012') }}</span>
+                                </label>
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="qa_cd" value="0302">
+                                    <span class="check_label">{{ message('item.dfccy.013') }}</span>
+                                </label>
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="qa_cd" value="0303">
+                                    <span class="check_label">{{ message('item.dfccy.004') }}</span>
+                                </label>
+                                <div class="cfrm_his">
+                                    {{ qaBtnHtml | raw }}
+                                    <!-- <button onclick="confirmPage.saveHitory('qa_cd')" id="qa_save">{{ message('btn.006') }} </button> -->
+                                    <button onclick="page.historyModal.open('01')">{{ message('item.dfccy.055') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col" id="spvs_check">
+                            <div class="form_label required">{{ message('item.dfccy.014') }}</div>
+                            <div class="form_data">
+                                <input type="hidden" id="result_spvs_cd" value="">
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="spvs_cd" value="0401">
+                                    <span class="check_label">{{ message('item.dfccy.012') }}</span>
+                                </label>
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="spvs_cd" value="0402">
+                                    <span class="check_label">{{ message('item.dfccy.013') }}</span>
+                                </label>
+                                <label class="form_check">
+                                    <input class="check_mark" type="checkbox" name="spvs_cd" value="0403">
+                                    <span class="check_label">{{ message('item.dfccy.004') }}</span>
+                                </label>
+                                <div class="cfrm_his">
+                                    {{ svBtnHtml | raw }}
+                                    <!-- <button onclick="confirmPage.saveHitory('spvs_cd')" id="spvs_save">{{ message('btn.006') }}</button> -->
+                                    <button onclick="page.historyModal.open('02')">{{ message('item.dfccy.055') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+    var USER_ID = gaiaCommon.me.info.usrId;
+    var currentCfrmList = [];
+    var currentDfccySeq = null;
+    var currentEdStatus = null;
+    var maxFilecount = 10;               // 등록 가능 파일 수
+    var uploadSize = 100;                // 등록 가능한 단일 사이즈 MB (무제한 : unlimited)
+    var maxUploadSize = 100;             // 등록 가능한 총 사이즈 MB
+    var isSaveAuth = '{{ isSaveAuth }}' === 'true' ? true : false;
+
+    var confirmPage = {
+        init: function () {
+            if(!isQa) {
+                $('#qa_save').hide();
+                $('#qa_check').find('input[name="qa_cd"]').prop('disabled', true);
+            }
+            if(!isSpvs) {
+                $('#spvs_save').hide();
+                $('#spvs_check').find('input[name="spvs_cd"]').prop('disabled', true);
+            }
+            confirmPage.read();
+
+            gaia.loaded = true;
+        },
+        attach: {
+            fileIndex: 0,                       // 파일 리스트 번호
+            totalFileSize: 0,                   // 등록할 전체 파일 사이즈
+            fileListCnt: 0,                     // 업로드할 파일 수
+            fileList: [],                       // 파일 리스트
+            fileSizeList: [],                   // 파일 사이즈 리스트
+            fileNameList: [],                   // 파일명 리스트
+            delFileList: [],
+            newFileList: [],
+
+            // 초기화
+            reset(resetType){
+                Object.keys(this).forEach((key) => {
+                    if (Array.isArray(this[key])) {
+                        if(!resetType || (key !== 'delFileList' && key !== 'newFileList'))
+                        this[key] = [];
+                    } else if (typeof this[key] === "number") {
+                        this[key] = 0;
+                    }
+                });
+            },
+            // 파일 사이즈 형식 변경
+            getFileSize(filesize){
+                if (filesize >= 1024 * 1024) {
+                    return (filesize / (1024 * 1024)).toFixed(2) + ' MB';
+                } else if (filesize >= 1024) {
+                    return (filesize / 1024).toFixed(2) + ' KB';
+                } else {
+                    return filesize + ' bytes';
+                }
+            },
+            //업로드 파일 갯수 및 용량 셋팅
+            setFilesInfo() {
+                $('#attachInfo').children().remove();
+                this.fileListCnt = this.fileList.filter(item => item !== 'undefined').length;
+                let fileSize = !this.totalFileSize ? 0 : this.getFileSize(this.totalFileSize);
+                let spanClass = this.fileListCnt > 0 ? 'sucess' : 'fail';
+                let iClass = this.fileListCnt > 0 ? 'ic-check' : 'ic-close';
+                if(this.fileListCnt > 0) {
+                    let resultHtml = `
+                                    <span class="attach_result">
+                                        <span class="${spanClass}">
+                                            <i class="ic ${iClass}"></i>
+                                            <b class="num">${this.fileListCnt}</b>
+                                        </span>
+                                    </span>
+                                    <span class="attach_capacity">
+                                        <span class="item" id="fileSize">${fileSize}</span>
+                                        <span class="item">${maxUploadSize}MB</span>
+                                    </span>
+                                    `
+                    $('#attachInfo').append(resultHtml);
+                }
+            },
+            handleFiles(files) {
+                files = [...files];
+
+                //최대 첨부파일 갯수 체크
+                if(maxFilecount < files.length + this.fileIndex) {
+                    gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', maxFilecount));
+                    return;
+                }
+
+                //동일 파일명 업로드 여부 체크
+                if(this.fileIndex > 0) {
+                    if(this.fileNameList.filter(item => files.some(i => i.name === item)).length > 0) {
+                        gaiaCommon.customAlert("{{ message('msg.app.011') }}");
+                        return;
+                    }
+                }
+
+                //최대 업로드 용량 체크
+                let attFileSize = 0;
+                files.forEach(file => attFileSize += file.size);
+                if(1024 * 1024 * maxUploadSize < this.totalFileSize + attFileSize) {
+                    gaiaCommon.customAlert("{{ message('msg.app.012') }}".replace('{0}', maxUploadSize));
+                    return;
+                }
+
+                //개별 파일 용량 체크
+                var returnValue = false;
+                files.forEach(function(files) {
+                    if(files.size > 1024 * 1024 * uploadSize) {
+                        gaiaCommon.customAlert("{{ message('msg.app.013') }}".replace('{0}', uploadSize));
+                        returnValue = true;
+                        return;
+                    }
+                    if(files.size <= 0) {
+                        gaiaCommon.customAlert("{{ message('msg.app.014') }}");
+                        returnValue = true;
+                        return;
+                    }
+                });
+
+                if(returnValue) {
+                    return;
+                }
+                // 파일선택 값 초기화
+                $('#chooseFile').val(null);
+                // 초기 업로드 안내 요소 삭제
+                if(this.fileListCnt < 1) {
+                    $("#uploadMsg").hide();
+                }
+                //파일 리스트 처리
+                files.forEach(file => {
+                    this.previewFile(file)
+                    this.newFileList.push(file);
+                });
+                //업로드 파일 정보 셋팅
+                this.setFilesInfo();
+            },
+            previewFile(file) {
+                $('#uploadMsg').hide();
+                $('#attachInfo').show();
+                if(this.fileListCnt < 1) {
+                    $('#cnfrmAttach .attach_list').show();
+                }
+                let attachListHtml = `<li class="list_item attach_item" data_status="NEW">
+                                        <button type="button" id="delFile" class="icon_btn" onclick="confirmPage.attach.deletefile(event, ${this.fileIndex})">
+                                            <i class="ic ic-close"></i>
+                                            <span class="blind">삭제</span>
+                                        </button>
+                                        <span class="f_name">${file.name}</span>
+                                        <span class="f_progress">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                            </span>
+                                        </span>
+                                        <span class="f_capacity">${this.getFileSize(file.size)}</span>
+                                    </li>`
+                $('#cnfrmAttach .file_list').append(attachListHtml);
+
+                this.fileList[this.fileIndex] = file;
+                this.fileSizeList[this.fileIndex] = file.size;
+                this.fileNameList[this.fileIndex] = file.name;
+                this.fileIndex = this.fileIndex + 1;
+                this.totalFileSize = this.totalFileSize + file.size;
+
+            },
+            // 업로드 파일 삭제
+            deletefile(event, index) {
+                this.totalFileSize -= this.fileSizeList[index];     // 전체 파일 사이즈 수정
+                delete this.fileList[index];                        // 파일 배열에서삭제
+                delete this.fileSizeList[index];                    // 파일 사이즈 배열 삭제
+                delete this.fileNameList[index];                    // 파일 이름 배열 삭제
+
+                // 업로드 파일 삭제목록에 추가
+                let li = $(event.target).closest('li');
+                if(li.data('status') === 'OLD') {
+                    this.delFileList.push({fileNo: li.data('fileno'), sno: li.data('sno')});
+                }
+
+                // 업로드 파일 목록에서 삭제
+                li.remove();
+
+                this.setFilesInfo();
+
+                this.fileListCnt = this.fileList.filter(item => item !== 'undefined').length;
+
+                if(this.fileListCnt < 1) {
+                    $('#cnfrmAttach .attach_list').hide();
+                    $("#uploadMsg").show();
+                    $('#attachInfo').children().remove();
+
+                    // 파일 변수 초기화
+                    this.reset('delete');
+                }
+
+            },
+            // 업로드 파일 전체 삭제
+            deleteAll(){
+                if(this.fileListCnt === 0) {
+                    gaiaCommon.customAlert("{{ message('msg.app.020') }}");
+                    return false;
+                }
+
+                gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.app.021') }}", "", () => {
+                    $('#fileList .attach_item').map(function() {
+                        if($(this).data('status') === 'OLD') {
+                            confirmPage.attach.delFileList.push({fileNo: $(this).data('fileno'), sno: $(this).data('sno')});
+                        };
+                    })
+
+                    $('#cnfrmAttach .attach_item').remove();
+                    $('#cnfrmAttach .attach_list').hide();
+                    $("#uploadMsg").show();
+                    $('#attachInfo').children().remove();
+
+                    // 파일 변수 초기화
+                    this.reset('delete');
+                })
+            },
+            add(){
+                $('#chooseFile').click();
+            }
+        },
+        read() {
+            let params = {
+                dfccyNo: currentDfccyNo,
+                dfccyPhaseNo: dfccyPhaseNo
+            }
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post(`/api/defecttracking/verification/detail`, params, function(data) {
+                let dfccyConfirm = data.details.dfccyConfirm;
+
+                currentEdStatus = dfccyConfirm[0].ed_cd;
+                if(isEnd || currentEdStatus === '0502') {
+                    $('#qa_save').hide();
+                    $('#spvs_save').hide();
+                    $('#qa_check').find('input[name="qa_cd"]').prop('disabled', true);
+                    $('#spvs_check').find('input[name="spvs_cd"]').prop('disabled', true);
+
+                }
+                let bgnDate = dfccyConfirm[0].bgn_date;
+                let endDate = dfccyConfirm[0].end_date;
+                let today = new Date().toISOString().slice(0, 10);
+                let dateStatus = isEnd ? "{{ message('item.dfccy.004') }}" : bgnDate > today ? "{{ message('item.dfccy.002') }}" : "{{ message('item.dfccy.003') }}";
+
+                $('#confirmDate').html(`${bgnDate} ~ ${endDate} <div style='color: red; padding:.35em;'> [ ${dateStatus} ] </div>`);
+
+                ['qa_cd', 'spvs_cd'].forEach(name => {
+                    let resultCd = dfccyConfirm[0][name];
+                    if (resultCd) {
+                        $(`input[name="${name}"][value="${resultCd}"]`).prop('checked', true);
+                        $(`#result_${name}`).val(resultCd);
+                    }
+                });
+
+
+                // 저장권한 있을 때
+                if(isSaveAuth && !isEnd && currentEdStatus !== '0502') {
+                    $('#detail').show().children().empty();
+                    $('#inputForm').show();
+                } else {
+                    // 저장권한 없을 때
+                    $('#inputForm').hide();
+                }
+
+                if(dfccyConfirm[0].dfccy_seq) {
+                    $('#detail').append(confirmPage.makeCfrmHtml(dfccyConfirm));
+                } else if(!dfccyConfirm[0].dfccy_seq && (isEnd || currentEdStatus == '0502')) {
+                    let msg = isEnd ? "{{ message('msg.dfccy.004') }}" : "{{ message('msg.dfccy.010') }}";
+                    $('#detail').show().append(`<div class="info">
+                                                        <p class="data_info">
+                                                            ${msg}
+                                                        </p>
+                                                    </div>`);
+                } else if(!dfccyConfirm[0].dfccy_seq) {
+                    $('#detail').hide();
+                }
+
+                gaiaCommon.LoadingOverlay('body', false);
+            }, function (xhr, status, error) {
+                console.error(status, error);
+                gaiaCommon.LoadingOverlay('body', false);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            });
+        },
+        save() {
+            let goSave = confirmPage.validate();
+
+            if(!goSave) {
+                return
+            }
+
+            if(currentDfccySeq) {
+                confirmPage.modify();
+                return
+            }
+
+            if(!$('#cnfrmOpnin').val()) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.046') }}");
+                return
+            }
+
+            var formData = new FormData();
+
+            let data = {
+                dtDeficiencyConfirm: {
+                    dfccyNo: currentDfccyNo,
+                    cntrctNo: cntrctNo,
+                    cnfrmOpnin: $('#cnfrmOpnin').val()
+                },
+            }
+
+            formData.delete('files');
+            confirmPage.attach.fileList.forEach(file => {
+                formData.append('files', file);
+            })
+
+            formData.append('confirmData', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+
+            gaiaCommon.customConfirm("{{ message('item.dfccy.059') }}", "{{ message('msg.dfccy.019') }}", "", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.post(`/api/defecttracking/verification/create`, formData, function(result) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.044') }}");
+                        gaiaCommon.checkAuth("DT_CONFIRM_CU", () => {
+                            $("#popup").load(`/defectTracking/verificationForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        });
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+                }, function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                });
+            })
+
+        },
+        saveHitory(hisDiv) {
+            let goSave = confirmPage.validate(hisDiv);
+
+            if(!goSave) {
+                return
+            }
+
+            let chkCnfrmCd = $(`input[name='${hisDiv}']:checked`).val();
+            if(!chkCnfrmCd) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.020') }}");
+                return;
+            }
+
+            let resultCd = $(`#result_${hisDiv}`).val();
+            if(resultCd === chkCnfrmCd) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.045') }}");
+                return;
+            }
+
+            let finishList = [];
+
+            finishList.push({
+                dfccyNo: currentDfccyNo,
+                cntrctNo: cntrctNo,
+                cnfrmDiv: hisDiv === 'qa_cd' ? '01' : '02',
+                cnfrmCd: chkCnfrmCd
+            })
+
+            let type = hisDiv === "qa_cd" ? "QA" : "{{ message('item.dfccy.071') }}";
+            let urlType = hisDiv === "qa_cd" ? "qa" : "spvs";
+
+            gaiaCommon.customConfirm("{{ message('item.dfccy.060') }}", `${type} {{ message('msg.dfccy.022') }}`, "", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.post(`/api/defecttracking/verification/createHistory-${urlType}`, finishList, function(result) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.044') }}");
+                        page.read(currentPage, currentDfccyNo);
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+                }, function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                });
+            })
+        },
+        delete(dfccySeq){
+            let goDelete = confirmPage.validate();
+
+            if(!goDelete) {
+                return
+            }
+
+            // 종결여부, 입력기간 종료 여부 체크
+            gaiaCommon.customConfirm("{{message('item.dfccy.052')}}", "{{message('msg.dfccy.012')}}", "{{message('msg.dfccy.013')}}", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.get(`/api/defecttracking/verification/delete/${dfccySeq}`, "", function(result) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert("{{ message('msg.006') }}");
+                    gaiaCommon.checkAuth("DT_CONFIRM_CU", () => {
+                        $("#popup").load(`/defectTracking/verificationForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                    });
+                }, function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                });
+            })
+
+        },
+        modify(){
+            if(!$('#cnfrmOpnin').val()) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.046') }}");
+                return
+            }
+
+            var formData = new FormData();
+
+            let data = {
+                dtDeficiencyConfirm: {
+                    dfccySeq: currentDfccySeq,
+                    cnfrmOpnin: $('#cnfrmOpnin').val()
+                },
+                delFileList: confirmPage.attach.delFileList
+            }
+            confirmPage.attach.newFileList.forEach(file => {
+                formData.append('files', file);
+            })
+
+            formData.append('confirmData', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+
+            gaiaCommon.customConfirm("{{message('item.dsgn.043')}}", "{{ message('msg.dsgn.009') }}", "", function(){
+                gaiaCommon.LoadingOverlay('body', true);
+                gaiaCommon.post(`/api/defecttracking/verification/update`, formData, function(result) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    if(result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.007') }}");
+                        gaiaCommon.checkAuth("DT_CONFIRM_CU", () => {
+                            $("#popup").load(`/defectTracking/verificationForm?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        });
+                    } else {
+                        gaiaCommon.customAlert("{{ message('msg.045') }}");
+                    }
+                }, function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.045') }}");
+                });
+            })
+        },
+        setModify(dfccySeq){
+            let goModify = confirmPage.validate();
+
+            if(!goModify) {
+                return
+            }
+
+            currentDfccySeq = dfccySeq;
+            let targetData = currentCfrmList.find(cfrm => cfrm.dfccy_seq === dfccySeq);
+            let $this = confirmPage.attach;
+
+            // 의견 조회 숨기기
+            $(`#cfrm_${dfccySeq}`).hide();
+            if($('#detail .cfrm_list:visible').length === 0) {
+                $('#detail').hide();
+            }
+
+            // 입력창 오픈
+            $this.reset();
+            $('#inputForm').show();
+            $('#cnfrmAttach').show();
+            $('#fileList').empty();
+            $('#cancelBtn').show();
+
+            $('#cnfrmOpnin').val(targetData.cnfrm_opnin);
+            $('.current-count').text(targetData.cnfrm_opnin.length);
+
+            // 기존 첨부파일 표시
+            if(targetData.confirmFiles && targetData.confirmFiles.length > 0) {
+                $('#attachInfo').show();
+                $("#uploadMsg").hide();
+                $('#cnfrmAttach .attach_list').show();
+
+                targetData.confirmFiles.map(file => {
+                    let attachListHtml = `<li class="list_item attach_item" data-status="OLD" data-fileNo="${file.fileNo}" data-sno="${file.sno}">
+                                            <button type="button" id="delFile" class="icon_btn" onclick="confirmPage.attach.deletefile(event, ${$this.fileIndex})">
+                                                <i class="ic ic-close"></i>
+                                                <span class="blind">삭제</span>
+                                            </button>
+                                            <span class="f_name">${file.fileNm}</span>
+                                            <span class="f_progress">
+                                                <span class="sucess">
+                                                    <i class="ic ic-check"></i>
+                                                </span>
+                                            </span>
+                                            <span class="f_capacity">${$this.getFileSize(file.fileSize)}</span>
+                                        </li>`;
+                    $('#cnfrmAttach .file_list').append(attachListHtml);
+
+                    $this.fileList.push(file.fileNm);
+                    $this.fileSizeList.push(file.fileSize);
+                    $this.fileNameList.push(file.fileNm);
+
+                    $this.fileIndex++;
+                }).join('');
+
+                // 업로드 파일 개수 & 용량 표시
+                $this.totalFileSize = targetData.confirmFiles.reduce((acc, file) => acc + file.fileSize, 0);
+                $this.fileListCnt = targetData.confirmFiles.length;
+                $this.setFilesInfo();
+            } else {
+                $("#cnfrmAttach .attach_list").hide();
+                $("#uploadMsg").show();
+            }
+        },
+        cancelModify(){
+            $('#detail').show();
+            $(`#cfrm_${currentDfccySeq}`).show();
+            $('#cnfrmOpnin').val("");
+            $(".current-count").text("0");
+            $('#cancelBtn').hide();
+            $('#fileList').empty();
+            $('#attach_list').hide();
+            $('#attachInfo').hide();
+            $('#uploadMsg').show();
+            $('#cnfrmAttach').show();
+            confirmPage.attach.reset();
+            currentDfccySeq = null;
+        },
+        validate(auth){
+            if (currentEdStatus === '0502') {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.010') }}");
+                return false;
+            }
+
+            if(isEnd) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.004') }}");
+                goDelete = false;
+                return
+            }
+
+            if((auth === 'qa_cd' && !isQa) || (auth === 'spvs_cd' && !isSpvs)) {
+                gaiaCommon.customAlert("{{ message('msg.dfccy.018') }}");
+                return false;
+            }
+
+            return true;
+        },
+        makeCfrmHtml(cfrmList) {
+            currentCfrmList = cfrmList;
+            let isMe = false;
+
+            let html = cfrmList.map(cfrm => {
+                isMe = USER_ID === cfrm.rgstr_id ? true : false;
+                let attachHtml = '';
+                // 첨부파일 리스트 생성
+                if(cfrm.atch_file_no) {
+                    attachHtml = cfrm.confirmFiles.map(file => {
+                        const fileUrl = `/api/defecttraking/tool/defectTracking/${file.fileNo}/${file.sno}/file-download`;
+                        return `<li>
+                                    <a class="f_name" href='javascript:page.download("${fileUrl}");'>
+                                        <i class="ic ic-folder-open"></i>
+                                        ${file.fileNm}
+                                    </a>
+                                </li>`;
+                    }).join('');
+                }
+                return `
+                    <div class="cfrm_list" id="cfrm_${cfrm.dfccy_seq}">
+                        <div class="cfrm_rgst_div">
+                            <div>
+                                <span class="name_color">${cfrm.rgstr_nm}</span>
+                                <span>${cfrm.rgst_dt}</span>
+                            </div>
+                            ${!isMe || currentEdStatus === '0502' || isEnd ? '' : `<div class="cfrm_his">
+                                                                            <span onclick="confirmPage.delete('${cfrm.dfccy_seq}')">{{ message('btn.002') }}</span>
+                                                                            <span> / </span>
+                                                                            <span onclick="confirmPage.setModify('${cfrm.dfccy_seq}')">{{ message('btn.003') }}</span>
+                                                                        </div>` }
+                        </div>
+                        <div class="cfrm_opnin">
+                            <pre>${cfrm.cnfrm_opnin ? gaiaCommon.safeText(gaiaCommon.decodeSafeText(cfrm.cnfrm_opnin)) : ''}</pre>
+                        </div>
+                        <div class="cfrm_attach_list">
+                            <ul>
+                                ${attachHtml}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }).join(''); // 배열을 문자열로 변환
+
+            return html;
+        },
+        closeForm(){
+            $('.gridContainer').removeClass('active');
+            $("#popup").empty();
+
+            const container = document.querySelector(".gridContainer");
+            const table = document.querySelector(".table ");
+            const newWidth = container.clientWidth;
+            if(container.clientWidth < table.clientWidth) {
+                $("#grid table").css("width", "max-content");
+            } else {
+                $("#grid table").css("width", "");
+            }
+            $('#grid').css("maxWidth", newWidth + "px");
+        }
+    }
+
+    $(document).ready(function() {
+        // 드래그 오버 이벤트
+        $(document).on('dragover', '.attach_area', function(event) {
+            event.preventDefault();
+            $(this).addClass('dragging');
+        });
+
+        // 드래그 리브 이벤트
+        $(document).on('dragleave', '.attach_area', function() {
+            $(this).removeClass('dragging');
+        });
+
+        // 드롭 이벤트
+        $(document).on('drop', '.attach_area', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            $(this).removeClass('dragging');
+
+            const newFiles = event.originalEvent.dataTransfer.files;
+            if (newFiles.length > 0) {
+                confirmPage.attach.handleFiles(newFiles);
+            }
+        });
+    });
+
+    $(document).on('input', '#cnfrmOpnin', function(){
+        let maxLength = $(this).attr('maxlength');
+        let inputLength = $(this).val().length;
+        let msg = "{{ message('msg.app.045') }}".replace("{0}", maxLength);
+
+        $('.max-count').text(maxLength);
+
+        if(inputLength >= maxLength) {
+            gaiaCommon.customAlert(`글자수는 최대 ${maxLength}자까지 입력 가능합니다.`);
+        }
+
+        $('.current-count').text(inputLength);
+    })
+
+    $('#input .check_mark').on('click', function() {
+        let name = $(this).attr('name');
+        $(`input[name=${name}]`).not(this).prop('checked', false);
+    });
+
+    var cTargetBtn = $(".collapse_btn");
+    var cTargetArea = $(".collapse_body");
+    $(cTargetBtn).click(function () {
+        $(this).toggleClass('collapsed');
+        $(this).parent().next(cTargetArea).slideToggle();
+    });
+
+    $(function(){
+        confirmPage.init();
+    })
+</script>

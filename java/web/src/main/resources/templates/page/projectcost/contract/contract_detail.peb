@@ -1,0 +1,212 @@
+
+<div class="modal fade" id="detailModal">
+	<div class="pop_box _md" id="modal-box" style="margin-top:120px;">
+		<div class="pop_header">
+			<h5 class="pop_tit">{{ message("btn.030") }}</h5>
+			<div class="btn_area">
+				<button type="button" class="icon_btn pop_close" id="cancel">
+					<i class="ic ic-close"></i>
+					<span class="blind">창닫기</span>
+				</button>
+			</div>
+
+		</div>
+		<div class="pop_body" id="modal-content">
+			<article class="conts">
+				<div class="group">
+					<h3 class="conts_tit"></h3>
+					<div class="conts_grid">
+						<div class="toolbar" style="display:none;">
+							<div class="btn_area s_default">
+								<button type="button" class="btn _outline" id="exportExcel">Excel</button>
+								<!--<button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>-->
+							</div>
+						</div>
+
+						<div class="grid" id="modalDataGrid">
+						</div>
+					</div>
+				</div>
+			</article>
+		</div>
+	</div>
+</div>
+
+
+{% block footer_script %}
+<style>
+	.cell-BizON { background-color: #FFF000 !important }
+	.pop_box._sm { width: 62rem;}
+</style>
+<script>
+	//콤보박스 렌더러, 에디터
+
+    var urlParams = new URLSearchParams(location.search);
+    var id = "";
+    var code = "";
+    var type = "";
+
+    let optionsDataCache = {}; //select의 options 데이터 정보
+
+      var initModal = function(){
+            gaiaCommon.LoadingOverlay('body', true);
+          // 그리드에서 값가져옴
+          const modalElement = document.getElementById("detailModal");
+          const row = JSON.parse(
+              modalElement.getAttribute("data-id-value")
+          );
+          console.log("row", row);
+          code = row.rsce_cd;
+          type = row.rsce_tp_cd;
+          id = row.cntrct_chg_id;
+          if (code && type && id) {
+              //modal.init();
+          }
+          modal.init();
+
+          //닫기 이벤트
+          $("#cancel").click(function(){
+              var modalElement = document.getElementById("detailModal");
+              modalElement.style.display = "none";
+              document.body.style.overflow = 'unset';
+          });
+
+      }
+
+
+      let modal = {
+          init: function (type) {
+              let _this = this;
+
+              if(!_this.modalGrid){
+                  _this.modalGrid = new tui.Grid({
+                      el: document.getElementById('modalDataGrid'),
+                      bodyHeight: 480,
+                      scrollX: false,
+                      scrollY: true,
+                      treeColumnOptions: {
+                          name: "cst_calc_it_nm",
+                          useIcon: true,
+                          useCascadingCheckbox: true,
+                      },
+                      header: {
+                          height: 100,
+                          complexColumns: [
+                              {
+                                  header: '{{ message("item.projectcost.012") }}',
+                                  name: 'cntrctMtrlTotal',
+                                  childNames: ['mtrl_uprc', 'mtrl_cost']
+                              },
+                              {
+                                  header: '{{ message("item.projectcost.013") }}',
+                                  name: 'cntrctLbrTotal',
+                                  childNames: ['lbr_uprc', 'lbr_cost']
+                              },
+                              {
+                                  header: '{{ message("item.projectcost.014") }}',
+                                  name: 'cntrctGnrlexpnsTotal',
+                                  childNames: ['gnrlexpns_uprc', 'gnrlexpns_cost']
+                              },
+                              {
+                                  header: '{{ message("item.projectcost.009") }}',
+                                  name: 'cntrctTotal',
+                                  childNames: ['uprc_total', 'cost']
+                              },
+                          ],
+                      },
+                      columns : [
+                          {header: '{{ message("item.projectcost.001") }}', name: 'cd', resizable: true, align:'center', width: 150},
+                          {header: '{{ message("item.projectcost.002") }}', name: 'nm', resizable: true},
+                          {header: '{{ message("item.projectcost.003") }}', name: 'spec_nm', resizable: true, width: 100},
+                          {header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 50, align:'center'},
+                          {header: '{{ message("item.projectcost.005") }}', name: 'rsce_qty', width: 50, align:'center',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.006") }}', name: 'mtrl_uprc', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.007") }}', name: 'mtrl_cost', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.006") }}', name: 'lbr_uprc', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.007") }}', name: 'lbr_cost', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.006") }}', name: 'gnrlexpns_uprc', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.007") }}', name: 'gnrlexpns_cost', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.006") }}', name: 'uprc_total', width: 100, align:'right',
+                                  formatter: numberFormat
+                          },
+                          {header: '{{ message("item.projectcost.007") }}', name: 'cost', width: 100, align:'right',
+                                  formatter: numberFormat
+                          }
+                      ]
+                  });
+              }
+
+
+              let list = this.read();
+
+              if (list) {
+                  this.modalGrid.resetData(list);
+                  refreshGrid(this.modalGrid);
+              }
+
+          },
+          read: function() {
+              let _this = this;
+              let data;
+              let root;
+
+              var param = {
+                  id: id,
+                  cd: code,
+                  type: type
+              };
+
+              var url = 'contract/cbs-detail';
+              $.ajax({
+                  url: BASEPATH+url,
+                  method: 'POST',
+                  dataType: 'json',
+                  contentType: 'application/json; charset-utf-8',
+                  data: JSON.stringify(param),
+                  async: false,
+                  success: function(response, status, xhr){
+                      data = response.details.cbsDetail;
+                      if(data.length > 0) {
+                          _this.modalGrid.resetData([]);
+
+                          if (code && type && id) {
+                          _this.modalGrid.resetData(data);
+                          }
+                      }else{
+                          _this.modalGrid.resetData([]);
+                      }
+                      _this.modalGrid.findRows(gd => gd.rowtype === "ori").forEach(row => _this.modalGrid.addRowClassName(row.rowKey, "cell-BizON"));
+                  }
+              });
+
+              gaiaCommon.LoadingOverlay('body', false);
+                return data;
+          }
+
+      }
+
+      $(function(){
+      });
+
+      $(document).on("click", "#modalIcon", function () {
+          initModal();
+          document.body.style.overflow = 'hidden';
+      });
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

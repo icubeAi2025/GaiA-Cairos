@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu">
+    <sql id="smMenuColumns">
+        menu_no
+        , menu_cd
+        , up_menu_cd
+        , menu_nm
+        , menu_dscrpt
+        , menu_url
+        , menu_use_yn
+        , menu_dsply_ordr
+        , icon_nm
+        , lk_yn
+        , menu_lvl
+        , menu_div
+        , dlt_yn
+        , rgstr_id
+        , rgst_dt
+        , chg_id
+        , chg_dt
+        , dlt_id
+        , dlt_dt
+    </sql>
+
+	<select id="selectMenuList" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmMenu">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMenuBillingList][thkim]  */
+		SELECT  A.MENU_NO AS MENU_NO,
+				A.MENU_CD AS MENU_CD,
+                A.UP_MENU_CD AS UP_MENU_CD,
+                CASE 
+				      WHEN A.MENU_CD = 'SETUP' THEN #{platform}||' '|| A.MENU_NM
+				      ELSE A.MENU_NM
+				END  AS MENU_NM,
+                A.MENU_DSCRPT AS MENU_DSCRPT,
+                A.MENU_URL AS MENU_URL,
+                A.MENU_LVL AS MENU_LVL,
+                A.MENU_DSPLY_ORDR AS MENU_DSPLY_ORDR,
+                A.ICON_NM AS ICON_NM,
+                A.LK_YN,
+                A.MENU_USE_YN,
+                A.MENU_DIV,
+                A.MENU_API,
+                A.RGST_DT,
+                A.CHG_DT
+        FROM    (   WITH RECURSIVE SM_MENU_LIST(    MENU_NO,
+													MENU_CD,
+													UP_MENU_CD,
+													MENU_NM,
+													MENU_DSCRPT,
+													MENU_URL,
+													MENU_LVL,
+													MENU_DSPLY_ORDR,
+													ICON_NM,
+                                                    LK_YN,
+                                                    MENU_USE_YN,
+                                                    MENU_DIV,
+													MENU_API,
+                                                    RGST_DT,
+                                                    CHG_DT,
+													DEPTH,
+													PATH,
+													CYCLE ) 
+                    AS (    SELECT  A.MENU_NO,
+									A.MENU_CD,
+                                    A.UP_MENU_CD,
+                                    A.MENU_NM,
+                                    A.MENU_DSCRPT,
+                                    A.MENU_URL,
+                                    A.MENU_LVL,
+                                    A.MENU_DSPLY_ORDR,
+                                    A.ICON_NM,
+                                    A.LK_YN,
+                                    A.MENU_USE_YN,
+                                    A.MENU_DIV,
+									A.MENU_API,
+                                    A.RGST_DT,
+                                    A.CHG_DT,
+                                    1,
+                                    ARRAY[A.MENU_CD::TEXT],
+                                    FALSE
+                            FROM    SM_MENU A
+                            WHERE   A.MENU_CD = 'M'
+                            UNION ALL
+                            SELECT  A.MENU_NO,
+									A.MENU_CD,
+                                    A.UP_MENU_CD,
+                                    A.MENU_NM,
+                                    A.MENU_DSCRPT,
+                                    A.MENU_URL,
+                                    A.MENU_LVL,
+                                    A.MENU_DSPLY_ORDR,
+                                    A.ICON_NM,
+                                    A.LK_YN,
+                                    A.MENU_USE_YN,
+                                    A.MENU_DIV,
+									A.MENU_API,
+                                    A.RGST_DT,
+                                    A.CHG_DT,
+                                    B.DEPTH + 1,
+                                    ARRAY_APPEND(B.PATH,
+                                    CAST(A.MENU_DSPLY_ORDR AS TEXT)::TEXT),
+                                    A.MENU_CD = ANY(B.PATH)
+                            FROM    SM_MENU A,
+                                    SM_MENU_LIST B
+                            WHERE   A.UP_MENU_CD = B.MENU_CD
+                            AND     A.MENU_USE_YN = 'Y'
+                            AND     A.DLT_YN = 'N'
+                            AND     NOT CYCLE
+                        )   SELECT  MENU_NO,
+									MENU_CD,
+                                    UP_MENU_CD,
+                                    MENU_NM,
+                                    MENU_DSCRPT,
+                                    MENU_URL AS MENU_URL,
+                                    MENU_LVL,
+                                    MENU_DSPLY_ORDR,
+                                    ICON_NM,
+                                    LK_YN,
+                                    MENU_USE_YN,
+                                    MENU_DIV,
+                                    MENU_API,
+                                    RGST_DT,
+                                    CHG_DT,
+                                    DEPTH AS LEVEL,
+                                    PATH
+                            FROM    SM_MENU_LIST) AS A
+        ORDER BY CAST(COALESCE(A.PATH[2], '0') AS INTEGER), CAST(COALESCE(A.PATH[3], '0') AS INTEGER), PATH
+    </select>
+
+
+    <select id="selectMenuBillingList" parameterType="menuBillingListInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMenuBillingList][hsjang]  */
+        select
+            a.bil_no,
+            a.menu_no,
+            a.menu_cd,
+            a.bil_code,
+            TO_CHAR(a.rgst_dt, 'YYYY-MM-DD') AS rgst_dt,
+            b.cmn_cd_no,
+            b.cmn_grp_no,
+            b.cmn_grp_cd,
+            b.cmn_cd,
+            b.cmn_cd_nm_eng,
+            b.cmn_cd_nm_krn as bil_nm,
+            b.cmn_cd_dsply_order,
+            b.cmn_cd_dscrpt as bil_dscrpt,
+            TO_CHAR(b.chg_dt, 'YYYY-MM-DD') AS chg_dt,
+            b.use_yn
+        from
+            sm_billing a
+        left outer join
+        sm_com_code b on
+            a.bil_code = b.cmn_cd
+        where
+            a.menu_no = #{menuNo}
+            and a.dlt_yn = 'N'
+            and b.cmn_grp_cd = #{cmnGrpCd}
+    </select>
+
+    <select id="selectMyMenuList" parameterType="string" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMyMenuList][hsjang]  */
+        with recursive menu as (
+            select
+                distinct menu_cd,
+                up_menu_cd
+            from
+                (
+                select
+                    m.menu_cd,
+                    m.up_menu_cd
+                from
+                    sm_menu m
+                inner join sm_menu_authority_group mag
+                    on
+                    m.menu_no = mag.menu_no
+                    and m.dlt_yn = 'N'
+                    and mag.dlt_yn = 'N'
+                inner join sm_authority_group g
+                    on
+                    mag.rght_grp_no = g.rght_grp_no
+                    and g.cntrct_no = #{contractNo}
+                    and g.dlt_yn = 'N'
+                inner join sm_authority_group_users gu on
+                    gu.rght_grp_no = g.rght_grp_no
+                    and gu.rght_grp_usr_ty = 'D'
+                inner join sm_department d on
+                    gu.auth_no = d.dept_no
+                    and d.dlt_yn = 'N'
+                inner join sm_organization o on
+                    d.dept_no = o.dept_no
+                    and o.usr_id = #{userId}
+                    and o.dlt_yn = 'N'
+            union all
+                select
+                    m.menu_cd,
+                    m.up_menu_cd
+                from
+                    sm_menu m
+                inner join sm_menu_authority_group mag
+                    on
+                    m.menu_no = mag.menu_no
+                    and m.dlt_yn = 'N'
+                    and mag.dlt_yn = 'N'
+                inner join sm_authority_group g
+                    on
+                    mag.rght_grp_no = g.rght_grp_no
+                    and g.cntrct_no = #{contractNo}
+                    and g.dlt_yn = 'N'
+                inner join sm_authority_group_users gu on
+                    gu.rght_grp_no = g.rght_grp_no
+                    and gu.rght_grp_usr_ty in ('U', 'R')
+                inner join sm_organization o on
+                    gu.auth_no = o.org_no
+                    and o.dlt_yn = 'N'
+                    and o.usr_id = #{userId}
+                    ) am
+            union all
+            select
+                m.menu_cd,
+                m.up_menu_cd
+            from
+                sm_menu m
+            inner join menu mh on
+                m.up_menu_cd = mh.menu_cd
+        )
+        select 
+            m.menu_no,
+            m.menu_cd,
+            m.up_menu_cd,
+            m.menu_nm,
+            m.menu_dscrpt,
+            m.menu_url,
+            m.menu_use_yn,
+            m.menu_dsply_ordr,
+            m.menu_lvl 
+        from menu rm
+        left outer join sm_menu m 
+        on rm.menu_cd = m.menu_cd 
+        order by m.menu_dsply_ordr 
+    </select>
+
+    <select id="selectMenuListAll" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMenuListAll][thkim]  */
+		WITH TREE AS
+			(
+                SELECT 
+                    MENU_NO,
+                    CHG_DT,
+                    ICON_NM,
+                    LK_YN,
+                    MENU_CD,
+                    MENU_DSCRPT,
+                    MENU_DSPLY_ORDR,
+                    MENU_LVL,
+                    MENU_NM,
+                    MENU_USE_YN,
+                    MENU_URL,
+                    RGST_DT,
+                    UP_MENU_CD
+                FROM 
+                    SM_MENU
+                WHERE 
+                    DLT_YN = 'N'
+                ORDER BY MENU_DSPLY_ORDR
+            )
+
+        SELECT  
+            MENU_NO,
+            CHG_DT,
+            ICON_NM,
+            LK_YN,
+            MENU_CD AS ID,
+            MENU_DSCRPT,
+            MENU_DSPLY_ORDR,
+            MENU_LVL,
+            MENU_NM AS TEXT,
+            MENU_USE_YN,
+            MENU_URL,
+            RGST_DT,
+            UP_MENU_CD AS PARENT
+            'FA-SOLID FA-CARET-RIGHT' AS ICONS
+        FROM 
+            TREE;
+    </select>
+
+    <select id="existBilling" parameterType="existBillingInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.existBilling][thkim]  */
+        SELECT
+            BIL_NO,
+            MENU_NO,
+            MENU_CD,
+            BIL_CODE
+        FROM
+            SM_BILLING 
+        WHERE
+                DLT_YN = 'N'
+            AND
+                MENU_CD = #{menuCd}
+            AND
+                BIL_CODE = #{bilCode};
+    </select>
+
+    <select id="menuUp" parameterType="menuMoveInput" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmMenu">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.menuUp][thkim]  */
+        <![CDATA[
+            SELECT
+                A.MENU_NM,
+                A.MENU_CD,
+                A.MENU_DSPLY_ORDR
+            FROM 
+                SM_MENU A
+            WHERE 
+                A.MENU_DSPLY_ORDR = (
+                    SELECT 
+                        MAX(B.MENU_DSPLY_ORDR)
+                    FROM   
+                        SM_MENU B
+                    WHERE 
+                            B.MENU_DSPLY_ORDR < #{menuDsplyOrdr}
+                        AND
+                            B.MENU_LVL = #{menuLvl}
+                        AND
+                            B.UP_MENU_CD = #{upMenuCd}
+                        AND
+            	            B.DLT_YN = 'N'
+                )
+            AND
+                A.MENU_LVL = #{menuLvl}
+            AND 
+                A.UP_MENU_CD = #{upMenuCd}
+            AND
+            	A.DLT_YN = 'N';
+        ]]>
+    </select>
+
+    <select id="menuDown" parameterType="menuMoveInput" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmMenu">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.menuDown][thkim]  */
+            SELECT 
+                A.MENU_NM,
+                A.MENU_CD,
+                A.MENU_DSPLY_ORDR
+            FROM 
+                SM_MENU A
+            WHERE 
+                A.MENU_DSPLY_ORDR = (
+                    SELECT 
+                        MIN(B.MENU_DSPLY_ORDR)
+                    FROM 
+                        SM_MENU B
+                    WHERE 
+                            B.MENU_DSPLY_ORDR > #{menuDsplyOrdr}
+                        AND 
+                            B.MENU_LVL = #{menuLvl}
+                        AND 
+                            B.UP_MENU_CD = #{upMenuCd}
+                        AND
+            	            B.DLT_YN = 'N'
+                )
+            AND 
+                A.MENU_LVL = #{menuLvl}
+            AND 
+                A.UP_MENU_CD = #{upMenuCd}
+            AND
+            	A.DLT_YN = 'N';
+    </select>
+
+    <update id="updateMenuDsplyOrdr" parameterType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmMenu">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.updateMenuDsplyOrdr][thkim]  */
+        UPDATE 
+            SM_MENU
+        SET 
+            MENU_DSPLY_ORDR = #{menuDsplyOrdr}
+        WHERE 
+            MENU_CD = #{menuCd}
+    </update>
+
+    <select id="selectMenuBtnAuthorityList" parameterType="menuBtnAuthorityListInput" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMenuBtnAuthorityList][thkim]  */
+        SELECT  BTN_NO,
+                BTN_ID,
+                MENU_NO,
+                MENU_CD,
+                BTN_URL,
+                BTN_NM_ENG,
+                BTN_NM_KRN,
+                RGHT_KIND,
+                (
+			        SELECT STRING_AGG(DISTINCT RGHT_KIND, ',' ORDER BY RGHT_KIND)
+			        FROM SM_BUTTON_AUTHORITY AA
+			        WHERE AA.BTN_ID = A.BTN_ID
+			          AND AA.MENU_CD = A.MENU_CD
+			          AND AA.DLT_YN = 'N'
+			    ) AS RGHT_KIND_LIST,
+                USE_YN,
+                TO_CHAR(CHG_DT, 'YYYY-MM-DD') AS CHG_DT
+        FROM    SM_BUTTON_AUTHORITY A
+        WHERE   MENU_CD = #{menuCd}
+        AND     DLT_YN = 'N'
+        <choose>
+            <when test="sortColumn != null and sortDirection != null">
+                ORDER BY 
+                <choose>
+                    <when test="sortColumn == 'btnId'">
+                        BTN_ID
+                    </when>
+                    <when test="sortColumn == 'btnUrl'">
+                        BTN_URL
+                    </when>
+                    <when test="sortColumn == 'rghtKind'">
+                        RGHT_KIND
+                    </when>
+                    <when test="sortColumn == 'btnNmKrn'">
+                        BTN_NM_KRN
+                    </when>
+                </choose>
+                <if test="sortDirection">
+                    ASC
+                </if>
+                <if test="!sortDirection">
+                    DESC
+                </if>
+            </when>
+
+            <otherwise>
+                ORDER BY BTN_ID ASC
+            </otherwise>
+        </choose>
+        <!-- 정렬 조건 동적 추가 -->
+        <!-- <if test="sortColumn != null and sortDirection != null">
+            ORDER BY 
+            <choose>
+                <when test="sortColumn == 'btnId'">
+                    BTN_ID
+                </when>
+                <when test="sortColumn == 'btnUrl'">
+                    BTN_URL
+                </when>
+                <when test="sortColumn == 'rghtKind'">
+                    RGHT_KIND
+                </when>
+                <when test="sortColumn == 'btnNmKrn'">
+                    BTN_NM_KRN
+                </when>
+            </choose>
+            <if test="sortDirection">
+                ASC
+            </if>
+            <if test="!sortDirection">
+                DESC
+            </if>
+        </if> -->
+        <if test="pageable != null">
+        OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY
+        </if>
+    </select>
+
+    <select id="getMenuBtnAuthorityListCount" parameterType="menuBtnAuthorityListInput" resultType="long">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.getMenuBtnAuthorityListCount][thkim]  */
+        SELECT  
+                COUNT(*)
+        FROM    SM_BUTTON_AUTHORITY
+        WHERE   MENU_CD = #{menuCd}
+        AND     DLT_YN = 'N'
+    </select>
+
+    <select id="selectMenuHierarchyList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.selectMenuHierarchyList][thkim]  */
+        --메뉴 코드를 기반으로 상위 메뉴 조회
+        	WITH RECURSIVE MenuHierarchy AS (
+                SELECT 
+                        MENU_NO,
+                        MENU_CD,
+                        UP_MENU_CD,
+                        MENU_NM,
+                        MENU_LVL
+                FROM SM_MENU 
+                WHERE MENU_CD = #{menuCd}
+
+                UNION ALL
+
+                SELECT 
+                        A.MENU_NO,
+                        A.MENU_CD,
+                        A.UP_MENU_CD,
+                        A.MENU_NM,
+                        A.MENU_LVL
+                FROM SM_MENU A
+                INNER JOIN MenuHierarchy B 
+                        ON A.MENU_CD = B.UP_MENU_CD
+                        AND A.DLT_YN = 'N'
+            )
+
+            SELECT
+                MENU_NO,
+                MENU_CD,
+                UP_MENU_CD,
+                CASE 
+                    WHEN MENU_CD = 'SETUP' THEN CONCAT(#{platform},' 설정')
+                    ELSE MENU_NM
+                END AS MENU_NM
+            FROM    
+                MenuHierarchy
+            WHERE   
+                UP_MENU_CD != '#'
+            ORDER BY MENU_LVL, MENU_CD;
+    </select>
+
+    <insert id="insertSmMenu">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.insertSmMenu][bjkim]  */
+        INSERT INTO sm_menu (
+            , menu_cd
+            , up_menu_cd
+            , menu_nm
+            , menu_dscrpt
+            , menu_url
+            , menu_use_yn
+            , menu_dsply_ordr
+            , icon_nm
+            , lk_yn
+            , menu_lvl
+            , menu_div
+            , dlt_yn
+            , rgstr_id
+            , rgst_dt
+            , chg_id
+            , chg_dt
+        ) VALUES (
+            , #{menuCd}
+            , #{upMenuCd}
+            , #{menuNm}
+            , #{menuDscrpt}
+            , #{menuUrl}
+            , #{menuUseYn}
+            , #{menuDsplyOrdr}
+            , #{iconNm}
+            , #{lkYn}
+            , #{menuLvl}
+            , #{menuDiv}
+            , 'N'
+            , #{rgstrId}
+            , NOW()
+            , #{chgId}
+            , NOW()
+        )
+    </insert>
+
+    <update id="updateSmMenu">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.menu.updateSmMenu][bjkim]  */
+        UPDATE sm_menu
+        <set>
+            , up_menu_cd = #{upMenuCd}
+            , menu_nm = #{menuNm}
+            , menu_dscrpt = #{menuDscrpt}
+            , menu_url = #{menuUrl}
+            , menu_use_yn = #{menuUseYn}
+            , menu_dsply_ordr = #{menuDsplyOrdr}
+            , icon_nm = #{iconNm}
+            , lk_yn = #{lkYn}
+            , menu_lvl = #{menuLvl}
+            , menu_div = #{menuDiv}
+            <if test=' "Y".equals(dltYn) '>
+            , dlt_yn = #{dltYn}
+            , dlt_id = #{dltId}
+            , dlt_dt = NOW()
+            </if>
+            , chg_id = #{chgId}
+            , chg_dt = NOW()
+        </set>
+        <where>
+            and menu_cd = #{menuCd}
+        </where>
+    </update>
+
+    <select id="selectSmMenuByMenuCd" resultType="smMenu">
+        select * from sm_menu where menu_cd = #{menuCd} and dlt_yn = 'N'
+    </select>
+</mapper>

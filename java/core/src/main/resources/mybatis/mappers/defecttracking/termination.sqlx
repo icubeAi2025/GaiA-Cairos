@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.mybatis.gaiacairos.mappers.defecttracking.termination">
+	<select id="selectDfccyEndList" parameterType="input" resultType="defectTrackingListOutput">
+        /* [kr.co.ideait.platform.mybatis.gaiacairos.mappers.defecttracking.termination.selectDfccyEndList][thkim]  */
+          <![CDATA[
+		SELECT
+			D.DFCCY_NO,
+			D.CNTRCT_NO,
+			D.RGSTR_ID,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = D.RGSTR_ID
+			) AS RGSTR_NM,
+			TO_CHAR(D.ED_RGST_DT::TIMESTAMP ,'YYYY-MM-DD') AS ED_RGST_DT,
+			TO_CHAR(D.QA_RGST_DT::TIMESTAMP ,'YYYY-MM-DD') AS QA_RGST_DT,
+			TO_CHAR(D.SPVS_RGST_DT::TIMESTAMP ,'YYYY-MM-DD') AS SPVS_RGST_DT,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = D.ED_RGSTR_ID
+			) AS ED_RGSTR_NM,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = D.QA_RGSTR_ID
+			) AS QA_RGSTR_NM,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = D.SPVS_RGSTR_ID
+			) AS SPVS_RGSTR_NM,
+			D.TITLE,
+			(
+				SELECT	STRING_AGG(PA.ACTIVITY_NM::TEXT, ' / ')
+				FROM	PR_ACTIVITY PA
+				WHERE	PA.REVISION_ID IN (
+										SELECT 	PR.REVISION_ID
+										FROM 	PR_REVISION PR
+										JOIN 	CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+										WHERE 	PR.CNTRCT_CHG_ID LIKE CONCAT(#{cntrctNo},'%')
+										AND 	PR.LAST_REVISION_YN = 'Y')
+				AND PA.ACTIVITY_ID IN (
+					SELECT	ACTIVITY_ID
+					FROM	DT_DEFICIENCY_ACTIVITY
+					WHERE	DFCCY_NO = D.DFCCY_NO)
+			) AS ACTIVITY_IDS,
+			D.DFCCY_CD,
+			CASE
+				WHEN #{lang} = 'ko' THEN SC5.CMN_CD_NM_KRN
+				WHEN #{lang} = 'en' THEN SC5.CMN_CD_NM_ENG
+				ELSE SC5.CMN_CD_NM_KRN
+			END  AS DFCCY_CD_NM,
+			D.CRTC_ISUE_YN,
+			D.RPLY_YN,
+			R.RPLY_CD,
+			R.REPLY_SEQ,
+			R.RPLY_CNTNTS,
+			R.ATCH_FILE_NO AS RPLY_ATCH_NO,
+			TO_CHAR(R.RPLY_RGSTR_DT::TIMESTAMP ,'YYYY-MM-DD') AS RPLY_OK_DT,
+			TO_CHAR(R.RGST_DT::TIMESTAMP ,'YYYY-MM-DD HH24:MI') AS RPLY_RGSTR_DT,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = R.RPLY_RGSTR_ID
+			) AS RPLY_OK_NM,
+			(
+				SELECT SUI.USR_NM
+				FROM SM_USER_INFO SUI
+				WHERE SUI.USR_ID = R.RGSTR_ID
+			) AS RPLY_RGSTR_NM,
+			CASE
+				WHEN #{lang} = 'ko' THEN SC1.CMN_CD_NM_KRN
+				WHEN #{lang} = 'en' THEN SC1.CMN_CD_NM_ENG
+				ELSE SC1.CMN_CD_NM_KRN
+			END  AS RPLY_CD_NM,
+			D.QA_CD,
+			CASE
+				WHEN #{lang} = 'ko' THEN SC2.CMN_CD_NM_KRN
+				WHEN #{lang} = 'en' THEN SC2.CMN_CD_NM_ENG
+				ELSE SC2.CMN_CD_NM_KRN
+			END  AS QA_CD_NM,
+			D.SPVS_CD,
+			CASE
+				WHEN #{lang} = 'ko' THEN SC3.CMN_CD_NM_KRN
+				WHEN #{lang} = 'en' THEN SC3.CMN_CD_NM_ENG
+				ELSE SC3.CMN_CD_NM_KRN
+			END  AS SPVS_CD_NM,
+			D.ED_CD,
+			CASE
+				WHEN #{lang} = 'ko' THEN SC4.CMN_CD_NM_KRN
+				WHEN #{lang} = 'en' THEN SC4.CMN_CD_NM_ENG
+				ELSE SC4.CMN_CD_NM_KRN
+			END  AS ED_CD_NM,
+			DDS1.END_DATE,
+			CASE
+				WHEN D.RPLY_YN IS NOT NULL AND D.RPLY_YN = 'Y' THEN #{confirm}
+				WHEN (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.END_DATE >= CURRENT_DATE
+					AND DDS1.BGN_DATE <= CURRENT_DATE THEN #{ing}
+				WHEN (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.BGN_DATE < CURRENT_DATE
+					AND DDS1.END_DATE < CURRENT_DATE THEN #{end}
+			END AS RPLY_STATUS,
+			DDS2.END_DATE,
+			CASE
+				WHEN D.QA_CD IS NOT NULL AND D.QA_CD <> '' THEN #{confirm}
+				WHEN (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.END_DATE >= CURRENT_DATE THEN #{ing}
+				WHEN (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE <= CURRENT_DATE
+					AND DDS2.END_DATE < CURRENT_DATE THEN #{end}
+			END AS QA_STATUS,
+			CASE
+				WHEN D.SPVS_CD IS NOT NULL AND D.SPVS_CD <> '' THEN #{confirm}
+				WHEN (D.SPVS_CD IS NULL OR D.SPVS_CD = '') AND DDS2.END_DATE >= CURRENT_DATE THEN #{ing}
+				WHEN (D.SPVS_CD IS NULL OR D.SPVS_CD = '') AND DDS2.BGN_DATE <= CURRENT_DATE
+					AND DDS2.END_DATE < CURRENT_DATE THEN #{end}
+			END AS SPVS_STATUS,
+               CASE
+				WHEN D.ED_CD IS NOT NULL AND D.ED_CD <> '' THEN #{confirm}
+				WHEN (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS3.END_DATE >= CURRENT_DATE THEN #{ing}
+				WHEN (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS3.BGN_DATE <= CURRENT_DATE
+					AND DDS3.END_DATE < CURRENT_DATE THEN #{end}
+			END AS ED_STATUS,
+			D.CRTC_ISUE_YN,
+			D.DFCCY_LCT,
+			D.DFCCY_CNTNTS,
+			TO_CHAR(D.RGST_DT::TIMESTAMP ,'YYYY-MM-DD') AS RGST_DT,
+			D.ATCH_FILE_NO,
+            D.priority_check
+          ]]>
+		FROM DT_DEFICIENCY D
+		LEFT JOIN DT_DEFICIENCY_REPLY R
+			ON D.DFCCY_NO = R.DFCCY_NO AND R.DLT_YN = 'N'
+		LEFT JOIN DT_DEFICIENTY_SCHEDULE DDS1
+			ON D.DFCCY_PHASE_NO = DDS1.DFCCY_PHASE_NO
+			AND DDS1.DFCCY_PHASE_CD = '0102' -- 답변 일정
+		LEFT JOIN DT_DEFICIENTY_SCHEDULE DDS2
+			ON D.DFCCY_PHASE_NO = DDS2.DFCCY_PHASE_NO
+			AND DDS2.DFCCY_PHASE_CD = '0103' -- 확인 일정
+		LEFT JOIN DT_DEFICIENTY_SCHEDULE DDS3
+			ON D.DFCCY_PHASE_NO = DDS3.DFCCY_PHASE_NO
+			AND DDS3.DFCCY_PHASE_CD = '0104' -- 종결 일정
+		LEFT JOIN SM_COM_CODE SC1
+			ON R.RPLY_CD = SC1.CMN_CD AND SC1.CMN_GRP_CD = #{rplyStatus}
+		LEFT JOIN SM_COM_CODE SC2
+			ON D.QA_CD = SC2.CMN_CD AND SC2.CMN_GRP_CD = #{qaStatus}
+		LEFT JOIN SM_COM_CODE SC3
+			ON D.SPVS_CD = SC3.CMN_CD AND SC3.CMN_GRP_CD = #{spvsStatus}
+		LEFT JOIN SM_COM_CODE SC4
+			ON D.ED_CD = SC4.CMN_CD AND SC4.CMN_GRP_CD = #{edCd}
+		LEFT JOIN SM_COM_CODE SC5
+			ON D.DFCCY_CD = SC5.CMN_CD AND SC5.CMN_GRP_CD = #{dfccyCd}
+		<where>
+				D.CNTRCT_NO = #{cntrctNo}
+			AND  D.DFCCY_PHASE_NO = #{dfccyPhaseNo}
+			AND  D.DLT_YN = 'N'
+               AND 	D.RPLY_YN = 'Y'
+               AND  D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+               AND  D.SPVS_CD IS NOT NULL AND D.SPVS_CD &lt;&gt; ''
+
+			<if test="searchInput != null">
+				<if test="searchInput.rgstrNm != null and searchInput.rgstrNm != ''">
+					AND EXISTS (
+							SELECT 1 FROM SM_USER_INFO SUI
+							WHERE SUI.USR_ID = D.RGSTR_ID
+							AND SUI.USR_NM ILIKE CONCAT('%', #{searchInput.rgstrNm}, '%')
+							LIMIT 1
+						)
+				</if>
+				<if test="searchInput.dfccyCd != null and searchInput.dfccyCd != ''">
+					AND D.DFCCY_CD ILIKE CONCAT('%', #{searchInput.dfccyCd}, '%')
+				</if>
+				<if test="searchInput.keyword != null and searchInput.keyword != ''">
+					AND (
+						D.DFCCY_NO::TEXT ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						OR D.TITLE ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						OR (
+								(
+									SELECT	STRING_AGG(PA.ACTIVITY_NM::TEXT, ' / ')
+									FROM	PR_ACTIVITY PA
+									WHERE	PA.REVISION_ID IN (
+															SELECT 	PR.REVISION_ID
+															FROM 	PR_REVISION PR
+															JOIN 	CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+															WHERE 	PR.CNTRCT_CHG_ID LIKE CONCAT(#{cntrctNo},'%')
+															AND 	PR.LAST_REVISION_YN = 'Y')
+									AND PA.ACTIVITY_ID IN (
+										SELECT	ACTIVITY_ID
+										FROM	DT_DEFICIENCY_ACTIVITY
+										WHERE	DFCCY_NO = D.DFCCY_NO)
+								) ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						)
+						OR EXISTS (
+							SELECT 1 FROM SM_USER_INFO SUI
+							WHERE SUI.USR_ID = D.RGSTR_ID
+							AND SUI.USR_NM ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+							LIMIT 1
+						)
+					)
+				</if>
+				<if test="searchInput.startRgstDt != null and searchInput.startRgstDt != ''">
+					AND DATE(D.RGST_DT) &gt;= DATE(#{searchInput.startRgstDt})
+				</if>
+				<if test="searchInput.endRgstDt != null and searchInput.endRgstDt != ''">
+					AND DATE(D.RGST_DT) &lt;= DATE(#{searchInput.endRgstDt})
+				</if>
+				<choose>
+					<when test="searchInput.startDfccyNo != null and searchInput.startDfccyNo != '' and searchInput.endDfccyNo != null and searchInput.endDfccyNo != ''">
+						AND D.DFCCY_NO::NUMERIC BETWEEN #{searchInput.startDfccyNo} AND #{searchInput.endDfccyNo}
+					</when>
+					<when test="searchInput.startDfccyNo == null and searchInput.endDfccyNo != null and searchInput.endDfccyNo != ''">
+						AND D.DFCCY_NO::NUMERIC &lt;= #{searchInput.endDfccyNo}
+					</when>
+					<when test="searchInput.startDfccyNo != null and searchInput.startDfccyNo != '' and searchInput.endDfccyNo == null">
+						AND D.DFCCY_NO::NUMERIC &gt;= #{searchInput.startDfccyNo}
+					</when>
+				</choose>
+				<if test="searchInput.activityNm != null and searchInput.activityNm != ''">
+					AND (
+							(
+								SELECT	STRING_AGG(PA.ACTIVITY_NM::TEXT, ' / ')
+								FROM	PR_ACTIVITY PA
+								WHERE	PA.REVISION_ID IN (
+														SELECT 	PR.REVISION_ID
+														FROM 	PR_REVISION PR
+														JOIN 	CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+														WHERE 	PR.CNTRCT_CHG_ID LIKE CONCAT(#{cntrctNo},'%')
+														AND 	PR.LAST_REVISION_YN = 'Y')
+								AND PA.ACTIVITY_ID IN (
+									SELECT	ACTIVITY_ID
+									FROM	DT_DEFICIENCY_ACTIVITY
+									WHERE	DFCCY_NO = D.DFCCY_NO)
+							) ILIKE CONCAT('%', #{searchInput.activityNm}, '%')
+					)
+				</if>
+				<if test="searchInput.rplyStatus != null and searchInput.rplyStatus != ''">
+					<choose>
+						<when test="searchInput.rplyStatus == 'ok'">
+							AND D.RPLY_YN IS NOT NULL AND D.RPLY_YN = 'Y'
+						</when>
+						<when test="searchInput.rplyStatus == 'ing'">
+							AND (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.BGN_DATE &lt;= CURRENT_DATE AND DDS1.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.rplyStatus == 'end'">
+							AND (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.BGN_DATE &lt; CURRENT_DATE AND DDS1.END_DATE &lt; CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.rplyCd != null and searchInput.rplyCd != '' and searchInput.rplyCd != 'all'">
+					AND R.RPLY_CD = #{searchInput.rplyCd}
+				</if>
+				<if test="searchInput.qaStatus != null and searchInput.qaStatus != ''">
+					<choose>
+						<when test="searchInput.qaStatus == 'ok'">
+							AND D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.qaStatus == 'ing'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.qaStatus == 'end'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt; CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.qaCd != null and searchInput.qaCd != ''">
+					AND D.QA_CD = #{searchInput.qaCd}
+				</if>
+				<if test="searchInput.spvsStatus != null and searchInput.spvsStatus != ''">
+					<choose>
+						<when test="searchInput.spvsStatus == 'ok'">
+							AND D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.spvsStatus == 'ing'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.spvsStatus == 'end'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt; CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.spvsCd != null and searchInput.spvsCd != ''">
+					AND D.SPVS_CD = #{searchInput.spvsCd}
+				</if>
+				<if test="searchInput.edStatus != null and searchInput.edStatus != ''">
+					<choose>
+						<when test="searchInput.edStatus == 'ok'">
+							AND D.ED_CD IS NOT NULL AND D.ED_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.edStatus == 'ing'">
+							AND (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.edStatus == 'end'">
+							AND (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt;= CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.edCd != null and searchInput.edCd != ''">
+					AND D.ED_CD = #{searchInput.edCd}
+				</if>
+                <if test="searchInput.priorityCheck != null and searchInput.priorityCheck != ''">
+					AND D.priority_check = #{searchInput.priorityCheck}
+				</if>
+				<if test="searchInput.crtcIsueYn != null and searchInput.crtcIsueYn != ''">
+					AND D.CRTC_ISUE_YN = #{searchInput.crtcIsueYn}
+				</if>
+				<if test='searchInput.atachYn != null and searchInput.atachYn != "" and searchInput.atachYn.equals("Y")'>
+					AND D.ATCH_FILE_NO IS NOT NULL AND D.ATCH_FILE_NO &lt;&gt; 0
+				</if>
+				<if test='searchInput.myRplyYn != null and searchInput.myRplyYn != "" and searchInput.myRplyYn.equals("Y")'>
+					AND (D.QA_RGSTR_ID = #{usrId} OR D.SPVS_RGSTR_ID = #{usrId} OR R.RPLY_RGSTR_ID = #{usrId} OR D.RGSTR_ID = #{usrId})
+				</if>
+			</if>
+		</where>
+		ORDER BY D.RGST_DT DESC
+		<if test="pageable != null">
+            OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY;
+          </if>
+	</select>
+
+     <select id="getDfccyEndListCount" parameterType="input" resultType="long">
+        /* [kr.co.ideait.platform.mybatis.gaiacairos.mappers.defecttracking.defectTracking.getDfccyEndListCount][thkim]  */
+		SELECT
+			COUNT(D.DFCCY_NO)
+		FROM
+			DT_DEFICIENCY D
+		LEFT JOIN DT_DEFICIENCY_REPLY R
+			ON D.DFCCY_NO = R.DFCCY_NO AND R.DLT_YN = 'N'
+		LEFT JOIN DT_DEFICIENTY_SCHEDULE DDS1
+			ON D.DFCCY_PHASE_NO = DDS1.DFCCY_PHASE_NO
+			AND DDS1.DFCCY_PHASE_CD = '0102' -- 답변 일정
+		LEFT JOIN DT_DEFICIENTY_SCHEDULE DDS2
+			ON D.DFCCY_PHASE_NO = DDS2.DFCCY_PHASE_NO
+			AND DDS2.DFCCY_PHASE_CD = '0103' -- 확인 일정
+		LEFT JOIN SM_COM_CODE SC1
+			ON R.RPLY_CD = SC1.CMN_CD AND SC1.CMN_GRP_CD = #{rplyStatus}
+		LEFT JOIN SM_COM_CODE SC2
+			ON D.QA_CD = SC2.CMN_CD AND SC2.CMN_GRP_CD = #{qaStatus}
+		LEFT JOIN SM_COM_CODE SC3
+			ON D.SPVS_CD = SC3.CMN_CD AND SC3.CMN_GRP_CD = #{spvsStatus}
+		LEFT JOIN SM_COM_CODE SC4
+			ON D.ED_CD = SC4.CMN_CD AND SC4.CMN_GRP_CD = #{edCd}
+		LEFT JOIN SM_COM_CODE SC5
+			ON D.DFCCY_CD = SC5.CMN_CD AND SC5.CMN_GRP_CD = #{dfccyCd}
+		<where>
+				D.CNTRCT_NO = #{cntrctNo}
+			AND  D.DFCCY_PHASE_NO = #{dfccyPhaseNo}
+			AND  D.DLT_YN = 'N'
+               AND 	D.RPLY_YN = 'Y'
+               AND  D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+               AND  D.SPVS_CD IS NOT NULL AND D.SPVS_CD &lt;&gt; ''
+			<if test="searchInput != null">
+				<if test="searchInput.rgstr != null and searchInput.rgstr != '' and searchInput.rgstr != 'all'">
+					AND D.RGSTR_ID ILIKE CONCAT('%', #{searchInput.rgstr}, '%')
+				</if>
+				<if test="searchInput.dfccyCd != null and searchInput.dfccyCd != ''">
+					AND D.DFCCY_CD ILIKE CONCAT('%', #{searchInput.dfccyCd}, '%')
+				</if>
+				<if test="searchInput.keyword != null and searchInput.keyword != ''">
+					AND (
+						D.DFCCY_NO::TEXT ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						OR D.TITLE ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						OR (
+								(
+									SELECT	STRING_AGG(PA.ACTIVITY_NM::TEXT, ' / ')
+									FROM	PR_ACTIVITY PA
+									WHERE	PA.REVISION_ID IN (
+															SELECT 	PR.REVISION_ID
+															FROM 	PR_REVISION PR
+															JOIN 	CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+															WHERE 	PR.CNTRCT_CHG_ID LIKE CONCAT(#{cntrctNo},'%')
+															AND 	PR.LAST_REVISION_YN = 'Y')
+									AND PA.ACTIVITY_ID IN (
+										SELECT	ACTIVITY_ID
+										FROM	DT_DEFICIENCY_ACTIVITY
+										WHERE	DFCCY_NO = D.DFCCY_NO)
+								) ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+						)
+						OR EXISTS (
+							SELECT 1 FROM SM_USER_INFO SUI
+							WHERE SUI.USR_ID = D.RGSTR_ID
+							AND SUI.USR_NM ILIKE CONCAT('%', #{searchInput.keyword}, '%')
+							LIMIT 1
+						)
+					)
+				</if>
+				<if test="searchInput.startRgstDt != null and searchInput.startRgstDt != ''">
+					AND DATE(D.RGST_DT) &gt;= DATE(#{searchInput.startRgstDt})
+				</if>
+				<if test="searchInput.endRgstDt != null and searchInput.endRgstDt != ''">
+					AND DATE(D.RGST_DT) &lt;= DATE(#{searchInput.endRgstDt})
+				</if>
+				<if test="searchInput.activityNm != null and searchInput.activityNm != ''">
+					AND (
+							(
+								SELECT	STRING_AGG(PA.ACTIVITY_NM::TEXT, ' / ')
+								FROM	PR_ACTIVITY PA
+								WHERE	PA.REVISION_ID IN (
+														SELECT 	PR.REVISION_ID
+														FROM 	PR_REVISION PR
+														JOIN 	CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+														WHERE 	PR.CNTRCT_CHG_ID LIKE CONCAT(#{cntrctNo},'%')
+														AND 	PR.LAST_REVISION_YN = 'Y')
+								AND PA.ACTIVITY_ID IN (
+									SELECT	ACTIVITY_ID
+									FROM	DT_DEFICIENCY_ACTIVITY
+									WHERE	DFCCY_NO = D.DFCCY_NO)
+							) ILIKE CONCAT('%', #{searchInput.activityNm}, '%')
+					)
+				</if>
+				<if test="searchInput.rplyStatus != null and searchInput.rplyStatus != ''">
+					<choose>
+						<when test="searchInput.rplyStatus == 'ok'">
+							AND D.RPLY_YN IS NOT NULL AND D.RPLY_YN = 'Y'
+						</when>
+						<when test="searchInput.rplyStatus == 'ing'">
+							AND (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.rplyStatus == 'end'">
+							AND (D.RPLY_YN IS NULL OR D.RPLY_YN = 'N' OR D.RPLY_YN = '') AND DDS1.BGN_DATE &lt;= CURRENT_DATE AND DDS1.END_DATE &lt;= CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.rplyCd != null and searchInput.rplyCd != '' and searchInput.rplyCd != 'all'">
+					AND R.RPLY_CD = #{searchInput.rplyCd}
+				</if>
+				<if test="searchInput.qaStatus != null and searchInput.qaStatus != ''">
+					<choose>
+						<when test="searchInput.qaStatus == 'ok'">
+							AND D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.qaStatus == 'ing'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.qaStatus == 'end'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt;= CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.qaCd != null and searchInput.qaCd != ''">
+					AND D.QA_CD = #{searchInput.qaCd}
+				</if>
+				<if test="searchInput.spvsStatus != null and searchInput.spvsStatus != ''">
+					<choose>
+						<when test="searchInput.spvsStatus == 'ok'">
+							AND D.QA_CD IS NOT NULL AND D.QA_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.spvsStatus == 'ing'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.spvsStatus == 'end'">
+							AND (D.QA_CD IS NULL OR D.QA_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt;= CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.spvsCd != null and searchInput.spvsCd != ''">
+					AND D.SPVS_CD = #{searchInput.spvsCd}
+				</if>
+                <if test="searchInput.edStatus != null and searchInput.edStatus != ''">
+					<choose>
+						<when test="searchInput.edStatus == 'ok'">
+							AND D.ED_CD IS NOT NULL AND D.ED_CD &lt;&gt; ''
+						</when>
+						<when test="searchInput.edStatus == 'ing'">
+							AND (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS2.END_DATE &gt;= CURRENT_DATE
+						</when>
+						<when test="searchInput.edStatus == 'end'">
+							AND (D.ED_CD IS NULL OR D.ED_CD = '') AND DDS2.BGN_DATE &lt;= CURRENT_DATE AND DDS2.END_DATE &lt;= CURRENT_DATE
+						</when>
+						<otherwise>
+							AND 1=1
+						</otherwise>
+					</choose>
+				</if>
+				<if test="searchInput.edCd != null and searchInput.edCd != ''">
+					AND D.ED_CD = #{searchInput.edCd}
+				</if>
+                <if test="searchInput.priorityCheck != null and searchInput.priorityCheck != ''">
+					AND D.priority_check = #{searchInput.priorityCheck}
+				</if>
+				<if test="searchInput.crtcIsueYn != null and searchInput.crtcIsueYn != ''">
+					AND D.CRTC_ISUE_YN = #{searchInput.crtcIsueYn}
+				</if>
+				<if test='searchInput.atachYn != null and searchInput.atachYn != "" and searchInput.atachYn.equals("Y")'>
+					AND D.ATCH_FILE_NO IS NOT NULL AND D.ATCH_FILE_NO &lt;&gt; 0
+				</if>
+				<if test='searchInput.myRplyYn != null and searchInput.myRplyYn != "" and searchInput.myRplyYn.equals("Y")'>
+					AND (D.QA_RGSTR_ID = #{usrId} OR D.SPVS_RGSTR_ID = #{usrId} OR R.RPLY_RGSTR_ID = #{usrId} OR D.RGSTR_ID = #{usrId})
+				</if>
+			</if>
+		</where>
+
+    </select>
+</mapper>

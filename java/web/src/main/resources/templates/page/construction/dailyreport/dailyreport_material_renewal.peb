@@ -1,0 +1,770 @@
+<div class="modal fade" id="materialModal" style="z-index:1000;">
+    <div class="pop_box _xlg">
+        <div class="pop_header">
+            <h5 class="pop_tit">자재 항목 추가</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="cancelMaterialModal()">
+                    <span class="blind">창닫기</span>✕
+                </button>
+            </div>
+        </div>
+
+        <div class="pop_body">
+            <div id='inputMaterialForm'>
+                <div class="group">
+                    <h4 class="conts_s-tit">자재 목록</h4>
+                    <div class="conts_grid">
+                        <div class="search_wrap toolbar">
+                            <div class="searchbox_wrap">
+                                <input type="text" id="materialSearchText" placeholder="검색어를 입력하세요">
+                                <button onclick="materialSearch()" class="icon_btn search">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">검색</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="button" class="btn _fill" id="btnAddNewMaterialRow">추가</button>
+                        </div>
+                        <div class="grid-wrap">
+                            <div id="materialListGrid"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="s_conts" style="margin-top: 20px;">
+                    <span class="tree_route">자재</span>
+                    <div class="group">
+                        <h4 class="conts_s-tit">자재</h4>
+                        <div class="grid-wrap">
+                            <div id="materialGrid"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area s_default jc_e">
+                <button type="button" class="btn _fill" id="btnMaterialSave">저장</button>
+                <button type="button" class="btn _outline" onclick="cancelMaterialModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+.cell-BizON {
+	background-color: #FFF000 !important
+}
+
+.pop_box._sm {
+	width: 62rem;
+}
+
+.selectbox_material select {
+	-webkit-appearance: menulist; /* Safari, Chrome */
+	-moz-appearance: menulist;    /* Firefox */
+	appearance: menulist;         /* Standard */
+	padding-right: 5px;
+	padding-left: 5px;
+}
+.pop_box.toast {
+  position: fixed !important;
+  z-index: 99999 !important;
+}
+#materialListGrid .tui-grid-cell[data-column-name="actions_add"]{
+  text-align:center;
+  overflow:visible;
+  padding:0;
+}
+
+/* 전역 float/right 무력화 + 가운데 배치용 inline-flex */
+#materialListGrid .tui-grid-cell[data-column-name="actions_add"] .icon_btn.more{
+  float:none !important;
+  transform:none !important;
+  position:static !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+  cursor: pointer;
+}
+
+</style>
+<script>
+    let materialUrlParam = new URLSearchParams(location.search);
+    let materialCntrctNo = materialUrlParam.get("cntrctNo");
+    let materialRId = materialUrlParam.get("rId");
+
+    let deleteMaterialList = [];        // 삭제 항목 수집
+    let addedMaterialCodes = new Set(); // 중복 추가 방지
+
+    let materialListGrid; // 상단(추가 후보)
+    let materialGrid;     // 하단(선택 항목)
+
+    let isMaterialSearch = false; // 키워드 검색실행 여부
+
+    // 그리드 초기화
+    function initMaterialGrids(listData = [], selectedData = []) {
+        // 상단 후보 리스트
+        materialListGrid = new tui.Grid({
+            el: document.getElementById('materialListGrid'),
+            data: listData,
+            bodyHeight: 300,
+            rowHeight: 40,
+            scrollX: true,
+            scrollY: true,
+            editingEvent: 'click',
+            columnOptions: {
+                resizable: true
+            },
+            columns: [
+                {
+                    header: '추가',
+                    name: 'actions_add',
+                    width: 70,
+                    align: 'center',
+                    formatter: () =>
+                        '<button type="button" class="icon_btn more" data-action="add"><i class="ic ic-plus"></i></button>'
+                },
+                { header: '자재종류', name: 'govsply_mtrl_txt', align: 'center', width: 100 },
+                { header: '자재코드', name: 'rsce_cd', align: 'center' },
+                { header: '품명',     name: 'rsce_nm', editor: 'text', align: 'left', width: 220 },
+                { header: '규격',     name: 'spec_nm', editor: 'text', align: 'left', width: 220 },
+                { header: '단위',     name: 'unit', editor: 'text', align: 'center', width: 110  },
+                { header: '총수량',   name: 'total_qty', editor: { type: CustomQtyTextEditor }, align: 'right', width: 110, formatter: ({value}) => formatNumber(value) },
+                { header: '금일수량', name: 'actual_qty', editor: { type: CustomQtyTextEditor }, align: 'right', width: 110, formatter: ({value}) => formatNumber(value) },
+                { header: '금일누계', name: 'acmtl_qty',  align: 'right', width: 110, formatter: ({value}) => formatNumber(value) },
+                { header: '잔여',     name: 'remndr_qty', align: 'right', width: 110, formatter: ({value}) => formatNumber(value) },
+                // hidden meta
+                { header: 'ori_qty',     name: 'ori_qty',     hidden: true },
+                { header: 'rsce_tp_cd',  name: 'rsce_tp_cd',  hidden: true },
+                { header: 'manual_yn',   name: 'manual_yn',   hidden: true },
+                { header: 'cbs_insert_yn', name: 'cbs_insert_yn', hidden: true }
+            ]
+        });
+
+        // cbs_insert_yn 이 Y 이 아니면 편집 막음
+        materialListGrid.on('editingStart', (ev) => {
+            const row = materialListGrid.getRow(ev.rowKey);
+            if (!row) return;
+
+            const isNew = row.cbs_insert_yn === 'Y';
+
+            // 신규 행이 아니면 편집 막기
+            if (!isNew) {
+                ev.stop();
+                materialListGrid.finishEditing();
+            }
+        });
+
+        // 하단 선택 목록
+        materialGrid = new tui.Grid({
+            el: document.getElementById('materialGrid'),
+            data: selectedData,
+            bodyHeight: 300,
+            rowHeight: 40,
+            scrollX: true,
+            scrollY: true,
+            editingEvent: 'click',
+            columnOptions: {
+                resizable: true
+            },
+            columns: [
+                {
+                  header: '삭제',
+                  name: 'actions_del',
+                  width: 70,
+                  align: 'center',
+                  formatter: () => '<button class="icon_btn" data-action="delete"><i class="ic ic-delete" style="cursor:pointer"></i></button>'
+                },
+                { header: '자재종류', name: 'govsply_mtrl_txt', align: 'center', width: 100 },
+                { header: '자재코드', name: 'rsce_cd', align: 'center' },
+                { header: '품명', name: 'rsce_nm', align: 'left', width: 220 },
+                { header: '규격', name: 'spec_nm', align: 'left', width: 220 },
+                { header: '단위', name: 'unit', align: 'center', width: 110 },
+                { header: '총수량', name: 'total_qty', align: 'right', width: 110, formatter: ({ value }) => formatNumber(value) },
+                { header: '금일수량', name: 'actual_qty', editor: { type: CustomQtyTextEditor }, align: 'right', width: 110, formatter: ({ value }) => formatNumber(value) },
+                { header: '금일누계', name: 'acmtl_qty', align: 'right', width: 110, formatter: ({ value }) => formatNumber(value) },
+                { header: '잔여', name: 'remndr_qty', align: 'right', width: 110, formatter: ({ value }) => formatNumber(value) },
+                // hidden meta
+                { header: 'ori_qty',     name: 'ori_qty',     hidden: true },
+                { header: 'rsce_tp_cd',  name: 'rsce_tp_cd',  hidden: true },
+                { header: 'manual_yn',   name: 'manual_yn',   hidden: true },
+                { header: 'cbs_insert_yn', name: 'cbs_insert_yn', hidden: true }
+            ]
+        });
+
+        // afterChange: 유효성 + 계산 규칙
+        const handleAfterChange = (grid) => (ev) => {
+            ev.changes.forEach(ch => {
+                const row = grid.getRow(ch.rowKey);
+                if (!row) return;
+                const col = ch.columnName;
+
+                // 원시 값
+                let totalQty = cleanNumber(row.total_qty);
+                let actualQty = cleanNumber(row.actual_qty);
+                const oriQty = cleanNumber(row.ori_qty);
+
+                // 총수량 유효성 (빈값이나 0은 허용, 음수 금지)
+                if (col === 'total_qty') {
+                    if (isNaN(totalQty) || totalQty < 0) {
+                        grid.setValue(ch.rowKey, 'total_qty', '');
+                        // 복원 (ori 기준)
+                        grid.setValue(ch.rowKey, 'acmtl_qty', oriQty > 0 ? oriQty : '');
+                        const restoredRemndr = totalQty > 0 ? (totalQty - oriQty) : 0;
+                        grid.setValue(ch.rowKey, 'remndr_qty', restoredRemndr > 0 ? restoredRemndr : '');
+                        gaiaCommon.customAlert("0 이상의 숫자만 입력할 수 있습니다.");
+                        return;
+                    }
+                }
+
+                // 금일수량 유효성
+                if (col === 'actual_qty') {
+                    if (isNaN(actualQty) || actualQty <= 0) {
+                        // 0, 음수, 공백 → 원래 값 복원: acmtl=ori, remndr=total-ori
+                        grid.setValue(ch.rowKey, 'actual_qty', '');
+                        grid.setValue(ch.rowKey, 'acmtl_qty', oriQty > 0 ? oriQty : '');
+                        const restoredRemndr = totalQty - oriQty;
+                        grid.setValue(ch.rowKey, 'remndr_qty', restoredRemndr > 0 ? restoredRemndr : '');
+                        return;
+                    }
+                }
+
+                // 정상 계산
+                const newAcmtl = oriQty + actualQty;
+                const newRemndr = totalQty - newAcmtl;
+                grid.setValue(ch.rowKey, 'acmtl_qty', newAcmtl > 0 ? newAcmtl : '');
+                grid.setValue(ch.rowKey, 'remndr_qty', newRemndr > 0 ? newRemndr : '');
+            });
+        };
+
+        materialListGrid.on('afterChange', handleAfterChange(materialListGrid));
+        materialGrid.on('afterChange', handleAfterChange(materialGrid));
+
+        // 포커스 이동 시 편집 종료 + 그리드 외부 클릭 시 편집 종료
+        const finishOnFocusChange = (grid) => {
+          grid.on('focusChange', () => grid.finishEditing());
+        };
+
+        finishOnFocusChange(materialListGrid);
+        finishOnFocusChange(materialGrid);
+        document.addEventListener('click', (e) => {
+            const inside = e.target.closest('#materialListGrid') || e.target.closest('#materialGrid');
+            if (!inside) {
+                try { materialListGrid && materialListGrid.finishEditing(); } catch (err) {}
+                try { materialGrid && materialGrid.finishEditing(); } catch (err) {}
+            }
+        });
+
+        // 버튼 클릭 위임
+        materialListGrid.on('click', (ev) => {
+            if (ev.targetType !== 'cell') return;
+            if (ev.columnName !== 'actions_add') return;
+
+            const row = materialListGrid.getRow(ev.rowKey);
+            if (!row) return;
+
+            // === 필수값 & 수치 기본계산 적용 ===
+            const cbsInsertYn = row.cbs_insert_yn === 'Y' ? 'Y' : 'N';
+            const rsceNm = (row.rsce_nm || '').trim();
+            const specNm = (row.spec_nm || '').trim();
+            const unit   = (row.unit   || '').trim();
+
+            if (cbsInsertYn === 'Y' && (!rsceNm || !specNm || !unit)) {
+                gaiaCommon.customAlert("품명, 규격, 단위는 필수 입력값입니다.");
+                return; // 추가 중단
+            }
+
+            addFromMaterialListToSelected(row, ev.rowKey);
+        });
+
+        materialGrid.on('click', (ev) => {
+          if (ev.targetType !== 'cell') return;
+          if (ev.columnName !== 'actions_del') return;
+
+          const row = materialGrid.getRow(ev.rowKey);
+          if (!row) return;
+          removeMaterialFromSelected(row, ev.rowKey);
+        });
+    }
+
+
+
+    function initMaterialModal() {
+        document.querySelector(".pop_box").style.zIndex = 9999;
+        const search = document.getElementById('materialSearchText');
+        if (search) search.value = '';
+        isMaterialSearch = false;
+    }
+
+    function cancelMaterialModal() {
+        document.getElementById('materialModal').style.display = 'none';
+        document.body.style.overflow = 'unset';
+        try { materialListGrid && materialListGrid.destroy(); } catch(e){}
+        try { materialGrid && materialGrid.destroy(); } catch(e){}
+    }
+
+    function materialSearch() {
+        isMaterialSearch = true;
+        initMaterialList();
+    }
+
+    function initMaterialList() {
+        const param = {
+            cntrctNo: materialCntrctNo,
+            rsceTpCd: "M",
+            dailyReportId: materialRId,
+            searchText: $("#materialSearchText").val() || ""
+        };
+        $.ajax({
+            url: "/api/construction/dailyreport/cbs-resource-summary-list",
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(param),
+            success: function (data) {
+                const details = (data && data.details) ? data.details : {};
+                let list = details.cbsResourceSummaryList || [];
+
+                // 원본 수치 정규화
+                list = list.map(row => ({
+                    govsply_mtrl_txt: row.govsply_mtrl_txt || '',
+                    govsply_mtrl_yn : (row.govsply_mtrl_yn != null) ? row.govsply_mtrl_yn
+                           : (row.govsply_mtrl_txt === '관급자재' ? 'Y' : 'N'),
+                    gnrlexpns_cd: row.gnrlexpns_cd || '',
+                    rsce_nm: row.rsce_nm || '',
+                    spec_nm: row.spec_nm || '',
+                    unit: row.unit || '',
+                    total_qty: cleanNumber(row.total_qty),
+                    actual_qty: cleanNumber(row.actual_qty),
+                    acmtl_qty: cleanNumber(row.acmtl_qty),
+                    remndr_qty: cleanNumber(row.remndr_qty),
+                    ori_qty: cleanNumber(row.ori_qty),
+                    rsce_tp_cd: row.rsce_tp_cd || 'M',
+                    manual_yn: row.manual_yn || 'N'
+                }));
+                console.log('*** list',list);
+                // 관급/사급 분리
+                if (addFlag === 'mtrlGovsply') {
+                    list = list.filter(r => r.govsply_mtrl_yn === 'Y');
+                } else if (addFlag === 'mtrlPrivate') {
+                    list = list.filter(r => r.govsply_mtrl_yn === 'N');
+                }
+
+                // 부모 목록 및 상단/하단 분리
+                const filterData = Array.isArray(displayMaterialList) ? displayMaterialList : [];
+
+                // 상단
+                const unmatchedList = list
+                    .filter(item => !filterData.some(m => m.rsce_cd === item.gnrlexpns_cd))
+                    .map(row => ({
+                        govsply_mtrl_txt: row.govsply_mtrl_txt,
+                        rsce_cd: row.gnrlexpns_cd,
+                        rsce_nm: row.rsce_nm,
+                        spec_nm: row.spec_nm,
+                        unit: row.unit,
+                        total_qty: row.total_qty,
+                        actual_qty: '',
+                        acmtl_qty: '',
+                        remndr_qty: '',
+                        ori_qty: row.ori_qty,
+                        rsce_tp_cd: row.rsce_tp_cd,
+                        manual_yn: row.manual_yn,
+                        cbs_insert_yn: 'N'
+                    }));
+
+                // 하단
+                const selectedList = filterData.map(item => {
+                    const total = cleanNumber(item.total_qty);
+                    const actual = cleanNumber(item.actual_qty);
+                    const ori = cleanNumber(item.ori_qty);
+                    return {
+                        govsply_mtrl_txt: item.govsply_mtrl_txt || '',
+                        rsce_tp_cd: item.rsce_tp_cd || 'M',
+                        rsce_cd: item.rsce_cd,
+                        rsce_nm: item.rsce_nm,
+                        spec_nm: item.spec_nm,
+                        unit: item.unit,
+                        total_qty: total,
+                        actual_qty: actual || '',
+                        acmtl_qty: ori + actual,
+                        remndr_qty: total - (ori + actual),
+                        ori_qty: ori,
+                        manual_yn: item.manual_yn || 'N',
+                        cbs_insert_yn: item.cbs_insert_yn || 'N'
+                    };
+                });
+
+                if (isMaterialSearch) {
+                    // 검색 시 상단만 갱신
+                    materialListGrid.resetData(unmatchedList);
+                } else {
+                    // 인스턴스가 없거나 비정상일 경우 전체 다시 초기화
+                    initMaterialGrids(unmatchedList, selectedList);
+                }
+                addedMaterialCodes = new Set(selectedList.map(r => r.rsce_cd));
+            },
+          error: function (xhr, status, error) {
+            console.error("AJAX request failed:", error);
+            gaiaCommon.customAlert("목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+          }
+        });
+    }
+
+    // 상단에서 하단으로 추가
+    function addFromMaterialListToSelected(row, rowKey) {
+        if (!row || !row.rsce_cd) return;
+        if (addedMaterialCodes.has(row.rsce_cd)) {
+            gaiaCommon.customAlert('이미 추가된 자재입니다.');
+            return;
+        }
+        addedMaterialCodes.add(row.rsce_cd);
+
+        // 수치 정리
+        const total = cleanNumber(row.total_qty);
+        const ori = cleanNumber(row.ori_qty);
+        let actual = 1; // 기본 금일 수량 1
+
+        // 계산식
+        let todayAcmtl = ori + actual; // 금일누계 = 기존누계 + 금일수량
+        let remndr = total - todayAcmtl;   // 잔여 = 총수량 - 금일누계
+        if (remndr < 0) remndr = 0;
+
+        // 코드 추가인 경우 이미 계산되어 있음
+        if(row.cbs_insert_yn === 'Y') {
+            if((row.tota_qty && row.actual_qty && row.acmtl_qty) ||
+                (row.actual_qty && row.acmtl_qty)) {
+                // 모두 입력되어 있거나 금일수량만 입력되어 있는 경우 그대로 할당
+                actual = row.actual_qty;
+                todayAcmtl = row.acmtl_qty;
+                remndr = row.remndr_qty;
+            }
+        }
+
+        // 하단 prepend
+        materialGrid.prependRow({
+          govsply_mtrl_txt: row.govsply_mtrl_txt,
+          rsce_tp_cd: row.rsce_tp_cd || 'M',
+          rsce_cd: row.rsce_cd,
+          rsce_nm: row.rsce_nm,
+          spec_nm: row.spec_nm,
+          unit: row.unit,
+          total_qty: cleanNumber(row.total_qty),
+          actual_qty: actual,
+          acmtl_qty: todayAcmtl,
+          remndr_qty: remndr,
+          ori_qty: cleanNumber(row.ori_qty),
+          manual_yn: 'Y',
+          cbs_insert_yn: row.cbs_insert_yn || 'N'
+        });
+
+        // 상단에서 제거
+        materialListGrid.removeRow(rowKey);
+    }
+
+    // 하단에서 삭제(상단으로 복귀) + 삭제목록 축적
+    function removeMaterialFromSelected(row, rowKey) {
+        if (!row || !row.rsce_cd) return;
+        materialGrid.removeRow(rowKey);
+        addedMaterialCodes.delete(row.rsce_cd);
+
+        // 상단으로 복구 (cbs_insert_yn === 'Y' 인 신규코드는 복구 안 함)
+        if (row.cbs_insert_yn !== 'Y') {
+            materialListGrid.prependRow({
+                govsply_mtrl_txt: row.govsply_mtrl_txt,
+                rsce_cd: row.rsce_cd,
+                rsce_nm: row.rsce_nm,
+                spec_nm: row.spec_nm,
+                unit: row.unit,
+                total_qty: cleanNumber(row.total_qty),
+                actual_qty: cleanNumber(row.actual_qty),
+                acmtl_qty: cleanNumber(row.acmtl_qty),
+                remndr_qty: cleanNumber(row.remndr_qty),
+                ori_qty: cleanNumber(row.ori_qty),
+                rsce_tp_cd: row.rsce_tp_cd || 'M',
+                manual_yn: row.manual_yn || 'N',
+                cbs_insert_yn: 'N'
+            });
+         }
+
+        // 삭제 목록에 추가 (서버 전송용)
+        const todayAcmtl = cleanNumber(row.acmtl_qty);
+        const inputQty = cleanNumber(row.actual_qty);
+        const restoredAcmtl = todayAcmtl - inputQty; // 전일누계 복원
+
+        deleteMaterialList.push({
+            cntrctNo: materialCntrctNo,
+            dailyReportId: materialRId,
+            rsceTpCd: row.rsce_tp_cd,
+            rsceCd: row.rsce_cd,
+            totalQty: cleanNumber(row.total_qty),
+            actualQty: 0,
+            acmtlQty: restoredAcmtl,
+            remndrQty: cleanNumber(row.remndr_qty),
+            dltYn: 'Y',
+            manualYn: row.manual_yn || 'Y',
+            cbsInsertYn: row.cbs_insert_yn || 'N',
+            oriQty: cleanNumber(row.ori_qty)
+        });
+    }
+
+    // 신규 입력행(상단 그리드에 추가)
+    function addNewMaterialRow() {
+        materialListGrid.prependRow({
+            govsply_mtrl_txt: '사급자재',
+            rsce_cd: generateGnrlexpnsCd(),
+            rsce_nm: '',
+            spec_nm: '',
+            unit: '',
+            total_qty: 0,
+            actual_qty: '',
+            acmtl_qty: '',
+            remndr_qty: '',
+            ori_qty: 0,
+            rsce_tp_cd: 'M',
+            manual_yn: 'Y',
+            cbs_insert_yn: 'Y'
+        });
+        setTimeout(() => {materialListGrid.refreshLayout();}, 0);
+    }
+
+    // 저장: 하단 그리드 값을 서버 형식으로 매핑
+    function collectMaterialSavePayload() {
+        const rows = materialGrid.getData();
+        const resourceList = rows.map(r => {
+            const inputQty = cleanNumber(r.actual_qty);
+            const todayAcmtl = cleanNumber(r.acmtl_qty);
+            const acmtlQty = todayAcmtl - inputQty; // 전일누계 복원
+            const govsplyMtrlYn = (r.govsply_mtrl_txt === '관급자재') ? 'Y' : 'N';
+            return {
+                govsplyMtrlTxt: r.govsply_mtrl_txt,
+                cntrctNo: materialCntrctNo,
+                dailyReportId: materialRId,
+                govsplyMtrlYn: govsplyMtrlYn,
+                rsceTpCd: r.rsce_tp_cd || 'M',
+                rsceCd: r.rsce_cd,
+                rsceNm: r.rsce_nm,
+                specNm: r.spec_nm,
+                unit: r.unit,
+                totalQty: cleanNumber(r.total_qty),
+                actualQty: inputQty,
+                acmtlQty: acmtlQty,
+                remndrQty: cleanNumber(r.remndr_qty),
+                oriQty: cleanNumber(r.ori_qty),
+                dltYn: 'N',
+                manualYn: r.manual_yn || 'Y',
+                cbsInsertYn: r.cbs_insert_yn || 'N'
+            };
+        });
+
+        // 삭제 목록 추가
+        deleteMaterialList.forEach(d => resourceList.push(d));
+        return { resourceList };
+    }
+
+    function finishAllEditingMaterial() {
+        try { materialListGrid && materialListGrid.finishEditing(); } catch(e){}
+        try { materialGrid && materialGrid.finishEditing(); } catch(e){}
+    }
+
+
+    function saveMaterialEvent() {
+        finishAllEditingMaterial();
+        const $btn = $("#btnMaterialSave");
+        $btn.prop("disabled", true);
+
+        const save = collectMaterialSavePayload();
+        $.ajax({
+            url: "/api/construction/dailyreport/save-manual-cbs-resource",
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(save),
+            success: function (data) {
+                // 서버가 리스트를 주면 사용, 아니면 방금 보낸 걸로 갱신
+                const details = data && data.details ? data.details : null;
+                const serverList =
+                    (details && Array.isArray(details.resourceList) && details.resourceList) ||
+                    (Array.isArray(data.resourceList) && data.resourceList) ||
+                    (Array.isArray(details) && details) ||
+                    save.resourceList;
+
+                appendMaterialModalDataToCards(serverList);
+                cancelMaterialModal();
+                gaiaCommon.customAlert("저장되었습니다.");
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX request failed:", error);
+                gaiaCommon.customAlert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            },
+            complete: function() {
+                $btn.prop("disabled", false);
+            }
+        });
+    }
+
+    // 서버 → UI 객체 매핑 (공통)
+    function materialMapServerToUi(item) {
+        const total         = N(item.totalQty);
+        const actual        = N(item.actualQty);
+        const acmtl         = N(item.acmtlQty)
+        const remndr        = N(item.remndrQty);
+
+        return {
+            govsply_mtrl_txt: item.govsplyMtrlTxt || (item.govsplyMtrlYn === 'Y' ? '관급자재' : '사급자재'),
+            rsce_tp_cd: item.rsceTpCd || 'M',
+            rsce_cd: item.rsceCd,
+            rsce_nm: item.rsceNm,
+            spec_nm: item.specNm,
+            unit: item.unit,
+            total_qty: total,
+            actual_qty: actual,
+            acmtl_qty: acmtl,
+            remndr_qty: remndr,
+            ori_qty: N(item.oriQty),
+            manual_yn: item.manualYn || 'N',
+            cbs_insert_yn: item.cbsInsertYn || 'N'
+        };
+    }
+
+    // 어떤 UL에 넣을지 결정 (관급/사급)
+    function materialTargetSelectorByUi(ui) {
+        const isGov = ui.govsply_mtrl_txt === '관급자재' || ui.govsply_mtrl_yn === 'Y';
+        return isGov ? '.ul_list._dash.mtrl-govsply' : '.ul_list._dash.mtrl';
+    }
+
+    // 기존 li 찾기
+    function materialFindLiByRsceCd(rsceCd) {
+        return $(`.ul_list._dash li[data-rsce-cd="${rsceCd}"]`).first();
+    }
+
+    // li 생성 (UI 객체 → LI DOM)
+    function materialCreateLi(ui) {
+        const todayAcmtlQty = Number(ui.actual_qty || 0) + Number(ui.acmtl_qty || 0);
+        return $(`
+            <li data-govsply-mtrl-txt="${String(ui.govsply_mtrl_txt)}"
+                data-rsce-cd="${String(ui.rsce_cd)}"
+                data-rsce-nm="${String(ui.rsce_nm)}"
+                data-spec-nm="${String(ui.spec_nm)}"
+                data-unit="${String(ui.unit)}"
+                data-total-qty="${String(ui.total_qty)}"
+                data-actual-qty="${String(ui.actual_qty)}"
+                data-acmtl-qty="${String(ui.acmtl_qty)}"
+                data-remndr-qty="${String(ui.remndr_qty)}"
+                data-ori-qty="${String(ui.ori_qty)}"
+                data-rsce-tp-cd="${String(ui.rsce_tp_cd)}"
+                data-manual-yn="${String(ui.manual_yn)}"
+                data-cbs-insert-yn="${String(ui.cbs_insert_yn)}"
+            >
+                <span class="r_name">${ui.rsce_nm}</span>
+                (<span class="r_actual_qty">${ui.actual_qty}</span>/<span class="r_today_actml_qty">${todayAcmtlQty}</span>)
+                <i class="ic ic-delete" style="cursor:pointer;"></i>
+            </li>
+        `);
+    }
+
+    // li 속성/표시값 업데이트
+    function materialUpdateLi($li, ui) {
+        const todayAcmtlQty = Number(ui.actual_qty || 0) + Number(ui.acmtl_qty || 0);
+        $li
+            .attr('data-govsply-mtrl-txt', ui.govsply_mtrl_txt)
+            .attr('data-rsce-cd', ui.rsce_cd)
+            .attr('data-rsce-nm', ui.rsce_nm)
+            .attr('data-spec-nm', ui.spec_nm)
+            .attr('data-unit', ui.unit)
+            .attr('data-total-qty', ui.total_qty)
+            .attr('data-actual-qty', ui.actual_qty)
+            .attr('data-acmtl-qty', ui.acmtl_qty)
+            .attr('data-remndr-qty', ui.remndr_qty)
+            .attr('data-ori-qty', ui.ori_qty)
+            .attr('data-rsce-tp-cd', ui.rsce_tp_cd)
+            .attr('data-manual-yn', ui.manual_yn)
+            .attr('data-cbs-insert-yn', ui.cbs_insert_yn);
+
+        // jQuery data 캐시도 갱신
+        $li
+            .data('govsplyMtrlTxt', ui.govsply_mtrl_txt)
+            .data('rsceCd', ui.rsce_cd)
+            .data('rsceNm', ui.rsce_nm)
+            .data('specNm', ui.spec_nm)
+            .data('unit', ui.unit)
+            .data('totalQty', ui.total_qty)
+            .data('actualQty', ui.actual_qty)
+            .data('acmtlQty', ui.acmtl_qty)
+            .data('remndrQty', ui.remndr_qty)
+            .data('oriQty', ui.ori_qty)
+            .data('rsceTpCd', ui.rsce_tp_cd)
+            .data('manualYn', ui.manual_yn)
+            .data('cbsInsertYn', ui.cbs_insert_yn);
+
+        // 표시 텍스트 갱신
+        $li.find('.r_name').text(ui.rsce_nm);
+        $li.find('.r_actual_qty').text(ui.actual_qty);
+        $li.find('.r_today_acmtl_qty').text(todayAcmtlQty);
+    }
+
+    // 부모 페이지 카드 갱신
+    function appendMaterialModalDataToCards(data) {
+        const list = Array.isArray(data) ? data : [];
+        if (!displayMaterialList) displayMaterialList = [];
+
+        // 삭제  처리
+        const deleteList = list.filter(it => it.dltYn === 'Y');
+        deleteList.forEach(it => {
+            const rsceCd = it.rsceCd;
+            const $li = materialFindLiByRsceCd(rsceCd);
+            if ($li.length) $li.remove();
+
+            // 메모리 동기화
+            displayMaterialList = displayMaterialList.filter(x => x.rsce_cd !== rsceCd);
+        });
+
+        // 추가/수정(upsert)
+        const upserts = list.filter(it => it.dltYn !== 'Y');
+        upserts.forEach(it => {
+            const ui = materialMapServerToUi(it);
+            const $exist = materialFindLiByRsceCd(ui.rsce_cd);
+            const selector = materialTargetSelectorByUi(ui);
+            const $ul = $(selector).first();
+
+            if ($exist.length) {
+                // 기존 li 업데이트
+                materialUpdateLi($exist, ui);
+
+                // 관급/사급 UL이 바뀌었으면 이동
+                const inRightUl = $exist.closest('ul').is($ul);
+                if (!inRightUl) {
+                    $exist.detach();
+                    $ul.append($exist);
+                }
+
+                // 메모리 동기화
+                displayMaterialList = displayMaterialList.map(x => x.rsce_cd === ui.rsce_cd ? ui : x);
+            } else {
+                // 신규 li 추가
+                const $li = materialCreateLi(ui);
+                $ul.append($li);
+
+                // 메모리 동기화
+                displayMaterialList.push(ui);
+            }
+        });
+    }
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 엔터로 검색
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target && e.target.id === 'materialSearchText') {
+                e.preventDefault();
+                isMaterialSearch = true;
+                materialSearch();
+            }
+        });
+
+        // 버튼
+        document.getElementById('btnAddNewMaterialRow').addEventListener('click', addNewMaterialRow);
+        document.getElementById('btnMaterialSave').addEventListener('click', saveMaterialEvent);
+  });
+</script>

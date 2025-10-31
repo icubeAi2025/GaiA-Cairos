@@ -1,0 +1,247 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+	<article class="conts">
+		<div class="group">
+			<h3 class="conts_tit">{{ message('item.app.026') }}</h3>
+			<div class="conts_grid">
+
+				<div class="search_wrap">
+					<span class="selectbox">
+						<select name="searchOption" id="searchOption">
+							<option selected value="">{{ message('item.com.005') }}</option>
+							<option value="apDocTitle">{{ message('item.app.001') }}</option>
+							<option value="apDocTxt">{{ message('item.app.017') }}</option>
+						</select>
+					</span>
+					<!-- searchbox -->
+					<div class="searchbox_wrap">
+						<input type="text" name="keyword" placeholder="{{ message('msg.004') }}" onkeyup="if(window.event.keyCode == 13) eapproval.searchKeyword();">
+						<button type="button" class="btn icon_btn filter" id="openDetail" >
+							<i class="ic ic-setting-config"></i>
+							<span class="blind">상세검색</span>
+						</button>
+						<button type="submit" class="icon_btn search" onclick="eapproval.searchKeyword();">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+						<!-- 상세검색 -->
+						<div class="lay_pop" data-name="search_detail" id="search_detail">
+							<form id="searchForm">
+								<div class="form_box ">
+									<div class="row">
+										<div class="col">
+											<div class="form_label">{{ message('item.app.044') }}</div>
+											<div class="form_data">
+												<span class="selectbox has_clear" style="width: 100%;">
+													<span class="sty_ip" id="dropdownText">{{ message('msg.app.031') }}</span>
+													<button class="icon_btn _clear" type="button" id="clear" onclick="eapproval.dropdownClear();" style="display: none;">
+														<i class="ic ic-close"></i>
+														<span class="blind">Clear</span>
+													</button>
+
+													<div class="dropdown" id="dropdown_id">
+														<ul class="list_sty dropdown_list" id="aptype_dropdown">
+															<!-- 전체 -->
+															<li class="list_item">
+																<label class="form_check">
+																	<input class="check_mark" type="checkbox" name="checkall"></input>
+																	<span class="check_label">{{ message('btn.038') }}</span> 
+																</label>
+															</li>
+														</ul>
+													</div>
+												</span>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col">
+											<div class="form_label">{{ message('item.app.022') }}</div>
+											<div class="form_data">
+												<span class="selectbox">
+													<select name="selectedForm" id="selectedForm">
+														<option value="">{{ message('item.com.005') }}</option>
+													</select>
+												</span>
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col">
+											<div class="form_label">{{ message('item.app.001') }}</div>
+											<div class="form_data">
+												<input type="text" name="apDocTitle">
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col">
+											<div class="form_label">{{ message('item.app.002') }}</div>
+											<div class="form_data">
+												<input type="text" name="apDocTxt">
+											</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col">
+											<div class="form_label">{{ message('item.app.023') }}</div>
+											<div class="form_data">
+												<div class="item_group">
+													<span class="selectbox">
+														<select id="apAppDt" onchange="eapproval.changeHandler('#apAppDt', $(this).val())"></select>
+													</span>
+													<!-- 직접선택시 input type="date"를 "text"로 변경 -->
+													<input type="date" name="startAppDt" id="startAppDt" class="date" data-date-format="DD/MM/YYYY" onchange="eapproval.setMinDate('startAppDt', 'endAppDt')">
+													~
+													<input type="date" name="endAppDt" id="endAppDt" class="date" data-date-format="DD/MM/YYYY">
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+			
+								<div class="btn_group _fill s_small jc_e">
+									<button type="button" class="btn" onclick="eapproval.searchDetail()">{{ message('btn.014') }}</button>
+									<button type="button" class="btn" onclick="eapproval.searchInputReset()">{{ message('btn.024') }}</button>
+								</div>
+								<button type="button" class="lay_pop_close icon_btn" style="position: absolute !important;" id="closeDetail">
+									<i class="ic ic-close"></i>
+									<span class="blind">창 닫기</span>
+								</button>
+							</form>
+						</div>
+					</div>
+				</div>
+				
+				<p class="selected_list"></p>
+
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						<button type="button" class="btn _outline appBtn" onclick="methods.approval('A')">{{ message('btn.025') }}</button>
+						<button type="button" class="btn _outline appBtn" onclick="methods.approval('R')">{{ message('btn.026') }}</button>
+					</div>
+					
+					<div class="selectbox sort">
+						<select name="items-per-page" id="items-per-page" onchange="eapproval.changePerPage()">
+							<option value="10">10</option>
+							<option value="30" selected>30</option>
+							<option value="50">50</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" id="list_grid"></div>			
+			</div>
+		</div>
+		
+	</article>
+</section>
+{% include "page/eapproval/approval/approval_line_modal" %}
+{% include "page/eapproval/eapproval" %}
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+var docStatus = 'waiting';
+
+var appParam = {
+	apStats : '',
+	approveDocList: []
+}
+var searchForm = {};
+
+var gridConfig = {
+	rowHeaders: [{type : 'checkbox'}],
+	columns: [
+		{name: 'upFrmNmKrn', 	header: "{{ message('item.app.014') }}", align: 'center'},
+		{name: 'frmNmKrn',   	header: "{{ message('item.app.030') }}", align: 'center'},
+		{name: 'apTypeKrn',   	header: "{{ message('item.app.044') }}", align: 'center',	resizable: true, ellipsis: true},
+		{name: 'apDocTitle', 	header: "{{ message('item.app.001') }}", align: 'left', 	resizable: true, width:500,
+			renderer: {
+				type: window.IconRenderer,
+				options: [{
+					type:"note",
+					isHover:true,
+					align:"right",
+					success:(rowData)=>{
+						window.location.href = createLinkOfDraft(rowData,`/eapproval/approval/detail`,docStatus);
+					},
+				}]
+			}
+		},
+		{name: 'usrNm',      	header: "{{ message('item.app.031') }}", align: 'center'},
+		{name: 'apAppDt',    	header: "{{ message('item.app.032') }}", align: 'center', sortable: true, sortingType: 'asc'},
+		{name: 'apDocStatsKrn', header: "{{ message('item.app.034') }}", align: 'center', 
+			formatter: function(e) {
+				return '<a href="javascript:void(0)" class="open_apLine_modal" data-doc-id="' + e.row.apDocId + '" data-doc-no="' + e.row.apDocNo + '">' + e.value + '</a>';
+			}
+		},
+	],
+	scrollY: false,
+	contextMenu: null,
+	readUrl: '/api/eapproval/approval/list',
+	gridElement: 'list_grid',
+	initialData: docStatus,
+	limit: Number($('select[id="items-per-page"]').val())
+};
+
+var methods = {
+	approval(type){
+		let selectedRows = eapproval.grid.obj.grid.getCheckedRows();
+
+		if (selectedRows.length < 1) {
+			gaiaCommon.customAlert("{{ message('msg.app.039') }}");
+			return;
+		}
+
+		$(selectedRows).each(function(index, row) {
+			let no = row.apDocNo;
+			let id = row.apDocId;
+			let apType = row.apType;
+
+			appParam.approveDocList.push({
+				apDocNo: no,
+				apDocId: id,
+				apType: apType
+			});
+		});
+
+		if(appParam.approveDocList.length > 0) {
+			let appType = type === "A" ? "{{ message('btn.025') }}" : "{{ message('btn.026') }}"
+			let setMsg = "{{ message('msg.app.029') }}".replace("{text}", appType);
+
+			gaiaCommon.customConfirm("{{ message('item.app.010') }}", setMsg, "", function(){
+				appParam.apStats = type;
+				methods.update(appParam);
+			});
+		} 
+	},
+	update(appParam){
+		gaiaCommon.LoadingOverlay('body', true);
+		gaiaCommon.post('/api/eapproval/approval/updateList', appParam, function (result) {
+			gaiaCommon.customAlert("{{ message('msg.034') }}", function(){
+				location.reload();
+			});
+		}, function (error) {
+			gaiaCommon.customAlert("서버오류 발생. 다시 시도해 주세요.");
+		})
+	},
+}
+
+
+$(function(){
+	gaia.create({
+		$init: function ($params) {
+
+			gaiaPortal.navMenuInit("M060201", "{{ message('item.app.026') }}");
+			eapproval.init(gridConfig);
+		}
+	});
+})
+
+</script>
+{% endblock footer_script %}

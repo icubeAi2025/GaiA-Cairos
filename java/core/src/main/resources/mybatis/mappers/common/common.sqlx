@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.common">
+
+	<!--공통 코드로 셀렉트 박스 만들기 가져오기-->
+    <select id="selectComCodeList" parameterType="comCodeSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectComCodeList][leegw]  */
+        SELECT  CMN_CD AS CMN_CD, 
+                COALESCE(NULLIF(CMN_CD_NM_KRN, ''), 'N/A') AS KOR_NM, 
+                COALESCE(NULLIF(CMN_CD_NM_ENG, ''), 'N/A') AS ENG_NM 
+        FROM    SM_COM_CODE 
+        WHERE   CMN_GRP_CD = #{cmnGrpCd}
+		AND     DLT_YN = 'N'
+		AND     USE_YN = 'Y'
+        <choose>
+			<when test="orderByCol == 'cmn_cd_nm_krn'">
+        		ORDER BY cmn_cd_nm_krn ASC
+		  	</when>
+		  	<otherwise>
+        		ORDER BY cmn_cd_dsply_order ASC
+		  	</otherwise>
+		</choose>
+    </select>
+
+	<!--전체 메뉴 가져오기-->
+	<select id="selectAllMenuList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectAllMenuList][leegw]  */
+        SELECT  A.MENU_NO AS MENU_NO,
+				A.MENU_CD AS MENU_CD,
+                A.UP_MENU_CD AS UP_MENU_CD,
+                A.MENU_NM AS MENU_NM,
+                A.MENU_DSCRPT AS MENU_DSCRPT,
+                A.MENU_URL AS MENU_URL,
+                A.MENU_LVL AS MENU_LVL,
+                A.MENU_DSPLY_ORDR AS MENU_DSPLY_ORDR,
+                A.LK_YN,
+                A.MENU_DIV
+        FROM    (   WITH RECURSIVE SM_MENU_LIST(    MENU_NO,
+													MENU_CD,
+													UP_MENU_CD,
+													MENU_NM,
+													MENU_DSCRPT,
+													MENU_URL,
+													MENU_LVL,
+													MENU_DSPLY_ORDR,
+                                                    LK_YN,
+                                                    MENU_DIV,
+													DEPTH,
+													PATH,
+													CYCLE ) 
+                    AS (    SELECT  A.MENU_NO,
+									A.MENU_CD,
+                                    A.UP_MENU_CD,
+                                    A.MENU_NM,
+                                    A.MENU_DSCRPT,
+                                    A.MENU_URL,
+                                    A.MENU_LVL,
+                                    A.MENU_DSPLY_ORDR,
+                                    A.LK_YN,
+                                    A.MENU_DIV,
+                                    1,
+                                    ARRAY[A.MENU_CD::TEXT],
+                                    FALSE
+                            FROM    SM_MENU A
+                            WHERE   A.MENU_CD = 'M'
+                            UNION ALL
+                            SELECT  A.MENU_NO,
+									A.MENU_CD,
+                                    A.UP_MENU_CD,
+                                    A.MENU_NM,
+                                    A.MENU_DSCRPT,
+                                    A.MENU_URL,
+                                    A.MENU_LVL,
+                                    A.MENU_DSPLY_ORDR,
+                                    A.LK_YN,
+                                    A.MENU_DIV,
+                                    B.DEPTH + 1,
+                                    ARRAY_APPEND(B.PATH,
+                                    CAST(A.MENU_DSPLY_ORDR AS TEXT)::TEXT),
+                                    A.MENU_CD = ANY(B.PATH)
+                            FROM    SM_MENU A,
+                                    SM_MENU_LIST B
+                            WHERE   A.UP_MENU_CD = B.MENU_CD
+                            AND     A.MENU_USE_YN = 'Y'
+                            AND     A.DLT_YN = 'N'
+                            AND     NOT CYCLE
+                        )   SELECT  MENU_NO,
+									MENU_CD,
+                                    UP_MENU_CD,
+                                    MENU_NM,
+                                    MENU_DSCRPT,
+                                    MENU_URL,
+                                    MENU_LVL,
+                                    MENU_DSPLY_ORDR,
+                                    LK_YN,
+                                    MENU_DIV,
+                                    DEPTH AS LEVEL,
+                                    PATH
+                            FROM    SM_MENU_LIST) AS A
+        ORDER BY CAST(COALESCE(A.PATH[2], '0') AS INTEGER), CAST(COALESCE(A.PATH[3], '0') AS INTEGER), PATH
+    </select> 
+
+	<!--프로젝트 지역구분 코드 가져오기-->
+	<select id="selectProjectRgnCd" parameterType="String" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectProjectRgnCd][leegw]  */
+        SELECT  RGN_CD AS RGN_CD
+        FROM    CN_PROJECT 
+        WHERE   PJT_NO = #{pjtNo}
+		AND     DLT_YN = 'N'
+		AND     USE_YN = 'Y'
+    </select>
+
+	<!--관측지점 일기 저장하기-->
+	<insert id="insertSmWeatherInfo" parameterType="list">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.insertSmWeatherInfo][leegw]  */
+      	<foreach collection="list" item="item" separator=";">
+		INSERT INTO SM_WEATHER 	(	
+									WEATHER_CD, 
+									WEATHER_DT, 
+									TA_AVG, 
+									TA_MAX, 
+									TA_MIN, 
+									RN_DAY, 
+									SD_MAX, 
+									WS_MAX, 
+									RGST_DT
+								) 
+					VALUES
+        						(	#{item.weather_cd}, 
+									#{item.weather_dt}, 
+									#{item.ta_avg}, 
+									#{item.ta_max}, 
+									#{item.ta_min},
+									CAST(#{item.rn_day} AS numeric),
+									CAST(#{item.sd_max} AS numeric),
+									CAST(#{item.ws_max} AS numeric),
+									now()
+								)
+		ON CONFLICT ON CONSTRAINT sm_weather_pk
+			DO 	UPDATE
+				SET TA_AVG = #{item.ta_avg},
+					TA_MAX = #{item.ta_max},
+					TA_MIN = #{item.ta_min},
+					RN_DAY = CAST(#{item.rn_day} AS numeric),
+					SD_MAX = CAST(#{item.sd_max} AS numeric),
+					WS_MAX = CAST(#{item.ws_max} AS numeric),
+					RGST_DT = now()
+      	</foreach>
+    </insert>
+
+	<!--예보구역 예보정보 가져오기-->
+	<insert id="insertSmForecastInfo" parameterType="list">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.insertSmForecastInfo][leegw]  */
+      	<foreach collection="list" item="item" separator=";">
+		INSERT INTO SM_FORECAST (	
+									FORECAST_CD, 
+									FORECAST_DT, 
+									FORECAST_DIV, 
+									FORECAST, 
+									RGST_DT
+								)
+					VALUES
+        						(	#{item.forecast_cd}, 
+									#{item.forecast_dt}, 
+									#{item.forecast_div}, 
+									#{item.forecast}, 
+									now()
+								)
+		ON CONFLICT ON CONSTRAINT sm_forecast_pk
+			DO 	UPDATE
+				SET FORECAST = #{item.forecast},
+					RGST_DT = now()
+      	</foreach>
+    </insert>
+
+	<!--관측 지점 및 예보구역 코드 가져오기-->
+	<select id="selectAllWeatherCode" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectAllWeatherCode][leegw]  */
+        SELECT 	CMN_CD AS CITY_CODE, 
+				ATTRBT_CD3 AS CITY_AREA_CODE 
+		FROM 	SM_COM_CODE 
+		WHERE 	CMN_GRP_CD = #{cmnGrpCd}
+		AND 	USE_YN = 'Y'
+		AND 	DLT_YN = 'N'
+    </select>
+
+	<!--프로젝트 지역 일기 및 예보 가져오기-->
+	<select id="selectProjectWeatherInfo" parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectProjectWeatherInfo][leegw]  */
+        SELECT 	A.TA_MAX AS TA_MAX, 
+				A.TA_MIN AS TA_MIN, 
+				A.RN_DAY AS RN_DAY, 
+				A.SD_MAX AS SD_MAX, 
+				C.AM_WF AS AM_WF, 
+				C.PM_WF AS PM_WF 
+		FROM 	SM_WEATHER A, 
+				(
+					SELECT 	CASE 	
+								WHEN NULLIF(TRIM(A.CITY_CODE1),'') IS NOT NULL 
+									THEN  A.CITY_CODE1
+								ELSE A.CITY_CODE2
+							END AS CITY_CODE,
+							CASE 
+								WHEN NULLIF(TRIM(A.CITY_AREA_CODE1),'') IS NOT NULL 
+									THEN  A.CITY_AREA_CODE1
+								ELSE A.CITY_AREA_CODE2
+							END AS CITY_AREA_CODE
+					FROM 	(	SELECT 	A.PJT_NO AS PJT_NO,
+										A.PLC_LCT_ADRS AS PLC_LCT_ADRS,
+										A.RGN_CD AS RGN_CD,
+										B.CMN_CD_NM_KRN AS CITY_NAME1,
+										B.CMN_CD AS CITY_CODE1,
+										B.ATTRBT_CD3 AS CITY_AREA_CODE1,
+										B.ATTRBT_CD4 AS CITY_ALIAS_CODE1,
+										C.CMN_CD_NM_KRN AS CITY_NAME2,
+										C.CMN_CD AS CITY_CODE2,
+										C.ATTRBT_CD3 AS CITY_AREA_CODE2,
+										C.ATTRBT_CD4 AS CITY_ALIAS_CODE2
+								FROM 	CN_PROJECT A
+								LEFT JOIN SM_COM_CODE B ON 	B.CMN_GRP_CD = #{cmnGrpCd}
+														AND B.USE_YN = 'Y'
+														AND B.DLT_YN = 'N'
+														AND (((B.ATTRBT_CD5 = 'M') AND (A.PLC_LCT_ADRS LIKE B.CMN_CD_NM_KRN || '%'))
+															OR ((B.ATTRBT_CD5 != 'M') AND (A.PLC_LCT_ADRS LIKE '%' || B.CMN_CD_NM_KRN || '%')))
+								LEFT JOIN SM_COM_CODE C ON 	C.CMN_GRP_CD = #{cmnGrpCd}
+														AND C.USE_YN = 'Y'
+														AND C.DLT_YN = 'N'
+														AND A.RGN_CD = C.ATTRBT_CD4
+								WHERE 	A.USE_YN = 'Y'
+								AND 	A.DLT_YN = 'N'
+							) AS A
+					WHERE 	A.PJT_NO = #{pjtNo}) AS B, 
+				(	SELECT 	A.FORECAST_DT,
+							A.FORECAST_CD,
+							( 	SELECT 	B.FORECAST
+								FROM 	SM_FORECAST B
+								WHERE 	B.FORECAST_DT = A.FORECAST_DT
+								AND 	B.FORECAST_CD = A.FORECAST_CD
+								AND 	B.FORECAST_DIV = 'AM'
+							) AS AM_WF,
+							( 	SELECT 	C.FORECAST
+								FROM 	SM_FORECAST C
+								WHERE 	C.FORECAST_DT = A.FORECAST_DT
+								AND 	C.FORECAST_CD = A.FORECAST_CD
+								AND 	C.FORECAST_DIV = 'PM') AS PM_WF
+					FROM 	SM_FORECAST A
+					WHERE 	A.FORECAST_DT = #{getDay}
+					GROUP BY FORECAST_DT, FORECAST_CD
+				) AS C
+		WHERE 	A.WEATHER_CD = B.CITY_CODE
+		AND 	B.CITY_AREA_CODE = C.FORECAST_CD
+		AND 	A.WEATHER_DT = #{getDay}
+    </select>
+
+	<!--다운로드 파일 정보 가져오기-->
+	<select id="selectDownloadFileInfo" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.common.selectDownloadFileInfo][leegw]  */
+		WITH UPDATED AS (
+    						<choose>
+								<when test="appId != null and !appId.equals('') and appId.equals('CN')">
+									UPDATE CN_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('CW')">
+									UPDATE CW_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('DC')">
+									UPDATE DC_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('DM')">
+									UPDATE DM_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('DT')">
+									UPDATE DT_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('AP')">
+									UPDATE AP_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('SM')">
+									UPDATE SM_ATTACHMENTS 
+								</when>
+								<when test="appId != null and !appId.equals('') and appId.equals('PR')">
+									UPDATE PR_ATTACHMENTS 
+								</when>
+							</choose>
+							SET 	FILE_HIT_NUM = FILE_HIT_NUM+1 
+							WHERE 	DLT_YN = 'N' 
+							AND 	FILE_NO = #{fileNo}
+							AND 	SNO = #{sNo} 
+							RETURNING *
+						)
+		SELECT 	FILE_DISK_PATH AS FILE_DISK_PATH, 
+				FILE_DISK_NM AS FILE_DISK_NM, 
+				FILE_NM AS FILE_NM 
+		<choose>
+			<when test="appId != null and !appId.equals('') and appId.equals('CN')">
+				FROM CN_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('CW')">
+				FROM CW_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('DC')">
+				FROM DC_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('DM')">
+				FROM DM_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('DT')">
+				FROM DT_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('AP')">
+				FROM AP_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('SM')">
+				FROM SM_ATTACHMENTS 
+			</when>
+			<when test="appId != null and !appId.equals('') and appId.equals('PR')">
+				FROM PR_ATTACHMENTS 
+			</when>
+		</choose>		
+		WHERE 	DLT_YN = 'N' 
+		AND 	FILE_NO = #{fileNo} 
+		AND 	SNO = #{sNo}
+    </select>
+</mapper>

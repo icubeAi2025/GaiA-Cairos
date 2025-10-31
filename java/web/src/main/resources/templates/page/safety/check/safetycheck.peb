@@ -1,0 +1,578 @@
+{% extends 'layout/base_content' %} {% block content %}
+<section class="contents_wrap">
+
+    <article class="conts g-row">
+        <div class="group">
+
+            <div class="conts_grid" id="container">
+                <div class="search_wrap">
+                    <span class="selectbox">
+                        <select name="appStatus" id="appStatus" onchange="toggleStatus()">
+                            <option value="status" selected>
+                                {{ message("item.projectcost.047") }}
+                            </option>
+                            <option value="E">{{ message("btn.027") }} <!-- 승인요청 --></option>
+                            <option value="A">{{ message("btn.025") }} <!-- 승인 --></option>
+                            <option value="R">{{ message("btn.026") }} <!-- 반려 --></option>
+                            <option value="C">{{ message("btn.005") }} <!-- 취소 --></option>
+                        </select>
+                    </span>
+
+                    <span class="selectbox">
+                        <select name="workType" id="workType" onchange="toggleWork()">
+                            <option value="work" selected>전체</option>
+                            <option value="A">{{ message("item.quality.001") }} <!-- 건축 --></option>
+                            <option value="C">{{ message("item.quality.002") }} <!-- 토목 --></option>
+                            <option value="F">{{ message("item.quality.003") }} <!-- 조경 --></option>
+                            <option value="T">{{ message("item.quality.004") }} <!-- 통신 --></option>
+                            <option value="M">{{ message("item.quality.005") }} <!-- 설비 --></option>
+                            <option value="E">{{ message("item.quality.006") }} <!-- 전기 --></option>
+                            <option value="O">{{ message("item.dash.043") }} <!-- 기타 --></option>
+                        </select>
+                    </span>
+                    <div class="searchbox_wrap">
+                        <input type="text" id="searchInput" placeholder='제목, 점검자' />
+                        <button type="button" class="icon_btn search">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <div class="btn_area s_default">
+                    {{ btnHtml | raw }}
+                </div>
+                <div class="grid" id="safetyGrid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 모달창 내용 -->
+</div>
+{% endblock content %}
+{% block footer_script %}
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+
+    let pjtNo;
+    let cntrctNo;
+    let gridData = [];
+    let selectedStatus;
+    let selectedValue;
+
+    const params = new URLSearchParams(window.location.search);
+    let returnCntrctNo = params.get("returnCntrctNo");
+    const urlSearchValue = params.get("urlSearchValue");    // 퀵메뉴에서 받아온 데이터
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init($params.search);
+            }
+        });
+    });
+
+    var page = {
+        init: function (search) {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            // 검색조건, 검색어가 존재한 상태로 화면으로 돌아왔을 시
+            const searchValue = urlSearchValue || (search?.searchValue ?? "");
+            selectedStatus = search?.selectedStatus ?? "status";
+
+            if (performance.navigation.type === 1) {
+                if (params.has('returnCntrctNo')) {
+                    params.delete('returnCntrctNo');
+                    window.history.replaceState({}, '', `/safetymgmt/check?cntrctNo=${pjtInfo.cntrctNo}&pjtNo=${pjtInfo.pjtNo}`);
+                }
+                returnCntrctNo = null;
+            }
+
+            gaiaPortal.navMenuInit('M1001', '{{ message("item.safety.001") }}');  // 안전 관리
+            selectedValue = "work"
+
+            safetyGrid.init();
+            gaiaCommon.makeCntrctSelectBox(
+                "#container",
+                () => { $(".btn_area").hide(); },
+                function initCb(initialCntrctNo) {  // 초기 콜백
+                    if (returnCntrctNo) {
+                        $("#cntrctNo").val(returnCntrctNo).change();
+                        cntrctNo = returnCntrctNo;
+                    } else {
+                        cntrctNo = initialCntrctNo;
+                    }
+                    if (searchValue) {
+                        $('#searchInput').val(searchValue);
+                        safetyGrid.getData(searchValue);
+                    } else {
+                        safetyGrid.getData();
+                    }
+
+                    refreshGrid(safetyGrid.safetyGrid);
+                },
+                function chgCb(newCntrctNo) {  // 변경 콜백
+                    cntrctNo = newCntrctNo;
+
+                    $('#searchInput').val("");
+                    $("#appStatus").val("status");
+                    safetyGrid.getData();
+                }
+            );
+
+            gaia.loaded = true
+        },
+        // 페이지 이동 함수들
+        addSafety: function () {    // 안점점검 추가
+            window.location.href = `/safetymgmt/check/add?mode=create&cntrctNo=${cntrctNo}&` + `&pjtNo=${pjtInfo.pjtNo}`;
+        },
+        mngInspectionlist: function () {    // 점검리스트 관리
+            window.location.href = `/safetymgmt/check/mgmtlist?type=d&cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`;
+        },
+    }
+
+    let safetyGrid = {
+        init: function () {
+            let _this = this;
+
+            let bodyHeight;
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                bodyHeight = window.innerHeight - 500;
+            } else if (isCAIROS()) {
+                bodyHeight = window.innerHeight - 420;
+            }
+
+            if (!this.safetyGrid) {
+                this.safetyGrid = new tui.Grid({
+                    el: document.getElementById('safetyGrid'),
+                    bodyHeight: bodyHeight,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 70,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+                                    {
+                                        type:'checkBox',
+                                    },
+                                    {
+                                        type:"trash",
+                                        url: "/api/safetymgmt/check/delete/safety",
+                                        idFields: "cntrctNo,inspectionNo",
+                                        keyName: "safetyList",
+                                        auth: `{{ isDelAuth | raw }}` == 'true' ? true : false,
+                                        msgList: {
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            confirmTit: "{{ message('item.safety.008') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        },
+                                        success: (rowData) => {
+                                            safetyGrid.getData('');
+                                            $('#searchInput').val("");
+                                        }
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    columns: [
+                        {
+                            header: "{{ message('item.app.035') }}", name: "num", width: 100, align: "center"
+                        },
+                        {
+                            header: "{{ message('item.app.001') }}",
+                            name: "title",
+                            className: "title",
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [{
+                                    type:"newWindow",
+                                    isHover:true,
+                                    idFields: "cntrctNo,inspectionNo",
+                                    open:{
+                                        url:"/safetymgmt/check/inspection?cntrctNo={id1}&inspectionNo={id2}",
+                                        width: "1300",
+                                        height: "550",
+                                        align:"center"
+                                    },
+                                }],
+                            },
+                            width: 500,
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.safety.003') }}", name: "cnsttyCdNm", align: "center", width: 100
+                        },
+                        {
+                            header: "점검일자", name: "ispDt", align: "center", width: 100
+                        },
+                        {
+                            header: "점검자", name: "ispNm", align: "center",
+                        },
+                        {
+                            header: "점검결과작성일자", name: "ispReqDt", align: "center", width: 150
+                        },
+                        {
+                            header: "양호", name: "goodCnt", align: "center", width: 80
+                        },
+                        {
+                            header: "불량", name: "badCnt", align: "center", width: 80
+                        },
+                        {
+                            header: '{{ message("item.quality.016") }}', name: "apprvlNm", align: "center",   // 결재자
+                        },
+                        {
+                            header: '{{ message("item.quality.017") }}', name: "apprvlDt", align: "center",   // 결재일
+                        },
+                        {
+                            header: '{{ message("item.quality.015") }}', name: "apprvlStatsNm", align: "center",  // 결과
+                        },
+                    ],
+                    header: {
+                        height: 70,
+                        complexColumns: [
+                            {
+                                header: '점검결과',
+                                name: 'testResult',
+                                childNames: ['ispReqDt', 'goodCnt', 'badCnt']
+                            },
+                            {
+                                header: '{{ message("item.quality.012") }}',
+                                name: 'payment',
+                                childNames: ['apprvl_id', 'apprvl_dt', 'apprvl_stats']
+                            },
+                        ]
+                    }
+                });
+            }
+            // 검색
+            $('.icon_btn.search').on('click', function () {
+                const searchValue = $('#searchInput').val();
+
+                let list = _this.getData(searchValue);
+
+                const searchData = {
+                    searchValue: searchValue,
+                    selectedStatus: selectedStatus,
+                }
+
+                gaia.setSearchData(searchData);
+
+                if (list) {
+                    _this.safetyGrid.resetData(list);
+                }
+            });
+            // 엔터키 검색
+            $(document).ready(function () {
+                $('#searchInput').on('keypress', function (event) {
+                    if (event.which === 13) {
+                        const searchValue = $('#searchInput').val();
+
+                        let list = _this.getData(searchValue);
+
+                        const searchData = {
+                            searchValue: searchValue,
+                            selectedStatus: selectedStatus,
+                        }
+
+                        gaia.setSearchData(searchData);
+
+                        if (list) {
+                            _this.safetyGrid.resetData(list);
+                        }
+                    }
+                });
+            });
+            // 체크상태 확인
+            this.safetyGrid.on('click', function (e) {
+                const rowKey = e.rowKey;
+                if (e.columnName == "_checked") {   // 체크박스 클릭 시 체크 상태 확인
+                    let temp = _this.safetyGrid.getRow(rowKey);
+                    temp._attributes.checked = _this.safetyGrid.getRow(rowKey)._attributes.checked ? false : true;
+                    _this.safetyGrid.setRow(rowKey, temp);
+                }
+
+                // 버튼명 변환
+                const checkedRows = _this.safetyGrid.getCheckedRowKeys();
+                const resultButton = document.getElementById("result");
+
+                if (checkedRows.length === 1) {
+                    const selectedRowData = _this.safetyGrid.getRow(checkedRows[0]);
+
+                    if (resultButton) {
+                        if (selectedRowData.rsltYn === "작성") {
+                            resultButton.textContent = "{{ message('btn.058') }}"; // 결과 수정
+                        } else {
+                            resultButton.textContent = "{{ message('btn.057') }}"; // 결과 등록
+                        }
+                    }
+                } else {
+                    if (resultButton) {
+                        resultButton.textContent = "{{ message('btn.057') }}"; // 결과 등록
+                    }
+                }
+            });
+            this.safetyGrid.on("errorResponse", function (ev) {
+                const statusCode = ev.xhr.status;
+
+                if (statusCode === 403) {
+                    gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                } else {
+                    console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                }
+            });
+        },
+        getData: function (searchValue = '') {
+            if (!this.safetyGrid) {
+                return;
+            }
+            let _this = this;
+            let param = {
+                cntrctNo: cntrctNo,
+                selectedStatus: selectedStatus,
+                selectedValue: selectedValue
+            }
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+            }
+
+            $.ajax({
+                url: '/api/safetymgmt/check/get/safetyList',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function (response) {
+                    const data = response.details.safetyList;
+                    gridData = data.map((item, index) => ({
+                        cntrctNo: item.cntrct_no,
+                        inspectionNo: item.inspection_no,
+                        num: (item.rowKey || index) + 1,
+                        title: gaiaCommon.decodeSafeText(item.title),
+                        cnsttyCd: item.cnstty_cd,
+                        cnsttyCdNm: gaiaCommon.decodeSafeText(item.cnstty_cd_nm),
+                        ispReqDt: item.isp_req_dt,
+                        ispId: item.isp_id,
+                        ispNm: item.isp_id_nm,
+                        ispDt: item.isp_dt,
+                        apprvlDt: item.apprvl_dt,
+                        apprvlId: item.apprvl_id,
+                        apprvlStats: item.apprvl_stats,
+                        apprvlNm: item.apprvl_nm,
+                        apprvlStatsNm: item.apprvl_stats_nm,
+                        goodCnt: item.good_cnt,
+                        badCnt: item.bad_cnt,
+                    }));
+
+                    if (gridData.length > 0) {
+                        _this.safetyGrid.resetData(gridData);
+                    } else {
+                        _this.safetyGrid.resetData([]);
+                    }
+                },
+            });
+        },
+        updateSafety: function () {
+            const checkedRows = safetyGrid.safetyGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.contract.022') }}"); // 수정할 항목을 선택해주세요.
+                return;
+            }
+            if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.020') }}"); // 하나만 선택해주세요.
+                return;
+            }
+
+            const rowData = checkedRows[0];
+            const {
+                inspectionNo,
+                cnsttyCd,        // 공종코드
+                apprvlStats,     // 승인상태
+                ispId,           // 점검자
+            } = rowData;
+
+            if (apprvlStats && apprvlStats !== "R") {
+                gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                return;
+            }
+
+            if (ispId || (apprvlStats && apprvlStats !== "R")) {
+                gaiaCommon.customAlert("처리중인 항목은 수정할 수 없습니다");
+                return;
+            }
+
+            window.location.href = `/safetymgmt/check/add?mode=update&cntrctNo=${cntrctNo}&inspectionNo=${inspectionNo}&workType=${cnsttyCd}`;
+        },
+        deleteSafety: function () {
+            const checkedRows = safetyGrid.safetyGrid.getCheckedRows();
+            const listName = "safetyList";
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.055') }}"); // 삭제할 항목을 선택해주세요.
+                return;
+            }
+
+            const hasProcessing = checkedRows.some(row => row.ispId);
+            if (hasProcessing) {
+                gaiaCommon.customAlert("{{ message('msg.quality.032') }}"); // 처리중인 항목은 삭제할 수 없습니다.
+                return;
+            }
+
+            const checked = checkedRows.map(row => ({
+                cntrctNo: row.cntrctNo,
+                inspectionNo: row.inspectionNo,
+            }));
+
+            gaiaCommon.customConfirm("{{ message('item.safety.008') }}", "{{ message('item.safety.008') }}", "{{ message('msg.009') }}", function () {
+                $.ajax({
+                    url: '/api/safetymgmt/check/delete/safety',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: "json",
+                    data: JSON.stringify({ [listName]: checked }),
+                    success: function (response) {
+                        if (response.ok) {
+                            gaiaCommon.customAlert("{{ message('msg.006') }}", function () {
+                                $('#searchInput').val("");
+                                safetyGrid.getData(searchValue = '');
+                            });
+                        }
+                    }
+                });
+            });
+        },
+        addInspectionResult: function () {
+            const checkedRows = safetyGrid.safetyGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.safety.001') }}"); // 작성할 항목을 선택해주세요.
+                return;
+            }
+            if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.safety.002') }}"); // 하나만 선택해주세요.
+                return;
+            }
+
+            const { inspectionNo, apprvlStats } = checkedRows[0];
+
+            if (apprvlStats && apprvlStats !== "R") {
+                gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                return;
+            }
+
+            // returnType: 전자결재가 아닌 목록화면에서 이동했을 시 다시 목록화면으로
+            window.location.href = `check/add/result?cntrctNo=${cntrctNo}&inspectionNo=${inspectionNo}&returnType=A`;
+        },
+        reportRequest: function () {
+            const checkedRows = safetyGrid.safetyGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("점검결과작성 요청을 보낼 항목을 선택 해 주세요");
+                return;
+            }
+
+            if (checkedRows.length != 1) {
+                gaiaCommon.customAlert("점검결과작성을 요청할 항목을 1건만 선택해주세요.");
+                return;
+            }
+
+            const row = checkedRows[0];
+            const inspectionNo = row.inspectionNo; // 점검번호
+            const cnsttyCdNm = row.cnsttyCdNm; // 공종명
+            const ispId = row.ispId;   // 점검자
+            const apprvlStats = row.apprvlStats;
+            const repApDocId = row.repApDocId; // 승인상태
+
+            // 검측자가 존재하면 이미 요청을 보낸 항못
+            if (ispId) {
+                gaiaCommon.customAlert("{{ message('msg.069') }}"); // 처리중인 항목입니다.
+                return;
+            }
+            // 검측자가 존재하고 전자결재 승인이 완료된 경우
+            if (ispId || apprvlStats === "A") {
+                gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                return;
+            }
+
+            gaiaCommon.checkAuth("SAF_AP_RES", () => {
+                $("#popup").load(`/safetymgmt/request`, function () {
+                    $("#popup").css({ "display": "flex" });
+                    popup.init(cnsttyCdNm, inspectionNo);
+                });
+            });
+        },
+        approvalRequest: function () {
+            const checkedRows = safetyGrid.safetyGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.safety.006') }}"); // 승인 요청할 항목을 선택해주세요.
+                return;
+            }
+            if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.safety.007') }}"); // 하나만 선택해주세요.
+                return;
+            }
+
+            const data = checkedRows[0];
+
+            if (["A", "C"].includes(data.apprvlStats)) {
+                gaiaCommon.customAlert("{{ message('msg.070') }}"); // 이미 처리된 항목입니다.
+                return;
+            }
+            if (data.rsltYn === "미작성") {
+                gaiaCommon.customAlert("{{ message('msg.safety.008') }}"); // 점검결과가 작성되지 않았습니다.
+                return;
+            }
+            if (data.apprvlStats === "E") {
+                gaiaCommon.customAlert("{{ message('msg.069') }}"); // 처리중인 항목입니다.
+                return;
+            }
+
+            gaiaCommon.customConfirm("{{ message('btn.027') }}", "{{ message('btn.027') }}", "{{ message('msg.monthlyreport.008') }}", function () {
+                $.ajax({
+                    url: '/api/safetymgmt/check/approval/safety',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: "json",
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        if (response.ok) {
+                            gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                                location.reload();
+                            });
+                        } else if (response.errorCode === '1000') {
+                            gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+                        }
+                    }
+                });
+            });
+        },
+    }
+    // 승인상태 선택
+    function toggleStatus() {
+        $("#searchInput").val("");
+        selectedStatus = document.getElementById("appStatus").value;
+        selectedValue = document.getElementById("workType").value;
+        safetyGrid.getData();
+    }
+    // 공종 선택
+    function toggleWork() {
+        $("#searchInput").val("");
+        selectedStatus = document.getElementById("appStatus").value;
+        selectedValue = document.getElementById("workType").value;
+        safetyGrid.getData();
+    }
+</script>
+{% endblock footer_script %}

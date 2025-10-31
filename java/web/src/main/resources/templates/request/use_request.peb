@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{{ message('item.com.093') }}</title>
+	<link rel="stylesheet" href="/assets/css/content.css" />
+	<style>
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			font-family: Arial, sans-serif;
+			background-color: #f4f4f4;
+		}
+		.login-container {
+			width: 500px;
+			padding: 20px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			background-color: #fff;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+		.login-container h2 {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+		.login-container h4 {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+		.login-container input[type="text"],
+		.login-container input[type="password"] {
+			width: 93%;
+			padding: 10px;
+			margin: 10px 0;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+		}
+		.login-container button {
+			width: 90px;
+			padding: 10px;
+			border: none;
+			border-radius: 3px;
+			background-color: #007bff;
+			color: white;
+			font-size: 16px;
+		}
+		.login-container button:hover {
+			background-color: #0056b3;
+		}
+		.btn {
+			color: inherit;
+			display: inline-block;
+			font-size: inherit;
+			font-weight: 500;
+			text-align: center;
+			width: 50px;
+			white-space: nowrap;
+			vertical-align: middle;
+			cursor: pointer;
+			-ms-touch-action: manipulation;
+					touch-action: manipulation;
+			-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+					user-select: none; 			
+			padding: .7em 1.5em;
+			border: 1px solid transparent;
+			border-radius: 4px;
+			background: transparent;    
+		}
+	</style>
+	<script src="/assets/js/jquery-3.4.1.min.js"></script>
+	<script src="/assets/js/common.js"></script>
+	<script src="/assets/js/gaia_common.js"></script>
+	<script src="/assets/js/main_common.js"></script>
+	<script src="/assets/js/gaia-cairos.js"></script>
+</head>
+<body>
+	<div class="login-container">
+		<h4>시스템 사용신청 및 사용승인 후 사용이 가능합니다.<br>사용신청을 원하시면 원하시는 사업명과 담당업무명을 입력 후<br>아래 <font font-weight="bold" color="red">사용신청</font> 버튼을 클릭하세요!!</h4>
+		<div>
+			<div style="display: flex; justify-content: center; align-items: center">
+				<div style="width: 70px; margin-right: 15px; justify-content: center;">사 업 명</div>
+				<div>
+					<input type="text" id="pjtNm" name="pjtNm" style="width: 350px;"/>
+				</div>
+			</div>
+			<div style="display: flex; justify-content: center; align-items: center">
+				<div style="width: 70px; margin-right: 15px; justify-content: center;">담당업무</div>
+				<div>
+					<input type="text" id="jobNm" name="jobNm" style="width: 350px;"/>
+				</div>
+			</div>
+		</div>
+		<div style="display: flex; justify-content: right;">
+			<button type="button" class="btn" id="use-request" style="margin-right: 15px;">{{ message("item.com.093") }}</button>
+			<button type="button" class="btn" id="window-close" style="margin-right: 22px;">{{ message("btn.007") }}</button>
+		</div>
+		<div class="pop_box toast on" id="popBoxToast" style="display:none;position:absolute;z-index:50;background-color: #494853;">
+			<span class="toast_msg"style="color: white;">
+			</span>
+		</div>
+	</div>
+</body>
+<script>
+	$(function(){   
+		$('#window-close').click(function(){    
+			self.close();
+		})
+	});
+
+	$(function(){   
+		$('#use-request').click(function(){    
+			if($("#pjtNm").val() == ''){
+				gaiaCommon.customAlert('사업명을 입력해주세요.');
+				$("#pjtNm").focus();
+				return; 
+			}   
+			if($("#jobNm").val() == ''){
+				gaiaCommon.customAlert('담당업무를 입력해주세요.');
+				$("#jobNm").focus();
+				return; 
+			}
+
+			requestData = {
+				pjtNm: $("#pjtNm").val().trim(),
+				jobNm: $("#jobNm").val().trim(),
+				usrId: `{{ request.getSession().getAttribute("detailMsg") }}`
+			};
+			console.log("requestData : ", requestData)
+			gaiaCommon.LoadingOverlay('body', true);
+
+			gaiaCommon.get(
+				"/api/portal/new-use-request",
+				requestData,
+				function (result) {
+					gaiaCommon.customAlert("사용신청을 완료하였습니다.", function () {
+						gaiaCommon.LoadingOverlay('body', false);
+						self.close();
+					});
+				}, function (error) {
+					console.log("오류 처리 로직 추후 추가!!!!!!");
+				}
+			);    
+		})
+	});
+</script>
+</html>

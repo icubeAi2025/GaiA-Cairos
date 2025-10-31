@@ -1,0 +1,289 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+    <style>
+        #formBox {
+            border-top: 1px solid var(--tb-bd);
+            width: 100%;
+            height: 150px;
+        }
+        #row {
+            height: 100%;
+        }
+        #formLabel {
+            justify-content: center;
+            text-align: center;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <section class="contents_wrap">
+        <article class="conts_area">
+            <div class="conts">
+                <div class="conts_form">
+                    <div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+                        <button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+                    </div>
+
+                    <form id='inputForm'>
+                        <!--개요 S-->
+                        <div class="s_conts">
+                            <span class="tree_route">{{ message("item.construction.012") }}</span>
+                            <div class="form_box">
+                                <div class="group">
+                                    <!-- row -->
+                                    <div class="row cols2">
+                                        <div class="col">
+                                            <div class="form_label required">{{ message("item.construction.002") }}</div>
+                                            <div class="form_data">
+                                                <input type="date" class="date w-md dDate" id="dailyReportDate"
+                                                    name="dailyReportDate">
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="form_label required">{{ message("item.construction.001") }}</div>
+                                            <div class="form_data">
+                                                <input type="text" id="reportNo" name="reportNo" class="maxlength" maxlength="20">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- row -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label">{{ message("item.app.001") }}</div>
+                                            <div class="form_data">
+                                                <input type="text" id="title" name="title" class="maxlength" maxlength="100">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- row -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label">{{ message("item.construction.013") }}</div>
+                                            <div class="form_data">
+                                                <div class="form_box in_formbox">
+                                                    <div class="row cols3">
+                                                        <div class="col">
+                                                            <div class="form_label">{{ message("item.construction.005") }} :
+                                                            </div>
+                                                            <div class="form_data">
+                                                                <div class="item_group">
+                                                                    <span class="item_wrap">
+                                                                        {{ message("item.construction.006") }} <input
+                                                                            type="text" class="w-md" id="amWthr"
+                                                                            name="amWthr">
+                                                                    </span>
+                                                                    <span class="item_wrap">
+                                                                        {{ message("item.construction.007") }} <input
+                                                                            type="text" class="w-md" id="pmWthr"
+                                                                            name="pmWthr">
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form_label">{{ message("item.construction.014") }} :
+                                                            </div>
+                                                            <div class="form_data">
+                                                                <div class="item_group">
+                                                                    <span class="item_wrap put_txt _celsius">
+                                                                        {{ message("item.construction.010") }} <input
+                                                                            type="text" class="w-xs cost" id="dlowstTmprtVal"
+                                                                            name="dlowstTmprtVal">
+                                                                    </span>
+                                                                    <span class="item_wrap put_txt _celsius">
+                                                                        {{ message("item.construction.009") }} <input
+                                                                            type="text" class="w-xs cost" id="dtopTmprtVal"
+                                                                            name="dtopTmprtVal">
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form_label blind">{{message("item.construction.015") }}/{{message("item.construction.016") }}</div>
+                                                            <div class="form_data">
+                                                                <div class="item_group">
+
+                                                                    <span class="item_wrap put_txt _mm">
+                                                                        {{ message("item.construction.015") }} <input
+                                                                            type="text" class="w-xs cost" id="prcptRate"
+                                                                            name="prcptRate">
+                                                                    </span>
+
+                                                                    <span class="item_wrap put_txt _mm">
+                                                                        {{ message("item.construction.016") }} <input
+                                                                            type="text" class="w-xs cost" id="snowRate"
+                                                                            name="snowRate">
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- row -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="form_label" id="formLabel">특이사항 <br> (안전/품질/환경) </div>
+                                            <div class="form_data">
+                                                <textarea id="majorMatter" name="majorMatter" class="maxlength" maxlength="2000"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <!--개요 E-->
+                    </form>
+                </div>
+            </div>
+        </article>
+
+    </section>
+{% endblock content %}
+{% block footer_script %}
+    <script src="/assets/js/construction/construction.js"></script>
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var cntrctNo = urlParams.get('cntrctNo');
+        var rId = urlParams.get('rId');
+        let drDt = '';
+
+        let init = function () {
+
+            $("#cancel").click(function () {
+                window.location.href = "/construction/dailyreport"+`?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`;
+                sessionStorage.setItem('cntrctNo', cntrctNo);
+            });
+            $("#save").click(function () {
+                saveDailyReport();
+            });
+            $("#dailyReportDate").change(function (e) {
+                callJsonApi();
+            });
+        };
+
+        function callJsonApi() {
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.customAlert("{{ message('msg.dailyreport.001') }}");
+            var formData = {
+                pjtNo: pjtInfo.pjtNo
+                , tm: $("#dailyReportDate").val().replaceAll("-", "")
+            }
+
+            $.ajax({
+                url: '/api/util/kma-weather',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    let kma = response.details.kma;
+
+                    $("#amWthr").val(kma.am_wf);
+                    $("#pmWthr").val(kma.pm_wf);
+                    $("#dlowstTmprtVal").val(kma.ta_min);
+                    $("#dtopTmprtVal").val(kma.ta_max);
+                    $("#prcptRate").val(kma.rn_day);
+                    $("#snowRate").val(kma.sd_max);
+                },
+                error: function (response) {
+                    gaiaCommon.customAlert("{{ message('msg.construction.002') }}");
+                    return false;
+                },
+                complete: function(){
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            });
+        }
+
+
+        // 작업일지 저장, 이미지 파일 업로드 완료 후 보고서 저장해야 해서 async 처리함
+        async function saveDailyReport() {
+            try {
+                gaiaCommon.LoadingOverlay('body', true);
+
+                // 필수 입력값 검증
+                const reportDate = $("#dailyReportDate").val().trim();
+                const reportNo = $("#reportNo").val().trim();
+
+                if (!reportDate) {
+                    return handleValidationError("{{ message('msg.039') }}".replace('{0}', "{{ message('item.construction.002') }}"));
+                }
+                if (!reportNo) {
+                    return handleValidationError("{{ message('msg.039') }}".replace('{0}', "{{ message('item.construction.001') }}"));
+                }
+
+                // 기본 폼 데이터
+                const inputForm = $("#inputForm").serializeArray();
+                inputForm.push({ name: 'cntrctNo', value: cntrctNo });
+                if (rId) inputForm.push({ name: 'dailyReportId', value: rId });
+
+                const formData = objectifyForm(inputForm);
+
+                addDailyReport(formData);
+            } catch (err) {
+                console.error("saveDailyReport error:", err);
+                gaiaCommon.customAlert("저장 중 오류가 발생했습니다.");
+          } finally {
+                gaiaCommon.LoadingOverlay('body', false);
+          }
+        }
+
+        // 유효성 오류 처리 공통
+        function handleValidationError(msg) {
+            gaiaCommon.customAlert(msg);
+            gaiaCommon.LoadingOverlay('body', false);
+            throw new Error("ValidationError");
+        }
+
+        function objectifyForm(formArray) {
+            //serialize data function`
+            var returnArray = {};
+            for (var i = 0; i < formArray.length; i++) {
+                returnArray[formArray[i]['name']] = formArray[i]['value'];
+            }
+            return returnArray;
+        }
+
+
+        function addDailyReport(addParam) {
+
+            const response = $.ajax({
+                url: BASEPATH + 'dailyreport/add-copy-dailyreport',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(addParam),
+                success(result) {
+                    if (result.ok) {
+                        gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                            currentRId = result.details.dailyreportId;
+                            window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}`;
+                        });
+                    }
+                }
+            });
+
+            return response;
+        }
+
+
+
+        $(document).ready(()=>{
+            gaia.create({
+                $init: function ($params) {
+                    gaiaPortal.navMenuInit('M0401', "{{ message('item.construction.901') }}" + " " + "{{ message('btn.001') }}");
+                    $("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }} {{ message("btn.001") }}</li>');
+                }
+            });
+
+            init();
+        })
+    </script>
+{% endblock footer_script %}

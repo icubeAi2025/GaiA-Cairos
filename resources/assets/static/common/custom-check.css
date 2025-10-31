@@ -1,0 +1,48 @@
+:root {
+	--form-control-color: rebeccapurple;
+	--form-control-disabled: ;
+}
+
+input[type=checkbox].custom-check {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+			 appearance: none;
+	margin: 0;
+	display: inline-block;
+	position: relative;
+	width: 1rem;
+	height: 1rem;
+	background-color: white;
+	border: 1px solid gray;
+}
+
+input[type=checkbox].custom-check::before {
+	position: absolute;
+	color: white;
+	font-weight: bold;
+	content: '';
+	width: 1rem;
+	height: 1rem;
+	top: -0.4rem;
+	left: 0.05rem;
+}
+
+input[type=checkbox].custom-check:checked::before {
+	content:'✔';
+	/*transform: scale(1);*/
+}
+
+input[type=checkbox].custom-check:focus {
+	/*outline: max(2px, 0.15em) solid currentColor;*/
+	/*outline-offset: max(2px, 0.15em);*/
+}
+
+input[type=checkbox].custom-check:disabled {
+	background-color: #efefef;
+	cursor: not-allowed;
+}
+
+input[type=checkbox].custom-check:checked {/* pyk */
+	background-color: rgb(230, 113, 0);
+	border-color: rgb(230, 113, 0);
+}

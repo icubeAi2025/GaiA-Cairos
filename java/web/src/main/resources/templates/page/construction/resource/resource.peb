@@ -1,0 +1,922 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+<section class="contents_wrap">
+
+    <article class="conts_area">
+        <div class="conts g-row" id="cntrct_no_select">
+            <!-- 메인 내용 시작 -->
+            <div class="conts_form">
+                <!-- Button - head -->
+                <div class="toolbar sort_toolbar">
+                    <div class="selectbox w-sm">
+                        <select name="period" id="period" class="">
+                            <option disabled value="">선택</option>
+                            <option selected value="M">Monthly</option>
+                            <option value="D">Daily</option>
+                        </select>
+                    </div>
+                    <!-- search 검색  -->
+                    <div class="searchbox_wrap" style="height: 30px; display: none;">
+                        <input type="text" name="searchText" class="searchText"
+                               placeholder="{{ message('item.projectcost.002') }}" />
+                        <button type="submit" class="icon_btn search_btn" style="cursor: pointer;">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="sort_month">
+                        <span class="today_date" data-month="">2024년 4월</span>
+                        <div class="btn_group _outline">
+                            <button class="btn prev" data-direction="prev">
+                                <i class="ic ic-arrow"></i>
+                                <span class="blind">이전달</span>
+                            </button>
+                            <button class="btn next" data-direction="next">
+                                <i class="ic ic-arrow"></i>
+                                <span class="blind">다음달</span>
+                            </button>
+                            <button class="btn" data-direction="today">오늘</button>
+                        </div>
+                    </div>
+
+                    <div class="item_group btnsty resource_type_group" role="group"
+                         aria-label="Button Style radio group">
+                        <label class="form_check all" data-type="all">
+                            <input class="check_mark" type="radio" name="radio" value="all" checked>
+                            <span class="check_label">{{ message("btn.038") }}</span>
+                        </label>
+                        <label class="form_check mtrl" data-type="mtrl">
+                            <input class="check_mark" type="radio" name="radio" value="mtrl">
+                            <span class="check_label">{{ message("item.construction.201") }}</span>
+                        </label>
+                        <label class="form_check expnss" data-type="expnss">
+                            <input class="check_mark" type="radio" name="radio" value="expnss">
+                            <span class="check_label">{{ message("item.construction.046") }}</span>
+                        </label>
+                        <label class="form_check lbr" data-type="lbr">
+                            <input class="check_mark" type="radio" name="radio" value="lbr">
+                            <span class="check_label">{{ message("item.construction.044") }}</span>
+                        </label>
+                    </div>
+                </div>
+                <!--
+                    S: Monthly : 활성화 'on'클래스
+                    div.ris_item_wrap > strong.month.today 선택된 월(month)
+                -->
+                <div class="ris_list monthly on">
+
+                </div>
+
+                <!-- //E: Monthly -->
+
+                <!-- S: Daily -->
+                <div class="ris_list daily on" style="display: block;">
+                    <!--주요 자재 S-->
+                    <div class="s_conts" id="mtrlDiv">
+                        <span class="tree_route">{{ message("item.construction.038") }}</span>
+                        <div class="btn_group _outline" style="margin-bottom: 10px; display: none;">
+                            <button type="button" class="btn" onclick="exportToExcel('M')">Excel</button>
+                        </div>
+                        <div class="conts_grid" id="mtrlTable">
+                            <div id="mtrlDataGrid" class="grid"></div>
+                        </div>
+                    </div>
+                    <!--주요 자재 E-->
+
+
+
+                    <!--인력 S-->
+                    <div class="s_conts" id="lbrDiv">
+                        <span class="tree_route">{{ message("item.construction.044") }}</span>
+                        <div class="btn_group _outline" style="margin-bottom: 10px; display: none;">
+                            <button type="button" class="btn" onclick="exportToExcel('L')">Excel</button>
+                        </div>
+                        <div class="conts_grid" id="lbrTable">
+                            <div id="lbrDataGrid" class="grid"></div>
+                        </div>
+                    </div>
+                    <!--인력 E-->
+
+
+
+                    <!--장비 S-->
+                    <div class="s_conts" id="expnssDiv">
+                        <span class="tree_route">{{ message("item.construction.046") }}</span>
+                        <div class="btn_group _outline" style="margin-bottom: 10px; display: none;  ">
+                            <button type="button" class="btn" onclick="exportToExcel('E')">Excel</button>
+                        </div>
+                        <div class="conts_grid" id="expnssTable">
+                            <div id="expnssDataGrid" class="grid"></div>
+                        </div>
+                    </div>
+                    <!--장비 E-->
+                </div>
+                <!-- //E: Daily -->
+
+                <div class="grid" id="dailyreportDataGrid" style="display: none;">
+                </div>
+            </div>
+            <!-- 메인 내용 끝 -->
+        </div>
+    </article>
+    <!-- Monthly 구성을 위한 태그 / generateMonthlyResourceList()  -->
+    <div class="dp-none monthly_item" style="display: none;">
+        <div class="ris_item_wrap">
+            <strong class="month"></strong>
+            <dl class="dl_box ris_item">
+                <dt class="ris_dt mtrl">{{ message("item.construction.201") }}</dt>
+                <dd class="ris_dd mtrl">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+                <dt class="ris_dt lbr">{{ message("item.construction.044") }}</dt>
+                <dd class="ris_dd lbr">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+                <dt class="ris_dt expnss">{{ message("item.construction.046") }}</dt>
+                <dd class="ris_dd expnss">
+                    <div class="dl_item">
+                        <ul class="ul_list _dash" style="float: left;">
+                            <li>
+                                <span class="r_name"></span>
+                                <span class="r_quantity put_txt _braket _r"></span>
+                            </li>
+                        </ul>
+
+                        <button type="button" class="icon_btn more" style="float: right; transform: translateY(0);">
+                            <i class="ic ic-dot-partline"></i>
+                            <span class="tooltip">{{ message("btn.030") }}</span>
+                        </button>
+                    </div>
+                </dd>
+            </dl>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+    .tui-grid-cell-header {
+        white-space: break-spaces;
+    }
+
+    .tui-grid-lside-area .tui-grid-header-area {
+        border-right: 0;
+    }
+
+    .tui-grid-cell-has-input .tui-grid-cell-content {
+        padding: 4px 5px;
+        text-align: right;
+    }
+
+    .tui-grid-cell.tui-grid-cell-has-input.lightYellow {
+        background-color: lightgoldenrodyellow !important;
+    }
+
+    .p-5 {
+        padding: 5px;
+    }
+
+    .dp_none,
+    .no_data {
+        display: none;
+    }
+
+    /* 20241125 월간 조회된 자료가 없을 때, Row 제외 */
+    .dl_box dt {
+        min-height: 65px;
+    }
+
+    .rendered_div {
+        display: flex;
+        position: relative;
+        justify-content: left;
+    }
+</style>
+<script src="/assets/js/construction/construction.js"></script>
+<script>
+    //콤보박스 렌더러, 에디터
+
+    // 페이지 사용 글로벌 변수
+    var cntrctNo = null;                    // 계약 번호
+    var gbl_currentMonth = null;            // 선택된 날짜
+    var gbl_monthlyResources = null;        // 월별 데이터
+    var gbl_mData = null;                   // Daily - 자재
+    var gbl_lData = null;                   // Daily - 인력
+    var gbl_eData = null;                   // Daily - 장비
+    var isAdmin = () => gaiaCommon.me.isAdmin();
+
+    var init = function () {
+
+        gaiaCommon.makeCntrctSelectBox(
+		    "#cntrct_no_select",
+		    // 계약 없음 콜백
+		    function() {
+    		    gaiaCommon.LoadingOverlay('body', false);
+            },
+            // initCb: 초기 세팅 후 호출
+            function(initialCntrctNo) {
+                cntrctNo = initialCntrctNo;
+                monthlyResource.init();
+            },
+            // chgCb: 값 변경 시 호출
+            function(newCntrctNo) {
+                cntrctNo = newCntrctNo;
+                monthlyResource.init();
+            }
+        );
+    }
+
+    let generateMonthlyResourceList = function (monthlyResources) {
+        // Init
+        let $risList = $('.ris_list.monthly .ris_item_wrap');
+        if ($risList.length > 0) {
+            $risList.remove();
+        }
+
+        let risItemlength = Object.keys(monthlyResources).length;
+        let risListElem = document.querySelector('.ris_list.monthly');
+        let risItem = null;
+
+        // 복사한 동일 객체를 반복해서 넣으면 이동만 수행, 순회할때마다 복사.
+        for (let key in monthlyResources) {
+            let M_arr = [];
+            let L_arr = [];
+            let E_arr = [];
+            let elem = monthlyResources[key];
+
+            //console.log(key, elem);
+            for (let item of elem) {
+                //console.log(key, item.resources);
+                M_arr.push(...item.resources['M']);
+                L_arr.push(...item.resources['L'])
+                E_arr.push(...item.resources['E']);
+            }
+
+            let limit = 2;
+            //let title = `${key.substring(5, 7)}월`;
+            let title = DateUtils.getCurrentDateTime('month_kor', new Date(key));
+            risItem = document.querySelector('.monthly_item.dp-none > .ris_item_wrap').cloneNode(true);
+            risItem.querySelector('strong.month').textContent = title;
+            risItem.querySelector('strong.month').dataset.month = key;
+            if (key === gbl_currentMonth) risItem.querySelector('strong.month').classList.add('today');
+
+            //TODO message 처리
+            let no_search_message = "조회된 데이터가 없습니다.";
+
+            // 자재 탭
+            if (M_arr.length > 0) {
+                limit = M_arr.length === 1 ? 1 : limit;
+                for (let i = 0; i < limit; i++) {
+                    let dlItem = risItem.querySelector('.ris_dd.mtrl .dl_item li').cloneNode(true);
+
+                    dlItem.querySelector('.r_name').textContent = `${M_arr[i]['rsceNm']}`;
+                    dlItem.querySelector('.r_quantity').textContent = `${M_arr[i]['rsceQty']}`;
+                    risItem.querySelector('.ris_dd.mtrl .dl_item .ul_list').append(dlItem);
+                    risItem.querySelector('.ris_dd.mtrl .dl_item .icon_btn.more').onclick = () => {
+                        goLink('detail_month', 'M', key)    // 상세보기 Event Binding
+                    }
+                }
+                risItem.querySelectorAll('.ris_dd.mtrl .dl_item li')[0].remove();
+            } else {
+                risItem.querySelector('.ris_dd.mtrl .dl_item').remove();
+                risItem.querySelector('.ris_dd.mtrl').textContent = "";
+
+            }
+
+            // 인력 탭
+            if (L_arr.length > 0) {
+                limit = L_arr.length === 1 ? 1 : limit;
+                for (let i = 0; i < limit; i++) {
+                    let dlItem = risItem.querySelector('.ris_dd.lbr .dl_item li').cloneNode(true);
+
+                    dlItem.querySelector('.r_name').textContent = `${L_arr[i]['rsceNm']}`;
+                    dlItem.querySelector('.r_quantity').textContent = `${L_arr[i]['rsceQty']}`;
+                    risItem.querySelector('.ris_dd.lbr .dl_item .ul_list').append(dlItem);
+                    risItem.querySelector('.ris_dd.lbr .dl_item .icon_btn.more').onclick = () => {
+                        goLink('detail_month', 'L', key)    // 상세보기 Event Binding
+                    }
+                }
+                risItem.querySelectorAll('.ris_dd.lbr .dl_item li')[0].remove();
+            } else {
+                risItem.querySelector('.ris_dd.lbr .dl_item').remove();
+                risItem.querySelector('.ris_dd.lbr').textContent = "";
+
+            }
+
+            // 장비 탭
+            if (E_arr.length > 0) {
+                limit = E_arr.length === 1 ? 1 : limit;
+                for (let i = 0; i < limit; i++) {
+                    let dlItem = risItem.querySelector('.ris_dd.expnss .dl_item li').cloneNode(true);
+
+                    dlItem.querySelector('.r_name').textContent = `${E_arr[i]['rsceNm']}`;
+                    dlItem.querySelector('.r_quantity').textContent = `${E_arr[i]['rsceQty']}`;
+                    risItem.querySelector('.ris_dd.expnss .dl_item .ul_list').append(dlItem);
+                    risItem.querySelector('.ris_dd.expnss .dl_item .icon_btn.more').onclick = () => {
+                        goLink('detail_month', 'E', key)    // 상세보기 Event Binding
+                    }
+                }
+                risItem.querySelectorAll('.ris_dd.expnss .dl_item li')[0].remove();
+            } else {
+                risItem.querySelector('.ris_dd.expnss .dl_item').remove();
+                risItem.querySelector('.ris_dd.expnss').textContent = "";
+
+            }
+
+            risListElem.append(risItem);
+
+        }
+    }
+
+    /**
+     * Daily Grid 구성 형식에 맞추어 변환/가공하는 함수
+     * @param originData
+     * @returns Array[]
+     */
+    let generateForDailyGrid = function (originData) {
+        let rtnMapData = [];
+
+        const mapData = originData.reduce((map, elem) => {
+
+            let key = elem.rsceCd;
+            // 최초 init
+            if (!map[key]) {
+                map[key] = { ...elem };
+                let day = `Day${elem.dailyDate.substring(8, 10)}`;
+                map[key][day] = elem.dailyQuantity;
+
+                delete map[key].dailyDate;
+            } else {
+                let day = `Day${elem.dailyDate.substring(8, 10)}`;
+                map[key][day] = elem.dailyQuantity;
+                map[key]['cumulativeQuantity'] = elem.cumulativeQuantity;
+            }
+            return map;
+        }, {});
+
+        for (let key in mapData) {
+            rtnMapData.push(mapData[key]);
+        }
+
+        return rtnMapData;
+    }
+
+    let monthlyResource = {
+        init: function (...args) {
+            let _this = this;
+            let param = {
+                cntrctNo: cntrctNo,
+                currentMonth: gbl_currentMonth,
+                currentDay: DateUtils.getCurrentDateTime('today'),
+                searchText: args[0],
+            };
+            gaiaCommon.post(
+                BASEPATH + 'resource/resource-list',
+                param,
+                function (response) {
+                    const activityList = response.details.resourceList.activityList;
+                    const qdbList = response.details.resourceList.qdbList;
+
+                    gbl_mData = response.details.resourceList.mData;
+                    gbl_lData = response.details.resourceList.lData;
+                    gbl_eData = response.details.resourceList.eData;
+
+                    /**
+                     * 1. activity 에서 월별 그룹핑
+                     * 2. 짜갠 액티비티랑 리소스 매핑
+                     * 3. 화면 그려그려
+                     *
+                     * 4. 그려그려 할때 활성화된 월 클래스 인덱스 확인필요
+                     */
+                    let monthlyResources = getActivityAndResourcess(activityList, qdbList);
+                    generateMonthlyResourceList(monthlyResources);
+
+                    // 전역변수 할당
+                    gbl_monthlyResources = monthlyResources;
+
+                    /**
+                     * 20241105
+                     * Monthly > 월 변경 > Daily 시 Grid 전시되지 않는 현상
+                     * 으로 인한 초기화 추가
+                     *
+                     * 20241224
+                     * Daily Grid 구성 시점 변경
+                     */
+                    if ($('#period').val() === "M") $('.ris_list.daily').show();
+
+                    setTimeout(() => $('#period').trigger('change'), 10);
+                },
+                function (error) {
+                    console.error(error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+        }
+    }
+
+    /**
+     * grid 객체
+     */
+    let grid = {
+        typeInfo: {
+            mtrl: {
+                grid_object: this.mtrlDataGrid,
+                header_message: '{{ message("item.construction.201") }}',
+                jq_el: $('#mtrlDataGrid'),
+                el: document.getElementById('mtrlDataGrid')
+            },
+            lbr: {
+                grid_object: this.lbrDataGrid,
+                header_message: '{{ message("item.construction.044") }}',
+                jq_el: $('#lbrDataGrid'),
+                el: document.getElementById('lbrDataGrid')
+            },
+            expnss: {
+                grid_object: this.expnssDataGrid,
+                header_message: '{{ message("item.construction.046") }}',
+                jq_el: $('#expnssDataGrid'),
+                el: document.getElementById('expnssDataGrid')
+            }
+        },
+
+        /**
+         * grid 초기화한다.
+         * @param data
+         * @param type - mtrl 자재, lbr 인력, expnss 장비
+         */
+        init: function (data, type) {
+            let _this = this;
+            this.typeInfo[type].grid_object = null;
+            this.typeInfo[type].jq_el.empty();
+            let renderedBodyHeight = data.length > 0 ? 300 : 100;
+            let renderedCellBorderWidth = data.length > 0 ? 1 : 0;
+            let lastDay = DateUtils.getLastDayOfMonth(gbl_currentMonth);
+            let columnsArray = Array.from({ length: lastDay }, (v, i = 1) => ({
+                header: i === 0 ? 1 : i + 1,
+                name: `Day${((i === 0 ? 1 : i + 1).toString()).padStart(2, '0')}`,
+                formatter: numberFormat
+            }));
+            columnsArray.splice(0, 0, {
+                header: this.typeInfo[type].header_message,
+                name: 'rsceNm',
+                width: 180,
+                resizable: true,
+                align: 'left',
+                renderer: {
+                    type:window.IconRenderer,
+                    options:[{
+                        type:'newWindow',
+                        align:'right',
+                        isHover:true,
+                        success:(rowData) => {
+                            goLink('detail_day', rowData.rsceCd);
+                        }
+                    }]
+                }
+            });
+            columnsArray.push({ header: '{{ message("item.projectcost.009") }}', name: 'cumulativeQuantity', width: 80 });
+
+            // 오늘 일자 색상변경 class 추가
+            let selectedMonth = document.querySelector('.today_date').dataset.month;
+            let todayMonth = DateUtils.getCurrentDateTime('month');
+            if (selectedMonth === todayMonth) {
+                columnsArray[new Date().getDate()]['className'] = 'lightYellow';
+            }
+
+            if (!this.typeInfo[type].grid_object) {
+                this.typeInfo[type].grid_object = new tui.Grid({
+                    el: this.typeInfo[type].el,
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    //selectionUnit: 'row',
+                    //bodyHeight: 'auto',
+                    //bodyHeight: 'fitToParent',
+                    // header: {
+                    //     height: 80,
+                    // },
+                    bodyHeight: renderedBodyHeight,
+                    rowHeaders: [{
+                        type: 'rowNum',
+                        header: '',
+                        width: 50,
+                        renderer: {
+                            type: window.IconRenderer,
+                            options:[{
+                                type:(rowData) => {
+                                    return rowData['MAIN_RSCE_DSPLY'] === 'Y' ? 'starFill' : 'starEmpty';
+                                },
+                                isNoValue:true
+                            }]
+                        }
+                    }],
+                    columns: columnsArray,
+                    columnOptions: {
+                        frozenCount: 1,                                 // n개의 컬럼을 고정하고
+                        frozenBorderWidth: renderedCellBorderWidth      // 고정 컬럼의 경계선 너비
+                    }
+                });
+
+            } else {
+                //this.mtrlDataGrid.refreshLayout();
+            }
+
+            if (data) {
+                this.typeInfo[type].grid_object.resetData(data);
+
+                // 2024-12-24 그리드 리사이징 추가
+                refreshGrid(this.typeInfo[type].grid_object);
+            }
+        }
+    }
+
+    function goLink(type, ...args) {
+        // 글로벌 변수 cntrctNo 할당 됨으로 인한 주석처리
+        //let cntrctNo = $("#cntrctNo option:selected").val();
+
+        let month
+        const URL = '/construction/resource/detail';
+
+        // parameter 목록으로받기 ?
+
+        if (type === "detail_month") {
+            window.location.href = URL + `/month?cntrctNo=${cntrctNo}&rsceTpCd=${args[0]}&currentMonth=${args[1]}`+`&pjtNo=${pjtInfo.pjtNo}`;
+        }
+
+        if (type === "detail_day") {
+            window.location.href = URL + `/day?cntrctNo=${cntrctNo}&rsceCd=${args[0]}`+`&pjtNo=${pjtInfo.pjtNo}`;
+        }
+
+
+    }
+
+    /**
+     * 월별 activity에 따라(ID) 리소스를 매핑하는 함수
+     * @param activityList
+     * @param qdbList
+     * @returns
+     */
+    let getActivityAndResourcess = function (activityList, qdbList) {
+        const monthMap = {};
+
+        // 각 activityId에 매핑된 리소스 객체
+        const itemMap = qdbList.reduce((map, elem) => {
+            if (!map[elem.activityId]) {
+                //map[elem.activityId] = [];
+                map[elem.activityId] = {
+                    all: [],
+                    M: [],
+                    L: [],
+                    E: []
+                };
+            }
+            if (!map[elem.activityId]['all'].includes(elem)) {
+                map[elem.activityId]['all'].push(elem);
+            }
+            return map;
+        }, {});
+
+        // 각 activityId에 매핑된 리소스 객체 가공 - 리소스 타입에 따라 구분하자
+        var obj = itemMap;
+        for (let key in obj) {
+            //console.log(key, obj[key]['all'].length, obj[key])
+
+            let arr = obj[key]['all'];
+            if (arr.length > 0) {
+                for (let i = 0; i < arr.length; i++) {
+                    let rsceTpCd = arr[i].rsceTpCd.substr(0, 1);     // 현재 리소스 타입
+                    if (Object.keys(obj[key]).includes(rsceTpCd)) {
+                        obj[key][rsceTpCd].push(arr[i]);
+                    }
+                }
+            }
+
+        }
+
+
+        activityList.forEach(({ activityId, activityNm, planStart, planFinish }) => {
+
+            // Activity 와 가져온 Resource 연결되는 경우에만 작업을 수행한다.
+            if (Object.keys(itemMap).includes(activityId)) {
+                const months = DateUtils.getMonthsBetweenDates(planStart, planFinish);
+
+                // 기간 동안의 월 별로 순회하며 매핑.
+                months.forEach(month => {
+                    if (!monthMap[month]) {
+                        monthMap[month] = [];
+                    }
+
+                    // Array.some() 해당 월에 리소스가 존재하면 true, 아니면 false
+                    if (!monthMap[month].some(resource => resource.activityId === activityId)) {
+                        //객체 구조분해 할당 , 존재하지 않으면 빈 배열을 값으로 한다.
+                        monthMap[month].push({ activityId, activityNm, resources: itemMap[activityId] || {} });
+                    }
+                });
+            }
+        });
+
+        // 정렬
+        const sortedmonthMap = Object.keys(monthMap)
+            .sort((a, b) => a.localeCompare(b))
+            .reduce((sortedMap, month) => {
+                sortedMap[month] = monthMap[month];
+                return sortedMap;
+            }, {});
+
+
+        // 241125 12 개의 월만 디스플레이
+        let getSelectedMonth = function (sortedmonthMap) {
+            let arr = Object.keys(sortedmonthMap);          // key 정보 배열 e.g. '2024-06', '2024-07', ...
+            let stdIndex = arr.indexOf(gbl_currentMonth);   // 기준 index
+            let startIndex = 0;                             // 시작 index
+            let endIndex = arr.length;                      // 마지막 index
+
+            let selectedArr = [];
+            let rtnObj = {};
+            /**
+             * 기준 Index 앞의 월별 현황이 5개 이하일때, 처음부터 start
+             * 아니면 5개 절삭
+             */
+            if (stdIndex - 5 > 0) {
+                startIndex = stdIndex - 5;
+            }
+
+            arr.slice(startIndex, endIndex).length > 12 ?
+                selectedArr = arr.slice(startIndex, endIndex).slice(0, 12) :
+                selectedArr = arr.slice(startIndex, endIndex);
+
+            selectedArr.forEach(key => {
+                rtnObj[key] = sortedmonthMap[key];
+            })
+
+            return rtnObj;
+        }
+
+
+        return getSelectedMonth(sortedmonthMap);
+    }
+
+    // EXCEL DOWNLOAD
+    let exportToExcel = function (type) {
+        let dataGrid = null;
+        let exportName = null;
+
+        if (type === 'M') {
+            dataGrid = mtrl.mtrlDataGrid;
+            exportName = `{{ message('item.construction.903') }}_{{ message('item.construction.038') }}`;
+        }
+
+        if (type === 'L') {
+            dataGrid = lbr.lbrDataGrid;
+            exportName = `{{ message('item.construction.903') }}_{{ message('item.construction.044') }}`;
+        }
+        if (type === 'E') {
+            dataGrid = expnss.expnssDataGrid;
+            exportName = `{{ message('item.construction.903') }}_{{ message('item.construction.046') }}`;
+        }
+
+        const options = {
+            includeHiddenColumns: false,
+            onlySelected: true,
+            fileName: exportName,
+        };
+
+        dataGrid.export("xlsx", options);
+    }
+
+    // 0. Page load
+
+    $(document).ready(()=>{
+        gaia.create({
+            $init: function ($params) {
+                if (isGAIA() || isAdmin()) {
+                    $("#conts_tit").show();
+                    $("#cntrct_no_select").show();
+                } else if (isCAIROS()) {
+                    cntrctNo = cNo;
+                } else {
+                    cntrctNo = cNo;
+                }
+            
+                // pageNav 구성
+                gaiaPortal.navMenuInit('M0403', '{{ message("item.construction.903") }}');
+            
+                // 사용 되는 값 및 변수 초기화
+                gbl_currentMonth = DateUtils.getCurrentDateTime('month');
+                document.querySelector('.today_date')
+                    .setAttribute('data-month', gbl_currentMonth);
+                document.querySelector('.today_date').textContent = DateUtils.getCurrentDateTime('month_kor', new Date(gbl_currentMonth));
+            
+                // 현황 Daily Style - Cell padding, align 수정
+                // let styleSheet = Array.from(document.styleSheets).filter(item => item.href !== null && item.href.indexOf('content.css') > 0)[0];
+                // let cellStyle = Array.from(styleSheet.cssRules).filter(rule => rule.selectorText === '.tui-grid-cell-has-input .tui-grid-cell-content')[0].style;
+                // cellStyle.padding = '4px 5px';
+                // cellStyle.textAlign = 'right';
+            
+            
+                /******************
+                 * EVENT BINDING
+                 ******************/
+                // 계약번호 변경 Event
+                $("#cntrctNo").change(function (e) {
+                    cntrctNo = e.target.value;
+                    monthlyResource.init();
+                });
+            
+                // Monthly, Daily 변경 Event
+                $('#period').change(function (e) {
+                    let selected_item = e.target.value;
+                    let $risList = $('.ris_list');
+                    let monthly_block = $risList.eq(0);
+                    let daily_block = $risList.eq(1);
+                    let $searchBox = $('.searchbox_wrap');
+            
+                    if (selected_item === 'M') {
+                        monthly_block.show();
+                        daily_block.hide();
+                        $searchBox.hide();
+                    } else {
+                        monthly_block.hide();
+                        daily_block.show();
+                        $searchBox.show();
+            
+                        // Daily - 주요 자재 Grid 초기화
+                        grid.init(generateForDailyGrid(gbl_mData), 'mtrl');
+            
+                        // Daily - 인력 Grid 초기화
+                        grid.init(generateForDailyGrid(gbl_lData), 'lbr');
+            
+                        // Daily - 장비 Grid 초기화
+                        grid.init(generateForDailyGrid(gbl_eData), 'expnss');
+            
+                    }
+                });
+            
+                // Monthly - 월 변경 Event
+                $('.sort_month button').click(function (e) {
+            
+                    let target = e.currentTarget;                          // Event Target
+                    let $todayDate = $('.today_date');                  // 현재 선택된 날짜 태그
+                    let dateMonth = $todayDate.attr('data-month');         // 현재 선택된 날짜 정보를 담은 속성
+            
+                    let month_array = Object.keys(gbl_monthlyResources);
+                    let minimum = month_array[0];
+                    let maximum = month_array[month_array.length - 1];
+            
+            
+                    if ($(target).hasClass('prev')) {
+                        let prevMonth = DateUtils.getCurrentDateTime('prev_month', new Date(dateMonth));
+                        if (prevMonth < minimum) { return false; } // 이전 날짜가 Activity 최소 월 보다 작을경우 Event 중지
+                        gbl_currentMonth = prevMonth;
+                    } else if ($(target).hasClass('next')) {
+                        let nextMonth = DateUtils.getCurrentDateTime('next_month', new Date(dateMonth));
+            
+                        if (nextMonth > maximum) { return false; } // 다음 날짜가 Activity 최대 월 보다 작을경우 Event 중지
+                        gbl_currentMonth = nextMonth;
+                    } else {
+                        gbl_currentMonth = DateUtils.getCurrentDateTime('month');
+                    }
+                    $todayDate.attr('data-month', gbl_currentMonth);
+                    $todayDate.text(DateUtils.getCurrentDateTime('month_kor', new Date(gbl_currentMonth)));
+            
+                    // Data를 불러온다.
+                    monthlyResource.init();
+                });
+            
+                // Monthly - 월 변경 Event - 해당 월 을 클릭시 변경
+                $(document).on("click", "strong.month", function (e) {
+                    //$('strong.month').on('click', function(e) {
+                    let target = e.currentTarget;                       // Event Target
+                    let $todayDate = $('.today_date');                  // 현재 선택된 날짜 태그
+            
+                    gbl_currentMonth = target.dataset.month;
+                    $todayDate.attr('data-month', gbl_currentMonth);
+                    $todayDate.text(DateUtils.getCurrentDateTime('month_kor', new Date(gbl_currentMonth)));
+            
+                    // Data를 불러온다.
+                    monthlyResource.init();
+                });
+            
+                // Monthly - 리소스 종류에 따른 디스플레이 이벤트
+                $('.resource_type_group .form_check').click(function (e) {
+                    let period = $('#period').val();
+                    let type = e.currentTarget.dataset.type;
+            
+                    if (period === 'M') {       // 월별(Monthly)
+                        if (type === 'all') {
+                            $('.ris_dt.mtrl, .ris_dd.mtrl').show();
+                            $('.ris_dt.lbr, .ris_dd.lbr').show();
+                            $('.ris_dt.expnss, .ris_dd.expnss').show();
+            
+                            // BOX 최소 높이 변경처리
+                            $('.dl_box').css('min-height', '200px');
+                        }
+            
+                        if (type === 'mtrl') {  // 월별 && 자재
+                            $('.ris_dt.mtrl, .ris_dd.mtrl').show();
+                            $('.ris_dt.lbr, .ris_dd.lbr').hide();
+                            $('.ris_dt.expnss, .ris_dd.expnss').hide();
+            
+                            $('.dl_box').css('min-height', '100px');
+                        }
+            
+                        if (type === 'lbr') {   // 월별 && 인력
+                            $('.ris_dt.mtrl, .ris_dd.mtrl').hide();
+                            $('.ris_dt.lbr, .ris_dd.lbr').show();
+                            $('.ris_dt.expnss, .ris_dd.expnss').hide();
+            
+                            $('.dl_box').css('min-height', '100px');
+                        }
+            
+                        if (type === 'expnss') {    // 월별 && 장비
+                            $('.ris_dt.mtrl, .ris_dd.mtrl').hide();
+                            $('.ris_dt.lbr, .ris_dd.lbr').hide();
+                            $('.ris_dt.expnss, .ris_dd.expnss').show();
+            
+                            $('.dl_box').css('min-height', '100px');
+                        }
+                    } else {        // 일별(Daily)
+                        if (type === 'all') {
+                            $('#mtrlDiv').show();
+                            $('#lbrDiv').show();
+                            $('#expnssDiv').show();
+                        }
+            
+                        if (type === 'mtrl') {  // 일별 && 자재
+                            $('#mtrlDiv').show();
+                            $('#lbrDiv').hide();
+                            $('#expnssDiv').hide();
+                        }
+            
+                        if (type === 'lbr') {   // 일별 && 인력
+                            $('#mtrlDiv').hide();
+                            $('#lbrDiv').show();
+                            $('#expnssDiv').hide();
+                        }
+            
+                        if (type === 'expnss') {    // 일별 && 장비
+                            $('#mtrlDiv').hide();
+                            $('#lbrDiv').hide();
+                            $('#expnssDiv').show();
+                        }
+                    }
+            
+                });
+            
+                // SearchEvent - 검색 아이콘 클릭
+                $('.search_btn').click(event => {
+                    let searchText = $('.searchText').val();
+                    monthlyResource.init(searchText);
+                });
+            
+                // SearchEvent - 검색 Input Enter
+                $('.searchText').keydown(event => {
+                    if (event.key === 'Enter') {
+                        let searchText = $('.searchText').val();
+                        monthlyResource.init(searchText);
+                    }
+                });
+            
+                init();
+            
+                console.log("hello, resource");
+                
+                gaia.loaded = true;
+            }
+        });
+	})
+
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}
