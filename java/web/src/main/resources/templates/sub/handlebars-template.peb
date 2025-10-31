@@ -1,3 +1,0 @@
-<script id="layout-header-template" type="text/x-handlebars-template">
-    <a id="goBackoffice" target="_blank" href="">BACKOFFICE<div class="icon"></div></a>
-</script>
