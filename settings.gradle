@@ -1,9 +1,0 @@
-rootProject.name = 'gaia-cairos'
-
-include(
-    'java',
-        'java:core',
-        'java:comp',
-        'java:web',
-    'doc'
-)

@@ -1,2 +1,0 @@
-{{response.setContentType("application/json;charset=UTF-8")}}
-{{ result | raw }}
