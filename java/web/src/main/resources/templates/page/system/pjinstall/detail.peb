@@ -1,0 +1,446 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+    .search_group {
+        border: solid 1px #EAEAEA;
+        border-radius: 10px;
+        padding: 15px;
+    }
+    .search_row {
+        display: flex;
+        gap: 16px; /* 항목 간 간격 */
+        align-items: center;
+        justify-content: space-between; /* 아이템 사이 동일 간격 */
+        padding-bottom: 10px;
+    }
+
+    .search_col {
+        flex: 1;                /* 모든 항목 동일 너비로 */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;           /* 줄어들 수 있게 설정 */
+    }
+    .search_col.search_col2 {
+        flex: 2;                /* 모든 항목 동일 너비로 */
+    }
+
+    .search_label {
+        white-space: nowrap;
+        font-weight: 500;
+        width: 80px;
+    }
+
+    .search_data {
+        flex: 1;                /* 나머지 공간 차지 */
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .search_btn_wrap {
+        display: flex;
+        gap: 8px;
+        justify-content: center; /* 우측 정렬 */
+        margin-top: 12px;
+    }
+    .calender_wrap{
+        display: flex;
+        gap:4px;
+        flex:1;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row">
+    <article class="conts g-row">
+        <div class="conts_form">
+            <div class="btn_area s_default _outline pstats_btn_area">
+            </div>
+            <div class="form_box">
+                <form id="newRequestForm">
+                    <!-- row -->
+                    <div class="row cols3">
+                        <div class="col">
+                            <div class="form_label">GAIA/PGAIA</div>
+                            <div class="form_data">
+                                <input type="text" class="pltReqType" id="pltReqType" readonly>
+                            </div>
+                        </div>
+                        <div class="col ">
+                            <div class="form_label">{{ message('item.com.007') }}</div> <!-- 공사명 -->
+                            <div class="form_data">
+                                <input type="text" id="plcNm" name="plcNm" class="maxlength" maxlength="100"
+                                       readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">현재 상태</div>
+                            <div class="form_data">
+                                <input type="text" id="openPstats" name="openPstats" readonly>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3">
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.com.008') }}</div> <!-- 현장위치 -->
+                            <div class="form_data">
+                                    <span class="item_group">
+                                        <input type="text" id="plcLctAdrsCntnts" name="plcLctAdrsCntnts"
+                                               class="maxlength" maxlength="100" readonly>
+                                    </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.007') }}</div> <!-- 공사기간 -->
+                            <div class="form_data">
+                                    <span class="item_group">
+                                        <input type="date" id="pjtBgnDate" name="pjtBgnDate" class="date w-md" readonly>
+                                        ~
+                                        <input type="date" id="pjtEndDate" name="pjtEndDate" class="date w-md" readonly>
+                                        <span class="item_wrap w-sm put_txt _day">
+                                            <input type="text" id="cnstwkDaynum" name="cnstwkDaynum" class="maxlength"
+                                                   maxlength="5" readonly>
+                                        </span>
+                                    </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3">
+                        <div class="col">
+                            <div class="form_label">공사구분</div>
+                            <div class="form_data">
+                                    <input type="text" class="majorCnsttyCd" id="majorCnsttyCd" readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.012') }}</div> <!-- 계약구분 -->
+                            <div class="form_data">
+                                    <input type="text" class="cntrctType" id="cntrctType" readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.009') }}</div> <!-- 공사승인일자 -->
+                            <div class="form_data">
+                                <input type="date" id="aprvlDate" name="aprvlDate" class="" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3">
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.info.023') }}</div> <!-- 주요시설 -->
+                            <div class="form_data">
+                                <input type="text" id="mainFcltyCntnts" name="mainFcltyCntnts" readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.024') }}</div> <!-- 수요기관 -->
+                            <div class="form_data">
+                                <input type="text" id="dminsttNm" name="dminsttNm" class="maxlength"
+                                       maxlength="100" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.pinstall.006') }}</div> <!-- 담당자 -->
+                            <div class="form_data">
+                                <input type="text" id="ofclNm" name="ofclNm" maxlength="20" readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">E-mail</div>
+                            <div class="form_data">
+                                <input type="email" id="email" name="email" class="form-control email"
+                                       maxlength="100" readonly>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.036') }}</div> <!-- 전화번호 -->
+                            <div class="form_data">
+                                <input type="tel" id="telNo" name="telNo" class="form-control telNo"
+                                       maxlength="20" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.022') }}</div> <!-- 비고 -->
+                            <div class="form_data">
+                                <textarea id="rmk" name="rmk" class="" maxlength="2000" readonly></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row cols3">
+                        <div class="col merge2">
+                            <div class="form_label">자료첨부</div> <!-- 자료첨부 -->
+                            <div class="form_data" id="detail" style="">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">등록일</div> <!-- 자료첨부 -->
+                            <div class="form_data" id="rgstDt" style=""></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+
+<script>
+	//새창 아이콘 렌더러
+	const newWindowViewRenderer = window.NewWindowViewRenderer;
+	// const customColumnCheckbox = window.CustomColumnCheckbox;
+
+	const BASEPATH = '/api/system/';
+	let pjtNo;
+	let cntrctNo;
+    let logType;
+    let user;
+    let startDt;
+    let endDt;
+
+	var page ={
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+        plcReqNo:null,
+        pjInstall: {},
+        workTypeMap:{},
+        cntrctTypeMap:{},
+        init() {
+			//프로젝트 정보 설정
+			page.plcReqNo = window.location.href.split("/").pop();
+            gaiaPortal.navMenuInit('CS01', '현장 개설 요청 관리');
+
+            gaiaCommon.get(`/api/system/pjinstall/detail/${page.plcReqNo}`,{},function(result){
+                page.pjInstall = result.details?.pjInstall
+                const pjtNo = page.pjInstall.pjtNo;
+                const workTypeList = result.details?.workTypeList
+                for(const workType of workTypeList){
+                    page.workTypeMap[workType.cmnCd] = workType.cmnCdNmKrn;
+                }
+                const cntrctTypeList = result.details?.cntrctTypeList
+                for(const cntrctType of cntrctTypeList){
+                    page.cntrctTypeMap[cntrctType.cmnCd] = cntrctType.cmnCdNmKrn;
+                }
+                const pstatsBtnArea = $(".pstats_btn_area");
+
+                console.log('pjtNo', pjtNo);
+                if(page.pjInstall.openPstats == "0702" && !pjtNo) {
+                    const btn = `<button type="button" class="btn _fill" id="openProjectBtn" onclick="page.openProject()">개설 하기</button>`;
+                    pstatsBtnArea.append(btn);
+                }
+                else if(page.pjInstall.openPstats == "0703"){
+                    if(pjtNo){
+                        //나머지 정보를 입력하고 페이지 이동한 경우
+                        const btn = `<button type="button" class="btn _fill" id="openProjectBtn" onclick="page.finish('${pjtNo}')">개설 완료</button>`
+                        pstatsBtnArea.append(btn);
+
+                        pstatsBtnArea.append(`<button type="button" class="btn _fill" id="openProjectBtn" onclick="page.modifyProject('${pjtNo}')">프로젝트 수정하기</button>`);
+                    }
+                    else{
+                        const btn = `<button type="button" class="btn _fill" id="openProjectBtn" onclick="page.openProject()">개설 하기</button>`;
+                        pstatsBtnArea.append(btn);
+                    }
+                }
+
+                pstatsBtnArea.append(`<button type="button" class="btn _outline" id="listBtn" onclick="page.goList()">목록</button>`);
+                $("#pop_box_confirm").text("확인");
+
+                page.setDatas(result.details);
+            })
+		},
+        setDatas:function(result){
+            const pjInstall = page.pjInstall;
+
+            $("#pltReqType").val(`${pjInstall.pltReqType !== 'G' ? 'P' : ''}GAIA`);
+            $("#plcNm").val(pjInstall.plcNm);
+
+            const openPstatsMap = {
+                "0701":"개설요청",
+                "0702":"개설요청확인",
+                "0703":"개설중",
+                "0704":"개설완료"
+            }
+
+            $("#openPstats").val(openPstatsMap[pjInstall.openPstats]);
+            $("#plcLctAdrsCntnts").val(pjInstall.plcLctAdrsCntnts);
+
+            $("#pjtBgnDate").val(page.formatDate(pjInstall.pjtBgnDate));
+            $("#pjtEndDate").val(page.formatDate(pjInstall.pjtEndDate));
+            $("#cnstwkDaynum").val(pjInstall.cnstwkDaynum);
+
+            $("#majorCnsttyCd").val(page.workTypeMap[pjInstall.majorCnsttyCd]);
+            $("#cntrctType").val(page.cntrctTypeMap[pjInstall.cntrctType]);
+            $("#aprvlDate").val(page.formatDate(pjInstall.aprvlDate));
+            $("#mainFcltyCntnts").val(pjInstall.mainFcltyCntnts);
+            $("#dminsttNm").val(pjInstall.dminsttNm);
+            $("#ofclNm").val(pjInstall.ofclNm);
+            $("#email").val(pjInstall.email);
+            $("#telNo").val(pjInstall.telNo);
+            $("#rmk").val(pjInstall.rmk);
+
+            $("#rgstDt").text(dayjs(pjInstall.rgstDt).format('YYYY-MM-DD HH:mm:ss'));
+
+            $('#detail').append(page.makeBackchkHtml(pjInstall, result.attachments));
+        },
+        makeBackchkHtml(pjInstall, attachments) {
+            let attachHtml = '';
+
+            if(pjInstall.atchFileNo) {
+                attachHtml = attachments.map(file =>
+                    `<li>
+                        <a class="f_name" href="${file.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload').replace(/\\/g, '/')}/${file.fileDiskNm}" download="${file.fileNm}">
+                            <i class="ic ic-folder-open"></i>
+                            ${file.fileNm}
+                        </a>
+                    </li>`
+                ).join('');
+            }
+
+            return `
+                <div class="cfrm_attach_list">
+                    <ul>
+                        ${attachHtml}
+                    </ul>
+                </div>
+            `;
+        },
+        goList:function(){
+            location.href = "/system/pjinstall";
+        },
+        openProject:function(){
+            if(page.pjInstall.openPstats == "0702"){
+                const params = {openPstats:"0703"};
+                gaiaCommon.post(`/api/system/pjinstall/update/${page.plcReqNo}`,params
+                ,function(result){
+                    console.log("개설중...");
+                    page.pjInstall.openPstats = "0703";
+                    page.setDatas();
+                    const width = 1500;
+                    const height = 700;
+                    let left = Math.ceil((window.screen.width - width) / 2);
+                    left += window.screenLeft; // 듀얼 모니터일 때
+                    const top = Math.ceil((window.screen.height - height) / 2);
+
+                    const createPopup = window.open(
+                            `/system/pjinstall/create?plcReqNo=${page.plcReqNo}&type=p`,
+                            "createPopup",
+                            `width=${width},height=${height},left=${left},top=${top}`
+                    );
+
+                }
+                ,function (error){
+                    console.log(`개설중으로 변경 실패, /api/system/pjinstall/update/${page.plcReqNo}, PARAMS :`,params,error)
+                })
+            }
+            else{
+                const width = 1500;
+                const height = 700;
+                let left = Math.ceil((window.screen.width - width) / 2);
+                left += window.screenLeft; // 듀얼 모니터일 때
+                const top = Math.ceil((window.screen.height - height) / 2);
+
+                const createPopup = window.open(
+                    `/system/pjinstall/create?plcReqNo=${page.plcReqNo}&type=p`,
+                    "createPopup",
+                    `width=${width},height=${height},left=${left},top=${top}`
+                );
+            }
+        },
+        modifyProject:function(pjtNo){
+                const width = 1500;
+                const height = 700;
+                let left = Math.ceil((window.screen.width - width) / 2);
+                left += window.screenLeft; // 듀얼 모니터일 때
+                const top = Math.ceil((window.screen.height - height) / 2);
+
+                const modifyPopup = window.open(
+                    `/system/pjinstall/modify?pjtNo=${pjtNo}&type=p&plcReqNo=${page.plcReqNo}`,
+                    `modifyPopup`,
+                    `width=${width},height=${height},left=${left},top=${top}`
+                );
+        },
+        finish:function(pjtNo){
+            const params = {openPstats:"0704"};
+            gaiaCommon.post(`/api/system/pjinstall/update/${page.plcReqNo}`,params,function(result){
+                console.log("완료중..")
+                page.pjInstall.openPstats = "0704";
+                gaiaCommon.customAlert("개설이 완료되었습니다.");
+                page.setDatas();
+
+                location.href = '/system/pjinstall';
+            },function (error){
+
+            })
+        },
+		//알림창 기능
+		customAlert(msg){
+			$('.pop_box.toast').show();
+			$('.toast_msg').text(msg);
+			$('.pop_box.toast').addClass('on');
+
+			// 일정 시간 후에 'on' 클래스 제거
+			setTimeout(function() {
+				$('.pop_box.toast').removeClass('on');
+				$('.pop_box.toast').hide();
+			}, 1500); // 1500ms = 1.5초
+		},
+
+		//Date 객체 / Date 형태의 문자열 포매팅 함수
+        formatDate:function(date) {
+            if(date instanceof Date){
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            else if(typeof date == "string"){
+
+                if(date[4] == '-' && date[7] == '-' && date[10] == '-'){
+                    const dateObj = new Date(date);
+                    const yyyy = dateObj.getFullYear();
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    return `${yyyy}-${mm}-${dd}`;
+                }
+                else{
+                    return `${date.substring(0,4)}-${date.substring(4,6)}-${date.substring(6,8)}`;
+                }
+            }
+            return null;
+        },
+
+  	};
+
+	$(document).ready(function() {
+		gaia.create({
+			$init: function ($params) {
+				page.init();
+            }
+        });
+
+
+		$('.pop_box.toast').hide();
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function() {
+			$('.pop_box.toast').removeClass('on');
+			$('.pop_box.toast').hide();
+		});
+	});
+
+
+</script>
+
+{% endblock footer_script %}

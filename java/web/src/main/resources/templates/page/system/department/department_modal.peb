@@ -1,0 +1,699 @@
+<div class="modal close" id="emploee-create-modal">
+	<div class="pop_box _xlg">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="dept_cu_tit">{{ message('item.dept.021') }}</h5>
+			<button type="button" class="icon_btn pop_close" onclick="emploeeCreateModal.close();">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<span class="tree_route" id="dept_breadcrumb"></span>
+			<p class="selected_list"></p>
+			<div class="form_box">
+				<form id="dept-form">
+					<!-- row -->
+					<div class="row">
+						<div class="col">
+							<div class="search_group">   <!-- 검색 조건 박스-->
+								<div class="search_row">   <!-- 검색 조건 1번째 줄 -->
+									<div class="search_col">
+										<span class="selectbox">
+											<select id="emp_search_type" class="emp_search_type" name="emp_search_type">
+												<option selected disabled value="">{{ message('item.com.005') }}</option>
+												<option selected value="usr_nm">{{ message('item.com.024') }}</option>
+												<option value="login_id">{{ message('item.com.025') }}</option>
+												<!-- <option value="pstn_nm">{{ message('item.com.026') }}</option>
+												<option value="ratng_nm">{{ message('item.com.027') }}</option> -->
+											</select>
+										</span>
+									</div>
+									<div class="search_col search_col2">
+										<div class="search_data">
+											<input type="text" class="empKeyword" name="empKeyword" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){emploeeCreateGrid.searchEmployee();}">
+										</div>
+									</div>
+								</div>
+								<div class="search_btn_wrap">
+									<button type="button" class="btn _fill" onclick="emploeeCreateGrid.searchEmployee()">검색</button>
+									<button type="button" class="btn _outline" onclick="emploeeCreateModal.reset()">초기화</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="sticky_wrap">
+							<div class="sticky_box" style="text-align: center; max-height: 585px;">
+								<table class="table sticky" id="emp_list_grid" style="border:0px;">
+									<thead style="border-bottom: 0px;">
+									<tr>
+										<th scope="col">
+											<label class="form_check" style="display: block;">
+												<input type="checkbox" id="selectAllCheckbox" class="check_mark">
+												<span class="check_label blind">{{ message('item.com.005') }}</span>
+											</label>
+										</th>
+										<th scope="col" class="required">{{ message('item.com.025') }}</th>
+										<th scope="col" class="required">{{ message('item.com.024') }}</th>
+										<th scope="col" >{{ message('item.dept.022') }}</th>
+										<th scope="col" >{{ message('item.dept.023') }}</th>
+										<th scope="col" >{{ message('item.com.026') }}</th>
+										<th scope="col" >{{ message('item.com.027') }}</th>
+										<th scope="col" class="required">{{ message('item.com.028') }}</th>
+										<th scope="col" >{{ message('item.com.029') }}</th>
+										<th scope="col" >{{ message('item.com.030') }}</th>
+									</tr>
+									</thead>
+									<!-- <tbody> -->
+									<!-- 동적으로 생성되는 행들 -->
+									<!-- </tbody> -->
+									<tbody>
+										<tr id="emptyRow">
+											<td colspan="10" style="text-align: center;">{{ message('msg.dept.016') }}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="emploeeCreateModal.close();">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="emploeeCreateModal.save()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+
+	const emploeeCreateModal = {
+		data: {
+			cntrctNo: null,
+			pjtNo: null,
+			pjtType: null,
+			deptId: null,
+			upDeptId: null,
+			deptNo: null,
+			svrType: null
+		},
+		init() {
+			this.data = {
+				cntrctNo: page.department.data.details.cntrctNo,
+				pjtNo: page.department.data.details.pjtNo,
+				pjtType: page.department.data.details.pjtType,
+				deptId: page.department.data.details.deptId,
+				upDeptId: page.department.data.details.upDeptId,
+				deptNo: page.department.data.details.deptNo,
+				svrType: page.department.data.details.svrType,
+			};
+
+			const breadcrumb = page.tree2.data.breadCrumb; //부서 정보
+
+
+			if (!this.data.deptId && !this.data.cntrctNo && !breadcrumb && !this.data.pjtNo && !this.data.deptNo) {
+				//잘못된 접근입니다.
+				gaiaCommon.customAlert("{{ message('msg.050') }}", () => {
+					this.close();
+				});
+			}
+
+			$("#emploee-create-modal #dept_breadcrumb").text(breadcrumb);
+
+			const el = document.querySelector('#emploee-create-modal')
+			el.classList.remove("close");
+			el.classList.add("open");
+		},
+		open(){
+
+		},
+		close() {
+			const el = document.querySelector('#emploee-create-modal')
+			emploeeCreateModal.data = {}
+			emploeeCreateGrid.data = {
+				selectedEmpData: {},
+				optionsData: {
+					pstn: null,
+							ratng: null,
+							flag: null,
+							compGrp: null,
+				},
+				list: []
+			}
+
+			emploeeCreateModal.reset();
+
+			el.classList.remove("open");
+			el.classList.add("close");
+		},
+		reset(){
+			document.querySelector("#emploee-create-modal .empKeyword").value = "";
+			document.querySelector("#emploee-create-modal .emp_search_type [value='']").selected = true;
+
+			document.querySelector("#emploee-create-modal .sticky_box tbody").innerHTML = `<tr id="emptyRow"><td colspan="10" style="text-align: center;">{{ message('msg.dept.016') }}</td></tr>`;
+		},
+		save(){
+			//필수 값 데이터 확인
+			let selectedEmpData = emploeeCreateGrid.data.selectedEmpData;
+			selectedEmpData = Object.values(selectedEmpData);
+
+			//선택한 부서 정보
+			const deptNo = emploeeCreateModal.data.deptNo;
+			const deptId = emploeeCreateModal.data.deptId;
+			const upDeptId = emploeeCreateModal.data.upDeptId;
+			const deptUuid = emploeeCreateModal.data.deptUuid;
+
+			//선택한 계약 정보
+			const cntrctNo = emploeeCreateModal.data.cntrctNo;
+			const pjtNo = emploeeCreateModal.data.pjtNo;
+
+			let empList = [];
+
+			selectedEmpData.forEach(empData => {
+
+				const empSaveData = {
+					deptNo: deptNo,
+					usrId : empData.usr_id,
+					loginId : empData.login_id,
+					// ratngCd : empData.ratng_cd,
+					pstnCd : empData.pstn_cd,
+					flag : empData.flag,
+					deptUuid:deptUuid
+				}
+
+				if(empData.flag === "T"){
+					empSaveData.startDt = new Date(empData.start_dt);
+					empSaveData.endDt = new Date(empData.end_dt);
+				}
+
+				if(empData.corp_no){
+					empSaveData.corpNo = empData.corp_no;
+				}
+
+				if(empData.ratng_cd){
+					empSaveData.ratngCd = empData.ratng_cd;
+				}
+
+				empList.push(empSaveData);
+			});
+
+			if(empList.length <= 0){
+				gaiaCommon.customAlert("{{ message('msg.dept.014') }}"); //추가할 직원을 선택해주세요.
+				return;
+			}
+
+			const requestData = {
+				departmentUserCreateList : empList,
+				pjtNo : pjtNo
+			}
+
+			gaiaCommon.LoadingOverlay('body', true); // 로딩 바 활성화
+			gaiaCommon.post("/api/hr/department/user/create", requestData,
+					function (result) {
+						gaiaCommon.LoadingOverlay('body', false); // 로딩 바 비활성화
+						if(result.ok){
+							gaiaCommon.customAlert("{{ message('msg.044') }}", function(){ //저장되었습니다.
+								emploeeCreateModal.close();
+								page.refresh(true);
+							});
+						}
+					},
+					function (error) {
+						console.error(error);
+						gaiaCommon.customAlert(error.responseJSON?.message);
+					}
+			);
+
+		}
+	}
+	const emploeeCreateGrid = {
+		data: {
+			selectedEmpData: {},
+			optionsData: {
+				pstn: null,
+				ratng: null,
+				flag: null,
+				compGrp: null,
+			},
+			list: []
+		},
+		setList: function (isSearch) {
+			// page.clearEmpToList();
+
+			this.data.list = [];
+			var params = {};
+			params.cntrctNo = emploeeCreateModal.data.cntrctNo;
+			params.pjtNo = emploeeCreateModal.data.pjtNo;
+			params.deptId = emploeeCreateModal.data.deptId;
+
+			if(isSearch){
+				params.columnNm = $('select[name="emp_search_type"]').val();
+				params.text = $('input[name="empKeyword"]').val().trim();
+				this.isSearch = false;
+			}
+
+			gaiaCommon.get("/api/hr/department/user/get", params, function (result) {
+				if (result.details?.employeeList) {
+
+					if(result.details.employeeList.length > 0){
+						emploeeCreateGrid.data.list = result.details.employeeList.map(item => {
+							// 직책은 해당 부서의 업무구분과 동일
+							if (!item.pstn_cd) {
+								item.pstn_cd = emploeeCreateModal.data.svrType;
+							}
+
+							item.flag = "I"; // 근무 상태 기본값 : 재직
+
+							return item;
+						});
+
+						//콤보상자 데이터 설정
+						if(result.details?.optionDataMap){
+							const dataMap = result.details.optionDataMap;
+
+							let data = {
+								pstn : dataMap.pstn,
+								ratng : dataMap.ratng,
+								flag : dataMap.flag,
+								compGrp : dataMap.compGrp
+							}
+							let pstnData = data.pstn.map(item => ({
+								text: item.cmnCdNm,  // 명칭
+								value: item.cmnCd    // 코드 값
+							}));
+
+							let ratngData = data.ratng.map(item => ({
+								text: item.cmnCdNm,  // 명칭
+								value: item.cmnCd    // 코드 값
+							}));
+
+							let flagData = data.flag.map(item => ({
+								text: item.cmnCdNm,  // 명칭
+								value: item.cmnCd    // 코드 값
+							}));
+
+							let compGrpData = data.compGrp.map(item => ({
+								text: item.cmnCdNm,  // 명칭
+								value: item.cmnCd    // 코드 값
+							}));
+
+							emploeeCreateGrid.data.optionsData.pstn = pstnData;
+							emploeeCreateGrid.data.optionsData.ratng = ratngData;
+							emploeeCreateGrid.data.optionsData.flag = flagData;
+							emploeeCreateGrid.data.optionsData.compGrp = compGrpData;
+
+						}else{
+							console.error("No optionsData.");
+						}
+
+					}else{
+						// gaiaCommon.customAlert("{{ message('msg.dept.012') }}", function(){ //추가할 직원이 없습니다.
+						// 	window.history.back();
+						// });
+
+						gaiaCommon.customAlert("{{ message('msg.dept.012') }}"); // 추가할 직원이 없습니다.
+					}
+
+				}else{
+					emploeeCreateGrid.data.list = [];
+				}
+
+				emploeeCreateGrid.renderTable(); //테이블 요소 그리드 세팅
+			});
+		},
+		searchEmployee: function(){
+			//검색 조회
+			let columnNm = $('select[name="emp_search_type"]').val();
+			// let text = $('input[name="empKeyword"]').val().trim();
+			let text = $('input[name="empKeyword"]').val();
+
+			// 검색 카테고리 선택 없을 시 반환.
+			if(!columnNm){
+				gaiaCommon.customAlert("{{ message('msg.003') }}");	// 구분을 선택해주세요.
+				return;
+			}
+
+			// 검색어가 없는 경우 searchData를 초기화하고 전체 리스트를 조회
+			if (!text) {
+				gaiaCommon.customAlert("{{ message('msg.004') }}");	// 검색어를 입력해주세요.
+				return;
+				// $('select[name="emp_search_type"]').val(''); // 검색 구분 초기화
+				// text = "";
+				// this.isSearch = false;
+			}else{
+				this.isSearch = true;
+			}
+
+			this.setList(this.isSearch);
+		},
+		renderTable: function() {
+			const tableBody = document.querySelector("#emp_list_grid tbody");
+			const emptyRow = document.querySelector("#emptyRow");
+			// tableBody.innerHTML = ""; // 기존 데이터 삭제
+
+			// 데이터가 없으면 메시지 표시, 데이터가 있으면 숨기기
+			if (this.data.list.length === 0) {
+				emptyRow.style.display = "table-row";
+				// 기존 데이터 행 삭제
+				Array.from(tableBody.children).forEach(child => {
+					if (child !== emptyRow) {
+						child.remove();
+					}
+				});
+				return;
+			}
+
+			// 데이터가 있으면 메시지 숨기기
+			emptyRow.style.display = "none";
+
+			// 기존 데이터 행 삭제 (emptyRow는 제외)
+			Array.from(tableBody.children).forEach(child => {
+				if (child !== emptyRow) {
+					child.remove();
+				}
+			});
+
+			this.data.list.forEach((rowData) => {
+				const row = document.createElement("tr");
+
+				// 콤보박스 생성
+				const pstnInput = emploeeCreateGrid.data.optionsData.pstn
+						.filter(option => option.value == emploeeCreateModal.data.svrType) //부서의 업무구분 (sm_department.svr_type) 와 조직 사용자의 직책을 동일하게 처리 (sm_organization.pstn_cd)
+						.map(option => `<input type="hidden" name="pstnValue" data-usrId="${rowData.usr_id} value="${option.value}">${option.text}`).join("");
+
+				const selectRatngOptions = emploeeCreateGrid.data.optionsData.ratng.map(option => {
+					const isSelected = option.value == rowData.ratng_cd ? "selected" : "";
+					return `<option value="${option.value}" ${isSelected}>${option.text}</option>`;
+				}).join("");
+
+				const selectFlagOptions = emploeeCreateGrid.data.optionsData.flag.map(option => {
+					const isSelected = option.value == rowData.flag ? "selected" : "";
+					return `<option value="${option.value}" ${isSelected}>${option.text}</option>`;
+				}).join("");
+
+				const selectCompGrpOptions = emploeeCreateGrid.data.optionsData.compGrp.map(option => {
+					const isSelected = option.value == rowData.compGrp ? "selected" : "";
+					return `<option value="${option.value}" ${isSelected}>${option.text}</option>`;
+				}).join("");
+
+				// 오늘 날짜를 구해 'YYYY-MM-DD' 형식으로 변환
+				const today = new Date().toISOString().split('T')[0];
+
+				row.innerHTML = `
+						<td>
+							<label class="form_check" style="display: block;">
+								<input class="check_mark" type="checkbox" name="checkboxgroup" data-usrId="${rowData.usr_id}">
+								<span class="check_label blind">{{ message('item.com.005') }}</span>
+							</label>
+						</td>
+						<td class="clickable-cell">${rowData.login_id || ''}</td>
+						<td class="clickable-cell">${rowData.usr_nm || ''}</td>
+						<td>
+							<span class="selectbox">
+								<select class="combo_box" id="comp_grp_combo_box" data-usrId="${rowData.usr_id}">
+									<option selected disabled value="">{{ message('item.comp.002') }}</option>
+									${selectCompGrpOptions}
+								</select>
+							</span>
+						</td>
+						<td class="clickable-cell">
+							<span class="selectbox">
+								<select name="corpNo" id="corp_no_combo_box" data-usrId="${rowData.usr_id}">
+									<option selected disabled value="">{{ message('item.comp.003') }}</option>
+								</select>
+                    		</span>
+						</td>
+						<td>
+							${pstnInput}
+						</td>
+						<td>
+							<span class="selectbox">
+								<select class="combo_box" id="ratng_combo_box" data-usrId="${rowData.usr_id}">
+									<option selected disabled value="">{{ message('item.com.027') }}</option>
+									${selectRatngOptions}
+								</select>
+							</span>
+						</td>
+						<td>
+							<span class="selectbox">
+								<select class="combo_box" id="flag_combo_box" data-usrId="${rowData.usr_id}">
+									${selectFlagOptions}
+								</select>
+							</span>
+						</td>
+						<td class="clickable-cell">
+							<span class="start_date">
+								<input type="date" class="w-md date start_date_input" data-usrId="${rowData.usr_id}" min="${today}" disabled/>
+							</span>
+						</td>
+						<td class="clickable-cell">
+							<span class="end_date">
+								<input type="date" class="w-md date end_date_input" data-usrId="${rowData.usr_id}" min="${today}" disabled/>
+							</span>
+						</td>
+					`;
+
+				// 체크박스 클릭 이벤트 추가
+				row.querySelector(".check_mark").addEventListener("change", (e) => {
+					// 근무 상태가 임시직인 경우 시작일과 종료일이 입력되었는지 확인
+					if (rowData.flag === "T") { // 'T'가 임시직 코드라고 가정
+						const startDateInput = document.querySelector(`input.start_date_input[data-usrId="${rowData.usr_id}"]`);
+						const endDateInput = document.querySelector(`input.end_date_input[data-usrId="${rowData.usr_id}"]`);
+
+						if (!startDateInput.value || !endDateInput.value) {
+							gaiaCommon.customAlert("{{ message('msg.dept.011') }}"); // 임시직의 경우 시작일과 종료일을 입력해 주세요.
+							e.target.checked = false;
+							return; // 입력이 없을 경우 함수 종료
+						}
+
+						// 시작일과 종료일 값을 rowData에 저장
+						rowData.start_dt = startDateInput.value;
+						rowData.end_dt = endDateInput.value;
+					}
+
+					if (e.target.checked) {
+						emploeeCreateGrid.addEmpToList(rowData);
+					} else {
+						emploeeCreateGrid.removeEmpFromSpanList(rowData.usr_id);
+					}
+				});
+
+				tableBody.appendChild(row);
+
+				// **콤보박스(직급) 변경 이벤트 추가
+				row.querySelector("#ratng_combo_box").addEventListener("change", (e) => {
+					rowData.ratng_cd = e.target.value;
+
+					// 해당하는 체크박스를 찾아 체크 해제
+					const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${rowData.usr_id}"]`);
+					if (checkbox.checked) {
+						// 선택된 값을 `rowData`에 반영
+						emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+						// selectedEmpData에서도 해당 데이터를 삭제
+						delete emploeeCreateGrid.data.selectedEmpData[rowData.usr_id];
+
+						// 선택 목록에서도 해당 아이템 삭제
+						emploeeCreateGrid.removeEmpFromSpanList(rowData.usr_id);
+
+						$(checkbox).trigger("click");
+					}
+
+				});
+
+				// **회사구분 콤보박스의 change 이벤트
+				row.querySelector("#comp_grp_combo_box").addEventListener("change", (e) => {
+					const selectedGroup = e.target.value; // 선택된 그룹 값을 가져옴
+
+					// usrId와 일치하는 corpNo 셀렉트 박스를 찾음
+					const relatedCorpNo = document.querySelector(`#corp_no_combo_box[data-usrId="${rowData.usr_id}"]`);
+
+					if (relatedCorpNo) {
+						page.updateSecondSelectBox(selectedGroup, relatedCorpNo); // 연관된 회사명 콤보박스 요소에 업데이트 적용
+					}
+				});
+
+				// **회사명 선택 시 이벤트 추가
+				row.querySelector("#corp_no_combo_box").addEventListener("change", (e) => {
+					rowData.corp_no = e.target.value;
+
+					// 해당하는 체크박스를 찾아 체크 해제
+					const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${rowData.usr_id}"]`);
+
+					if (checkbox.checked) {
+						// 선택된 값을 `rowData`에 반영
+						emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+						// selectedEmpData에서도 해당 데이터를 삭제
+						delete emploeeCreateGrid.data.selectedEmpData[rowData.usr_id];
+
+						// 선택 목록에서도 해당 아이템 삭제
+						page.removeEmpFromSpanList(rowData.usr_id);
+
+						$(checkbox).trigger("click");
+					}
+				});
+
+				// **근무 상태 선택 시 이벤트 추가
+				row.querySelector("#flag_combo_box").addEventListener("change", (e) => {
+					const isTemporary = e.target.value === 'T'; // 'T'가 임시직 코드라고 가정
+					const startDateInput = row.querySelector(".start_date_input");
+					const endDateInput = row.querySelector(".end_date_input");
+
+					// 임시직일 때만 활성화, 다른 상태는 비활성화
+					startDateInput.disabled = !isTemporary;
+					endDateInput.disabled = !isTemporary;
+
+					if (!isTemporary) {
+						startDateInput.value = ''; // 비활성화 시 날짜 초기화
+						endDateInput.value = '';
+					}
+
+					// 선택된 값을 `rowData`에 반영
+					rowData.flag = e.target.value;
+
+					// 해당하는 체크박스를 찾아 체크 해제
+					const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${rowData.usr_id}"]`);
+					if (checkbox.checked) {
+						// 선택된 값을 `rowData`에 반영
+						emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+						// selectedEmpData에서도 해당 데이터를 삭제
+						delete emploeeCreateGrid.data.selectedEmpData[rowData.usr_id];
+
+						// 선택 목록에서도 해당 아이템 삭제
+						page.removeEmpFromSpanList(rowData.usr_id);
+
+						$(checkbox).trigger("click");
+					}
+
+				});
+
+				// **종료일 변경 이벤트 추가 (종료일이 시작일보다 크거나 같은 경우 알림)
+				row.querySelector(".end_date_input").addEventListener("change", (e) => {
+					const startDateInput = row.querySelector(".start_date_input");
+					const endDateInput = e.target;
+
+					if (startDateInput.value && new Date(endDateInput.value) <= new Date(startDateInput.value)) {
+						gaiaCommon.customAlert("{{ message('msg.dept.013') }}"); //종료일은 시작일 이후여야 합니다.
+						endDateInput.value = ''; // 유효하지 않은 값 초기화
+						return;
+					}
+
+					const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${rowData.usr_id}"]`);
+					if (checkbox.checked) {
+						// 선택된 값을 `rowData`에 반영
+						emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+						// selectedEmpData에서도 해당 데이터를 삭제
+						delete emploeeCreateGrid.data.selectedEmpData[rowData.usr_id];
+
+						// 선택 목록에서도 해당 아이템 삭제
+						page.removeEmpFromSpanList(rowData.usr_id);
+
+						$(checkbox).trigger("click");
+					}
+				});
+
+				// **시작일 변경 이벤트 추가
+				row.querySelector(".start_date_input").addEventListener("change", (e) => {
+					const startDateInput = e.target;
+					const endDateInput = row.querySelector(".end_date_input");
+
+					if (endDateInput.value && new Date(startDateInput.value) >= new Date(endDateInput.value)) {
+						gaiaCommon.customAlert("{{ message('msg.dept.013') }}"); //종료일은 시작일 이후여야 합니다.
+						endDateInput.value = ''; // 유효하지 않은 값 초기화
+						return;
+					}
+
+					const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${rowData.usr_id}"]`);
+					if (checkbox.checked) {
+						// 선택된 값을 `rowData`에 반영
+						emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+						// selectedEmpData에서도 해당 데이터를 삭제
+						delete emploeeCreateGrid.data.selectedEmpData[rowData.usr_id];
+
+						// 선택 목록에서도 해당 아이템 삭제
+						emploeeCreateGrid.removeEmpFromSpanList(rowData.usr_id);
+
+						$(checkbox).trigger("click");
+					}
+				});
+
+			});
+		},
+		addEmpToList: function(rowData) {
+
+			if (emploeeCreateGrid.data.selectedEmpData[rowData.usr_id]) {
+				gaiaCommon.customAlert("이미 추가된 직원입니다.");
+				return;
+			}
+
+			// usr_id key로 하여 selectedEmpData 저장
+			emploeeCreateGrid.data.selectedEmpData[rowData.usr_id] = rowData;
+
+			// HTML 요소 추가
+			const selectedList = document.querySelector('.selected_list');
+
+			// <p> 요소에 'on' 클래스 추가
+			selectedList.classList.add('on');
+
+			// 선택된 항목 추가
+			const selectedItem = document.createElement('span');
+			selectedItem.classList.add('selected_item');
+			selectedItem.setAttribute('data-usrId', rowData.usr_id);
+
+			selectedItem.innerHTML = `
+						<span class="item">${rowData.login_id}</span>
+						<span class="item name">${rowData.usr_nm}</span>
+						<button type="button" class="icon_btn" onclick="page.removeEmpFromSpanList('${rowData.usr_id}')">
+							<i class="ic ic-close"></i>
+							<span class="blind">삭제</span>
+						</button>
+			`;
+
+			selectedList.appendChild(selectedItem);
+
+			// 모든 개별 체크박스가 체크 상태인지 확인
+			const checkboxes = document.querySelectorAll("#emp_list_grid tbody .check_mark");
+			const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+
+			// 전체 선택 체크박스를 체크 상태로 설정
+			if (allChecked) {
+				document.getElementById("selectAllCheckbox").checked = true;
+			}
+		},
+		removeEmpFromSpanList: function(usrId) {
+
+			const selectedItem = document.querySelector(`.selected_item[data-usrId="${usrId}"]`);
+			if (selectedItem) {
+				selectedItem.remove();
+
+				// usrId를 key로 selectedEmployeesData에서 삭제
+				delete page.employee.data.selectedEmpData[usrId];
+
+				// usrId에 해당하는 체크박스를 찾아 체크 해제
+				const checkbox = document.querySelector(`#emp_list_grid tbody input[type="checkbox"][data-usrId="${usrId}"]`);
+				if (checkbox) {
+					checkbox.checked = false;
+				}
+			}
+
+			// 만약 선택된 항목이 없으면 'on' 클래스 제거
+			const selectedList = document.querySelector('.selected_list');
+			if (selectedList.querySelectorAll('.selected_item').length === 0) {
+				selectedList.classList.remove('on');
+			}
+
+			// 전체 선택 체크박스 해제 상태로 변경
+			const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+			if (selectAllCheckbox.checked) {
+				selectAllCheckbox.checked = false;
+			}
+
+		},
+		searchInit(){
+
+		}
+	}
+</script>

@@ -1,0 +1,503 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+    .tui-grid-border-line-right{
+        background-color: var(--tb-bd);
+    }
+    .personal_area{
+        margin-bottom: 2em;
+    }
+	.contents_wrap .form_box{
+		min-width: 49%; width: 49%;
+	}
+	#stampName{
+		padding: .25em 1em;
+	}
+    .thumbnail{
+        border: 1px solid var(--tb-bd);
+        max-height: 200px; width: auto;
+    }
+    .thumbnail_box{
+		min-width: 49%; width: 49%;
+    }
+    .info_area{
+        display: flex;
+        gap:2%;
+    }
+    .info_area > div{
+        width: 100%;
+    }
+    #updateMyInfoModal .pop_box .form_box{
+        width: 30em;
+        min-width: 30em;
+    }
+</style>
+{% endblock %} {% block content %}
+
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            <div class="personal_area">
+                <h3 class="conts_tit">회원 정보</h3>
+                <div class="my_form">
+                    <div class="btn_area" style=" margin-top: var(--gap-group);">
+                        <button type="button" class="btn _outline start-btn" onclick="page.startUpdate(this)">수정</button>
+                        <button type="button" class="btn _fill finish-btn" style="display:none" onclick="page.finishUpdate(this)">저장</button>
+                        <button type="button" class="btn _outline cancel-btn" style="" onclick="page.cancelUpdate()">닫기</button>
+                    </div>
+                    <div class="row" style="margin-top: var(--gap-group); gap:2%; height:fit-content">
+                        <div class="form_box">
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">아이디</div>
+                                    <div class="form_data">
+                                        <input type="text" id="loginId" name="loginId" required readonly value="">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">핸드폰 번호</div>
+                                    <div class="form_data">
+                                        <input type="text" id="phoneNo" name="phoneNo" class="editable" required readonly value="">
+                                    </div>
+                                </div>
+
+                            </div>
+                            <!-- row -->
+                            <div class="row cols">
+                                <div class="col">
+                                    <div class="form_label">이메일 주소</div>
+                                    <div class="form_data">
+                                        <input type="text" id="emailAdrs" name="emailAdrs" class="editable" required readonly value="">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row cols" style="min-height:50px">
+                                <div class="col">
+                                    <div class="form_label">직인</div>
+                                    <div class="form_data" style="justify-content: space-between;">
+                                        <span id="stampName"></span>
+                                        <div class="btn_area stamp_btns" style="display: none">
+                                            <div class="btn_group _outline">
+                                                <button type="button" class="btn icon_btn" id="addPhotoData" style="" onclick="page.uploadFile(this)">
+                                                    <i class="ic ic-picture-one"></i>
+                                                    <span class="blind">직인등록</span>
+                                                </button>
+                                                <input type="file" style="display:none" id="stampFile" accept="image/*">
+                                                <button type="button" class="btn icon_btn" onclick="page.cancelFile(this.previousElementSibling)">
+                                                    <i class="ic ic-delete"></i>
+                                                    <span class="blind">취소</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="thumbnail_box stamp_thumbnail" style="min-width: 40%; width: 40%;">
+                            <img src='' class="thumbnail">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="info_area">
+                <div class="department_box">
+                    <h3 class="conts_tit">부서 정보</h3>
+                    <div class="conts_grid" style="min-height: 320px">
+                        <div class="grid" id="department_grid"></div>
+                    </div>
+                </div>
+<!--                <div class="authority_box">-->
+<!--                    <h3 class="conts_tit">권한 그룹</h3>-->
+<!--                    <div class="conts_grid" style="min-height: 320px">-->
+<!--                        <div class="grid" id="autorityGroup_grid"></div>-->
+<!--                    </div>-->
+<!--                </div>-->
+            </div>
+        </div>
+    </article>
+</section>
+{% include "page/portal/common/update_modal" %}
+{% endblock content %} {% block footer_script %}
+<script>
+    $(document).ready(()=>{
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("", "마이페이지");
+                page.init();
+            }
+        });
+    })
+    const page = {
+        mode: 'R',
+        //마이페이지 상의 수정 가능한 입력 태그들
+		inputs:null,
+        //현재 클릭한 버튼들을 담을 변수
+		uploadBtn:null,
+		cancelBtn:null,
+        //직인 or 로고 구별 변수
+		type:"",
+        //각 파일 이름 태그
+        stampNameTag:null,
+        logoNameTag: null,
+        orgValue:{},
+        cntrctList:[],
+        flagOfDeleteStamp:false,
+		init:function(){
+            gaiaCommon.LoadingOverlay('body', true);
+
+            //*추후 복원(2차 인증)
+            // const mypageAuth = commonJs.getSessionStorage("mypageAuth");
+            // if(!mypageAuth){
+            //     gaiaCommon.customAlert('2차 인증을 진행해주세요.',()=>{
+            //         location.href = '/checkpw?to=mypage'
+            //     });
+            //     return;
+            // }
+
+            page.inputs = document.querySelectorAll(".editable");
+            $("input[type=file]").change(page.doFileChanged)
+            page.stampNameTag = document.querySelector("#stampName");
+            page.logoNameTag = document.querySelector("#logoName");
+            tui.Grid.setLanguage('ko', {
+				display: {
+					noData: '데이터가 없습니다'
+				}
+			});
+            gaiaCommon.get(`/api/user/myinfo`,null,(result)=>{
+                if(result.details){
+                    const user = result.details?.user;
+                    const stamp = result.details?.stamp;
+                    const deptAndAuthInfo = result.details?.deptAndAuthInfo;
+                    const cntrctList = result.details?.cntrctList;
+                    const authList = deptAndAuthInfo.authList
+                    page.orgValue = {
+                        phoneNo:user.phoneNo,
+                        emailAdrs:user.emailAdrs,
+                        stamp:stamp
+                    }
+                    document.getElementById("loginId").value = user.loginId;
+                    document.getElementById("phoneNo").value = user.phoneNo;
+                    document.getElementById("emailAdrs").value = user.emailAdrs;
+                    if(stamp != null){
+                        $(".stamp_thumbnail .thumbnail").attr("src",`/api/user/mypage/thumbnail?fileNo=${stamp.fileNo}`)
+                    }
+                    $("#stampName").text(stamp!=null?stamp.fileOrgNm:"등록된 직인이 없습니다.");
+
+                    // resultList = [];
+                    // cntrctNoSet = new Set();
+                    // for(const contract of cntrctList){
+                    //     if(!cntrctNoSet.has(contract.cntrct_no)){
+                    //         resultList.push({
+                    //             pjtNo:contract.pjt_no,
+                    //             pjtNm:contract.pjt_nm,
+                    //             cntrctNo:contract.cntrct_no,
+                    //             cntrctNm:contract.cntrct_nm
+                    //         })
+                    //         cntrctNoSet.add(contract.cntrct_no);
+                    //     }
+                    // }
+                    // page.cntrctList = resultList;
+                    console.log("CNTRCTLIST : ",cntrctList);
+                    const grouped = Object.values(
+                        cntrctList.reduce((acc, cur) => {
+                            const key = `${cur.pjt_no}|${cur.cntrct_no}`;
+                            if (!acc[key]) {
+                                acc[key] = {
+                                    ...cur,
+                                    dept_nm: cur.dept_nm // 첫 dept_nm 넣기
+                                };
+                            } else {
+                                acc[key].dept_nm += `,${cur.dept_nm}`; // 기존 dept_nm에 추가
+                            }
+                            return acc;
+                        }, {})
+                    );
+
+                    const dbMap = {};
+                    authList.forEach(item => {
+                        const key = `${item.pjtNo}|${item.cntrctNo}`
+                        dbMap[key] = item.rghtGrpNmKrn;
+                    })
+                    const merged = grouped.map(row => ({
+                        ...row,
+                        rght_grp_nm_krn : dbMap[`${row.pjt_no}|${row.cntrct_no}`] || ''
+                    }));
+
+                    merged.sort((a, b) => {
+                        const isSelfA = a.pjt_no === a.cntrct_no;
+                        const isSelfB = b.pjt_no === b.cntrct_no;
+
+                        // 1단계: pjt_no == cntrct_no 우선
+                        if (isSelfA && !isSelfB) return -1;
+                        if (!isSelfA && isSelfB) return 1;
+
+                        // 2단계: 같은 pjt_no끼리 우선
+                        if (a.pjt_no === b.pjt_no) {
+                            return a.cntrct_no.localeCompare(b.cntrct_no); // 세부정렬 (원하는대로)
+                        }
+
+                        // 3단계: 그 외 pjt_no 정렬
+                        return a.pjt_no.localeCompare(b.pjt_no);
+                    })
+                    page.departmentGridInit(merged);
+                    // page.authorityGroupGridInit();
+                }
+            },(error)=>{
+                console.log(error);
+            })
+            gaiaCommon.LoadingOverlay('body', false);
+			gaia.loaded = true;
+		},
+        departmentGridInit:function(cntrctList){
+            const isAdmin = gaiaCommon.me.info.admin
+            page.departmentGrid = new tui.Grid({
+				el: document.getElementById('department_grid'),
+				data:[],
+				useClientSort: false,
+				minBodyHeight: 280,
+				bodyHeight: "auto",
+                scrollX:false,
+                scrollY:cntrctList.length>=8,
+				columns: [
+					{
+						header: '프로젝트 명', //프로젝트 명
+						name: 'pjtNm',
+						align: 'left',
+						resizable: true,
+                        minWidth:"350",
+                        formatter: function({ row }) {
+                            if(row.cntrct_no == "ADMIN" || row.pjt_no == "ADMIN"){
+                                return "슈퍼 관리 부서";
+                            }
+                            else{
+                                return row.pjt_nm || "-";
+                            }
+                        }
+					},
+					{
+                        header: '계약 명', //계약 명
+						name: 'cntrctNm',
+						align: 'left',
+                        resizable: true,
+                        minWidth:"450",
+                        formatter: function({ row }) {
+                            let contractInfo = null;
+                            if(row.cntrct_no == "ADMIN" || row.pjt_no == "ADMIN"){
+                                return "슈퍼 관리 부서";
+                            }
+                            else{
+                                return row.cntrct_nm || "-";
+                            }
+                        }
+					},
+					{
+                        header: '조직', //조직
+						name: 'dept_nm',
+						align: 'center',
+                        resizable: true,
+                        minWidth:"150",
+					},
+                    {
+                        header:'진행상태',
+                        name:'pr_status',
+                        align:'center',
+                        resizable: true,
+                        minWidth:"250",
+                        formatter: function({ row }) {
+                            const now = new Date();
+                            const dateStr = `${now.getFullYear()}${now.getMonth() + 1}${now.getDate()}`;
+                            if (row.start_dt && row.end_dt) {
+                                if (row.start_dt <= dateStr && dateStr <= row.end_dt) {
+                                    return `진행중 (${row.start_dt} ~ ${row.end_dt})`;
+                                } else {
+                                    return `종료 (${row.start_dt} ~ ${row.end_dt})`;
+                                }
+                            } else {
+                                return "-"
+                            }
+                        }
+                    },
+                    {
+                        header:'권한그룹',
+                        name:'rght_grp_nm_krn',
+                        align: 'center',
+                        resizable: true,
+                        minWidth:"150",
+                        formatter: function({ row }) {
+                            if(row.rght_grp_nm_krn){
+                                return row.rght_grp_nm_krn;
+                            }
+                            return "-";
+                        }
+                    },
+                    {
+                        header:'재직상태',
+                        name:'status',
+                        align: 'center',
+                        resizable: true,
+                        minWidth:"120",
+                    },
+				]
+			});
+            page.departmentGrid.resetData(cntrctList)
+        },
+        authorityGroupGridInit:function(authList){
+            page.authorityGroupGrid = new tui.Grid({
+				el: document.getElementById('autorityGroup_grid'),
+				data:[],
+                useClientSort: false,
+                minBodyHeight: 280,
+                bodyHeight: "auto",
+                scrollX:false,
+                scrollY:authList.length>=8,
+				columns: [
+					{
+						header: '그룹 명', //그룹 명
+						name: 'rghtGrpNm',
+						align: 'left',
+						resizable: true,
+                        formatter: function({ row }) {
+                            return row.rghtGrpNmKrn;
+                        }
+					},
+					{
+                        header: '그룹 설명', //그룹 설명
+						name: 'rghtGrpDscrpt',
+						align: 'center',
+                        resizable: true,
+					},
+					{
+                        header: '사용여부', //사용여부
+						name: 'useYn ',
+						align: 'center',
+                        resizable: true,
+                        formatter: function({ row }) {
+                            return row.useYn === 'Y' ? '사용' : '사용안함';
+                        }
+					}
+				]
+			});
+            page.authorityGroupGrid.resetData(authList);
+        },
+		doFileChanged:(e) => {
+			const fileTag = e.target;
+	   		const file = fileTag?.files[0];
+
+	   		if(file){
+                if(!file.type.startsWith('image/')) {
+                    gaiaCommon.customAlert("이미지 파일만 업로드 가능합니다.")
+                    fileTag.value = "";
+                    return;
+                }
+	    		//thumbnail 띄우기
+	    		//업로드 된 파일의 확장자명
+                const thumbnail = document.querySelector(`.stamp_thumbnail img`);
+                const reader = new FileReader();
+                reader.onload = function(ie){
+                    const img = new Image();
+                    img.onload = function() {
+                        if(img.height > 2000 || img.width > 2000){
+                            gaiaCommon.customAlert("직인의 크기는 최대 2000px × 2000px 입니다.")
+                            return;
+                        }
+                        else{
+                            thumbnail.setAttribute("src",ie.target.result);
+                            thumbnail.setAttribute("class","thumbnail");
+            	    		document.getElementById("stampName").innerHTML = file.name;
+                        }
+                    }
+                    img.src = ie.target.result;
+                }
+                reader.readAsDataURL(file);
+			}
+		},
+        startUpdate:(updateBtn)=>{
+            page.mode = 'U';
+
+            $(".finish-btn").show();
+            $(".start-btn").hide();
+            $(".stamp_btns").show();
+
+            page.inputs.forEach((item,i)=>{
+                item.removeAttribute("readonly");
+            })
+        },
+        finishUpdate(finishBtn){
+            page.mode = 'R';
+
+            finishBtn.previousElementSibling.style.display = "";
+            finishBtn.style.display = "none";
+            
+            page.inputs.forEach((item,i)=>{
+                item.setAttribute("readonly",true);
+            })
+
+            const updateFormData = new FormData();
+            const user = {
+                phoneNo:document.getElementById("phoneNo").value,
+                emailAdrs:document.getElementById("emailAdrs").value,
+            }
+            updateFormData.append('user', new Blob([JSON.stringify(user)], { type: 'application/json' }));
+            updateFormData.append("flagOfDeleteStamp",new Blob([JSON.stringify(page.flagOfDeleteStamp)], { type: 'application/json' }));
+            updateFormData.append("stampFile",document.getElementById("stampFile").files[0]);
+            gaiaCommon.post("/api/user/mypage-update",updateFormData, (response) => {
+                if (response.ok) {
+                    gaiaCommon.customAlert("수정이 완료되었습니다.",()=>{
+                        page.cancelUpdate();
+                    })
+                }
+                else{
+                    console.log(xhr, response.message);
+                    gaiaCommon.customAlert("수정 실패. 잠시 후 다시 시도해주세요.",()=>{
+                        location.reload();
+                    })
+                }
+            },(xhr) => {
+                console.log("UPDATE FAIL : ",xhr);
+            });
+        },
+        cancelUpdate:()=>{
+            if (page.mode == 'R') {
+                gaia.goBack();
+            } else {
+                page.inputs.forEach((item)=>{
+                    item.readOnly = true;
+                    console.log(item);
+                })
+
+                for(const name in page.orgValue){
+
+                    if(name != 'stamp'){
+                        $(`[name=${name}]`).val(page.orgValue[name]);
+                    }
+                    else{
+                        $(`#stampName`).text(page.orgValue.stamp?.fileOrgNm||"등록된 직인이 없습니다.");
+                        $(`.stamp_thumbnail img`).attr("src",page.orgValue.stamp?"/api/user/mypage/thumbnail?fileNo="+page.orgValue.stamp.fileNo:null);
+                    }
+                }
+
+                $("#stampFile").val("");
+
+                $(".finish-btn").hide();
+                $(".start-btn").show();
+                $(".stamp_btns").hide();
+            }
+        },
+        uploadFile:(btn)=>{
+            page.uploadBtn = $(btn);
+            page.cancelBtn = $(btn).next().next();
+            btn.nextElementSibling.click();
+        },
+        cancelFile:(fileTag)=>{
+            fileTag.value = "";
+            $(`#stampName`).text("등록된 직인이 없습니다.");
+            $(`.stamp_thumbnail img`).attr("src",null);
+            page.flagOfDeleteStamp = true;
+        },
+	}
+
+</script>
+{% endblock footer_script %}

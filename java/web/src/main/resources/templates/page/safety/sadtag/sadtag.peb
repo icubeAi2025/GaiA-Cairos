@@ -1,0 +1,509 @@
+{% extends 'layout/base_content' %} {% block content %}
+<section class="contents_wrap">
+
+    <article class="conts g-row">
+        <div class="group">
+
+            <div class="conts_grid" id="container">
+                <div class="search_wrap">
+                    <span class="selectbox">
+                        <select name="appStatus" id="appStatus" onchange="toggleStatus()">
+                            <option value="status" selected>
+                                {{ message("item.projectcost.047") }}
+                            </option>
+                            <option value="E">
+                                {{ message("btn.027") }}
+                            </option>
+                            <option value="A">
+                                {{ message("btn.025") }}
+                            </option>
+                            <option value="R">
+                                {{ message("btn.026") }}
+                            </option>
+                            <option value="C">
+                                {{ message("btn.005") }}
+                            </option>
+                        </select>
+                    </span>
+                    <div class="searchbox_wrap">
+                        <input type="text" id="searchInput" placeholder='제목' />
+                        <button type="button" class="icon_btn search">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <div class="btn_area s_default">
+                    {{ btnHtml | raw }}
+                </div>
+                <div class="grid" id="sadtagGrid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    #inspectionListBody tr {
+        height: 40px;
+    }
+</style>
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+
+    let pjtNo;
+    let cntrctNo;
+    let gridData = [];
+    let selectedStatus;
+    let searchValue;
+    let svrType;
+
+    const params = new URLSearchParams(window.location.search);
+    let returnCntrctNo = params.get("returnCntrctNo");
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init($params.search);
+                gaia.loaded = true
+            }
+        });
+    });
+
+    // 승인상태 선택
+    function toggleStatus() {
+        $("#searchInput").val("");
+        selectedStatus = document.getElementById("appStatus").value;
+        sadtagGrid.getData();
+    }
+
+    var page = {
+        init: function (search) {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            selectedStatus = search?.selectedStatus ?? "status";
+            searchValue = search?.searchValue ?? "";
+
+            // 새로고침
+            // if (performance.navigation.type === 1) { 
+            //     const urlParams = new URLSearchParams(window.location.search);
+            //     if (urlParams.has('returnCntrctNo')) {
+            //         urlParams.delete('returnCntrctNo');
+            //         window.history.replaceState({}, '', '/safetymgmt/check');
+            //     }
+            //     returnCntrctNo = null;
+            // }
+
+            gaiaPortal.navMenuInit('M1002', "{{ message('item.sadtag.002') }}");
+
+            sadtagGrid.init();
+            gaiaCommon.makeCntrctSelectBox(
+                "#container",
+                () => {
+                    $(".btn_area").hide();
+                },
+                function initCb(initialCntrctNo) {  // 초기 콜백
+                    if (returnCntrctNo) {
+                        $("#cntrctNo").val(returnCntrctNo).change();
+                        cntrctNo = returnCntrctNo;
+                    } else {
+                        cntrctNo = initialCntrctNo;
+                    }
+
+                    if (selectedStatus || searchValue) {
+                        $('#appStatus').val(selectedStatus);
+                        $('#searchInput').val(searchValue);
+                        sadtagGrid.getData(searchValue, selectedStatus);
+                    } else {
+                        sadtagGrid.getData();
+                    }
+
+                    refreshGrid(sadtagGrid.sadtagGrid);
+                },
+                function chgCb(newCntrctNo) {   // 변경 콜백
+                    cntrctNo = newCntrctNo;
+
+                    if (sadtagGrid) {
+                        $('#searchInput').val("");
+                        $("#appStatus").val("status");
+                        sadtagGrid.getData();
+                    }
+                }
+            );
+
+            gaia.loaded = true
+        },
+        // 페이지 이동 함수
+        addSadtag: function () {    // 추가
+            window.location.href = `/safetymgmt/sadtag/add?type=d&cntrctNo=${cntrctNo}`;
+        }
+    }
+
+    let sadtagGrid = {
+        init: function () {
+            let _this = this;
+
+            let bodyHeight;
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                bodyHeight = window.innerHeight - 500;
+            } else if (isCAIROS()) {
+                bodyHeight = window.innerHeight - 420;
+            }
+
+            if (!this.sadtagGrid) {
+                this.sadtagGrid = new tui.Grid({
+                    el: document.getElementById('sadtagGrid'),
+                    bodyHeight: bodyHeight,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 70,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+                                    {
+                                        type:"checkBox",
+                                    },
+                                    {
+                                        type:"trash",
+                                        url: "/api/safetymgmt/sadtag/delete",
+                                        idFields: "cntrctNo,sadtagNo",
+                                        keyName: "sadtagList",
+                                        auth: `{{ isDelAuth | raw }}` == 'true',
+                                        msgList: {
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            confirmTit: "{{ message('item.sadtag.003') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        },
+                                        condition:(rowData) => {
+                                            if (rowData.ap_doc_id) {
+                                                gaiaCommon.customAlert("승인요청한 항목은 삭제할 수 없습니다.");
+                                                return false;
+                                            }
+                                            return true;
+                                        },
+                                        success: function () {
+                                            sadtagGrid.getData('');
+                                            $('#searchInput').val("");
+                                        }
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    columns: [
+                        {
+                            header: "{{ message('item.app.035') }}", name: "rowNum", width: 100, align: "center"
+                        },
+                        {
+                            header: "{{ message('item.sadtag.004') }}", name: "findDt", width: 150, align: "center"
+                        },
+                        {
+                            header: "{{ message('item.doc.003') }}",
+                            name: "title",
+                            className: "title",
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [{
+                                    type:"newWindow",
+                                    idFields: "cntrctNo,sadtagNo",
+                                    gridId: "sadtagGrid",
+                                    isHover:true,
+                                    open:{
+                                        url: "/safetymgmt/sadtag/read?cntrctNo={id1}&sadtagNo={id2}&type=A",
+                                    }
+                                }],
+                            },
+                            width: 700,
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sadtag.005') }}", name: "dfccyLct", width: 200
+                        },
+                        {
+                            header: "{{ message('item.sadtag.006') }}", name: "actnTmlmt", align: "center",
+
+                        },
+                        {
+                            header: "{{ message('item.sadtag.007') }}", name: "actnDt", align: "center",
+                        },
+                        {
+                            header: "{{ message('item.projectcost.047') }}", name: "apprvlStatsNm", align: "center",
+                        },
+                        {
+                            header: "{{ message('item.sadtag.008') }}", name: "findId", align: "center",
+                        },
+                    ],
+                });
+            }
+            // 검색
+            $('.icon_btn.search').on('click', function () {
+                searchValue = $('#searchInput').val();
+                let list = _this.getData(searchValue);
+
+                const searchData = {
+                    searchValue: searchValue,
+                    selectedStatus: selectedStatus,
+                }
+
+                gaia.setSearchData(searchData);
+
+                if (list) {
+                    _this.sadtagGrid.resetData(list);
+                }
+            });
+            // 엔터키 검색
+            $(document).ready(function () {
+                $('#searchInput').on('keypress', function (event) {
+                    if (event.which === 13) {
+                        searchValue = $('#searchInput').val();
+                        let list = _this.getData(searchValue);
+
+                        const searchData = {
+                            searchValue: searchValue,
+                            selectedStatus: selectedStatus,
+                        }
+
+                        gaia.setSearchData(searchData);
+
+                        if (list) {
+                            _this.sadtagGrid.resetData(list);
+                        }
+                    }
+                });
+            });
+            this.sadtagGrid.on('click', function (e) {
+                const rowKey = e.rowKey;
+                if (e.columnName == "_checked") {   // 체크박스 클릭 시 체크 상태 확인
+                    let temp = _this.sadtagGrid.getRow(rowKey);
+                    temp._attributes.checked = _this.sadtagGrid.getRow(rowKey)._attributes.checked ? false : true;
+                    _this.sadtagGrid.setRow(rowKey, temp);
+
+                    // 버튼명 변환
+                    const checkedRows = _this.sadtagGrid.getCheckedRowKeys();
+                    const resultButton = document.getElementById("addResult");
+
+                    if (checkedRows.length === 1) {
+                        const selectedRowData = _this.sadtagGrid.getRow(checkedRows[0]);
+
+                        if (resultButton) {
+                            if (selectedRowData.actnRslt) {
+                                resultButton.textContent = '조치결과 수정'; // 조치결과 등록
+                            } else {
+                                resultButton.textContent = '조치결과 등록'; // 조치결과 등록
+                            }
+
+                        }
+                    } else {
+                        if (resultButton) {
+                            resultButton.textContent = '조치결과 등록'; // 조치결과 등록
+                        }
+                    }
+                }
+            })
+            this.sadtagGrid.on("errorResponse", function (ev) {
+                const statusCode = ev.xhr.status;
+
+                if (statusCode === 403) {
+                    gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                } else {
+                    console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                }
+            });
+        },
+        getData: function (searchValue = '') {
+            if (!this.sadtagGrid) {
+                return;
+            }
+            let _this = this;
+            let param = {
+                cntrctNo: cntrctNo,
+                selectedStatus: selectedStatus
+            }
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+            }
+
+            $.ajax({
+                url: '/api/safetymgmt/sadtag/get/sadtagList',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                success: function (response) {
+                    const data = response.details.sadtagList;
+
+                    gridData = data.map((item, index) => ({
+                        rowNum: index + 1,
+                        cntrctNo: item.cntrct_no,
+                        sadtagNo: item.sadtag_no,
+                        sadtagDocNo: item.sadtag_doc_no,
+                        findDt: item.find_dt,
+                        title: gaiaCommon.decodeSafeText(item.title),
+                        dfccyLct: item.dfccy_lct,
+                        actnTmlmt: item.actn_tmlmt,
+                        actnDt: item.actn_dt,
+                        findId: item.find_id,
+                        apprvlStats: item.apprvl_stats,
+                        actnRslt: item.actn_rslt,
+                        apDocId: item.ap_doc_id,
+                        apprvlStatsNm: item.apprvl_stats_nm
+                    }));
+
+                    if (gridData.length > 0) {
+                        _this.sadtagGrid.resetData(gridData);
+                    } else {
+                        _this.sadtagGrid.resetData([]);
+                    }
+                },
+            });
+        },
+        updateSadtag: function () { // 수정
+            const checkedRows = sadtagGrid.sadtagGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.contract.022') }}"); // 수정할 항목을 선택해주세요.
+                return;
+            }
+
+            if (checkedRows.length === 1) {
+                const { sadtagNo, apprvlStats } = checkedRows[0];
+
+                if (apprvlStats) {
+                    gaiaCommon.customAlert("처리중인 항목은 수정할 수 없습니다.");
+                    return;
+                }
+
+                window.location.href = `/safetymgmt/sadtag/update?type=d&cntrctNo=${cntrctNo}&sadtagNo=${sadtagNo}`;
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.020') }}");  // 수정할 항목을 하나만 선택해주세요.
+            }
+        },
+        deleteSadtag: function () { // 삭제
+            const listName = "sadtagList";
+            const checkedRows = sadtagGrid.sadtagGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.055') }}"); // 삭제할 항목을 선택해주세요.
+                return;
+            }
+
+            const hasApproval = checkedRows.some(item => {
+                if (item.apprvlStats === "E") {
+                    gaiaCommon.customAlert("승인요청을 보낸 항목은 삭제할 수 없습니다.");
+                    return true;
+                } else if (item.apprvlStats === "A") {
+                    gaiaCommon.customAlert("승인 완료된 항목은 삭제할 수 없습니다.");
+                    return true;
+                }
+                return false;  // 반려(R)이거나 없음 → 삭제 허용
+            });
+
+            if (hasApproval) return;
+
+            const checked = checkedRows.map(item => ({
+                cntrctNo: item.cntrctNo,
+                sadtagNo: item.sadtagNo,
+                apprvlStats: item.apprvlStats
+            }));
+
+            gaiaCommon.customConfirm("{{ message('item.safety.008') }}", "{{ message('item.safety.008') }}", "{{ message('msg.009') }}", function () {
+                $.ajax({
+                    url: '/api/safetymgmt/sadtag/delete',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: "json",
+                    data: JSON.stringify({ [listName]: checked }),
+                    success: function (response) {
+                        if (response.ok) {
+                            gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+                            $('#searchInput').val("");
+                            sadtagGrid.getData(searchValue = '');
+                        }
+                    }
+                });
+            });
+        },
+        addAction: function () { // 조치결과 등록/수정
+            const checkedRows = sadtagGrid.sadtagGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("조치결과를 등록/수정할 항목을 선택해주세요.");
+                return;
+            }
+
+            if (checkedRows.length === 1) {
+                const { sadtagNo, apprvlStats, actnRslt } = checkedRows[0];
+
+                if (apprvlStats === "E") {
+                    gaiaCommon.customAlert("승인요청을 보낸 항목은 조치결과를 수정할 수 없습니다.");
+                    return;
+                }
+                if (apprvlStats === "A") {
+                    gaiaCommon.customAlert("승인 완료된 항목은 조치결과를 수정할 수 없습니다.");
+                    return;
+                }
+
+                const mode = actnRslt ? "update" : "create";
+                window.location.href = `/safetymgmt/sadtag/action?type=d&mode=${mode}&cntrctNo=${cntrctNo}&sadtagNo=${sadtagNo}&pjtNo=${pjtInfo.pjtNo}`;
+            } else {
+                gaiaCommon.customAlert("조치결과를 등록/수정할 항목을 하나만 선택해주세요.");
+            }
+        },
+
+        approvalRequest: function () { // 승인요청
+            const checkedRows = sadtagGrid.sadtagGrid.getCheckedRows();
+
+            if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.safety.006') }}");
+                return;
+            }
+
+            if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.safety.007') }}");
+                return;
+            }
+
+            const data = checkedRows[0];
+
+            if (data.apprvlStats === "E") {
+                gaiaCommon.customAlert("{{ message('msg.069') }}");
+                return;
+            }
+
+            if (["A", "C"].includes(data.apprvlStats)) {
+                gaiaCommon.customAlert("{{ message('msg.070') }}");
+                return;
+            }
+
+            gaiaCommon.customConfirm("{{ message('btn.027') }}", "{{ message('btn.027') }}", "{{ message('msg.monthlyreport.008') }}", function () {
+                $.ajax({
+                    url: '/api/safetymgmt/sadtag/approval',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: "json",
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        if (response.ok) {
+                            gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
+                                location.reload();
+                            });
+                        } else if (response.errorCode === '1000') {
+                            gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+                        }
+                    }
+                });
+            });
+        },
+    }
+</script>
+{% endblock footer_script %}

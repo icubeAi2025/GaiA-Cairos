@@ -1,0 +1,417 @@
+<div class="modal fade" id="nextModal" style="z-index:1000;">
+	<div class="pop_box _xlg">
+		<div class="pop_header">
+			<h5 class="pop_tit">{{ message("item.construction.035") }}</h5>
+			<div class="btn_area">
+				<button type="button" class="icon_btn pop_close" id="cancelNextModal">
+					<i class="ic ic-close"></i>
+					<span class="blind">창닫기</span>
+				</button>
+			</div>
+
+		</div>
+		<div class="pop_body">
+			<form id='inputChgNextForm'>
+				<div class="group">
+					<h4 class="conts_s-tit">Activity {{ message("item.com.066") }}</h4>
+					<div class="conts_grid">
+						<!-- S: search wrap ---------------------------------------------- -->
+						<div class="search_wrap">
+							<span class="item_group">
+								<input type="date" class="date w-md" id="plan_start">
+								<span class="_tilde">~</span>
+								<input type="date" class="date w-md" id="plan_finish">
+							</span>
+
+							<!-- searchbox -->
+							<div class="searchbox_wrap">
+								<input type="text" id="searchText" placeholder="검색어를 입력하세요">
+								<button type="submit" class="icon_btn search">
+									<i class="ic ic-search"></i>
+									<span class="blind">검색</span>
+								</button>
+							</div>
+						</div>
+						<!-- // E: search wrap ---------------------------------------------- -->
+
+						<div class="conts_grid">
+							<div class="sticky_wrap">
+								<div class="sticky_box">
+									<div style="min-height:150px;max-height:300px;min-width:1280px;">
+										<table class="table sticky" style="border: 0px;">
+											<thead style="border-bottom: 0px;">
+											<tr>
+												<th scope="col">{{ message("btn.001") }}</th>
+												<th scope="col">WBS</th>
+												<th scope="col">Activity ID</th>
+												<th scope="col">{{ message("item.construction.052") }}</th>
+												<th scope="col">{{ message("item.construction.055") }}</th>
+												<th scope="col">{{ message("item.wbs.004") }}</th>
+												<th scope="col">{{ message("item.wbs.005") }}</th>
+											</tr>
+											</thead>
+											<tbody id="nextPrActivityTbody">
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="s_conts" style="margin-top: var(--gap-row);">
+					<span class="tree_route">{{ message("item.construction.036") }}</span>
+					<div>
+						<div class="group">
+							<h4 class="conts_s-tit">{{ message("item.construction.036") }} Activity</h4>
+							<div class="conts_grid">
+								<table class="table">
+									<thead>
+									<tr>
+										<th scope="col" rowspan="2">{{ message("btn.002") }}</th>
+										<th scope="col" rowspan="2">WBS</th>
+										<th scope="col" rowspan="2">Activity</th>
+										<th scope="col" colspan="3">{{ message("item.construction.036") }}</th>
+										<th scope="col" rowspan="2">{{ message("item.app.018") }}</th>
+									</tr>
+									<tr>
+										<th scope="col">{{ message("item.construction.029") }}</th>
+										<th scope="col">{{ message("item.construction.030") }}</th>
+										<th scope="col">{{ message("item.construction.033") }}</th>
+									</tr>
+									</thead>
+									<tbody id="nextDailyReportActivityTbody">
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area s_default jc_e">
+				<button type="button" class="btn _fill" onclick="goSaveChgNext()">{{ message("btn.006") }}</button>
+				<button type="button" class="btn _outline" id="cancelNextModalBtn">{{ message("btn.007") }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<style>
+	.cell-BizON {
+		background-color: #FFF000 !important
+	}
+
+	.pop_box._sm {
+		width: 62rem;
+	}
+</style>
+<script>
+	var urlParams = new URLSearchParams(location.search);
+	var id = "";
+	var code = "";
+	var type = "";
+	var curSeq = 0;
+	var delActivityArr = new Array();
+	let returnNextMap = new Array();
+
+
+	var initNextModal = function () {
+		// 그리드에서 값가져옴
+		const modalElement = document.getElementById("nextModal");
+		/*
+		const row = JSON.parse(
+			modalElement.getAttribute("data-id-value")
+		);
+		code = row.rsce_cd;
+		type = row.rsce_tp_cd;
+		id = row.cntrct_chg_id;
+		if (code && type && id) {
+			modal.init();
+		}
+		*/
+		$(".pop_box").css("z-index", 9999);
+
+		$("#cancelNextModalBtn").click(function () {
+			closeNextModal();
+		});
+
+		$("#cancelNextModal").click(function () {
+			closeNextModal();
+		});
+
+		/* 검색창 관련 함수 */
+		const searchEl = $(".search");
+		const searchInputEl = searchEl.find("input");
+
+		searchEl.click(function () {
+			nextModal.init();
+		});
+
+		//엔터 검색
+		$("#searchForm").on("keyup", function (key) {
+			if (key.keyCode == 13) {
+				nextModal.init();
+			}
+		});
+
+		let commonItem = [];
+		commonItem[0] = {
+			cmnGrpCd: 'b5af6b1b-224f-3ce1-ab98-0c8db36c2955',
+			selectBoxId: 'statusTypeChgNext',
+			selectBoxNmType: 'KOR',
+			paramNm: 'testBox',
+			funName: '',
+			funParam: 'this.value',
+			funtype: 'onchange'
+		};
+
+		$.ajax({
+			url: '/api/util/make-selectBox',
+			method: "POST",
+			dataType: "json",
+			xhrFields: { withCredentials: true },
+			contentType: 'application/json; charset=UTF-8',
+			traditional: true,
+			data: JSON.stringify(commonItem),
+			success: function (data) {
+				returnNextMap = data.details.returnMap;
+				returnNextMap.testBox = returnNextMap.testBox.replace("id=", "name=");
+				returnNextMap.testBox = returnNextMap.testBox.replace("<option value='0101'>완료</option>", "");
+
+				nextModal.init();
+			},
+            error: function (xhr, status, error) {
+                console.error(status, error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            }
+		});
+	}
+
+
+	let nextModal = {
+		init: function (type) {
+			let data;
+
+			var param = {
+				cntrctNo: cntrctNo
+				, dailyReportId: rId
+				, workDtType: 'TM'
+				, planStart: $("#plan_start").val()
+				, planFinish: $("#plan_finish").val()
+				, searchText: $("#searchText").val()
+			};
+
+			$("#nextPrActivityTbody").empty();
+			$("#nextDailyReportActivityTbody").empty();
+			$.ajax({
+				url: BASEPATH + 'dailyreport/dailyreport-chg',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset-utf-8',
+				data: JSON.stringify(param),
+				async: false,
+				success: function (response, status, xhr) {
+					data = response.details.prActivityList;
+					prNextActivity.init(response.details.prActivityList);
+					nextDailyReportActivity.init(response.details.nextDailyReportActivityList);
+				},
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+			});
+
+		}
+
+	}
+
+
+	let prNextActivity = {
+		init: function (data) {
+			data.forEach(function (row, seq) {
+				var hid = "";
+				if (row.chk == 1) {
+					hid = "hidden";
+				}
+				$("#nextPrActivityTbody").append(
+					`<tr id="prNext_` + row.activity_id + `" ` + hid + `>
+						<td style="width:100px;text-align:center;"><button type="button" class="btn icon_btn _outline" onclick="addNextRow(`+ seq + `, '` + row.activity_id + `');"><i class="ic ic-plus"><span class="blind">추가</span></button></td>
+						<td style="width:200px;text-align:center;">`+ row.path_nm + `</td>
+						<td style="width:100px;text-align:center;">`+ row.activity_id + `</td>
+						<td>`+ row.activity_nm + `</td>
+						<td style="width:95px;text-align:right;">`+ numberFormat(row.expt_cost, "g") + `</td>
+						<td style="text-align:center;"><span>`+ row.plan_start + `</span></td>
+						<td style="text-align:center;"><span>`+ row.plan_finish + `</span></td>
+						<td style="display:none;">`+ row.cntrct_chg_id + `</td>
+						<td style="display:none;">`+ row.revision_id + `</td>
+						<td style="display:none;">`+ row.activity_kind + `</td>
+					</tr>`);
+			});
+		}
+	}
+
+	let nextDailyReportActivity = {
+		init: function (data) {
+			data.forEach(function (row, seq) {
+				var actual_reqre_daynum = row.actual_reqre_daynum < 1 ? '' : row.actual_reqre_daynum;
+				$("#nextDailyReportActivityTbody").append(
+					`<tr id="nextChg_` + row.activity_id + `">
+						<td style="display:none;">`+ row.activity_id + `</td>
+						<td style="width:100px;text-align:center;"><button type="button" class="icon_btn" onclick="deleteNextRow(`+ seq + `, '` + row.activity_id + `');"><i class="ic ic-delete"><span class="blind">삭제</span></button></td>
+						<td style="width:200px;text-align:center;">`+ row.path_nm + `</td>
+						<td>`+ row.activity_nm + `</td>
+						<td style="text-align:center;"><span id="activity_plan_start_`+ row.activity_id + `">` + row.plan_start + `</span></td>
+						<td style="text-align:center;"><span id="activity_plan_finish_`+ row.activity_id + `">` + row.plan_finish + `</span></td>
+						<td style="width:95px;text-align:right;">`+ row.plan_reqre_daynum + `</td>
+						<td style="width:120px;"><div class="selectbox" name="chgNextActivity" dId="`+ row.daily_activity_id + `" aId="` + row.activity_id + `" style="z-index:0;">` + returnNextMap.testBox + `</div></td>
+						<td style="display:none;">`+ row.cntrct_chg_id + `</td>
+						<td style="display:none;">`+ row.revision_id + `</td>
+						<td style="display:none;">`+ row.daily_activity_id + `</td>
+					</tr>`);
+				if (row.pstats != "" && row.pstats != null) {
+					$("select[name='statusTypeChgNext']")[seq].value = row.pstats;
+				}
+			});
+		}
+	}
+
+	function addNextRow(rownum, activity_id) {
+		var cell = $("#prNext_" + activity_id)[0];
+		var diffDate = calcNextDate(rownum, 'diff', cell.cells[5].innerText, cell.cells[6].innerText, activity_id, cell.cells[9].innerText);
+		let newRow = $("#nextDailyReportActivityTbody tr").length;
+		$("#nextDailyReportActivityTbody").prepend(
+			`<tr id="nextChg_` + activity_id + `" oriSeq="` + rownum + `">
+				<td hidden>`+ activity_id + `</td>
+				<td style="width:100px;text-align:center;"><button type="button" class="icon_btn" onclick="deleteNextRow(`+ newRow + `, '` + activity_id + `', 'pr');"><i class="ic ic-delete"><span class="blind">삭제</span></button></td>
+				<td style="width:200px;text-align:center;">`+ cell.cells[1].innerText + `</td>
+				<td>`+ cell.cells[3].innerText + `</td>
+				<td style="text-align:center;"><span id="activity_plan_start_`+ activity_id + `">` + cell.cells[5].innerText + `</span></td>
+				<td style="text-align:center;"><span id="activity_plan_finish_`+ activity_id + `">` + cell.cells[6].innerText + `</span></td>
+				<td style="width:95px;text-align:right;">`+ diffDate + `</td>
+				<td style="width:120px;"><div class="selectbox" name="chgNextActivity" aId="`+ activity_id + `" style="z-index:0;">` + returnNextMap.testBox + `</div></td>
+				<td style="display:none;">`+ cell.cells[7].innerText + `</td>
+				<td style="display:none;">`+ cell.cells[8].innerText + `</td>
+				<td style="display:none;"></td>
+				<td style="display:none;">`+ cell.cells[9].innerText + `</td>
+			</tr>`);
+		$("#prNext_" + activity_id).hide();
+	}
+
+	function deleteNextRow(rownum, activity_id, type) {
+		if (type == "pr") {
+			delActivityArr.push({
+				daily_activity_id: ''
+				, cntrct_chg_id: $("#nextChg_" + activity_id)[0].cells[8].innerText
+				, revision_id: $("#nextChg_" + activity_id)[0].cells[9].innerText
+				, activity_id: activity_id
+				, work_dt_type: "TM"
+				, dlt_yn: "Y"
+			});
+		} else {
+			delActivityArr.push({
+				daily_activity_id: $("#nextChg_" + activity_id)[0].cells[10].innerText
+				, cntrct_chg_id: $("#nextChg_" + activity_id)[0].cells[8].innerText
+				, revision_id: $("#nextChg_" + activity_id)[0].cells[9].innerText
+				, plan_bgn_date: $("#activity_plan_start_" + activity_id).text()
+				, plan_end_date: $("#activity_plan_finish_" + activity_id).text()
+				, plan_reqre_daynum: $("#nextChg_" + activity_id)[0].cells[6].innerText
+				, activity_id: activity_id
+				, work_dt_type: "TM"
+				, dlt_yn: "Y"
+			});
+		}
+
+		$("#prNext_" + activity_id).show();
+		$("#nextChg_" + activity_id).hide();
+	}
+
+	function closeNextModal() {
+		var modalElement = document.getElementById("nextModal");
+		modalElement.style.display = "none";
+		document.body.style.overflow = 'unset';
+	}
+
+
+	function calcNextDate(seq, type, sDt, eDt, activity_id, activity_kind) {
+		var diff = Math.abs((new Date(sDt) - new Date(eDt)) / 86_400_000) + 1;
+
+		if (activity_kind == "FN" || activity_kind == "SM") {
+			diff = 0;
+		}
+
+		return diff;
+	}
+
+	function goSaveChgNext() {
+		var inputForm = $("#inputChgNextForm").serializeArray();
+		var activityForm = new Array();
+
+		var statusTypeChgNext = new Array();
+
+
+		$("select[name=statusTypeChgNext]").each(function (i, el) {
+			statusTypeChgNext.push($(this).val());
+		});
+
+		$('div[name=chgNextActivity]').each(function (i, el) {
+			activityForm.push({
+				cntrctNo: cntrctNo
+				, dailyReportId: rId
+				, dailyActivityId: $(this).attr("dId")
+				, activityId: $(this).attr("aId")
+				, workDtType: "TM"
+				, pstats: statusTypeChgNext[i]
+				, dltYn: "N"
+			});
+		});
+
+		delActivityArr.forEach(function (row, seq) {
+			activityForm.push({
+				cntrctNo: cntrctNo
+				, dailyReportId: rId
+				, dailyActivityId: row.daily_activity_id
+				, activityId: row.activity_id
+				, dltYn: "Y"
+				, workDtType: "TM"
+			});
+		});
+
+		var formData = new FormData();
+		formData = {
+			cntrctNo: cntrctNo
+			, dailyReportId: rId
+			, workDtType: 'TM'
+		}
+		formData['dailyReportActivity'] = activityForm;
+
+        saveModal = 'Y';
+        goSave();
+
+		$.ajax({
+			url: BASEPATH + 'dailyreport/update-chg-dailyreport-activity',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(formData),
+			success(result) {
+				gaiaCommon.customAlert("{{ message("msg.034") }}", function () {
+					closeNextModal();
+					window.location.reload();
+				});
+			},
+            error: function (xhr, status, error) {
+                console.error(status, error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            }
+		});
+
+	}
+
+	$(document).on("click", "#chgNext", function () {
+		initNextModal();
+		document.body.style.overflow = 'hidden';
+	});
+</script>

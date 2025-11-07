@@ -1,0 +1,4252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document">
+
+    <sql id="selectDocuAuthSQL">
+        SELECT AA.NO,
+            AA.ID,
+            AA.NO AS AUTH_NO,
+            AA.ID AS AUTH_ID,
+            CASE
+                WHEN MAX(AA.RGHT_TY) = 1 THEN 'G'
+                WHEN MAX(AA.RGHT_TY) = 2 THEN 'R'
+                WHEN MAX(AA.RGHT_TY) = 3 THEN 'C'
+                WHEN MAX(AA.RGHT_TY) = 4 THEN 'D'
+                WHEN MAX(AA.RGHT_TY) = 5 THEN 'A'
+            END AS RGHT_TY
+        FROM (
+            SELECT
+                A.NO AS NO,
+                A.ID AS ID,
+                CASE
+                    WHEN A.RGHT_TY = 'G' THEN 1
+                    WHEN A.RGHT_TY = 'R' THEN 2
+                    WHEN A.RGHT_TY = 'C' THEN 3
+                    WHEN A.RGHT_TY = 'D' THEN 4
+                    WHEN A.RGHT_TY = 'A' THEN 5
+                END AS RGHT_TY
+            FROM DC_AUTHORITY A,
+            (
+                SELECT
+                    B.RGHT_GRP_NO,
+                    B.RGHT_GRP_CD
+                FROM
+                    SM_ORGANIZATION A,
+                    (
+                        SELECT
+                            A.RGHT_GRP_NO,
+                            A.RGHT_GRP_CD,
+                            B.AUTH_NO,
+                            B.RGHT_GRP_USR_TY
+                        FROM
+                            SM_AUTHORITY_GROUP A,
+                            SM_AUTHORITY_GROUP_USERS B
+                        WHERE
+                            A.DLT_YN = 'N'
+                            AND A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                    ) AS B
+                WHERE A.ORG_NO = B.AUTH_NO
+                AND A.DLT_YN = 'N'
+                AND B.RGHT_GRP_USR_TY != 'D'
+                AND A.LOGIN_ID = #{loginId}
+                UNION
+                SELECT
+                    C.RGHT_GRP_NO,
+                    C.RGHT_GRP_CD
+                FROM
+                    SM_ORGANIZATION A,
+                    SM_DEPARTMENT B,
+                    (
+                        SELECT
+                            A.RGHT_GRP_NO,
+                            A.RGHT_GRP_CD,
+                            B.AUTH_NO,
+                            B.RGHT_GRP_USR_TY
+                        FROM
+                            SM_AUTHORITY_GROUP A,
+                            SM_AUTHORITY_GROUP_USERS B
+                        WHERE A.DLT_YN = 'N'
+                        AND A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                    ) AS C
+                WHERE A.DEPT_NO = B.DEPT_NO
+                AND A.DLT_YN = 'N'
+                AND B.DLT_YN = 'N'
+                AND B.DEPT_NO = C.AUTH_NO
+                AND C.RGHT_GRP_USR_TY = 'D'
+                <if test=' (loginId == null and loginId == "" ) and user != null and (user.login_Id != null) '>
+                    AND A.LOGIN_ID = #{user.login_Id}
+                </if>
+                <if test=' loginId != null and loginId != "" '>
+                    AND A.LOGIN_ID = #{loginId}
+                </if>
+            ) AS B
+            WHERE A.RGHT_GRP_NO = B.RGHT_GRP_NO
+            AND A.RGHT_GRP_CD = B.RGHT_GRP_CD
+            AND A.DLT_YN = 'N'
+        ) AS AA
+        GROUP BY AA.NO, AA.ID
+    </sql>
+
+    <sql id="dcStorageMainColumns">
+            doc_no
+            , doc_id
+            , navi_no
+            , navi_id
+            , up_doc_no
+            , up_doc_id
+            , doc_type
+            , doc_path
+            , doc_nm
+            , doc_disk_nm
+            , doc_disk_path
+            , doc_url_path
+            , doc_size
+            , doc_hit_num
+            , doc_trash_yn
+            , dlt_yn
+            , rgstr_id
+            , rgst_dt
+            , chg_id
+            , chg_dt
+            , dlt_id
+            , dlt_dt
+            , cbgn_key
+    </sql>
+
+    <select id="selectOneDocument" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectOneDocument][thkim] */
+       SELECT
+            DOC_NO,
+            DOC_ID,
+            UP_DOC_ID,
+            UP_DOC_NO,
+            NAVI_NO,
+            NAVI_ID,
+            DOC_TYPE,
+            DOC_PATH,
+            DOC_NM,
+            DOC_DISK_NM,
+            DOC_DISK_PATH,
+            DOC_SIZE
+       FROM DC_STORAGE_MAIN
+       WHERE
+            DOC_ID = #{docId}
+       AND DLT_YN = 'N';
+    </select>
+
+    <select id="selectOneNavigation" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectOneNavigation][thkim] */
+       SELECT
+            NAVI_NO,
+            NAVI_ID,
+            PJT_NO,
+            CNTRCT_NO,
+            NAVI_DIV,
+            NAVI_PATH,
+            NAVI_NM,
+            UP_NAVI_ID,
+            UP_NAVI_NO,
+            NAVI_LEVEL,
+            NAVI_TYPE,
+            DSPLY_ORDR,
+            RGSTR_ID,
+            RGST_DT,
+            CHG_ID,
+            CHG_DT,
+            NAVI_FOLDER_TYPE
+       FROM DC_NAVIGATION
+       WHERE
+            NAVI_ID = #{naviId}
+       AND DLT_YN = 'N';
+    </select>
+
+    <select id="selectLastestDcStorageMainByFolderType" resultType="dcStorageMain">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectLastestDcStorageMainByFolderType][bjkim] */
+        SELECT <include refid="dcStorageMainColumns" />
+        FROM dc_storage_main dsm
+        WHERE navi_id IN (
+            SELECT navi_id
+            FROM dc_navigation dn
+            WHERE cntrct_no = #{cntrctNo}
+            AND dn.navi_div = #{naviDiv}
+            AND dn.navi_folder_type = #{naviFolderType}
+            AND dlt_yn = 'N'
+        )
+        ORDER BY doc_no DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectAdminDocumentNavigationList" parameterType="String" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectAdminDocumentNavigationList][gwLee] */
+        WITH RECURSIVE DC_NAVIGATION_LIST(  NAVI_NO,
+                                            NAVI_ID,
+                                            PJT_NO,
+                                            CNTRCT_NO,
+                                            NAVI_DIV,
+                                            NAVI_PATH,
+                                            NAVI_NM,
+                                            UP_NAVI_NO,
+                                            UP_NAVI_ID,
+                                            NAVI_LEVEL,
+                                            NAVI_TYPE,
+                                            NAVI_SHAR_YN,
+                                            DLT_YN,
+                                            RGSTR_ID,
+                                            RGST_DT,
+                                            CHG_ID,
+                                            CHG_DT,
+                                            DLT_ID,
+                                            DLT_DT,
+                                            DSPLY_ORDR,
+                                            SVR_TYPE,
+                                            DEPTH,
+                                            PATH,
+                                            CYCLE ) 
+        AS (    SELECT  A.NAVI_NO,
+                        A.NAVI_ID,
+                        A.PJT_NO,
+                        A.CNTRCT_NO,
+                        A.NAVI_DIV,
+                        A.NAVI_PATH,
+                        A.NAVI_NM,
+                        A.UP_NAVI_NO,
+                        A.UP_NAVI_ID,
+                        A.NAVI_LEVEL,
+                        A.NAVI_TYPE,
+                        A.NAVI_SHAR_YN,
+                        A.DLT_YN,
+                        A.RGSTR_ID,
+                        A.RGST_DT,
+                        A.CHG_ID,
+                        A.CHG_DT,
+                        A.DLT_ID,
+                        A.DLT_DT, 
+                        A.DSPLY_ORDR,
+                        A.SVR_TYPE,
+                        1,
+                        ARRAY[A.NAVI_ID::TEXT],
+                        FALSE
+                FROM    DC_NAVIGATION A
+                WHERE   A.NAVI_ID = #{naviId}
+                AND     A.DLT_YN = 'N'
+                UNION ALL
+                SELECT  A.NAVI_NO,
+                        A.NAVI_ID,
+                        A.PJT_NO,
+                        A.CNTRCT_NO,
+                        A.NAVI_DIV,
+                        A.NAVI_PATH,
+                        A.NAVI_NM,
+                        A.UP_NAVI_NO,
+                        A.UP_NAVI_ID,
+                        A.NAVI_LEVEL,
+                        A.NAVI_TYPE,
+                        A.NAVI_SHAR_YN,
+                        A.DLT_YN,
+                        A.RGSTR_ID,
+                        A.RGST_DT,
+                        A.CHG_ID,
+                        A.CHG_DT,
+                        A.DLT_ID,
+                        A.DLT_DT,   
+                        A.DSPLY_ORDR,
+                        A.SVR_TYPE,
+                        B.DEPTH + 1,
+                        ARRAY_APPEND(B.PATH,
+                        CAST(A.NAVI_LEVEL AS TEXT)::TEXT),
+                        A.NAVI_ID = ANY(B.PATH)
+                FROM    DC_NAVIGATION A,
+                        DC_NAVIGATION_LIST B
+                WHERE   A.UP_NAVI_ID = B.NAVI_ID
+                AND     A.DLT_YN = 'N'
+                AND     NOT CYCLE )   
+        SELECT  NAVI_NO,
+                NAVI_ID,
+                PJT_NO,
+                CNTRCT_NO,
+                NAVI_DIV,
+                NAVI_PATH,
+                NAVI_NM,
+                UP_NAVI_NO,
+                (CASE WHEN COALESCE(UP_NAVI_ID, '') = '' THEN '#' ELSE UP_NAVI_ID END) AS UP_NAVI_ID,
+                NAVI_PATH,
+                NAVI_LEVEL,
+                NAVI_TYPE,
+                NAVI_SHAR_YN,
+                DLT_YN,
+                RGSTR_ID,
+                RGST_DT,
+                CHG_ID,
+                CHG_DT,
+                DLT_ID,
+                DLT_DT,
+                DSPLY_ORDR,
+                SVR_TYPE,
+                DEPTH AS LEVEL,
+                PATH,
+                'A' AS RGHT_TY
+        FROM    DC_NAVIGATION_LIST
+        ORDER BY PATH, DSPLY_ORDR
+    </select>
+
+    <select id="selectUserDocumentNavigationList" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectUserDocumentNavigationList][gwLee] */
+        WITH RECURSIVE DC_NAVIGATION_LIST(  NAVI_NO,
+                                            NAVI_ID,
+                                            PJT_NO,
+                                            CNTRCT_NO,
+                                            NAVI_DIV,
+                                            NAVI_PATH,
+                                            NAVI_NM,
+                                            UP_NAVI_NO,
+                                            UP_NAVI_ID,
+                                            NAVI_LEVEL,
+                                            NAVI_TYPE,
+                                            NAVI_SHAR_YN,
+                                            DLT_YN,
+                                            RGSTR_ID,
+                                            RGST_DT,
+                                            CHG_ID,
+                                            CHG_DT,
+                                            DLT_ID,
+                                            DLT_DT,
+                                            DSPLY_ORDR,
+                                            SVR_TYPE,
+                                            DEPTH,
+                                            PATH,
+                                            CYCLE ) 
+        AS (    SELECT  A.NAVI_NO,
+                        A.NAVI_ID,
+                        A.PJT_NO,
+                        A.CNTRCT_NO,
+                        A.NAVI_DIV,
+                        A.NAVI_PATH,
+                        A.NAVI_NM,
+                        A.UP_NAVI_NO,
+                        A.UP_NAVI_ID,
+                        A.NAVI_LEVEL,
+                        A.NAVI_TYPE,
+                        A.NAVI_SHAR_YN,
+                        A.DLT_YN,
+                        A.RGSTR_ID,
+                        A.RGST_DT,
+                        A.CHG_ID,
+                        A.CHG_DT,
+                        A.DLT_ID,
+                        A.DLT_DT, 
+                        A.DSPLY_ORDR,
+                        A.SVR_TYPE,
+                        1,
+                        ARRAY[A.NAVI_ID::TEXT],
+                        FALSE
+                FROM    DC_NAVIGATION A
+                WHERE   A.NAVI_ID = #{naviId}
+                AND     A.DLT_YN = 'N'
+                UNION ALL
+                SELECT  A.NAVI_NO,
+                        A.NAVI_ID,
+                        A.PJT_NO,
+                        A.CNTRCT_NO,
+                        A.NAVI_DIV,
+                        A.NAVI_PATH,
+                        A.NAVI_NM,
+                        A.UP_NAVI_NO,
+                        A.UP_NAVI_ID,
+                        A.NAVI_LEVEL,
+                        A.NAVI_TYPE,
+                        A.NAVI_SHAR_YN,
+                        A.DLT_YN,
+                        A.RGSTR_ID,
+                        A.RGST_DT,
+                        A.CHG_ID,
+                        A.CHG_DT,
+                        A.DLT_ID,
+                        A.DLT_DT,   
+                        A.DSPLY_ORDR,
+                        A.SVR_TYPE,
+                        B.DEPTH + 1,
+                        ARRAY_APPEND(B.PATH,
+                        CAST(A.NAVI_LEVEL AS TEXT)::TEXT),
+                        A.NAVI_ID = ANY(B.PATH)
+                FROM    DC_NAVIGATION A,
+                        DC_NAVIGATION_LIST B
+                WHERE   A.UP_NAVI_ID = B.NAVI_ID
+                AND     A.DLT_YN = 'N'
+                AND     NOT CYCLE )   
+        SELECT  A.NAVI_NO,
+                A.NAVI_ID,
+                A.PJT_NO,
+                A.CNTRCT_NO,
+                A.NAVI_DIV,
+                A.NAVI_PATH,
+                A.NAVI_NM,
+                A.UP_NAVI_NO,
+                (CASE WHEN COALESCE(A.UP_NAVI_ID, '') = '' THEN '#' ELSE A.UP_NAVI_ID END) AS UP_NAVI_ID,
+                A.NAVI_PATH,
+                A.NAVI_LEVEL,
+                A.NAVI_TYPE,
+                A.NAVI_SHAR_YN,
+                A.DLT_YN,
+                A.RGSTR_ID,
+                A.RGST_DT,
+                A.CHG_ID,
+                A.CHG_DT,
+                A.DLT_ID,
+                A.DLT_DT,
+                A.DSPLY_ORDR,
+                A.SVR_TYPE,
+                A.DEPTH AS LEVEL,
+                A.PATH,
+                B.RGHT_TY
+        FROM DC_NAVIGATION_LIST A
+        , (
+            <include refid="selectDocuAuthSQL" />
+        ) AS B
+        WHERE   A.NAVI_NO = B.NO
+        AND     A.NAVI_ID = B.ID
+        ORDER BY PATH, DSPLY_ORDR
+    </select>
+
+    <select id="selectUserDocumentNavigationListAuthority" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectUserDocumentNavigationListAuthority][gwLee] */
+        SELECT A.RGHT_KIND AS RGHT_KIND
+        FROM (  SELECT  B.RGHT_KIND AS RGHT_KIND, 
+                        (   SELECT  AA.CMN_CD_DSPLY_ORDER 
+                            FROM    SM_COM_CODE AA 
+                            WHERE   AA.CMN_GRP_CD = #{cmnGrpCd}
+                            AND     AA.CMN_CD = B.RGHT_KIND ) AS AUTHORITYLV
+                FROM    SM_AUTHORITY_GROUP A,
+                        SM_MENU_AUTHORITY_GROUP B,
+                        SM_AUTHORITY_GROUP_USERS C,
+                        SM_ORGANIZATION D
+                WHERE   A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                AND     A.RGHT_GRP_CD = B.RGHT_GRP_CD
+                AND     A.RGHT_GRP_NO = C.RGHT_GRP_NO 
+                AND     A.RGHT_GRP_CD = C.RGHT_GRP_CD 
+                AND     C.AUTH_NO = D.ORG_NO 
+                AND     A.DLT_YN = 'N'
+                AND     B.DLT_YN = 'N'
+                AND     D.DLT_YN = 'N'
+                AND     C.RGHT_GRP_USR_TY != 'D'
+                AND     A.PJT_NO = #{pjtNo}
+                AND     A.CNTRCT_NO = #{cntrctNo}
+                AND     A.PJT_TYPE = #{pjtType}
+                AND     B.MENU_CD = #{menuCd}
+                AND     D.LOGIN_ID = #{loginId}
+                UNION
+                SELECT  B.RGHT_KIND AS RGHT_KIND, 
+                        (   SELECT  AA.CMN_CD_DSPLY_ORDER 
+                            FROM    SM_COM_CODE AA 
+                            WHERE   AA.CMN_GRP_CD = #{cmnGrpCd}
+                            AND     AA.CMN_CD = B.RGHT_KIND ) AS AUTHORITYLV
+                FROM    SM_AUTHORITY_GROUP A,
+                        SM_MENU_AUTHORITY_GROUP B,
+                        SM_AUTHORITY_GROUP_USERS C,
+                        SM_DEPARTMENT D,
+                        SM_ORGANIZATION E
+                WHERE   A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                AND     A.RGHT_GRP_CD = B.RGHT_GRP_CD
+                AND     A.RGHT_GRP_NO = C.RGHT_GRP_NO 
+                AND     A.RGHT_GRP_CD = C.RGHT_GRP_CD 
+                AND     C.AUTH_NO = D.DEPT_NO
+                AND     D.DEPT_NO = E.DEPT_NO 
+                AND     A.DLT_YN = 'N'
+                AND     B.DLT_YN = 'N'
+                AND     E.DLT_YN = 'N'
+                AND     C.RGHT_GRP_USR_TY = 'D'
+                AND     A.PJT_NO = #{pjtNo}
+                AND     A.CNTRCT_NO = #{cntrctNo}
+                AND     A.PJT_TYPE = #{pjtType}
+                AND     B.MENU_CD = #{menuCd}
+                AND     E.LOGIN_ID = #{loginId}) AS A 
+        ORDER BY A.AUTHORITYLV ASC 
+        LIMIT 1
+    </select>
+
+    <select id="checkFolderExist" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.checkFolderExist][gwLee] */
+        SELECT  CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS NAME_EXIST
+        FROM    DC_STORAGE_MAIN 
+        WHERE   DOC_TYPE    = 'FOLDR'
+        AND     DLT_YN      = 'N'
+        AND     NAVI_ID     = #{naviId}
+        AND     UP_DOC_ID   = #{upDocId}
+        AND     DOC_NM      = #{folderNm}
+    </select>
+
+    <select id="addNaviExist" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.addNaviExist][gwLee] */
+        SELECT  CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS NAME_EXIST
+        FROM    DC_NAVIGATION
+        WHERE   NAVI_DIV    = #{naviDiv}
+        AND     UP_NAVI_ID  = #{upNaviId}
+        AND     NAVI_NM     = #{naviNm}
+        AND     DLT_YN      = 'N'
+    </select>
+
+    <select id="checkHasNavigationType" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.checkHasFolderType][bjkim] */
+        WITH RECURSIVE FIND_FOLDER_TYPE(UP_NAVI_ID, NAVI_ID, NAVI_NM, NAVI_FOLDER_TYPE, DSPLY_ORDR, DEPTH) AS (
+            SELECT UP_NAVI_ID, NAVI_ID, NAVI_NM, NAVI_FOLDER_TYPE, CONCAT(NAVI_ID, '_', DSPLY_ORDR), 1
+            FROM DC_NAVIGATION A
+            WHERE A.UP_NAVI_ID = UP_NAVI_ID
+            AND A.DLT_YN = 'N'
+            AND A.UP_NAVI_ID = #{upNaviId}
+            UNION
+            SELECT D.UP_NAVI_ID, D.NAVI_ID, D.NAVI_NM, D.NAVI_FOLDER_TYPE, CONCAT(D.NAVI_ID, '_', D.DSPLY_ORDR), R.DEPTH+1
+            FROM FIND_FOLDER_TYPE R
+            INNER JOIN DC_NAVIGATION D ON D.UP_NAVI_ID = R.NAVI_ID AND D.DLT_YN = 'N'
+        )
+        SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS has_yn
+        FROM FIND_FOLDER_TYPE V
+        WHERE NAVI_FOLDER_TYPE = #{naviFolderType}
+    </select>
+
+    <select id="firstNaviAuthority" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.firstNaviAuthority][gwLee] */
+        SELECT  COALESCE(CAST(B.RGHT_NO AS TEXT), 'NON') AS RGHT_NO, 
+                A.RGHT_GRP_NO AS RGHT_GRP_NO,
+                A.RGHT_GRP_CD AS RGHT_GRP_CD,
+                A.RGHT_GRP_NM_KRN AS RGHT_GRP_NM_KRN,
+                A.RGHT_GRP_NM_ENG AS RGHT_GRP_NM_ENG,
+                A.RGHT_GRP_DSCRPT AS RGHT_GRP_DSCRPT,
+                COALESCE(CAST(B.RGHT_TY AS TEXT), '') AS RGHT_TY,
+                (CASE   WHEN COALESCE(B.RGHT_TY, '') = ''
+                        THEN ''
+                        ELSE 'CHECKED'
+                END) AS CHECKYN
+        FROM    SM_AUTHORITY_GROUP A
+        LEFT JOIN DC_AUTHORITY B    ON  A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                                    AND A.RGHT_GRP_CD = B. RGHT_GRP_CD
+                                    AND B.NO = #{naviNo}
+                                    AND B.ID = #{naviId}
+                                    AND B.DLT_YN = 'N'
+        WHERE   A.PJT_NO    = #{pjtNo}
+        AND     A.CNTRCT_NO = #{cntrctNo}
+        AND     A.PJT_TYPE  = #{pjtType}
+        AND     A.DLT_YN    = 'N'
+    </select>
+
+    <insert id="insertAutoMyAuthority" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertAutoMyAuthority][gwLee]  */
+        INSERT INTO DC_AUTHORITY    (   RGHT_GRP_NO, 
+                                        ID, 
+                                        NO, 
+                                        RGHT_GRP_CD, 
+                                        RGHT_TY, 
+                                        DLT_YN, 
+                                        RGSTR_ID, 
+                                        RGST_DT, 
+                                        CHG_ID, 
+                                        CHG_DT 
+                                    )
+        SELECT  A.RGHT_GRP_NO,
+                #{id},
+                #{no},
+                A.RGHT_GRP_CD,
+                A.RGHT_TY,
+                'N',
+                #{usrId},
+                now(),
+                #{usrId},
+                now()
+        FROM    DC_AUTHORITY A 
+        WHERE   A.ID = #{upId}
+        AND     A.NO = #{upNo}
+        AND     A.DLT_YN = 'N'
+    </insert>
+
+    <select id="selectAutoMyAuthority" parameterType="input" resultType="map">
+            /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertAutoMyAuthority][gwLee]  */
+            SELECT  *
+            FROM    DC_AUTHORITY A
+            WHERE   A.ID = #{upId}
+            AND     A.NO = #{upNo}
+            AND     A.DLT_YN = 'N'
+        </select>
+
+    <select id="naviAuthority" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.naviAuthority][gwLee] */
+        SELECT  COALESCE(CAST(C.RGHT_NO AS TEXT), 'NON') AS RGHT_NO, 
+                A.RGHT_GRP_NO AS RGHT_GRP_NO,
+                A.RGHT_GRP_CD AS RGHT_GRP_CD,
+                A.RGHT_GRP_NM_KRN AS RGHT_GRP_NM_KRN,
+                A.RGHT_GRP_NM_ENG AS RGHT_GRP_NM_ENG,
+                A.RGHT_GRP_DSCRPT AS RGHT_GRP_DSCRPT,
+                COALESCE(CAST(C.RGHT_TY AS TEXT), '') AS RGHT_TY,
+                (CASE   WHEN COALESCE(C.RGHT_TY, '') = ''
+                        THEN ''
+                        ELSE 'CHECKED'
+                END) AS CHECKYN
+        FROM    SM_AUTHORITY_GROUP A
+        INNER JOIN DC_AUTHORITY B   ON  A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                                    AND A.RGHT_GRP_CD = B. RGHT_GRP_CD
+                                    AND B.DLT_YN = 'N'
+                                    AND B.NO = #{upNaviNo}
+                                    AND B.ID = #{upNaviId}
+        LEFT JOIN DC_AUTHORITY C    ON  A.RGHT_GRP_NO = C.RGHT_GRP_NO
+                                    AND A.RGHT_GRP_CD = C. RGHT_GRP_CD
+                                    AND C.NO = #{naviNo}
+                                    AND C.ID = #{naviId}
+                                    AND C.DLT_YN = 'N'
+        WHERE   A.PJT_NO    = #{pjtNo}
+        AND     A.CNTRCT_NO = #{cntrctNo}
+        AND     A.PJT_TYPE  = #{pjtType}
+        AND     A.DLT_YN    = 'N'
+    </select>
+
+    <update id="updateNaviAuthority" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.updateNaviAuthority][gwLee] */
+        UPDATE  DC_AUTHORITY
+	    SET     RGHT_TY = #{rghtTy}, 
+                CHG_ID = #{usrId}, 
+                CHG_DT = NOW()
+        WHERE   RGHT_NO = #{rghtNo}
+    </update>
+
+    <update id="deleteNaviAuthority" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deleteNaviAuthority][gwLee] */
+        UPDATE  DC_AUTHORITY
+	    SET     DLT_YN = 'Y', 
+                DLT_ID = #{usrId}, 
+                DLT_DT = NOW()
+        WHERE   (ID, NO) IN (   WITH RECURSIVE DC_NAVIGATION_LIST   (   ITEM_NO,
+                                                                        ITEM_ID,
+                                                                        UP_ITEM_NO,
+                                                                        UP_ITEM_ID,
+                                                                        ITEM_NM,
+                                                                        DEPTH,
+                                                                        PATH,
+                                                                        CYCLE ) 
+                                AS (    SELECT  A.ITEM_NO,
+                                                A.ITEM_ID,
+                                                A.UP_ITEM_NO,
+                                                A.UP_ITEM_ID,
+                                                A.ITEM_NM,
+                                                1,
+                                                ARRAY[A.ITEM_ID::TEXT],
+                                                FALSE
+                                        FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                                            NAVI_ID AS ITEM_ID,
+                                                            UP_NAVI_NO AS UP_ITEM_NO,
+                                                            UP_NAVI_ID AS UP_ITEM_ID,
+                                                            NAVI_NM AS ITEM_NM
+                                                    FROM    DC_NAVIGATION
+                                                    WHERE   DLT_YN = 'N'
+                                                    UNION ALL
+                                                    SELECT  DOC_NO AS ITEM_NO,
+                                                            DOC_ID AS ITEM_ID,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                                        THEN NAVI_NO
+                                                                        ELSE UP_DOC_NO
+                                                                END) AS UP_ITEM_NO,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                                        THEN NAVI_ID
+                                                                        ELSE UP_DOC_ID
+                                                                END) AS UP_ITEM_ID,
+                                                            DOC_NM AS ITEM_NM
+                                                    FROM    DC_STORAGE_MAIN
+                                                    WHERE   DLT_YN = 'N') AS A
+                                        WHERE   A.ITEM_ID = #{naviId}
+                                        AND     A.ITEM_NO = #{naviNo}
+                                        UNION ALL
+                                        SELECT  A.ITEM_NO,
+                                                A.ITEM_ID,
+                                                A.UP_ITEM_NO,
+                                                A.UP_ITEM_ID,
+                                                A.ITEM_NM,
+                                                B.DEPTH + 1,
+                                                ARRAY_APPEND(B.PATH,
+                                                CAST(A.ITEM_NO AS TEXT)::TEXT),
+                                                A.ITEM_ID = ANY(B.PATH)
+                                        FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                                            NAVI_ID AS ITEM_ID,
+                                                            UP_NAVI_NO AS UP_ITEM_NO,
+                                                            UP_NAVI_ID AS UP_ITEM_ID,
+                                                            NAVI_NM AS ITEM_NM
+                                                    FROM    DC_NAVIGATION
+                                                    WHERE   DLT_YN = 'N'
+                                                    UNION ALL
+                                                    SELECT  DOC_NO AS ITEM_NO,
+                                                            DOC_ID AS ITEM_ID,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                                        THEN NAVI_NO
+                                                                    ELSE UP_DOC_NO
+                                                                END) AS UP_ITEM_NO,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                                        THEN NAVI_ID
+                                                                        ELSE UP_DOC_ID
+                                                                END) AS UP_ITEM_ID,
+                                                            DOC_NM AS ITEM_NM
+                                                    FROM    DC_STORAGE_MAIN
+                                                    WHERE   DLT_YN = 'N') AS A,
+                                                    DC_NAVIGATION_LIST B
+                                        WHERE   A.UP_ITEM_ID = B.ITEM_ID
+                                        AND     NOT CYCLE )
+                                SELECT  ITEM_ID,
+                                        ITEM_NO
+                                FROM    DC_NAVIGATION_LIST
+                                ORDER BY PATH, ITEM_NM)
+        AND     RGHT_GRP_NO = #{rghtGrpNo}
+        AND     RGHT_GRP_CD = #{rghtGrpCd}
+        AND     DLT_YN = 'N'
+    </update>
+
+    <select id="naviAuthorityGroupUserList" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.naviAuthorityGroupUserList][gwLee] */
+        SELECT  D.LOGIN_ID AS LOGIN_ID,
+                B.DEPT_NM AS DEPT_NM,
+                D.USR_NM AS USR_NM,
+                COALESCE((  SELECT  AA.CMN_CD_NM_KRN
+                            FROM    SM_COM_CODE AA
+                            WHERE   AA.CMN_GRP_CD = #{pstnCd}
+                            AND     AA.CMN_CD = D.PSTN_CD), '직책없음') AS PSTN_NM
+        FROM    SM_AUTHORITY_GROUP_USERS A,
+                SM_DEPARTMENT B,
+                SM_ORGANIZATION C,
+                SM_USER_INFO D
+        WHERE   A.RGHT_GRP_USR_TY = 'D'
+        AND     B.DLT_YN = 'N'
+        AND     C.DLT_YN = 'N'
+        AND     D.DLT_YN = 'N'
+        AND     A.AUTH_NO = B.DEPT_NO
+        AND     B.DEPT_NO = C.DEPT_NO
+        AND     C.LOGIN_ID = D.LOGIN_ID
+        AND     A.RGHT_GRP_NO = #{rghtGrpNo}
+        AND     A.RGHT_GRP_CD = #{rghtGrpCd}
+        UNION ALL
+        SELECT  D.LOGIN_ID AS LOGIN_ID,
+                C.DEPT_NM AS DEPT_NM,
+                D.USR_NM AS USR_NM,
+                COALESCE((  SELECT  AA.CMN_CD_NM_KRN
+                            FROM    SM_COM_CODE AA
+                            WHERE   AA.CMN_GRP_CD = #{pstnCd}
+                            AND     AA.CMN_CD = D.PSTN_CD), '직책없음') AS PSTN_NM
+        FROM    SM_AUTHORITY_GROUP_USERS A,
+                SM_ORGANIZATION B,
+                SM_DEPARTMENT C,
+                SM_USER_INFO D
+        WHERE   A.RGHT_GRP_USR_TY != 'D'
+        AND     B.DLT_YN = 'N'
+        AND     C.DLT_YN = 'N'
+        AND     D.DLT_YN = 'N'
+        AND     A.AUTH_NO = B.ORG_NO
+        AND     B.DEPT_NO = C.DEPT_NO
+        AND     B.LOGIN_ID = D.LOGIN_ID
+        AND     A.RGHT_GRP_NO = #{rghtGrpNo}
+        AND     A.RGHT_GRP_CD = #{rghtGrpCd}
+    </select>
+
+    <select id="docItemCreatePropertyListToHtml" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.docItemCreatePropertyListToHtml][thkim] */
+        SELECT DISTINCT ON (A.ATTRBT_DSPLY_ORDER)
+            A.NAVI_ID,
+            A.ATTRBT_NO,
+            A.ATTRBT_TYPE,
+            A.ATTRBT_CD,
+            CASE 
+                WHEN #{lang} = 'ko' THEN A.ATTRBT_NM_KRN
+                WHEN #{lang} = 'en' THEN A.ATTRBT_NM_ENG
+                ELSE A.ATTRBT_NM_KRN
+            END AS ATTRBT_NAME,
+            COALESCE(B.OPTIONS, '[]') AS OPTIONS, -- JSON 배열 문자열
+            COALESCE(C.DC_FORM, '') AS HTML_FORM,
+            D.ATTRBT_CNTNTS,
+            A.ATTRBT_DSPLY_ORDER
+        FROM DC_PROPERTY A
+        LEFT JOIN (
+            SELECT 
+                CMN_GRP_CD,
+                json_agg(json_build_object(
+                    'value', CMN_CD,
+                    'label', CASE 
+                                WHEN #{lang} = 'ko' THEN CMN_CD_NM_KRN
+                                WHEN #{lang} = 'en' THEN CMN_CD_NM_ENG
+                                ELSE CMN_CD_NM_KRN
+                            END
+                ) ORDER BY CMN_CD) AS OPTIONS
+            FROM SM_COM_CODE
+            WHERE DLT_YN = 'N'
+            AND USE_YN = 'Y'
+            GROUP BY CMN_GRP_CD
+        ) B
+        ON A.ATTRBT_TYPE_SEL = B.CMN_GRP_CD
+        AND A.DLT_YN = 'N'
+        LEFT JOIN (
+            SELECT 
+                FORM_NO,
+                DC_FORM
+            FROM DC_HTML_FORM
+            WHERE DLT_YN = 'N'
+        ) C ON A.ATTRBT_TYPE_SEL::text = C.FORM_NO::text
+        LEFT JOIN DC_PROPERTY_DATA D
+            ON A.attrbt_cd = D.attrbt_cd
+            AND A.DLT_YN = 'N'
+            <if test="docNo != null">
+            AND D.doc_no = #{docNo}
+            </if>
+        WHERE A.NAVI_ID = #{naviId}
+            AND A.DLT_YN = 'N'
+            <if test="actionTy != null and !actionTy.isEmpty()">
+            AND A.ATTRBT_CHG_YN = 'Y'
+            </if>
+        ORDER BY A.ATTRBT_DSPLY_ORDER;
+
+    </select>
+
+    <update id="deleteNaviAuthorityList" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deleteNaviAuthorityList][thkim] */
+        UPDATE  DC_AUTHORITY
+	    SET     DLT_YN = 'Y', 
+                DLT_ID = #{usrId}, 
+                DLT_DT = NOW()
+        WHERE   (ID, NO) IN (   WITH RECURSIVE DC_NAVIGATION_LIST   (   ITEM_NO,
+                                                                        ITEM_ID,
+                                                                        UP_ITEM_NO,
+                                                                        UP_ITEM_ID,
+                                                                        ITEM_NM,
+                                                                        DEPTH,
+                                                                        PATH,
+                                                                        CYCLE ) 
+                                AS (    SELECT  A.ITEM_NO,
+                                                A.ITEM_ID,
+                                                A.UP_ITEM_NO,
+                                                A.UP_ITEM_ID,
+                                                A.ITEM_NM,
+                                                1,
+                                                ARRAY[A.ITEM_ID::TEXT],
+                                                FALSE
+                                        FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                                            NAVI_ID AS ITEM_ID,
+                                                            UP_NAVI_NO AS UP_ITEM_NO,
+                                                            UP_NAVI_ID AS UP_ITEM_ID,
+                                                            NAVI_NM AS ITEM_NM
+                                                    FROM    DC_NAVIGATION
+                                                    WHERE   DLT_YN = 'N'
+                                                    UNION ALL
+                                                    SELECT  DOC_NO AS ITEM_NO,
+                                                            DOC_ID AS ITEM_ID,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                                        THEN NAVI_NO
+                                                                        ELSE UP_DOC_NO
+                                                                END) AS UP_ITEM_NO,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                                        THEN NAVI_ID
+                                                                        ELSE UP_DOC_ID
+                                                                END) AS UP_ITEM_ID,
+                                                            DOC_NM AS ITEM_NM
+                                                    FROM    DC_STORAGE_MAIN
+                                                    WHERE   DLT_YN = 'N') AS A
+                                        WHERE   A.ITEM_ID = #{targetId}
+                                        AND     A.ITEM_NO = #{targetNo}
+                                        UNION ALL
+                                        SELECT  A.ITEM_NO,
+                                                A.ITEM_ID,
+                                                A.UP_ITEM_NO,
+                                                A.UP_ITEM_ID,
+                                                A.ITEM_NM,
+                                                B.DEPTH + 1,
+                                                ARRAY_APPEND(B.PATH,
+                                                CAST(A.ITEM_NO AS TEXT)::TEXT),
+                                                A.ITEM_ID = ANY(B.PATH)
+                                        FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                                            NAVI_ID AS ITEM_ID,
+                                                            UP_NAVI_NO AS UP_ITEM_NO,
+                                                            UP_NAVI_ID AS UP_ITEM_ID,
+                                                            NAVI_NM AS ITEM_NM
+                                                    FROM    DC_NAVIGATION
+                                                    WHERE   DLT_YN = 'N'
+                                                    UNION ALL
+                                                    SELECT  DOC_NO AS ITEM_NO,
+                                                            DOC_ID AS ITEM_ID,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                                        THEN NAVI_NO
+                                                                    ELSE UP_DOC_NO
+                                                                END) AS UP_ITEM_NO,
+                                                            (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                                        THEN NAVI_ID
+                                                                        ELSE UP_DOC_ID
+                                                                END) AS UP_ITEM_ID,
+                                                            DOC_NM AS ITEM_NM
+                                                    FROM    DC_STORAGE_MAIN
+                                                    WHERE   DLT_YN = 'N') AS A,
+                                                    DC_NAVIGATION_LIST B
+                                        WHERE   A.UP_ITEM_ID = B.ITEM_ID
+                                        AND     NOT CYCLE )
+                                SELECT  ITEM_ID,
+                                        ITEM_NO
+                                FROM    DC_NAVIGATION_LIST
+                                ORDER BY PATH, ITEM_NM)
+        AND     DLT_YN = 'N'
+    </update>
+
+    <!-- 하위 문서 권한 리스트 삭제 -->
+    <update id="deleteSubDocAuthorityList" parameterType="list">
+        UPDATE  DC_AUTHORITY
+        SET     DLT_YN = 'Y',
+                DLT_ID = 'SYSTEM',
+                DLT_DT = NOW()
+        WHERE
+            ID IN
+            <foreach collection="list" item="docId"  open="(" close=")" separator=",">
+                #{docId}
+            </foreach>
+    </update>
+
+    <insert id="pasteAuthority" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.pasteAuthority][thkim]  */
+        WITH RECURSIVE DC_NAVIGATION_LIST   (   ITEM_NO,
+                                                ITEM_ID,
+                                                UP_ITEM_NO,
+                                                UP_ITEM_ID,
+                                                ITEM_NM,
+                                                DEPTH,
+                                                PATH,
+                                                CYCLE ) 
+        AS (    SELECT  A.ITEM_NO,
+                        A.ITEM_ID,
+                        A.UP_ITEM_NO,
+                        A.UP_ITEM_ID,
+                        A.ITEM_NM,
+                        1,
+                        ARRAY[A.ITEM_ID::TEXT],
+                        FALSE
+                FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                    NAVI_ID AS ITEM_ID,
+                                    UP_NAVI_NO AS UP_ITEM_NO,
+                                    UP_NAVI_ID AS UP_ITEM_ID,
+                                    NAVI_NM AS ITEM_NM
+                            FROM    DC_NAVIGATION
+                            WHERE   DLT_YN = 'N'
+                            
+                            UNION ALL
+                            
+                            SELECT  DOC_NO AS ITEM_NO,
+                                    DOC_ID AS ITEM_ID,
+                                    (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                THEN NAVI_NO
+                                                ELSE UP_DOC_NO
+                                        END) AS UP_ITEM_NO,
+                                    (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                THEN NAVI_ID
+                                                ELSE UP_DOC_ID
+                                        END) AS UP_ITEM_ID,
+                                    DOC_NM AS ITEM_NM
+                            FROM    DC_STORAGE_MAIN
+                            WHERE   DLT_YN = 'N') AS A
+                WHERE   A.ITEM_ID = #{targetId} -- 붙여넣을 네비게이션 id (target id)
+                AND     A.ITEM_NO = #{targetNo} -- 붙여넣을 네비게이션 no
+                
+                UNION ALL
+                
+                SELECT  A.ITEM_NO,
+                        A.ITEM_ID,
+                        A.UP_ITEM_NO,
+                        A.UP_ITEM_ID,
+                        A.ITEM_NM,
+                        B.DEPTH + 1,
+                        ARRAY_APPEND(B.PATH,
+                        CAST(A.ITEM_NO AS TEXT)::TEXT),
+                        A.ITEM_ID = ANY(B.PATH)
+                FROM    (   SELECT  NAVI_NO AS ITEM_NO,
+                                    NAVI_ID AS ITEM_ID,
+                                    UP_NAVI_NO AS UP_ITEM_NO,
+                                    UP_NAVI_ID AS UP_ITEM_ID,
+                                    NAVI_NM AS ITEM_NM
+                            FROM    DC_NAVIGATION
+                            WHERE   DLT_YN = 'N'
+                            
+                            UNION ALL
+                            
+                            SELECT  DOC_NO AS ITEM_NO,
+                                    DOC_ID AS ITEM_ID,
+                                    (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                THEN NAVI_NO
+                                            ELSE UP_DOC_NO
+                                        END) AS UP_ITEM_NO,
+                                    (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                THEN NAVI_ID
+                                                ELSE UP_DOC_ID
+                                        END) AS UP_ITEM_ID,
+                                    DOC_NM AS ITEM_NM
+                            FROM    DC_STORAGE_MAIN
+                            WHERE   DLT_YN = 'N') AS A,
+                            DC_NAVIGATION_LIST B
+                WHERE   A.UP_ITEM_ID = B.ITEM_ID
+                AND     NOT CYCLE )
+
+        -- 권한 데이터 삽입
+        INSERT
+        INTO	DC_AUTHORITY
+            (	RGHT_GRP_NO,
+                ID,
+                NO,
+                RGHT_GRP_CD,
+                RGHT_TY,
+                DLT_YN,
+                RGSTR_ID,
+                RGST_DT,
+                CHG_ID,
+                CHG_DT)
+        SELECT
+            A.RGHT_GRP_NO,
+            LIST.ITEM_ID,
+            LIST.ITEM_NO,
+            A.RGHT_GRP_CD,
+            A.RGHT_TY,
+            'N',
+            #{usrId},
+            now(),
+            #{usrId},
+            now()
+        FROM
+            DC_AUTHORITY A
+        JOIN DC_NAVIGATION_LIST LIST
+            ON A.ID = #{sourceId}  --복사해올 권한의 네비게이션 id (source id)
+            AND A.NO = #{sourceNo}
+        WHERE
+            A.DLT_YN = 'N';
+    </insert>
+
+    <select id="selectDocumentListAdmin" parameterType="input" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectDocumentListAdmin][thkim]  */
+        with AAA as (
+             SELECT
+                 AA.DOC_TYPE,
+                 AA.DOC_ID,
+                 JSONB_BUILD_OBJECT(
+                         'doc_path', AA.DOC_PATH,
+                         'doc_type', AA.DOC_TYPE,
+                         'doc_disk_nm', AA.DOC_DISK_NM,
+                         'doc_nm',   AA.DOC_NM,
+                         'doc_id',   AA.DOC_ID,
+                         'doc_no',   AA.DOC_NO,
+                         'up_doc_id', AA.UP_DOC_ID,
+                         'up_doc_no', AA.UP_DOC_NO,
+                         'navi_id',  AA.NAVI_ID,
+                         'doc_size',  AA.DOC_SIZE,
+                         'rgstr_id', (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.RGSTR_ID),
+                         'rgst_dt',   TO_CHAR(AA.RGST_DT, 'YYYY-MM-DD'),
+                         'chg_id',   (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.CHG_ID),
+                         'chg_dt',   TO_CHAR(AA.CHG_DT, 'YYYY-MM-DD'),
+                         'doc_user_type', 'A'
+                 )
+                     || COALESCE((
+                                     SELECT
+                                         JSONB_OBJECT_AGG(A.ATTRBT_CD,
+                                                          (CASE
+                                                               WHEN A.ATTRBT_TYPE = 'SEL' THEN (
+                                                                   SELECT C.CMN_CD_NM_KRN
+                                                                   FROM SM_COM_CODE C
+                                                                   WHERE C.CMN_CD = B.ATTRBT_CNTNTS
+                                                                     AND C.DLT_YN = 'N'
+                                                                     AND C.USE_YN = 'Y'
+                                                                   LIMIT 1
+                                                               )
+                                                               WHEN A.ATTRBT_TYPE = 'ATCH' THEN (
+                                                                   SELECT D.file_nm
+                                                                   FROM DC_ATTACHMENTS D
+                                                                   WHERE D.File_no :: TEXT = B.ATTRBT_CNTNTS
+                                                                     AND D.DLT_YN = 'N'
+                                                                   LIMIT 1
+                                                               )
+                                                               ELSE B.ATTRBT_CNTNTS
+                                                              END
+                                                              ))
+                                     FROM
+                                         DC_PROPERTY A
+                                             JOIN
+                                         DC_PROPERTY_DATA B
+                                         ON A.ATTRBT_CD = B.ATTRBT_CD
+                                             AND A.DLT_YN = 'N'
+                                     WHERE
+                                         A.ATTRBT_DSPLY_YN = 'Y'
+                                       AND A.dlt_yn = 'N'
+                                       AND A.NAVI_NO = AA.NAVI_NO
+                                       AND A.NAVI_ID = AA.NAVI_ID
+                                       AND B.DOC_NO = AA.DOC_NO
+                                       AND B.DOC_ID = AA.DOC_ID
+                                 ), '{}'::JSONB)
+                     || JSONB_BUILD_OBJECT(
+                         'attachments', COALESCE(JSONB_AGG(
+                                                 JSONB_BUILD_OBJECT(
+                                                         'fileNo', B.FILE_NO,
+                                                         'fileNm', B.FILE_NM,
+                                                         'fileSize', B.FILE_SIZE,
+                                                         'fileHitNum', B.FILE_HIT_NUM,
+                                                         'docNo', B.DOC_NO,
+                                                         'docId', B.DOC_ID,
+                                                         'dltYn', B.DLT_YN
+                                                 )
+                                                          ) FILTER (WHERE B.FILE_NO IS NOT NULL), '[]'::JSONB)
+                        )
+                     || JSONB_BUILD_OBJECT(
+                         'upDocList', COALESCE((
+                                                   WITH RECURSIVE FolderHierarchy AS (
+                                                       SELECT
+                                                           DOC_ID, DOC_NO, UP_DOC_ID, DOC_NM, NAVI_ID, NAVI_NO, 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN
+                                                       WHERE DOC_ID = #{upDocId} AND DLT_YN = 'N'
+
+                                                       UNION ALL
+
+                                                       SELECT
+                                                           d.DOC_ID, d.DOC_NO, d.UP_DOC_ID, d.DOC_NM, d.NAVI_ID, d.NAVI_NO, fh.LEVEL + 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN d
+                                                                INNER JOIN FolderHierarchy fh ON fh.UP_DOC_ID = d.DOC_ID
+
+                                                   )
+                                                   SELECT JSONB_AGG(
+                                                                  JSONB_BUILD_OBJECT(
+                                                                          'docId', DOC_ID,
+                                                                          'upDocId', UP_DOC_ID,
+                                                                          'docNm', DOC_NM,
+                                                                          'naviId', NAVI_ID,
+                                                                          'naviNo', NAVI_NO
+                                                                  )ORDER BY LEVEL DESC
+                                                          )
+                                                   FROM FolderHierarchy
+                                               ), '{}'::JSONB))
+                     || JSONB_BUILD_OBJECT(
+                                        'propertyAttachment', COALESCE((
+                                            SELECT JSONB_AGG(
+                                                JSONB_BUILD_OBJECT(
+                                                     'attrbtCd', A.ATTRBT_CD,
+                                                    'fileNo', ATT.FILE_NO,
+                                                    'fileNm', ATT.FILE_NM,
+                                                    'fileSize', ATT.FILE_SIZE,
+                                                    'fileHitNum', ATT.FILE_HIT_NUM,
+                                                    'docNo', ATT.DOC_NO,
+                                                    'docId', ATT.DOC_ID,
+                                                    'dltYn', ATT.DLT_YN
+                                                )
+                                            )
+                                            FROM DC_PROPERTY A
+                                            INNER JOIN DC_PROPERTY_DATA B
+                                                ON A.ATTRBT_CD = B.ATTRBT_CD
+                                                AND A.DLT_YN = 'N'
+                                            INNER JOIN DC_ATTACHMENTS ATT
+                                                ON ATT.FILE_NO::TEXT = B.ATTRBT_CNTNTS
+                                                AND ATT.DLT_YN = 'N'
+                                            WHERE
+                                                A.ATTRBT_TYPE = 'ATCH'
+                                                AND A.DLT_YN = 'N'
+                                                AND A.NAVI_NO = AA.NAVI_NO
+                                                AND A.NAVI_ID = AA.NAVI_ID
+                                                AND B.DOC_NO = AA.DOC_NO
+                                                AND B.DOC_ID = AA.DOC_ID
+                                        ), '[]'::JSONB)
+                        ) AS RESULT
+            FROM
+                DC_STORAGE_MAIN AA
+            LEFT JOIN DC_ATTACHMENTS B
+                -- ON AA.DOC_TYPE = 'ITEM'
+                ON AA.DOC_ID = B.DOC_ID
+                AND B.DLT_YN = 'N'
+                AND B.FILE_NO NOT IN (
+                                        SELECT
+                                            CASE
+                                               WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                               WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                               ELSE B.ATTRBT_CNTNTS::INTEGER
+                                            END FILE_NO
+                                        FROM DC_PROPERTY A
+                                        INNER JOIN DC_PROPERTY_DATA B
+                                        ON A.ATTRBT_CD = B.ATTRBT_CD
+                                        AND A.ATTRBT_TYPE = 'ATCH'
+                                        AND A.DLT_YN = 'N'
+                                     )
+            WHERE
+                AA.DLT_YN = 'N'
+                AND AA.NAVI_ID = #{naviId}
+                <if test="upDocId != null and !upDocId.isEmpty()">
+                AND UP_DOC_ID = #{upDocId}
+                </if>
+            GROUP BY
+                AA.DOC_PATH, AA.DOC_TYPE, AA.DOC_NM, AA.DOC_ID, AA.CHG_ID, AA.CHG_DT, AA.NAVI_NO, AA.NAVI_ID, AA.DOC_NO
+            <if test="pageable.sort.isEmpty()">
+                ORDER BY
+                    AA.DOC_TYPE DESC, AA.DOC_NM ASC
+            </if>
+        )
+        select
+            aaa.RESULT
+            ||  JSONB_BUILD_OBJECT(
+                   'folderCnt', (select count(1) from AAA v where DOC_TYPE = 'FOLDR' <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                    'fileCnt' , (select count(1) from AAA v where DOC_TYPE = 'FILE'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                    'itemCnt' , (select count(1) from AAA v where DOC_TYPE = 'ITEM'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>)
+                )
+        from AAA
+        <if test="searchText != null and columnNm != null">
+            WHERE RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'
+        </if>
+        <if test="pageable != null and !pageable.sort.isEmpty()">
+        ORDER BY
+            <foreach collection="pageable.sort" item="sort" separator=",">
+                RESULT-> #{sort.property}
+                <if test="sort.direction.name() == 'DESC'">DESC</if>
+                <if test="sort.direction.name() == 'ASC'">ASC</if>
+            </foreach>
+        </if>
+        <if test="pageable != null">
+            OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY;
+        </if>
+    </select>
+
+    <select id="selectDocumentList" parameterType="input" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectDocumentList][thkim]  */
+        with AAA as (
+             SELECT
+                 AA.DOC_TYPE,
+                 AA.DOC_ID,
+                 JSONB_BUILD_OBJECT(
+                         'doc_path', AA.DOC_PATH,
+                         'doc_type', AA.DOC_TYPE,
+                         'doc_disk_nm', AA.DOC_DISK_NM,
+                         'doc_nm',   AA.DOC_NM,
+                         'doc_id',   AA.DOC_ID,
+                         'doc_no',   AA.DOC_NO,
+                         'up_doc_id', AA.UP_DOC_ID,
+                         'up_doc_no', AA.UP_DOC_NO,
+                         'navi_id',  AA.NAVI_ID,
+                         'doc_size',  AA.DOC_SIZE,
+                         'rgstr_id', (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.RGSTR_ID),
+                         'rgst_dt',   TO_CHAR(AA.RGST_DT, 'YYYY-MM-DD'),
+                         'chg_id',   (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.CHG_ID),
+                         'chg_dt',   TO_CHAR(AA.CHG_DT, 'YYYY-MM-DD'),
+                         'doc_user_type', AUTH.RGHT_TY
+                 )
+                     || COALESCE((
+                                     SELECT
+                                         JSONB_OBJECT_AGG(A.ATTRBT_CD,
+                                                          (CASE
+                                                               WHEN A.ATTRBT_TYPE = 'SEL' THEN (
+                                                                   SELECT C.CMN_CD_NM_KRN
+                                                                   FROM SM_COM_CODE C
+                                                                   WHERE C.CMN_CD = B.ATTRBT_CNTNTS
+                                                                     AND C.DLT_YN = 'N'
+                                                                     AND C.USE_YN = 'Y'
+                                                                   LIMIT 1
+                                                               )
+                                                               WHEN A.ATTRBT_TYPE = 'ATCH' THEN (
+                                                                   SELECT D.file_nm
+                                                                   FROM DC_ATTACHMENTS D
+                                                                   WHERE D.File_no :: TEXT = B.ATTRBT_CNTNTS
+                                                                     AND D.DLT_YN = 'N'
+                                                                   LIMIT 1
+                                                               )
+                                                               ELSE B.ATTRBT_CNTNTS
+                                                              END
+                                                              ))
+                                     FROM
+                                         DC_PROPERTY A
+                                             JOIN
+                                         DC_PROPERTY_DATA B
+                                         ON A.ATTRBT_CD = B.ATTRBT_CD
+                                             AND A.DLT_YN = 'N'
+                                     WHERE
+                                         A.ATTRBT_DSPLY_YN = 'Y'
+                                       AND A.dlt_yn = 'N'
+                                       AND A.NAVI_NO = AA.NAVI_NO
+                                       AND A.NAVI_ID = AA.NAVI_ID
+                                       AND B.DOC_NO = AA.DOC_NO
+                                       AND B.DOC_ID = AA.DOC_ID
+                                 ), '{}'::JSONB)
+                     || JSONB_BUILD_OBJECT(
+                         'attachments', COALESCE(JSONB_AGG(
+                                                 JSONB_BUILD_OBJECT(
+                                                         'fileNo', B.FILE_NO,
+                                                         'fileNm', B.FILE_NM,
+                                                         'fileSize', B.FILE_SIZE,
+                                                         'fileHitNum', B.FILE_HIT_NUM,
+                                                         'docNo', B.DOC_NO,
+                                                         'docId', B.DOC_ID,
+                                                         'dltYn', B.DLT_YN
+                                                 )
+                                                          ) FILTER (WHERE B.FILE_NO IS NOT NULL), '[]'::JSONB)
+                        )
+                     || JSONB_BUILD_OBJECT(
+                         'upDocList', COALESCE((
+                                                   WITH RECURSIVE FolderHierarchy AS (
+                                                       SELECT
+                                                           DOC_ID, DOC_NO, UP_DOC_ID, DOC_NM, NAVI_ID, NAVI_NO, 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN
+                                                       WHERE DOC_ID = #{upDocId} AND DLT_YN = 'N'
+
+                                                       UNION ALL
+
+                                                       SELECT
+                                                           d.DOC_ID, d.DOC_NO, d.UP_DOC_ID, d.DOC_NM, d.NAVI_ID, d.NAVI_NO, fh.LEVEL + 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN d
+                                                                INNER JOIN FolderHierarchy fh ON fh.UP_DOC_ID = d.DOC_ID
+
+                                                   )
+                                                   SELECT JSONB_AGG(
+                                                                  JSONB_BUILD_OBJECT(
+                                                                          'docId', DOC_ID,
+                                                                          'upDocId', UP_DOC_ID,
+                                                                          'docNm', DOC_NM,
+                                                                          'naviId', NAVI_ID,
+                                                                          'naviNo', NAVI_NO
+                                                                  )ORDER BY LEVEL DESC
+                                                          )
+                                                   FROM FolderHierarchy
+                                               ), '{}'::JSONB))
+                     || JSONB_BUILD_OBJECT(
+                     				    'propertyAttachment', COALESCE((
+                     				        SELECT JSONB_AGG(
+                     				            JSONB_BUILD_OBJECT(
+                                                     'attrbtCd', A.ATTRBT_CD,
+                     				                'fileNo', ATT.FILE_NO,
+                     				                'fileNm', ATT.FILE_NM,
+                     				                'fileSize', ATT.FILE_SIZE,
+                     				                'fileHitNum', ATT.FILE_HIT_NUM,
+                     				                'docNo', ATT.DOC_NO,
+                     				                'docId', ATT.DOC_ID,
+                     				                'dltYn', ATT.DLT_YN
+                     				            )
+                     				        )
+                     				        FROM DC_PROPERTY A
+                     				        INNER JOIN DC_PROPERTY_DATA B
+                     				            ON A.ATTRBT_CD = B.ATTRBT_CD
+                     				            AND A.DLT_YN = 'N'
+                     				        INNER JOIN DC_ATTACHMENTS ATT
+                     				            ON ATT.FILE_NO::TEXT = B.ATTRBT_CNTNTS
+                     				            AND ATT.DLT_YN = 'N'
+                     				        WHERE
+                     				            A.ATTRBT_TYPE = 'ATCH'
+                     				            AND A.DLT_YN = 'N'
+                     				            AND A.NAVI_NO = AA.NAVI_NO
+                     				            AND A.NAVI_ID = AA.NAVI_ID
+                     				            AND B.DOC_NO = AA.DOC_NO
+                     				            AND B.DOC_ID = AA.DOC_ID
+                     				    ), '[]'::JSONB)
+                        ) AS RESULT
+            FROM
+                DC_STORAGE_MAIN AA
+            LEFT JOIN DC_ATTACHMENTS B
+                -- ON AA.DOC_TYPE = 'ITEM'
+                ON AA.DOC_ID = B.DOC_ID
+                AND B.DLT_YN = 'N'
+                AND B.FILE_NO NOT IN (
+                                        SELECT
+                                            CASE
+                                               WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                               WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                               ELSE B.ATTRBT_CNTNTS::INTEGER
+                                            END FILE_NO
+                                        FROM DC_PROPERTY A
+                                        INNER JOIN DC_PROPERTY_DATA B
+                                        ON A.ATTRBT_CD = B.ATTRBT_CD
+                                        AND A.ATTRBT_TYPE = 'ATCH'
+                                        AND A.DLT_YN = 'N'
+                                     )
+            INNER JOIN (
+                <include refid="selectDocuAuthSQL" />
+            ) AUTH 
+                ON  AA.DOC_ID = AUTH.ID
+            WHERE
+                AA.DLT_YN = 'N'
+                AND AA.NAVI_ID = #{naviId}
+                <if test="upDocId != null and !upDocId.isEmpty()">
+                AND UP_DOC_ID = #{upDocId}
+                </if>
+            GROUP BY
+                AA.DOC_PATH, AA.DOC_TYPE, AA.DOC_NM, AA.DOC_ID, AA.CHG_ID, AA.CHG_DT, AA.NAVI_NO, AA.NAVI_ID, AA.DOC_NO, AUTH.RGHT_TY
+            <if test="pageable.sort.isEmpty()">
+                ORDER BY
+                    AA.DOC_TYPE DESC, AA.DOC_NM ASC
+            </if>
+        )
+        select
+            aaa.RESULT
+            ||  JSONB_BUILD_OBJECT(
+                   'folderCnt', (select count(1) from AAA v where DOC_TYPE = 'FOLDR' <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                    'fileCnt' , (select count(1) from AAA v where DOC_TYPE = 'FILE'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                    'itemCnt' , (select count(1) from AAA v where DOC_TYPE = 'ITEM'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>)
+            	)
+        from AAA
+        <if test="searchText != null and columnNm != null">
+            WHERE RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'
+        </if>
+        <if test="pageable != null and !pageable.sort.isEmpty()">
+        ORDER BY
+            <foreach collection="pageable.sort" item="sort" separator=",">
+                RESULT-> #{sort.property} 
+                <if test="sort.direction.name() == 'DESC'">DESC</if>
+                <if test="sort.direction.name() == 'ASC'">ASC</if>
+            </foreach>
+        </if>
+        <if test="pageable != null">
+            OFFSET #{pageable.offset} ROWS FETCH NEXT #{pageable.pageSize} ROWS ONLY;
+        </if>
+    </select>
+
+    <select id="getDocumentListCountAdmin" parameterType="input" resultType="long">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getDocumentListCountAdmin][thkim]  */
+        with AAA as (
+             SELECT
+                 AA.DOC_TYPE,
+                 AA.DOC_ID,
+                 JSONB_BUILD_OBJECT(
+                         'doc_path', AA.DOC_PATH,
+                         'doc_type', AA.DOC_TYPE,
+                         'doc_disk_nm', AA.DOC_DISK_NM,
+                         'doc_nm',   AA.DOC_NM,
+                         'doc_id',   AA.DOC_ID,
+                         'doc_no',   AA.DOC_NO,
+                         'up_doc_id', AA.UP_DOC_ID,
+                         'up_doc_no', AA.UP_DOC_NO,
+                         'navi_id',  AA.NAVI_ID,
+                         'doc_size',  AA.DOC_SIZE,
+                         'rgstr_id', (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.RGSTR_ID),
+                         'rgst_dt',   TO_CHAR(AA.RGST_DT, 'YYYY-MM-DD'),
+                         'chg_id',   (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.CHG_ID),
+                         'chg_dt',   TO_CHAR(AA.CHG_DT, 'YYYY-MM-DD'),
+                         'doc_user_type', 'A'
+                 )
+                     || COALESCE((
+                                     SELECT
+                                         JSONB_OBJECT_AGG(A.ATTRBT_CD,
+                                                          (CASE
+                                                               WHEN A.ATTRBT_TYPE = 'SEL' THEN (
+                                                                   SELECT C.CMN_CD_NM_KRN
+                                                                   FROM SM_COM_CODE C
+                                                                   WHERE C.CMN_CD = B.ATTRBT_CNTNTS
+                                                                     AND C.DLT_YN = 'N'
+                                                                     AND C.USE_YN = 'Y'
+                                                                   LIMIT 1
+                                                               )
+                                                               WHEN A.ATTRBT_TYPE = 'ATCH' THEN (
+                                                                   SELECT D.file_nm
+                                                                   FROM DC_ATTACHMENTS D
+                                                                   WHERE D.File_no :: TEXT = B.ATTRBT_CNTNTS
+                                                                     AND D.DLT_YN = 'N'
+                                                                   LIMIT 1
+                                                               )
+                                                               ELSE B.ATTRBT_CNTNTS
+                                                              END
+                                                              ))
+                                     FROM
+                                         DC_PROPERTY A
+                                             JOIN
+                                         DC_PROPERTY_DATA B
+                                         ON A.ATTRBT_CD = B.ATTRBT_CD
+                                             AND A.DLT_YN = 'N'
+                                     WHERE
+                                         A.ATTRBT_DSPLY_YN = 'Y'
+                                       AND A.dlt_yn = 'N'
+                                       AND A.NAVI_NO = AA.NAVI_NO
+                                       AND A.NAVI_ID = AA.NAVI_ID
+                                       AND B.DOC_NO = AA.DOC_NO
+                                       AND B.DOC_ID = AA.DOC_ID
+                                 ), '{}'::JSONB)
+                     || JSONB_BUILD_OBJECT(
+                         'attachments', COALESCE(JSONB_AGG(
+                                                 JSONB_BUILD_OBJECT(
+                                                         'fileNo', B.FILE_NO,
+                                                         'fileNm', B.FILE_NM,
+                                                         'fileSize', B.FILE_SIZE,
+                                                         'fileHitNum', B.FILE_HIT_NUM,
+                                                         'docNo', B.DOC_NO,
+                                                         'docId', B.DOC_ID,
+                                                         'dltYn', B.DLT_YN
+                                                 )
+                                                          ) FILTER (WHERE B.FILE_NO IS NOT NULL), '[]'::JSONB)
+                        )
+                     || JSONB_BUILD_OBJECT(
+                         'upDocList', COALESCE((
+                                                   WITH RECURSIVE FolderHierarchy AS (
+                                                       SELECT
+                                                           DOC_ID, DOC_NO, UP_DOC_ID, DOC_NM, NAVI_ID, NAVI_NO, 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN
+                                                       WHERE DOC_ID = #{upDocId} AND DLT_YN = 'N'
+
+                                                       UNION ALL
+
+                                                       SELECT
+                                                           d.DOC_ID, d.DOC_NO, d.UP_DOC_ID, d.DOC_NM, d.NAVI_ID, d.NAVI_NO, fh.LEVEL + 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN d
+                                                                INNER JOIN FolderHierarchy fh ON fh.UP_DOC_ID = d.DOC_ID
+
+                                                   )
+                                                   SELECT JSONB_AGG(
+                                                                  JSONB_BUILD_OBJECT(
+                                                                          'docId', DOC_ID,
+                                                                          'upDocId', UP_DOC_ID,
+                                                                          'docNm', DOC_NM,
+                                                                          'naviId', NAVI_ID,
+                                                                          'naviNo', NAVI_NO
+                                                                  )ORDER BY LEVEL DESC
+                                                          )
+                                                   FROM FolderHierarchy
+                                               ), '{}'::JSONB))
+                     || JSONB_BUILD_OBJECT(
+                                        'propertyAttachment', COALESCE((
+                                            SELECT JSONB_AGG(
+                                                JSONB_BUILD_OBJECT(
+                                                     'attrbtCd', A.ATTRBT_CD,
+                                                    'fileNo', ATT.FILE_NO,
+                                                    'fileNm', ATT.FILE_NM,
+                                                    'fileSize', ATT.FILE_SIZE,
+                                                    'fileHitNum', ATT.FILE_HIT_NUM,
+                                                    'docNo', ATT.DOC_NO,
+                                                    'docId', ATT.DOC_ID,
+                                                    'dltYn', ATT.DLT_YN
+                                                )
+                                            )
+                                            FROM DC_PROPERTY A
+                                            INNER JOIN DC_PROPERTY_DATA B
+                                                ON A.ATTRBT_CD = B.ATTRBT_CD
+                                                AND A.DLT_YN = 'N'
+                                            INNER JOIN DC_ATTACHMENTS ATT
+                                                ON ATT.FILE_NO::TEXT = B.ATTRBT_CNTNTS
+                                                AND ATT.DLT_YN = 'N'
+                                            WHERE
+                                                A.ATTRBT_TYPE = 'ATCH'
+                                                AND A.DLT_YN = 'N'
+                                                AND A.NAVI_NO = AA.NAVI_NO
+                                                AND A.NAVI_ID = AA.NAVI_ID
+                                                AND B.DOC_NO = AA.DOC_NO
+                                                AND B.DOC_ID = AA.DOC_ID
+                                        ), '[]'::JSONB)
+                        ) AS RESULT
+            FROM
+                DC_STORAGE_MAIN AA
+            LEFT JOIN DC_ATTACHMENTS B
+                -- ON AA.DOC_TYPE = 'ITEM'
+                ON AA.DOC_ID = B.DOC_ID
+                AND B.DLT_YN = 'N'
+                AND B.FILE_NO NOT IN (
+                                        SELECT
+                                            CASE
+                                               WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                               WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                               ELSE B.ATTRBT_CNTNTS::INTEGER
+                                            END FILE_NO
+                                        FROM DC_PROPERTY A
+                                        INNER JOIN DC_PROPERTY_DATA B
+                                        ON A.ATTRBT_CD = B.ATTRBT_CD
+                                        AND A.ATTRBT_TYPE = 'ATCH'
+                                        AND A.DLT_YN = 'N'
+                                     )
+            WHERE
+                AA.DLT_YN = 'N'
+                AND AA.NAVI_ID = #{naviId}
+                <if test="upDocId != null and !upDocId.isEmpty()">
+                AND UP_DOC_ID = #{upDocId}
+                </if>
+            GROUP BY
+                AA.DOC_PATH, AA.DOC_TYPE, AA.DOC_NM, AA.DOC_ID, AA.CHG_ID, AA.CHG_DT, AA.NAVI_NO, AA.NAVI_ID, AA.DOC_NO
+            <if test="pageable.sort.isEmpty()">
+                ORDER BY
+                    AA.DOC_TYPE DESC, AA.CHG_DT DESC
+            </if>
+        )
+
+        select
+            count(
+                aaa.RESULT
+                ||  JSONB_BUILD_OBJECT(
+                       'folderCnt', (select count(1) from AAA v where DOC_TYPE = 'FOLDR' <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                        'fileCnt' , (select count(1) from AAA v where DOC_TYPE = 'FILE'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                        'itemCnt' , (select count(1) from AAA v where DOC_TYPE = 'ITEM'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>)
+                    )
+            )
+        from AAA
+        <if test="searchText != null and columnNm != null">
+            WHERE RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'
+        </if>
+    </select>
+
+    <select id="getDocumentListCount" parameterType="input" resultType="long">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getDocumentListCount][thkim]  */
+        with AAA as (
+             SELECT
+                 AA.DOC_TYPE,
+                 AA.DOC_ID,
+                 JSONB_BUILD_OBJECT(
+                         'doc_path', AA.DOC_PATH,
+                         'doc_type', AA.DOC_TYPE,
+                         'doc_disk_nm', AA.DOC_DISK_NM,
+                         'doc_nm',   AA.DOC_NM,
+                         'doc_id',   AA.DOC_ID,
+                         'doc_no',   AA.DOC_NO,
+                         'up_doc_id', AA.UP_DOC_ID,
+                         'up_doc_no', AA.UP_DOC_NO,
+                         'navi_id',  AA.NAVI_ID,
+                         'doc_size',  AA.DOC_SIZE,
+                         'rgstr_id', (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.RGSTR_ID),
+                         'rgst_dt',   TO_CHAR(AA.RGST_DT, 'YYYY-MM-DD'),
+                         'chg_id',   (SELECT AAA.USR_NM FROM SM_USER_INFO AAA WHERE AAA.USR_ID = AA.CHG_ID),
+                         'chg_dt',   TO_CHAR(AA.CHG_DT, 'YYYY-MM-DD'),
+                         'doc_user_type', AUTH.RGHT_TY
+                 )
+                     || COALESCE((
+                                     SELECT
+                                         JSONB_OBJECT_AGG(A.ATTRBT_CD,
+                                                          (CASE
+                                                               WHEN A.ATTRBT_TYPE = 'SEL' THEN (
+                                                                   SELECT C.CMN_CD_NM_KRN
+                                                                   FROM SM_COM_CODE C
+                                                                   WHERE C.CMN_CD = B.ATTRBT_CNTNTS
+                                                                     AND C.DLT_YN = 'N'
+                                                                     AND C.USE_YN = 'Y'
+                                                                   LIMIT 1
+                                                               )
+                                                               WHEN A.ATTRBT_TYPE = 'ATCH' THEN (
+                                                                   SELECT D.file_nm
+                                                                   FROM DC_ATTACHMENTS D
+                                                                   WHERE D.File_no :: TEXT = B.ATTRBT_CNTNTS
+                                                                     AND D.DLT_YN = 'N'
+                                                                   LIMIT 1
+                                                               )
+                                                               ELSE B.ATTRBT_CNTNTS
+                                                              END
+                                                              ))
+                                     FROM
+                                         DC_PROPERTY A
+                                             JOIN
+                                         DC_PROPERTY_DATA B
+                                         ON A.ATTRBT_CD = B.ATTRBT_CD
+                                             AND A.DLT_YN = 'N'
+                                     WHERE
+                                         A.ATTRBT_DSPLY_YN = 'Y'
+                                       AND A.dlt_yn = 'N'
+                                       AND A.NAVI_NO = AA.NAVI_NO
+                                       AND A.NAVI_ID = AA.NAVI_ID
+                                       AND B.DOC_NO = AA.DOC_NO
+                                       AND B.DOC_ID = AA.DOC_ID
+                                 ), '{}'::JSONB)
+                     || JSONB_BUILD_OBJECT(
+                         'attachments', COALESCE(JSONB_AGG(
+                                                 JSONB_BUILD_OBJECT(
+                                                         'fileNo', B.FILE_NO,
+                                                         'fileNm', B.FILE_NM,
+                                                         'fileSize', B.FILE_SIZE,
+                                                         'fileHitNum', B.FILE_HIT_NUM,
+                                                         'docNo', B.DOC_NO,
+                                                         'docId', B.DOC_ID,
+                                                         'dltYn', B.DLT_YN
+                                                 )
+                                                          ) FILTER (WHERE B.FILE_NO IS NOT NULL), '[]'::JSONB)
+                        )
+                     || JSONB_BUILD_OBJECT(
+                         'upDocList', COALESCE((
+                                                   WITH RECURSIVE FolderHierarchy AS (
+                                                       SELECT
+                                                           DOC_ID, DOC_NO, UP_DOC_ID, DOC_NM, NAVI_ID, NAVI_NO, 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN
+                                                       WHERE DOC_ID = #{upDocId} AND DLT_YN = 'N'
+
+                                                       UNION ALL
+
+                                                       SELECT
+                                                           d.DOC_ID, d.DOC_NO, d.UP_DOC_ID, d.DOC_NM, d.NAVI_ID, d.NAVI_NO, fh.LEVEL + 1 AS LEVEL
+                                                       FROM DC_STORAGE_MAIN d
+                                                                INNER JOIN FolderHierarchy fh ON fh.UP_DOC_ID = d.DOC_ID
+
+                                                   )
+                                                   SELECT JSONB_AGG(
+                                                                  JSONB_BUILD_OBJECT(
+                                                                          'docId', DOC_ID,
+                                                                          'upDocId', UP_DOC_ID,
+                                                                          'docNm', DOC_NM,
+                                                                          'naviId', NAVI_ID,
+                                                                          'naviNo', NAVI_NO
+                                                                  )ORDER BY LEVEL DESC
+                                                          )
+                                                   FROM FolderHierarchy
+                                               ), '{}'::JSONB))
+                     || JSONB_BUILD_OBJECT(
+                     				    'propertyAttachment', COALESCE((
+                     				        SELECT JSONB_AGG(
+                     				            JSONB_BUILD_OBJECT(
+                                                     'attrbtCd', A.ATTRBT_CD,
+                     				                'fileNo', ATT.FILE_NO,
+                     				                'fileNm', ATT.FILE_NM,
+                     				                'fileSize', ATT.FILE_SIZE,
+                     				                'fileHitNum', ATT.FILE_HIT_NUM,
+                     				                'docNo', ATT.DOC_NO,
+                     				                'docId', ATT.DOC_ID,
+                     				                'dltYn', ATT.DLT_YN
+                     				            )
+                     				        )
+                     				        FROM DC_PROPERTY A
+                     				        INNER JOIN DC_PROPERTY_DATA B
+                     				            ON A.ATTRBT_CD = B.ATTRBT_CD
+                     				            AND A.DLT_YN = 'N'
+                     				        INNER JOIN DC_ATTACHMENTS ATT
+                     				            ON ATT.FILE_NO::TEXT = B.ATTRBT_CNTNTS
+                     				            AND ATT.DLT_YN = 'N'
+                     				        WHERE
+                     				            A.ATTRBT_TYPE = 'ATCH'
+                     				            AND A.DLT_YN = 'N'
+                     				            AND A.NAVI_NO = AA.NAVI_NO
+                     				            AND A.NAVI_ID = AA.NAVI_ID
+                     				            AND B.DOC_NO = AA.DOC_NO
+                     				            AND B.DOC_ID = AA.DOC_ID
+                     				    ), '[]'::JSONB)
+                        ) AS RESULT
+            FROM
+                DC_STORAGE_MAIN AA
+            LEFT JOIN DC_ATTACHMENTS B
+                -- ON AA.DOC_TYPE = 'ITEM'
+                ON AA.DOC_ID = B.DOC_ID
+                AND B.DLT_YN = 'N'
+                AND B.FILE_NO NOT IN (
+                                        SELECT
+                                            CASE
+                                               WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                               WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                               ELSE B.ATTRBT_CNTNTS::INTEGER
+                                            END FILE_NO
+                                        FROM DC_PROPERTY A
+                                        INNER JOIN DC_PROPERTY_DATA B
+                                        ON A.ATTRBT_CD = B.ATTRBT_CD
+                                        AND A.ATTRBT_TYPE = 'ATCH'
+                                        AND A.DLT_YN = 'N'
+                                     )
+            INNER JOIN (
+                <include refid="selectDocuAuthSQL" />
+            ) AUTH
+                ON  AA.DOC_ID = AUTH.ID
+            WHERE
+                AA.DLT_YN = 'N'
+                AND AA.NAVI_ID = #{naviId}
+                <if test="upDocId != null and !upDocId.isEmpty()">
+                AND UP_DOC_ID = #{upDocId}
+                </if>
+            GROUP BY
+                AA.DOC_PATH, AA.DOC_TYPE, AA.DOC_NM, AA.DOC_ID, AA.CHG_ID, AA.CHG_DT, AA.NAVI_NO, AA.NAVI_ID, AA.DOC_NO, AUTH.RGHT_TY
+            <if test="pageable.sort.isEmpty()">
+                ORDER BY
+                    AA.DOC_TYPE DESC, AA.CHG_DT DESC
+            </if>
+        )
+
+        SELECT
+            COUNT(
+                aaa.RESULT
+                ||  JSONB_BUILD_OBJECT(
+                       'folderCnt', (select count(1) from AAA v where DOC_TYPE = 'FOLDR' <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                        'fileCnt' , (select count(1) from AAA v where DOC_TYPE = 'FILE'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>),
+                        'itemCnt' , (select count(1) from AAA v where DOC_TYPE = 'ITEM'  <if test="searchText != null and columnNm != null"> AND RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'</if>)
+                    )
+            )
+        FROM AAA
+        <if test="searchText != null and columnNm != null">
+            WHERE RESULT ->> #{columnNm} ILIKE '%'||#{searchText}||'%'
+        </if>
+    </select>
+
+    <select id="getPropertyList" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getPropertyList][thkim]  */
+        SELECT 
+            NAVI_ID,
+            ATTRBT_CD,
+            CASE 
+                WHEN #{lang} = 'ko' THEN ATTRBT_NM_KRN
+                WHEN #{lang} = 'en' THEN ATTRBT_NM_ENG
+                ELSE ATTRBT_NM_KRN
+            END AS ATTRBT_NM
+        FROM DC_PROPERTY
+        WHERE 
+            NAVI_ID = #{naviId}
+        AND DLT_YN = 'N'
+        AND ATTRBT_DSPLY_YN = 'Y'
+        ORDER BY ATTRBT_DSPLY_ORDER ASC
+    </select>
+
+    <select id="selectPropertyByNaviIdAndAttrbtCd" parameterType="input" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcProperty">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectPropertyByNaviIdAndAttrbtCd][thkim]  */
+        SELECT
+        	ATTRBT_NO
+        	,NAVI_NO
+        	,NAVI_ID
+        	,ATTRBT_CD
+        	,ATTRBT_CD_TYPE
+        	,ATTRBT_TYPE
+        	,ATTRBT_TYPE_SEL
+        	,ATTRBT_NM_ENG
+        	,ATTRBT_NM_KRN
+        	,ATTRBT_DSPLY_ORDER
+        	,ATTRBT_DSPLY_YN
+        	,ATTRBT_CHG_YN
+        FROM DC_PROPERTY DP
+        WHERE
+        	DP.NAVI_ID = #{naviId}
+        	AND DP.ATTRBT_CD = #{attrbtCd}
+        	AND DLT_YN = 'N'
+    </select>
+
+    <select id="getDocListToDashboardAdmin" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getDocListToDashboardAdmin][thkim] */
+        SELECT DISTINCT
+                    DN.PJT_NO,
+                    DN.CNTRCT_NO,
+                    DSM.DOC_NO,
+                    DSM.DOC_ID,
+                    DSM.NAVI_NO,
+                    DSM.NAVI_ID,
+                    DSM.UP_DOC_NO,
+                    DSM.UP_DOC_ID,
+                    DSM.DOC_NM,
+                    SUI.USR_NM,
+                    TO_CHAR(DSM.CHG_DT,'YYYY-MM-DD') AS CHG_DT
+        FROM
+            DC_STORAGE_MAIN DSM
+        INNER JOIN
+            DC_NAVIGATION DN
+            ON DN.NAVI_ID = DSM.NAVI_ID AND DN.DLT_YN = 'N'
+        LEFT JOIN
+            SM_USER_INFO SUI
+            ON SUI.USR_ID = DSM.CHG_ID AND SUI.DLT_YN = 'N' AND SUI.USE_YN = 'Y'
+        WHERE DSM.NAVI_ID IN (
+                                SELECT
+                                    NAVI_ID
+                                FROM
+                                    DC_NAVIGATION DN2
+                                WHERE DN2.PJT_NO = #{pjtNo}
+                                <if test = "pjtDiv != null and (pjtDiv == 'gaia' or pjtDiv == 'pgaia')">
+                                    AND DN2.CNTRCT_NO = #{pjtNo}
+                                </if>
+                                <if test = "pjtDiv != null and pjtDiv == 'cairos'">
+                                    AND DN2.CNTRCT_NO != #{pjtNo}
+                                </if>
+                                AND DN2.NAVI_DIV = '01'
+                                AND DN2.DLT_YN = 'N'
+                            )
+        AND DSM.DLT_YN = 'N'
+        ORDER BY CHG_DT DESC
+        LIMIT 6;
+    </select>
+
+    <select id="getDocListToDashboard" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getDocListToDashboard][gwLee] */
+        SELECT
+            A.DOC_NO,
+            A.DOC_ID,
+            A.NAVI_NO,
+            A.NAVI_ID,
+            A.UP_DOC_NO,
+            A.UP_DOC_ID,
+            A.DOC_NM,
+            (SELECT AA.USR_NM FROM SM_USER_INFO AA WHERE AA.USR_ID = A.CHG_ID) AS USR_NM,
+            TO_CHAR(A.CHG_DT,'YYYY-MM-DD') AS CHG_DT
+        FROM
+            DC_STORAGE_MAIN A
+            JOIN
+            (
+                WITH RECURSIVE DC_NAVIGATION_LIST (ITEM_NO,
+                                                    ITEM_ID,
+                                                    UP_ITEM_NO,
+                                                    UP_ITEM_ID,
+                                                    ITEM_NM,
+                                                    ITEM_TYPE,
+                                                    DEPTH,
+                                                    PATH,
+                                                    CYCLE
+                ) AS (
+                    SELECT
+                        A.ITEM_NO,
+                        A.ITEM_ID,
+                        A.UP_ITEM_NO,
+                        A.UP_ITEM_ID,
+                        A.ITEM_NM,
+                        A.ITEM_TYPE,
+                        1,
+                        ARRAY[A.ITEM_ID::TEXT],
+                        FALSE
+                    FROM (
+                        SELECT
+                            NAVI_NO AS ITEM_NO,
+                            NAVI_ID AS ITEM_ID,
+                            UP_NAVI_NO AS UP_ITEM_NO,
+                            UP_NAVI_ID AS UP_ITEM_ID,
+                            NAVI_NM AS ITEM_NM,
+                            'N' AS ITEM_TYPE
+                        FROM
+                            DC_NAVIGATION
+                        WHERE
+                            DLT_YN = 'N'
+
+                        UNION ALL
+
+                        SELECT
+                            DOC_NO AS ITEM_NO,
+                            DOC_ID AS ITEM_ID,
+                            (CASE WHEN COALESCE(UP_DOC_NO, 0) = 0
+                                THEN NAVI_NO
+                                ELSE UP_DOC_NO
+                            END) AS UP_ITEM_NO,
+                            (CASE WHEN COALESCE(UP_DOC_ID, '#') = '#'
+                                THEN NAVI_ID
+                                ELSE UP_DOC_ID
+                            END) AS UP_ITEM_ID,
+                            DOC_NM AS ITEM_NM,
+                            'D' AS ITEM_TYPE
+                        FROM
+                            DC_STORAGE_MAIN
+                        WHERE
+                            DLT_YN = 'N'
+                    ) AS A
+                    WHERE   
+                        A.ITEM_ID = #{itemId}
+
+                    UNION ALL
+
+                    SELECT  
+                        A.ITEM_NO,
+                        A.ITEM_ID,
+                        A.UP_ITEM_NO,
+                        A.UP_ITEM_ID,
+                        A.ITEM_NM,
+                        A.ITEM_TYPE,
+                        B.DEPTH + 1,
+                        ARRAY_APPEND(B.PATH,
+                        CAST(A.ITEM_NO AS TEXT)::TEXT),
+                        A.ITEM_ID = ANY(B.PATH)
+                    FROM (
+                        SELECT
+                            NAVI_NO AS ITEM_NO,
+                            NAVI_ID AS ITEM_ID,
+                            UP_NAVI_NO AS UP_ITEM_NO,
+                            UP_NAVI_ID AS UP_ITEM_ID,
+                            NAVI_NM AS ITEM_NM,
+                            'N' AS ITEM_TYPE
+                        FROM
+                            DC_NAVIGATION
+                        WHERE
+                            DLT_YN = 'N'
+
+                        UNION ALL
+
+                        SELECT  DOC_NO AS ITEM_NO,
+                                DOC_ID AS ITEM_ID,
+                                (CASE WHEN COALESCE(UP_DOC_NO, 0) = 0
+                                    THEN NAVI_NO
+                                    ELSE UP_DOC_NO
+                                END) AS UP_ITEM_NO,
+                                (CASE WHEN COALESCE(UP_DOC_ID, '#') = '#'
+                                    THEN NAVI_ID
+                                    ELSE UP_DOC_ID
+                                END) AS UP_ITEM_ID,
+                                DOC_NM AS ITEM_NM,
+                                'D' AS ITEM_TYPE
+                        FROM
+                            DC_STORAGE_MAIN
+                        WHERE
+                            DLT_YN = 'N'
+                    ) AS A,
+                    DC_NAVIGATION_LIST B
+                    WHERE   
+                            A.UP_ITEM_ID = B.ITEM_ID
+                    AND     NOT CYCLE
+                )
+                SELECT  
+                    ITEM_ID,
+                    ITEM_NO
+                FROM    
+                    DC_NAVIGATION_LIST
+                WHERE   
+                    ITEM_TYPE = 'D'
+                ORDER BY PATH, ITEM_NM
+            ) AS B
+            ON A.DOC_NO = B.ITEM_NO
+            AND A.DOC_ID = B.ITEM_ID
+            JOIN
+            (
+                <include refid="selectDocuAuthSQL" />
+            ) AS C
+            ON A.DOC_NO = C.NO
+            AND A.DOC_ID = C.ID
+        WHERE A.DLT_YN = 'N'
+        ORDER BY A.CHG_DT DESC
+        LIMIT 6
+    </select>
+
+    <select id="updateDocExist" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.updateDocExist][thkim] */
+        SELECT  CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS NAME_EXIST
+        FROM    DC_STORAGE_MAIN 
+        WHERE   DLT_YN      = 'N'
+        AND     NAVI_ID     = #{naviId}
+        AND     UP_DOC_ID   = #{upDocId}
+        AND     DOC_NM      = #{docNm}
+    </select>
+
+    <insert id="insertPropertyList" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertPropertyList][thkim]  */
+        INSERT
+        INTO	DC_PROPERTY
+            (	
+                NAVI_ID,
+                NAVI_NO,
+                ATTRBT_CD,
+                ATTRBT_CD_TYPE,
+                ATTRBT_TYPE,
+                ATTRBT_TYPE_SEL,
+                ATTRBT_NM_KRN,
+                ATTRBT_NM_ENG,
+                ATTRBT_DSPLY_YN,
+                ATTRBT_CHG_YN,
+                DLT_YN,
+                RGSTR_ID,
+                RGST_DT,
+                CHG_ID,
+                CHG_DT,
+                ATTRBT_DSPLY_ORDER
+             )
+        SELECT
+            #{targetId},
+            #{targetNo},
+            A.ATTRBT_CD || '_c',
+            A.ATTRBT_CD_TYPE,
+            A.ATTRBT_TYPE,
+            A.ATTRBT_TYPE_SEL,
+            A.ATTRBT_NM_KRN,
+            A.ATTRBT_NM_ENG,
+            A.ATTRBT_DSPLY_YN,
+            A.ATTRBT_CHG_YN,
+            'N',
+            #{usrId},
+            now(),
+            #{usrId},
+            now(),
+            (SELECT
+				COALESCE(MAX(AA.ATTRBT_DSPLY_ORDER), 0) 
+			FROM
+				DC_PROPERTY AA
+			WHERE
+				AA.NAVI_ID = #{targetId}
+				AND AA.NAVI_NO = #{targetNo}
+				AND AA.DLT_YN = 'N') + ROW_NUMBER() OVER (ORDER BY A.ATTRBT_CD)
+        FROM
+            DC_PROPERTY A
+        WHERE
+        	A.NAVI_ID = #{sourceId}
+        AND A.NAVI_NO = #{sourceNo}
+        AND A.DLT_YN = 'N'
+        AND NOT EXISTS ( -- 이미 존재하는 속성인 경우, 삽입X
+	        SELECT 1
+	        FROM DC_PROPERTY BB
+	        WHERE BB.NAVI_ID = #{targetId}
+	          AND BB.NAVI_NO = #{targetNo}
+	          AND BB.ATTRBT_CD = A.ATTRBT_CD || '_c'
+	          AND BB.DLT_YN = 'N'
+    	);
+    </insert>
+
+    <select id="docAuthority" parameterType="input" resultType="output">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.docAuthority][thkim] */
+        SELECT  COALESCE(CAST(C.RGHT_NO AS TEXT), 'NON') AS RGHT_NO, 
+                A.RGHT_GRP_NO AS RGHT_GRP_NO,
+                A.RGHT_GRP_CD AS RGHT_GRP_CD,
+                A.RGHT_GRP_NM_KRN AS RGHT_GRP_NM_KRN,
+                A.RGHT_GRP_NM_ENG AS RGHT_GRP_NM_ENG,
+                A.RGHT_GRP_DSCRPT AS RGHT_GRP_DSCRPT,
+                COALESCE(CAST(C.RGHT_TY AS TEXT), '') AS RGHT_TY,
+                (CASE   WHEN COALESCE(C.RGHT_TY, '') = ''
+                        THEN ''
+                        ELSE 'CHECKED'
+                END) AS CHECKYN
+        FROM    SM_AUTHORITY_GROUP A
+        INNER JOIN DC_AUTHORITY B   ON  A.RGHT_GRP_NO = B.RGHT_GRP_NO
+                                    AND A.RGHT_GRP_CD = B. RGHT_GRP_CD
+                                    AND B.DLT_YN = 'N'
+                                    AND B.NO = #{upDocNo}
+                                    AND B.ID = #{upDocId}
+        LEFT JOIN DC_AUTHORITY C    ON  A.RGHT_GRP_NO = C.RGHT_GRP_NO
+                                    AND A.RGHT_GRP_CD = C. RGHT_GRP_CD
+                                    AND C.NO = #{docNo}
+                                    AND C.ID = #{docId}
+                                    AND C.DLT_YN = 'N'
+        WHERE   A.PJT_NO    = #{pjtNo}
+        AND     A.CNTRCT_NO = #{cntrctNo}
+        AND     A.PJT_TYPE  = #{pjtType}
+        AND     A.DLT_YN    = 'N'
+    </select>
+
+    <select id="getFolderAndFileCounts" parameterType="string" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getFolderAndFileCounts][thkim] */
+        WITH RECURSIVE FolderHierarchy AS (
+            SELECT 
+                doc_no, 
+                doc_id, 
+                up_doc_id, 
+                doc_type, 
+                doc_path, 
+                doc_nm, 
+                doc_disk_nm, 
+                doc_disk_path, 
+                doc_size,
+                1 as depth 
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                doc_id = #{docId} 
+
+            UNION ALL
+
+            SELECT 
+                d.doc_no, 
+                d.doc_id, 
+                d.up_doc_id, 
+                d.doc_type, 
+                d.doc_path, 
+                d.doc_nm, 
+                d.doc_disk_nm, 
+                d.doc_disk_path, 
+                d.doc_size,
+                fh.depth + 1 as depth
+            FROM 
+                DC_STORAGE_MAIN d
+            INNER JOIN 
+                FolderHierarchy fh ON d.up_doc_id = fh.doc_id
+            AND d.dlt_yn = 'N'
+        )
+
+        SELECT 
+            COUNT(*) FILTER (WHERE doc_type = 'FOLDR' AND depth > 1) AS folder_count,
+            COUNT(*) FILTER (WHERE doc_type != 'FOLDR' AND depth > 1) AS file_count
+        FROM 
+            FolderHierarchy;
+    </select>
+
+    <update id="deleteDocumentList" parameterType="input">
+     /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deleteDocumentList][thkim] */
+        WITH RECURSIVE FolderHierarchy AS (
+            SELECT 
+                DOC_ID,
+                1 as DEPTH
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                DOC_ID = #{docId}
+
+            UNION ALL
+
+            SELECT 
+                d.DOC_ID,
+                fh.DEPTH + 1 as DEPTH
+            FROM 
+                DC_STORAGE_MAIN d
+            INNER JOIN 
+                FolderHierarchy fh ON d.UP_DOC_ID = fh.DOC_ID
+        ) 
+
+        UPDATE 
+            DC_STORAGE_MAIN 
+        SET 
+            DLT_YN = 'Y',
+            DLT_ID = #{user.usrId},
+            DLT_DT = NOW(),
+            DOC_TRASH_YN = 'N',
+            CHG_DT = NOW(),
+            CHG_ID = #{user.usrId}
+        WHERE 
+            DOC_ID IN (
+                    SELECT 
+                        DOC_ID 
+                    FROM 
+                        FolderHierarchy);
+    </update>
+
+    <!-- 문서 논리 삭제 -->
+    <update id="logicalDeleteDocument" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.logicalDeleteDocument][thkim] */
+        UPDATE
+            DC_STORAGE_MAIN
+        SET
+            DLT_YN = 'Y',
+            DLT_ID = #{usrId},
+            DLT_DT = NOW(),
+            DOC_TRASH_YN = 'N'
+        WHERE
+            DOC_ID = #{docId}
+    </update>
+
+    <update id="deleteAttachments" parameterType="input">
+        UPDATE
+            DC_ATTACHMENTS
+        SET
+            DLT_YN = 'Y',
+            DLT_ID = #{user.usrId},
+            DLT_DT = NOW()
+        WHERE DOC_ID = #{docId}
+    </update>
+
+    <delete id="deletePropertyData" parameterType="input">
+        DELETE
+        FROM
+            DC_PROPERTY_DATA
+        WHERE DOC_ID = #{docId}
+    </delete>
+    <delete id="hardDeleteDocument">
+        delete from dc_storage_main
+        where doc_id = #{docId}
+    </delete>
+
+    <select id="getNaviDocTreeList" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getNaviDocTreeList][thkim] */
+        WITH RECURSIVE AUTHORITY_LIST AS (
+            <include refid="selectDocuAuthSQL" />
+        ),
+        DC_NAVIGATION_LIST   (  ITEM_NO,
+                                ITEM_ID,
+                                UP_ITEM_NO,
+                                UP_ITEM_ID,
+                                ITEM_NM,
+                                DEPTH,
+                                PATH,
+                                CYCLE,
+                                ITEM_KIND,
+                                ITEM_TYPE,
+                                DSPLY_ORDR) 
+        AS (
+            -- 초기 계층 데이터
+            SELECT  A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    1,
+                    ARRAY[A.ITEM_ID::TEXT],
+                    FALSE,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE,
+                    A.DSPLY_ORDR
+            FROM    (
+                        SELECT  NAVI_NO AS ITEM_NO,
+                                NAVI_ID AS ITEM_ID,
+                                UP_NAVI_NO AS UP_ITEM_NO,
+                                COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                                NAVI_NM AS ITEM_NM,
+                                'NAVI' AS ITEM_KIND,
+                                NAVI_TYPE AS ITEM_TYPE,
+                                DSPLY_ORDR
+                        FROM    DC_NAVIGATION
+                        WHERE   DLT_YN = 'N'
+                            AND NAVI_ID IN (SELECT AUTH_ID FROM AUTHORITY_LIST) -- 권한 조건 추가
+                        
+                        UNION ALL
+                        
+                        SELECT  DOC_NO AS ITEM_NO,
+                                DOC_ID AS ITEM_ID,
+                                (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                            THEN COALESCE(NAVI_NO, 0)
+                                            ELSE UP_DOC_NO
+                                        END) AS UP_ITEM_NO,
+                                (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                            THEN COALESCE(NAVI_ID, '#')
+                                            ELSE UP_DOC_ID
+                                        END) AS UP_ITEM_ID,
+                                DOC_NM AS ITEM_NM,
+                                'DOC' AS ITEM_KIND,
+                                DOC_TYPE AS ITEM_TYPE,
+                                NULL AS DSPLY_ORDR
+                        FROM    DC_STORAGE_MAIN
+                        WHERE   DLT_YN = 'N'
+                                AND DOC_TYPE = 'FOLDR' -- doc_type 조건 추가
+                                AND DOC_ID IN (SELECT AUTH_ID FROM AUTHORITY_LIST) -- 권한 조건 추가 
+                                <if test="docFolderIdList != null and docFolderIdList.size() > 0">
+                                AND DOC_ID NOT IN 
+                                    <foreach collection="docFolderIdList" item="docId"  open="(" close=")" separator=",">
+                                        #{docId}
+                                    </foreach>
+                                </if>
+                                 
+                    ) AS A
+            WHERE   A.ITEM_ID = #{topNaviId} -- 01_(어느 페이지냐에 따라 다름.) + 계약번호
+            
+            UNION ALL
+            
+            SELECT  A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    B.DEPTH + 1,
+                    ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                    A.ITEM_ID = ANY(B.PATH),
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE,
+                    A.DSPLY_ORDR
+            FROM    (
+                        SELECT  NAVI_NO AS ITEM_NO,
+                                NAVI_ID AS ITEM_ID,
+                                UP_NAVI_NO AS UP_ITEM_NO,
+                                COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                                NAVI_NM AS ITEM_NM,
+                                'NAVI' AS ITEM_KIND,
+                                NAVI_TYPE AS ITEM_TYPE,
+                                DSPLY_ORDR
+                        FROM    DC_NAVIGATION
+                        WHERE   DLT_YN = 'N'
+                            AND NAVI_ID IN (SELECT AUTH_ID FROM AUTHORITY_LIST) -- 권한 조건 추가
+                        
+                        UNION ALL
+                        
+                        SELECT  DOC_NO AS ITEM_NO,
+                                DOC_ID AS ITEM_ID,
+                                (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                            THEN COALESCE(NAVI_NO, 0)
+                                            ELSE UP_DOC_NO
+                                        END) AS UP_ITEM_NO,
+                                (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                            THEN COALESCE(NAVI_ID, '#')
+                                            ELSE UP_DOC_ID
+                                        END) AS UP_ITEM_ID,
+                                DOC_NM AS ITEM_NM,
+                                'DOC' AS ITEM_KIND,
+                                DOC_TYPE AS ITEM_TYPE,
+                                NULL AS DSPLY_ORDR
+                        FROM    DC_STORAGE_MAIN
+                        WHERE   DLT_YN = 'N'
+                                AND DOC_TYPE = 'FOLDR' -- doc_type 조건 추가
+                                AND DOC_ID IN (SELECT AUTH_ID FROM AUTHORITY_LIST) -- 권한 조건 추가 
+                                <if test="docFolderIdList != null and docFolderIdList.size() > 0">
+                                AND DOC_ID NOT IN 
+                                    <foreach collection="docFolderIdList" item="docId"  open="(" close=")" separator=",">
+                                        #{docId}
+                                    </foreach>
+                                </if>
+                    ) AS A,
+                    DC_NAVIGATION_LIST B
+            WHERE   A.UP_ITEM_ID = B.ITEM_ID
+            AND     NOT CYCLE
+        )
+        SELECT  ITEM_ID,
+                ITEM_NO,
+                ITEM_NM,
+                UP_ITEM_ID,
+                ITEM_KIND,
+                ITEM_TYPE,
+                DSPLY_ORDR
+        FROM    DC_NAVIGATION_LIST
+        ORDER BY UP_ITEM_ID, DSPLY_ORDR, ITEM_NM;
+    </select>
+
+    <select id="getNaviDocTreeListAdmin" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getNaviDocTreeListAdmin][thkim] */
+        WITH RECURSIVE DC_NAVIGATION_LIST   (   ITEM_NO,
+                                                        ITEM_ID,
+                                                        UP_ITEM_NO,
+                                                        UP_ITEM_ID,
+                                                        ITEM_NM,
+                                                        DEPTH,
+                                                        PATH,
+                                                        CYCLE,
+                                                        ITEM_KIND,
+                                                        ITEM_TYPE,
+                                                        DSPLY_ORDR) 
+                AS (
+                    -- 초기 계층 데이터
+                    SELECT  A.ITEM_NO,
+                            A.ITEM_ID,
+                            A.UP_ITEM_NO,
+                            A.UP_ITEM_ID,
+                            A.ITEM_NM,
+                            1,
+                            ARRAY[A.ITEM_ID::TEXT],
+                            FALSE,
+                            A.ITEM_KIND,
+                            A.ITEM_TYPE,
+                            A.DSPLY_ORDR
+                    FROM    (
+                                SELECT  NAVI_NO AS ITEM_NO,
+                                        NAVI_ID AS ITEM_ID,
+                                        UP_NAVI_NO AS UP_ITEM_NO,
+                                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                                        NAVI_NM AS ITEM_NM,
+                                        'NAVI' AS ITEM_KIND,
+                                        NAVI_TYPE AS ITEM_TYPE,
+                                        DSPLY_ORDR
+                                FROM    DC_NAVIGATION
+                                WHERE   DLT_YN = 'N'
+                                
+                                UNION ALL
+                                
+                                SELECT  DOC_NO AS ITEM_NO,
+                                        DOC_ID AS ITEM_ID,
+                                        (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                    THEN COALESCE(NAVI_NO, 0)
+                                                    ELSE UP_DOC_NO
+                                                END) AS UP_ITEM_NO,
+                                        (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                    THEN COALESCE(NAVI_ID, '#')
+                                                    ELSE UP_DOC_ID
+                                                END) AS UP_ITEM_ID,
+                                        DOC_NM AS ITEM_NM,
+                                        'DOC' AS ITEM_KIND,
+                                        DOC_TYPE AS ITEM_TYPE,
+                                        NULL AS DSPLY_ORDR
+                                FROM    DC_STORAGE_MAIN
+                                WHERE   DLT_YN = 'N'
+                                        AND DOC_TYPE = 'FOLDR' -- doc_type 조건 추가
+                                        <if test="docFolderIdList != null and docFolderIdList.size() > 0">
+                                        AND DOC_ID NOT IN 
+                                            <foreach collection="docFolderIdList" item="docId"  open="(" close=")" separator=",">
+                                                #{docId}
+                                            </foreach>
+                                        </if>
+                                        
+                            ) AS A
+                    WHERE   A.ITEM_ID = #{topNaviId} -- 01_(어느 페이지냐에 따라 다름.) + 계약번호
+                    
+                    UNION ALL
+                    
+                    SELECT  A.ITEM_NO,
+                            A.ITEM_ID,
+                            A.UP_ITEM_NO,
+                            A.UP_ITEM_ID,
+                            A.ITEM_NM,
+                            B.DEPTH + 1,
+                            ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                            A.ITEM_ID = ANY(B.PATH),
+                            A.ITEM_KIND,
+                            A.ITEM_TYPE,
+                            A.DSPLY_ORDR
+                    FROM    (
+                                SELECT  NAVI_NO AS ITEM_NO,
+                                        NAVI_ID AS ITEM_ID,
+                                        UP_NAVI_NO AS UP_ITEM_NO,
+                                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                                        NAVI_NM AS ITEM_NM,
+                                        'NAVI' AS ITEM_KIND,
+                                        NAVI_TYPE AS ITEM_TYPE,
+                                        DSPLY_ORDR
+                                FROM    DC_NAVIGATION
+                                WHERE   DLT_YN = 'N'
+                                
+                                UNION ALL
+                                
+                                SELECT  DOC_NO AS ITEM_NO,
+                                        DOC_ID AS ITEM_ID,
+                                        (   CASE    WHEN COALESCE(UP_DOC_NO, 0) = 0 
+                                                    THEN COALESCE(NAVI_NO, 0)
+                                                    ELSE UP_DOC_NO
+                                                END) AS UP_ITEM_NO,
+                                        (   CASE    WHEN COALESCE(UP_DOC_ID, '#') = '#' 
+                                                    THEN COALESCE(NAVI_ID, '#')
+                                                    ELSE UP_DOC_ID
+                                                END) AS UP_ITEM_ID,
+                                        DOC_NM AS ITEM_NM,
+                                        'DOC' AS ITEM_KIND,
+                                        DOC_TYPE AS ITEM_TYPE,
+                                        NULL AS DSPLY_ORDR
+                                FROM    DC_STORAGE_MAIN
+                                WHERE   DLT_YN = 'N'
+                                        AND DOC_TYPE = 'FOLDR' -- doc_type 조건 추가
+                                        <if test="docFolderIdList != null and docFolderIdList.size() > 0">
+                                        AND DOC_ID NOT IN 
+                                            <foreach collection="docFolderIdList" item="docId"  open="(" close=")" separator=",">
+                                                #{docId}
+                                            </foreach>
+                                        </if>
+                            ) AS A,
+                            DC_NAVIGATION_LIST B
+                    WHERE   A.UP_ITEM_ID = B.ITEM_ID
+                    AND     NOT CYCLE
+                )
+
+                SELECT  ITEM_ID,
+                        ITEM_NO,
+                        ITEM_NM,
+                        UP_ITEM_ID,
+                        ITEM_KIND,
+                        ITEM_TYPE,
+                        DSPLY_ORDR
+                FROM    DC_NAVIGATION_LIST
+                ORDER BY UP_ITEM_ID, DSPLY_ORDR, ITEM_NM;
+    </select>
+
+    <update id="updateMoveSubDocPath" parameterType="input">
+     /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.updateMoveSubDocPath][thkim] */
+        WITH RECURSIVE FolderHierarchy AS (
+            SELECT 
+                DOC_ID,
+                UP_DOC_ID,
+                DOC_TYPE,
+                DOC_NM,
+                CAST(DOC_PATH AS character varying(2000)) AS doc_path   -- 명시적으로 2000자로 캐스팅
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                DOC_ID = #{upDocId}                                     -- 상위 폴더 ID 기준
+                AND DLT_YN = 'N'
+
+            UNION ALL
+
+            -- 재귀적으로 상위 문서의 doc_path와 doc_nm을 조합
+            SELECT 
+                d.DOC_ID,
+                d.UP_DOC_ID,
+                d.DOC_TYPE,
+                d.DOC_NM,
+                CASE 
+                    WHEN fh.DOC_TYPE = 'FOLDR' 
+                        THEN CAST(CONCAT(fh.DOC_PATH, ' > ', fh.DOC_NM) AS character varying(2000))  -- 폴더일 경우 경로 확장
+                    ELSE CAST(fh.DOC_PATH AS character varying(2000))                                -- 파일일 경우 상위 경로 유지
+                END AS DOC_PATH
+            FROM 
+                DC_STORAGE_MAIN d
+            INNER JOIN 
+                FolderHierarchy fh ON d.UP_DOC_ID = fh.DOC_ID -- 상위 doc_id와 하위 up_doc_id가 같을 때만
+        )
+
+                
+        -- 재귀로 생성된 경로를 기반으로 데이터 업데이트
+        UPDATE 
+            DC_STORAGE_MAIN
+        SET 
+            NAVI_ID = #{naviId},
+            NAVI_NO = #{naviNo},
+            CHG_ID = #{usrId},
+            CHG_DT = now(), 
+            DOC_PATH = (
+                SELECT 
+                    DOC_PATH
+                FROM 
+                    FolderHierarchy
+                WHERE 
+                    FolderHierarchy.DOC_ID = DC_STORAGE_MAIN.DOC_ID
+            )
+        WHERE 
+            DOC_ID IN (
+                        SELECT 
+                            DOC_ID 
+                        FROM 
+                            FolderHierarchy
+                        );
+    </update>
+
+    <insert id="insertCopiedSubDocuments" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertCopiedSubDocuments][thkim] */
+        WITH RECURSIVE FolderHierarchy AS (
+            -- 초기 데이터: 지정된 상위 폴더의 직속 하위 문서
+            SELECT 
+                DOC_ID,
+                UP_DOC_ID,
+                DOC_TYPE,
+                CAST(#{newDocNm} AS varchar(255)) AS doc_nm, 
+                CAST(#{newDocId} AS varchar(50)) AS NEW_DOC_ID,
+                nextval('dc_storage_main_doc_no_seq'::regclass) AS NEW_DOC_NO,
+                CAST(#{newUpDocId} AS varchar(50)) AS NEW_UP_DOC_ID,            -- 상위 문서의 새로운 DOC_ID 
+                CAST(#{newUpDocNo} AS int4) AS NEW_UP_DOC_NO,                   -- 상위 문서의 새로운 DOC_NO 
+                CAST(#{docPath} AS varchar(2000)) AS DOC_PATH                   -- 명시적으로 2000자로 캐스팅
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                DOC_ID = #{sourceDocId} -- 상위 폴더 ID 기준
+                AND DLT_YN = 'N'
+
+            UNION ALL
+
+            -- 재귀적으로 상위 문서의 doc_path와 doc_nm을 조합
+            SELECT 
+                d.DOC_ID,
+                d.UP_DOC_ID,
+                d.DOC_TYPE,
+                d.DOC_NM,
+                CAST(gen_random_uuid() AS varchar(50)) AS NEW_DOC_ID,
+                nextval('dc_storage_main_doc_no_seq'::regclass) AS NEW_DOC_NO,
+                CAST(fh.NEW_DOC_ID  AS varchar(50)) AS NEW_UP_DOC_ID,                       -- 상위 문서의 NEW_DOC_ID
+                CAST(fh.NEW_DOC_NO AS int4) AS NEW_UP_DOC_NO,                               -- 상위 문서의 NEW_DOC_NO
+                CASE 
+                    WHEN fh.DOC_TYPE = 'FOLDR' 
+                        THEN CAST(CONCAT(fh.DOC_PATH, ' > ', fh.DOC_NM) AS varchar(2000))   -- 폴더일 경우 경로 확장
+                    ELSE CAST(fh.DOC_PATH AS varchar(2000)) -- 파일일 경우 상위 경로 유지
+                END AS DOC_PATH
+            FROM 
+                DC_STORAGE_MAIN d
+            INNER JOIN 
+                FolderHierarchy fh ON d.UP_DOC_ID = fh.DOC_ID                               -- 상위 doc_id와 하위 up_doc_id가 같을 때만
+        )
+
+        -- 재귀로 생성된 경로, id를 기반으로 복사 데이터 생성
+        INSERT INTO DC_STORAGE_MAIN (
+            DOC_NO,
+            DOC_ID,
+            UP_DOC_ID,
+            UP_DOC_NO,
+            DOC_TYPE,
+            DOC_NM,
+            DOC_PATH,
+            DOC_DISK_NM,
+            DOC_DISK_PATH,
+            DOC_SIZE,
+            NAVI_ID,
+            NAVI_NO,
+            DLT_YN,
+            RGSTR_ID,
+            RGST_DT,
+            CHG_ID,
+            CHG_DT
+        )
+        SELECT 
+            fh.NEW_DOC_NO,
+            fh.NEW_DOC_ID,                          -- 새로 생성된 DOC_ID
+            COALESCE(fh.NEW_UP_DOC_ID, '#'),        -- 상위 문서의 NEW_DOC_ID
+            fh.NEW_UP_DOC_NO,                       -- 상위 문서의 NEW_DOC_NO
+            fh.DOC_TYPE,
+            fh.DOC_NM,
+            fh.DOC_PATH,
+            d.DOC_DISK_NM,
+            d.DOC_DISK_PATH,
+            d.DOC_SIZE,
+            #{naviId}, 
+            #{naviNo}, 
+            'N',
+            #{usrId},
+            NOW(),
+            #{usrId},
+            NOW()
+        FROM 
+            FolderHierarchy fh
+        LEFT JOIN 
+            DC_STORAGE_MAIN d ON fh.DOC_ID = d.DOC_ID;
+
+    </insert>
+
+    <select id="getUpDocInfoList" parameterType="input" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getUpDocInfoList][thkim] */
+        WITH RECURSIVE FolderHierarchy AS (
+            SELECT 
+                DOC_ID,
+                UP_DOC_ID,
+                DOC_NM,
+                NAVI_ID,
+                NAVI_NO,
+                1 AS LEVEL
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                DOC_ID = #{upDocId} -- 상위 폴더 ID 기준
+                AND DLT_YN = 'N'
+
+            UNION ALL
+
+            SELECT 
+                d.DOC_ID,
+                d.UP_DOC_ID,
+                d.DOC_NM,
+                d.NAVI_ID,
+                d.NAVI_NO,
+                fh.LEVEL + 1 AS LEVEL
+            FROM 
+                DC_STORAGE_MAIN d
+            INNER JOIN 
+                FolderHierarchy fh ON fh.UP_DOC_ID = d.DOC_ID -- 하위 문서의 UP_DOC_ID와 상위 DOC_ID가 같을 때
+        )
+
+        SELECT
+            DOC_ID,
+            UP_DOC_ID,
+            DOC_NM,
+            NAVI_ID,
+            NAVI_NO
+        FROM FolderHierarchy
+        ORDER BY LEVEL DESC, NAVI_NO;
+    </select>
+
+    <update id="deleteNaviSubDocList" parameterType="input">
+     /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deleteNaviSubDocList][thkim] */
+        -- 재귀 쿼리 정의
+        WITH RECURSIVE DC_DOCUMENT_LIST (
+            ITEM_NO,
+            ITEM_ID,
+            UP_ITEM_NO,
+            UP_ITEM_ID,
+            ITEM_NM,
+            ITEM_TYPE,
+            DEPTH,
+            PATH,
+            CYCLE
+        ) AS (
+            -- 초기 레벨 데이터 가져오기
+            SELECT  
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                A.ITEM_TYPE,
+                1 AS DEPTH,
+                ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                FALSE AS CYCLE
+            FROM (
+                SELECT  
+                    NAVI_NO AS ITEM_NO,
+                    NAVI_ID AS ITEM_ID,
+                    UP_NAVI_NO AS UP_ITEM_NO,
+                    UP_NAVI_ID AS UP_ITEM_ID,
+                    NAVI_NM AS ITEM_NM,
+                    'N' AS ITEM_TYPE
+                FROM DC_NAVIGATION
+                WHERE DLT_YN = 'N'
+
+                UNION ALL
+
+                SELECT  
+                    DOC_NO AS ITEM_NO,
+                    DOC_ID AS ITEM_ID,
+                    COALESCE(NULLIF(UP_DOC_NO, 0), NAVI_NO) AS UP_ITEM_NO,
+                    COALESCE(NULLIF(UP_DOC_ID, '#'), NAVI_ID) AS UP_ITEM_ID,
+                    DOC_NM AS ITEM_NM,
+                    'D' AS ITEM_TYPE
+                FROM DC_STORAGE_MAIN
+                WHERE DLT_YN = 'N'
+            ) AS A
+            WHERE A.ITEM_ID = #{naviId}
+
+            UNION ALL
+
+            -- 재귀적으로 하위 항목 연결
+            SELECT  
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                A.ITEM_TYPE,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, A.ITEM_ID::TEXT),
+                A.ITEM_ID = ANY(B.PATH)
+            FROM (
+                SELECT  
+                    NAVI_NO AS ITEM_NO,
+                    NAVI_ID AS ITEM_ID,
+                    UP_NAVI_NO AS UP_ITEM_NO,
+                    UP_NAVI_ID AS UP_ITEM_ID,
+                    NAVI_NM AS ITEM_NM,
+                    'N' AS ITEM_TYPE
+                FROM DC_NAVIGATION
+                WHERE DLT_YN = 'N'
+
+                UNION ALL
+
+                SELECT  
+                    DOC_NO AS ITEM_NO,
+                    DOC_ID AS ITEM_ID,
+                    COALESCE(NULLIF(UP_DOC_NO, 0), NAVI_NO) AS UP_ITEM_NO,
+                    COALESCE(NULLIF(UP_DOC_ID, '#'), NAVI_ID) AS UP_ITEM_ID,
+                    DOC_NM AS ITEM_NM,
+                    'D' AS ITEM_TYPE
+                FROM DC_STORAGE_MAIN
+                WHERE DLT_YN = 'N'
+            ) AS A,
+            DC_DOCUMENT_LIST B
+            WHERE A.UP_ITEM_ID = B.ITEM_ID
+            AND NOT CYCLE
+        )
+
+        -- 업데이트 쿼리
+        UPDATE DC_STORAGE_MAIN 
+        SET 
+            DLT_YN = 'Y',
+            DLT_ID = #{usrId},
+            DLT_DT = NOW(),
+            DOC_TRASH_YN = 'N',
+            CHG_DT = NOW(),
+            CHG_ID = #{usrId}
+        WHERE DOC_ID IN (
+            SELECT ITEM_ID 
+            FROM DC_DOCUMENT_LIST
+        );
+    </update>
+
+    <select id="moveUpNavi" parameterType="input" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.moveUpNavi][thkim]  */
+        <![CDATA[
+            SELECT
+                A.*
+            FROM 
+                DC_NAVIGATION A
+            WHERE 
+                A.DSPLY_ORDR = (
+                    SELECT 
+                        MAX(B.DSPLY_ORDR)
+                    FROM   
+                        DC_NAVIGATION B
+                    WHERE 
+                            B.DSPLY_ORDR < #{dsplyOrdr}
+                        AND
+                            B.NAVI_LEVEL = #{naviLevel}
+                        AND
+                            B.UP_NAVI_ID = #{upNaviId}
+                )
+            AND
+                A.NAVI_LEVEL = #{naviLevel}
+            AND 
+                A.UP_NAVI_ID = #{upNaviId}
+            AND 
+                A.DLT_YN = 'N';
+        ]]>
+    </select>
+
+    <select id="moveDownNavi" parameterType="input" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.moveDownNavi][thkim]  */
+        <![CDATA[
+            SELECT
+                A.*
+            FROM 
+                DC_NAVIGATION A
+            WHERE 
+                A.DSPLY_ORDR = (
+                    SELECT 
+                        MIN(B.DSPLY_ORDR)
+                    FROM   
+                        DC_NAVIGATION B
+                    WHERE 
+                            B.DSPLY_ORDR > #{dsplyOrdr}
+                        AND
+                            B.NAVI_LEVEL = #{naviLevel}
+                        AND
+                            B.UP_NAVI_ID = #{upNaviId}
+                )
+            AND
+                A.NAVI_LEVEL = #{naviLevel}
+            AND 
+                A.UP_NAVI_ID = #{upNaviId}
+            AND 
+                A.DLT_YN = 'N';
+        ]]>
+    </select>
+
+    <update id="updateNaviDsplyOrdr" parameterType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+    /* [kr.co.ideait.platform.gaiacairos.mappers.system.menu.updateNaviDsplyOrdr][thkim]  */
+        UPDATE 
+            DC_NAVIGATION
+        SET 
+            DSPLY_ORDR = #{dsplyOrdr}
+        WHERE 
+            NAVI_ID = #{naviId}
+    </update>
+
+    <select id="getTrashDocListAdmin" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getTrashDocListAdmin][thkim]  */
+        WITH RECURSIVE DC_DOC_NAVI_LIST AS (
+            SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    1 AS DEPTH,
+                    ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                    FALSE AS CYCLE,
+                    A.ITEM_NM::text AS FULL_PATH,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE
+            FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO, 
+                        NAVI_ID AS ITEM_ID, 
+                        UP_NAVI_NO AS UP_ITEM_NO, 
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_STORAGE_MAIN
+                    WHERE 
+                        DLT_YN = 'Y'
+            ) AS A
+            
+            WHERE A.ITEM_ID = #{topNaviId}
+        
+            UNION ALL
+            
+            SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    B.DEPTH + 1,
+                    ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                    A.ITEM_ID = ANY(B.PATH),
+                    B.FULL_PATH || ' > ' || A.ITEM_NM,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE
+            FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO,
+                        NAVI_ID AS ITEM_ID,
+                        UP_NAVI_NO AS UP_ITEM_NO,
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE
+                    FROM
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_STORAGE_MAIN
+            ) AS A,
+            DC_DOC_NAVI_LIST B
+            WHERE 
+                A.UP_ITEM_ID = B.ITEM_ID 
+            AND NOT CYCLE
+        )
+
+        SELECT 
+            *
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN POSITION(' > ' IN FULL_PATH) > 0 THEN 
+                        LEFT(FULL_PATH, LENGTH(FULL_PATH) - LENGTH(SPLIT_PART(FULL_PATH, ' > ', array_length(regexp_split_to_array(FULL_PATH, ' > '), 1))) - 3)
+                    ELSE FULL_PATH 
+                END                                                         AS trash_doc_path,
+                B.DOC_NM                                                    AS trash_doc_nm,
+                B.DOC_ID                                                    AS trash_doc_id,
+                CASE 
+                    WHEN B.DOC_TYPE = 'ITEM' THEN COALESCE(D.FILE_SIZE, 0)
+                    ELSE COALESCE(B.DOC_SIZE, 0)
+                END                                                         AS trash_doc_size,
+                TO_CHAR(B.DLT_DT, 'YYYY-MM-DD HH24:MI:SS')                  AS trash_dt,
+                COALESCE(C.USR_NM, 'SYSTEM')                                AS trash_usr_id,
+                B.DOC_TYPE                                                  AS trash_doc_type
+            FROM 
+                DC_DOC_NAVI_LIST A
+            INNER JOIN 
+                DC_STORAGE_MAIN B 
+                ON A.ITEM_ID = B.DOC_ID
+            LEFT JOIN 
+                SM_USER_INFO C
+                ON C.USR_ID = B.DLT_ID
+            LEFT JOIN 
+                (SELECT 
+                    AA.DOC_NO,
+                    SUM(COALESCE(AA.FILE_SIZE, 0)) AS FILE_SIZE
+                FROM 
+                    DC_ATTACHMENTS AA
+                GROUP BY 
+                    AA.DOC_NO) D 
+                ON B.DOC_NO = D.DOC_NO
+            WHERE 
+                B.DLT_YN = 'Y'
+                AND B.DOC_TRASH_YN = 'N'
+        ) AS TRASH_DATA
+        <if test="columnNm != null and searchText != null and !columnNm.isEmpty()">
+            <where>
+                <choose>
+                    <when test="columnNm == 'trash_doc_nm' and searchText != null">
+                        trash_doc_nm ILIKE CONCAT('%', #{searchText}, '%')
+                    </when>
+                    <when test="columnNm == 'trash_usr_id' and searchText != null">
+                        trash_usr_id ILIKE CONCAT('%', #{searchText}, '%')
+                    </when>
+                    <otherwise>
+                        1=1
+                    </otherwise>
+                </choose>
+            </where>
+        </if>
+        ORDER BY 
+            trash_doc_path ASC,
+            trash_dt DESC;
+    </select>
+
+    <select id="getTrashDocList" parameterType="input" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getTrashDocListAdmin][thkim]  */
+        WITH RECURSIVE DC_DOC_NAVI_LIST AS (
+            SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    1 AS DEPTH,
+                    ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                    FALSE AS CYCLE,
+                    A.ITEM_NM::text AS FULL_PATH,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE
+            FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO, 
+                        NAVI_ID AS ITEM_ID, 
+                        UP_NAVI_NO AS UP_ITEM_NO, 
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_STORAGE_MAIN
+                    WHERE 
+                        DLT_YN = 'Y'
+            ) AS A
+            
+            WHERE A.ITEM_ID = #{topNaviId}
+        
+            UNION ALL
+            
+            SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    B.DEPTH + 1,
+                    ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                    A.ITEM_ID = ANY(B.PATH),
+                    B.FULL_PATH || ' > ' || A.ITEM_NM,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE
+            FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO,
+                        NAVI_ID AS ITEM_ID,
+                        UP_NAVI_NO AS UP_ITEM_NO,
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE
+                    FROM
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE
+                    FROM 
+                        DC_STORAGE_MAIN
+            ) AS A,
+            DC_DOC_NAVI_LIST B
+            WHERE 
+                A.UP_ITEM_ID = B.ITEM_ID 
+            AND NOT CYCLE
+        )
+
+        SELECT 
+            *
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN POSITION(' > ' IN FULL_PATH) > 0 THEN 
+                        LEFT(FULL_PATH, LENGTH(FULL_PATH) - LENGTH(SPLIT_PART(FULL_PATH, ' > ', array_length(regexp_split_to_array(FULL_PATH, ' > '), 1))) - 3)
+                    ELSE FULL_PATH 
+                END                                                         AS trash_doc_path,
+                B.DOC_NM                                                    AS trash_doc_nm,
+                B.DOC_ID                                                    AS trash_doc_id,
+                CASE 
+                    WHEN B.DOC_TYPE = 'ITEM' THEN COALESCE(D.FILE_SIZE, 0)
+                    ELSE COALESCE(B.DOC_SIZE, 0)
+                END                                                         AS trash_doc_size,
+                TO_CHAR(B.DLT_DT, 'YYYY-MM-DD HH24:MI:SS')                  AS trash_dt,
+                COALESCE(C.USR_NM, 'SYSTEM')                                AS trash_usr_id,
+                B.DOC_TYPE                                                  AS trash_doc_type
+            FROM 
+                DC_DOC_NAVI_LIST A
+            INNER JOIN 
+                DC_STORAGE_MAIN B 
+                ON A.ITEM_ID = B.DOC_ID
+            LEFT JOIN 
+                SM_USER_INFO C
+                ON C.USR_ID = B.DLT_ID
+            LEFT JOIN (
+                SELECT 
+                    AA.DOC_NO,
+                    SUM(COALESCE(AA.FILE_SIZE, 0)) AS FILE_SIZE
+                FROM 
+                    DC_ATTACHMENTS AA
+                GROUP BY 
+                    AA.DOC_NO
+            ) D 
+                ON B.DOC_NO = D.DOC_NO
+            WHERE 
+                B.DLT_YN = 'Y'
+                AND B.DOC_TRASH_YN = 'N'
+                AND B.DLT_ID = #{usrId}
+        ) AS TRASH_DATA
+        -- WHERE trash_doc_nm ILIKE '%공사%'
+        ORDER BY 
+            trash_doc_path ASC,
+            trash_dt DESC;
+    </select>
+
+    <update id="recoverDocument" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.recoverDocument][thkim]  */
+        WITH RECURSIVE DC_UP_DOC_NAVI_LIST AS (
+                SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    1 AS DEPTH,
+                    ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                    FALSE AS CYCLE,
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE,
+                    A.ITEM_DLT_YN
+                FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO, 
+                        NAVI_ID AS ITEM_ID, 
+                        UP_NAVI_NO AS UP_ITEM_NO, 
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE,
+                        DLT_YN AS ITEM_DLT_YN
+                    FROM 
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE,
+                        DLT_YN AS ITEM_DLT_YN
+                    FROM 
+                        DC_STORAGE_MAIN
+                ) AS A
+                
+                WHERE A.ITEM_ID = #{docId}
+                
+                UNION ALL
+                
+                SELECT 
+                    A.ITEM_NO,
+                    A.ITEM_ID,
+                    A.UP_ITEM_NO,
+                    A.UP_ITEM_ID,
+                    A.ITEM_NM,
+                    B.DEPTH + 1,
+                    ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                    A.ITEM_ID = ANY(B.PATH),
+                    A.ITEM_KIND,
+                    A.ITEM_TYPE,
+                    A.ITEM_DLT_YN
+                FROM (
+                    SELECT 
+                        NAVI_NO AS ITEM_NO,
+                        NAVI_ID AS ITEM_ID,
+                        UP_NAVI_NO AS UP_ITEM_NO,
+                        COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                        NAVI_NM AS ITEM_NM, 
+                        'NAVI' AS ITEM_KIND,
+                        NAVI_TYPE AS ITEM_TYPE,
+                        DLT_YN AS ITEM_DLT_YN
+                    FROM
+                        DC_NAVIGATION
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        DOC_NO AS ITEM_NO,
+                        DOC_ID AS ITEM_ID,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                            ELSE UP_DOC_NO 
+                        END AS UP_ITEM_NO,
+                        CASE 
+                            WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                            ELSE UP_DOC_ID 
+                        END AS UP_ITEM_ID,
+                        DOC_NM AS ITEM_NM,
+                        'DOC' AS ITEM_KIND,
+                        DOC_TYPE AS ITEM_TYPE,
+                        DLT_YN AS ITEM_DLT_YN
+                    FROM 
+                        DC_STORAGE_MAIN
+                ) AS A,
+                DC_UP_DOC_NAVI_LIST B
+                WHERE 
+                    A.ITEM_ID = B.UP_ITEM_ID 
+                AND NOT CYCLE)
+
+            -- DC_STORAGE_MAIN 복원
+            UPDATE 
+                DC_STORAGE_MAIN
+            SET 
+                DLT_YN = 'N',
+                CHG_ID = #{usrId},
+                CHG_DT = NOW()
+            WHERE 
+                DOC_ID IN (
+                            SELECT 
+                                ITEM_ID
+                            FROM 
+                                DC_UP_DOC_NAVI_LIST
+                            WHERE 
+                                ITEM_KIND = 'DOC' 
+                            AND ITEM_DLT_YN = 'Y'
+                )
+            AND DLT_YN = 'Y'
+    </update>
+
+    <update id="recoverNavigation" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.recoverNavigation][thkim]  */
+    WITH RECURSIVE DC_UP_DOC_NAVI_LIST AS (
+            SELECT 
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                1 AS DEPTH,
+                ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                FALSE AS CYCLE,
+                A.ITEM_KIND,
+                A.ITEM_TYPE,
+                A.ITEM_DLT_YN
+            FROM (
+                SELECT 
+                    NAVI_NO AS ITEM_NO, 
+                    NAVI_ID AS ITEM_ID, 
+                    UP_NAVI_NO AS UP_ITEM_NO, 
+                    COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                    NAVI_NM AS ITEM_NM, 
+                    'NAVI' AS ITEM_KIND,
+                    NAVI_TYPE AS ITEM_TYPE,
+                    DLT_YN AS ITEM_DLT_YN
+                FROM 
+                    DC_NAVIGATION
+                
+                UNION ALL
+                
+                SELECT 
+                    DOC_NO AS ITEM_NO,
+                    DOC_ID AS ITEM_ID,
+                    CASE 
+                        WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                        ELSE UP_DOC_NO 
+                    END AS UP_ITEM_NO,
+                    CASE 
+                        WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                        ELSE UP_DOC_ID 
+                    END AS UP_ITEM_ID,
+                    DOC_NM AS ITEM_NM,
+                    'DOC' AS ITEM_KIND,
+                    DOC_TYPE AS ITEM_TYPE,
+                    DLT_YN AS ITEM_DLT_YN
+                FROM 
+                    DC_STORAGE_MAIN
+            ) AS A
+            
+            WHERE A.ITEM_ID = #{docId}
+            
+            UNION ALL
+            
+            SELECT 
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, CAST(A.ITEM_NO AS TEXT)::TEXT),
+                A.ITEM_ID = ANY(B.PATH),
+                A.ITEM_KIND,
+                A.ITEM_TYPE,
+                A.ITEM_DLT_YN
+            FROM (
+                SELECT 
+                    NAVI_NO AS ITEM_NO,
+                    NAVI_ID AS ITEM_ID,
+                    UP_NAVI_NO AS UP_ITEM_NO,
+                    COALESCE(NULLIF(UP_NAVI_ID, ''), '#') AS UP_ITEM_ID,
+                    NAVI_NM AS ITEM_NM, 
+                    'NAVI' AS ITEM_KIND,
+                    NAVI_TYPE AS ITEM_TYPE,
+                    DLT_YN AS ITEM_DLT_YN
+                FROM
+                    DC_NAVIGATION
+                
+                UNION ALL
+                
+                SELECT 
+                    DOC_NO AS ITEM_NO,
+                    DOC_ID AS ITEM_ID,
+                    CASE 
+                        WHEN COALESCE(UP_DOC_NO, 0) = 0 THEN COALESCE(NAVI_NO, 0)
+                        ELSE UP_DOC_NO 
+                    END AS UP_ITEM_NO,
+                    CASE 
+                        WHEN COALESCE(UP_DOC_ID, '#') = '#' THEN COALESCE(NAVI_ID, '#')
+                        ELSE UP_DOC_ID 
+                    END AS UP_ITEM_ID,
+                    DOC_NM AS ITEM_NM,
+                    'DOC' AS ITEM_KIND,
+                    DOC_TYPE AS ITEM_TYPE,
+                    DLT_YN AS ITEM_DLT_YN
+                FROM 
+                    DC_STORAGE_MAIN
+            ) AS A,
+            DC_UP_DOC_NAVI_LIST B
+            WHERE 
+                A.ITEM_ID = B.UP_ITEM_ID 
+            AND NOT CYCLE)
+
+        -- DC_NAVIGATION 복원
+        UPDATE 
+            DC_NAVIGATION
+        SET 
+            DLT_YN = 'N'
+        WHERE
+            NAVI_ID IN (
+                        SELECT 
+                            ITEM_ID
+                        FROM 
+                            DC_UP_DOC_NAVI_LIST
+                        WHERE 
+                            ITEM_KIND = 'NAVI' 
+                        AND ITEM_DLT_YN = 'Y'
+            )
+        AND DLT_YN = 'Y';
+    </update>
+
+    <update id="removeTrashDocument" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.removeTrashDocument][thkim]  */
+        WITH RECURSIVE DC_DOCUMENT_LIST (
+            ITEM_NO,
+            ITEM_ID,
+            UP_ITEM_NO,
+            UP_ITEM_ID,
+            ITEM_NM,
+            ITEM_DLT_YN,
+            DEPTH,
+            PATH,
+            CYCLE
+        ) AS (
+            -- 초기 레벨 데이터 가져오기
+            SELECT  
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                A.ITEM_DLT_YN,
+                1 AS DEPTH,
+                ARRAY[A.ITEM_ID::TEXT] AS PATH,
+                FALSE AS CYCLE
+            FROM (
+                SELECT  
+                    DOC_NO                                      AS ITEM_NO,
+                    DOC_ID                                      AS ITEM_ID,
+                    COALESCE(NULLIF(UP_DOC_NO, 0), NAVI_NO)     AS UP_ITEM_NO,
+                    COALESCE(NULLIF(UP_DOC_ID, '#'), NAVI_ID)   AS UP_ITEM_ID,
+                    DOC_NM                                      AS ITEM_NM,
+                    DLT_YN                                      AS ITEM_DLT_YN
+                FROM DC_STORAGE_MAIN
+                WHERE DLT_YN = 'Y' AND DOC_TRASH_YN = 'N'
+            ) AS A
+            WHERE A.ITEM_ID = #{docId}
+
+            UNION ALL
+
+            -- 재귀적으로 하위 항목 연결
+            SELECT  
+                A.ITEM_NO,
+                A.ITEM_ID,
+                A.UP_ITEM_NO,
+                A.UP_ITEM_ID,
+                A.ITEM_NM,
+                A.ITEM_DLT_YN,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, A.ITEM_ID::TEXT),
+                A.ITEM_ID = ANY(B.PATH)
+            FROM (
+                SELECT  
+                    DOC_NO                                      AS ITEM_NO,
+                    DOC_ID                                      AS ITEM_ID,
+                    COALESCE(NULLIF(UP_DOC_NO, 0), NAVI_NO)     AS UP_ITEM_NO,
+                    COALESCE(NULLIF(UP_DOC_ID, '#'), NAVI_ID)   AS UP_ITEM_ID,
+                    DOC_NM                                      AS ITEM_NM,
+                    DLT_YN                                      AS ITEM_DLT_YN
+                FROM DC_STORAGE_MAIN
+                WHERE DLT_YN = 'Y' AND DOC_TRASH_YN = 'N'
+            ) AS A,
+            DC_DOCUMENT_LIST B
+            WHERE A.UP_ITEM_ID = B.ITEM_ID
+            AND NOT CYCLE
+        )
+        
+        -- 업데이트 쿼리
+        UPDATE DC_STORAGE_MAIN 
+        SET 
+            DLT_ID = #{usrId},
+            DLT_DT = NOW(),
+            DOC_TRASH_YN = 'Y'
+        WHERE 
+        	DOC_ID IN (
+            			SELECT ITEM_ID 
+            			FROM DC_DOCUMENT_LIST
+        			)
+        AND DOC_TRASH_YN = 'N'
+    </update>
+
+    <update id="removeAllTrashDocument" parameterType="input">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.removeAllTrashDocument][thkim]  */
+        UPDATE DC_STORAGE_MAIN
+        SET 
+            DOC_TRASH_YN = 'Y',
+            DLT_ID = #{usrId},
+            DLT_DT = NOW()
+        WHERE 
+            DOC_ID IN 
+            <foreach item="docId" collection="trashDocIdList" open="(" separator="," close=")">
+                #{docId}
+            </foreach>
+        AND DOC_TRASH_YN = 'N'
+        AND DLT_YN = 'Y';
+    </update>
+
+    <select id="getNavigationTree" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getNavigationTree][thkim]  */
+        WITH RECURSIVE NAV_TREE AS (
+            SELECT 
+                NAVI_NO,
+                NAVI_ID,
+                UP_NAVI_NO,
+                UP_NAVI_ID,
+                NAVI_NM,
+                NAVI_PATH,
+                DSPLY_ORDR,
+    	        NAVI_LEVEL
+            FROM 
+                DC_NAVIGATION
+            WHERE 
+                NAVI_ID = #{rootNaviId}
+                AND DLT_YN = 'N'
+            UNION ALL
+            
+            SELECT 
+                N.NAVI_NO,
+                N.NAVI_ID,
+                N.UP_NAVI_NO,
+                N.UP_NAVI_ID,
+                N.NAVI_NM,
+                N.NAVI_PATH,
+                N.DSPLY_ORDR,
+    	        N.NAVI_LEVEL
+            FROM 
+                DC_NAVIGATION N
+            INNER JOIN 
+                    NAV_TREE T
+                ON N.UP_NAVI_NO = T.NAVI_NO
+                AND DLT_YN = 'N'
+        )
+        
+        SELECT 
+            NAVI_NO,
+            NAVI_ID,
+            UP_NAVI_NO,
+            UP_NAVI_ID,
+            NAVI_NM,
+            NAVI_PATH,
+            DSPLY_ORDR
+        FROM 
+            NAV_TREE
+        ORDER BY NAVI_LEVEL, DSPLY_ORDR;
+    </select>
+
+    <select id="getAllDocuments" parameterType="list" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcStorageMain">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getAllDocuments][thkim]  */
+        WITH RECURSIVE DOCUMENT_TREE AS (
+            SELECT 
+                DOC_NO,
+                UP_DOC_NO,
+                NAVI_ID,
+                DOC_NM,
+                DOC_PATH,
+                DOC_DISK_NM,
+                DOC_DISK_PATH,
+                DOC_SIZE,
+                DOC_TYPE
+            FROM 
+                DC_STORAGE_MAIN
+            WHERE 
+                NAVI_ID IN 
+                <foreach collection="list" item="naviIdList" separator="," open="(" close=")">
+                    #{naviIdList}
+                </foreach>
+            AND UP_DOC_NO = 0 
+            AND DLT_YN = 'N' 
+            UNION ALL
+            SELECT 
+                S.DOC_NO,
+                S.UP_DOC_NO,
+                S.NAVI_ID,
+                S.DOC_NM,
+                S.DOC_PATH,
+                S.DOC_DISK_NM,
+                S.DOC_DISK_PATH,
+                S.DOC_SIZE,
+                S.DOC_TYPE
+            FROM 
+                DC_STORAGE_MAIN S
+            INNER JOIN 
+                DOCUMENT_TREE T 
+            ON S.UP_DOC_NO = T.DOC_NO
+            AND DLT_YN = 'N' 
+        )
+        SELECT 
+            DOC_NO,
+            UP_DOC_NO,
+            NAVI_ID,
+            DOC_NM,
+            DOC_PATH,
+            DOC_DISK_NM,
+            DOC_DISK_PATH,
+            DOC_SIZE,
+            DOC_TYPE
+        FROM DOCUMENT_TREE;
+    </select>
+
+    <select id="getHtmlformList" resultType="map">
+        SELECT 
+            FORM_NO,
+            FORM_NM
+        FROM DC_HTML_FORM
+        WHERE DLT_YN = 'N'
+    </select>
+
+    <select id="getConstructBeginList" parameterType="int" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.document.ConstructionBeginsDocDto">
+       /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getConstructBeginList][dsjung]  */
+        WITH RECURSIVE PARENT_TREE AS (
+            SELECT 
+                CBGN_NO,
+                CBGN_NM,
+                CBGN_PATH,
+                UP_CBGN_NO,
+                CBGN_DOC_FORM,
+                CBGN_LEVEL,
+                DOC_YN
+            FROM SM_CONSTRUCTION_BEGINS_DOC
+            WHERE CBGN_NO = #{cbgnNo}
+            AND DLT_YN = 'N'
+
+            UNION ALL
+
+            SELECT 
+                PARENT.CBGN_NO,
+                PARENT.CBGN_NM,
+                PARENT.CBGN_PATH,
+                PARENT.UP_CBGN_NO,
+                PARENT.CBGN_DOC_FORM,
+                PARENT.CBGN_LEVEL,
+                PARENT.DOC_YN
+            FROM SM_CONSTRUCTION_BEGINS_DOC PARENT
+            JOIN PARENT_TREE CHILD ON PARENT.CBGN_NO = CHILD.UP_CBGN_NO
+            AND PARENT.DLT_YN = 'N'
+            AND PARENT.CBGN_LEVEL &lt;&gt; 1
+        )
+
+        SELECT
+            CBGN_NO,
+            CBGN_NM,
+            CBGN_PATH,
+            UP_CBGN_NO,
+            CBGN_DOC_FORM,
+            CBGN_LEVEL,
+            DOC_YN
+        FROM PARENT_TREE
+        ORDER BY CBGN_LEVEL;
+    </select>
+
+    <update id="deleteConstructDocument" parameterType="input">
+    	/*[kr.co.ideait.platform.gaiacairos.mappers.system.document.deleteConstructDocument][thkim]*/
+    	UPDATE DC_STORAGE_MAIN
+    	SET
+    		DLT_YN = 'Y',
+    		DLT_ID = (SELECT USR_ID FROM SM_USER_INFO SUI WHERE USR_ID = #{userId}),
+    		DLT_DT = NOW()
+    	WHERE
+			RGSTR_ID = 
+				(
+					SELECT
+						USR_ID
+					FROM
+						SM_USER_INFO SUI
+					WHERE
+						USR_ID = #{userId}
+				)
+			AND DOC_ID = #{docId}
+    </update>
+
+    <select id="getCbgnPropertyList" parameterType="hashmap" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.document.CbgnPropertyDto">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.getCbgnPropertyList][thkim]  */
+    	SELECT 
+            A.CBGN_NO,
+            A.ATTRBT_CD,
+            A.ATTRBT_CD_TYPE,
+            A.ATTRBT_TYPE,
+            A.ATTRBT_TYPE_SEL,
+            A.ATTRBT_NM_ENG,
+            A.ATTRBT_NM_KRN,
+            A.ATTRBT_DSPLY_ORDER,
+            A.ATTRBT_DSPLY_YN,
+            A.ATTRBT_CHG_YN
+        FROM SM_CBGN_PROPERTY A
+        WHERE 
+            A.CBGN_NO = #{cbgnNo}
+        AND A.DLT_YN = 'N'
+    </select>
+
+    <insert id="insertDcHtmlForm" parameterType="hashmap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertDcHtmlForm][thkim]  */
+         <!-- BEFORE 구문: insert 전에 시퀀스를 조회해서 formNo에 저장 -->
+        <selectKey keyProperty="generatedFormNo" resultType="long" order="BEFORE">
+            SELECT nextval('dc_html_form_form_no_seq')
+        </selectKey>
+
+        INSERT INTO dc_html_form (
+            FORM_NO,
+            FORM_NM,
+            PJT_NO,
+            CNTRCT_NO,
+            FORM_TYPE,
+            DC_FORM,
+            RGSTR_ID,
+            RGST_DT,
+            CHG_ID,
+            CHG_DT
+        )
+        	SELECT
+        	    #{generatedFormNo},
+        		FORM_NM,
+        		#{pjtNo},
+        		#{cntrctNo},
+        		FORM_TYPE,
+        		DC_FORM,
+        		RGSTR_ID,
+        		now(),
+        		CHG_ID,
+        		now()
+        	FROM SM_CBGN_HTML_FORM
+        	WHERE
+        		FORM_NO = #{formNo}
+        	AND DLT_YN = 'N'
+    </insert>
+
+    <select id="checkDcPropertyExists" parameterType="input" resultType="int">
+        SELECT COUNT(1)
+        FROM DC_PROPERTY
+        WHERE NAVI_ID = #{naviId}
+          AND ATTRBT_CD = #{attrbtCd}
+          AND DLT_YN = 'N'
+    </select>
+
+    <select id="selectMergeAttachmentList" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectMergeAttachmentList][thkim]  */
+            SELECT
+                FILE_NO AS FILE_NO,
+                FILE_NM AS DOC_NM,
+                FILE_DISK_NM AS DOC_DISK_NM,
+                FILE_DISK_PATH AS DOC_DISK_PATH
+            FROM DC_ATTACHMENTS DA
+            WHERE
+            FILE_NO NOT IN (
+                            SELECT
+                                CASE
+                                   WHEN B.ATTRBT_CNTNTS IS NULL THEN 0
+                                   WHEN B.ATTRBT_CNTNTS = '' THEN 0
+                                   ELSE B.ATTRBT_CNTNTS::INTEGER
+                                END FILE_NO
+                            FROM DC_PROPERTY A
+                            INNER JOIN DC_PROPERTY_DATA B
+                            ON A.ATTRBT_CD = B.ATTRBT_CD
+                            AND A.ATTRBT_TYPE = 'ATCH'
+                            AND A.DLT_YN = 'N'
+                        )
+            AND DA.DLT_YN = 'N'
+            AND DA.DOC_ID = #{docId};
+    </select>
+
+    <update id="updateDeleteStorageMain" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.information.updateDeleteStorageMain][jhkim] */
+        UPDATE
+            DC_STORAGE_MAIN
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            DOC_ID = #{docId}
+    </update>
+
+    <select id="countDocumentsByNaviId" parameterType="map" resultType="int">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.countDocumentsByNaviId][thkim]  */
+        SELECT
+            COUNT(*)
+        FROM DC_STORAGE_MAIN
+        WHERE
+            NAVI_ID = #{naviId} AND DLT_YN = 'N'
+    </select>
+
+    <update id="deleteNavigationByNaviId" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deleteNavigationByNaviId][thkim]  */
+        UPDATE DC_NAVIGATION
+        SET DLT_YN = 'Y',
+            DLT_ID = #{userId},
+            DLT_DT = now()
+        WHERE NAVI_ID = #{naviId}
+    </update>
+
+    <update id="deletePropertyByNaviId" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.deletePropertyByNaviId][thkim]  */
+        UPDATE DC_PROPERTY
+        SET DLT_YN = 'Y',
+            DLT_ID = #{userId},
+            DLT_DT = now()
+        WHERE NAVI_ID = #{naviId}
+    </update>
+
+    <select id="selectUpNaviIdByNaviId" parameterType="map" resultType="string">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectUpNaviIdByNaviId][thkim]  */
+        SELECT
+            UP_NAVI_ID
+        FROM DC_NAVIGATION
+        WHERE NAVI_ID = #{naviId}
+        AND DLT_YN = 'N'
+    </select>
+
+    <select id="countSiblingsByUpNaviId" parameterType="map" resultType="int">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectUpNaviIdByNaviId][thkim]  */
+        SELECT
+            COUNT(*)
+        FROM
+            DC_NAVIGATION
+        WHERE UP_NAVI_ID = #{upNaviId}
+          AND NAVI_ID != #{excludeNaviId}
+          AND DLT_YN = 'N'
+    </select>
+
+    <update id="updateUpDocNoOfList">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.updateUpDocNoOfList][dsjung]  */
+        <foreach collection="list" item="item" separator=";">
+            UPDATE dc_storage_main
+            SET up_doc_no = COALESCE((
+                SELECT d2.doc_no
+                FROM dc_storage_main d2
+                WHERE d2.doc_id = #{item.upDocId}
+            ),0)
+            WHERE doc_id = #{item.docId}
+        </foreach>
+    </update>
+
+    <sql id="navigationColumns">
+        navi_no
+        , navi_id
+        , pjt_no
+        , cntrct_no
+        , navi_div
+        , navi_path
+        , navi_nm
+        , up_navi_no
+        , up_navi_id
+        , navi_level
+        , navi_type
+        , dsply_ordr
+        , navi_shar_yn
+        , dlt_yn
+        , rgstr_id
+        , rgst_dt
+        , chg_id
+        , chg_dt
+        , dlt_id
+        , dlt_dt
+        , navi_folder_type
+    </sql>
+
+    <select id="selectNavigationRoot" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectNavigationRoot][bjkim] */
+        select <include refid="navigationColumns" />
+        from dc_navigation
+        <where>
+            and cntrct_no = #{cntrctNo}
+            and navi_div = #{naviDiv}
+            and navi_level = 0
+            and dlt_yn = 'N'
+        </where>
+        limit 1
+    </select>
+
+
+    <insert id="insertPropertyData" parameterType="list">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertPropertyData] */
+        INSERT INTO dc_property_data (
+            doc_no
+            , doc_id
+            , attrbt_cd
+            , attrbt_cntnts
+            , rgstr_id
+            , rgst_dt
+            , chg_id
+            , chg_dt
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (CAST(#{item.docNo} AS numeric), #{item.docId}, #{item.attrbtCd}, #{item.attrbtCntnts}, #{item.rgstrId}, NOW(), #{item.chgId}, NOW())
+        </foreach>
+    </insert>
+
+    <insert id="insertNavigation" parameterType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.insertNavigation] */
+            INSERT INTO dc_navigation (
+                navi_id,
+                pjt_no,
+                cntrct_no,
+                navi_div,
+                navi_path,
+                navi_nm,
+                up_navi_id,
+                up_navi_no,
+                navi_level,
+                navi_type,
+                dsply_ordr,
+                rgstr_id,
+                rgst_dt,
+                chg_id,
+                chg_dt,
+                navi_folder_type,
+                navi_key,
+                ref_sys_key,
+                svr_type
+            )
+            VALUES (
+                #{naviId},
+                #{pjtNo},
+                #{cntrctNo},
+                #{naviDiv},
+                #{naviPath},
+                #{naviNm},
+                #{upNaviId},
+                #{upNaviNo},
+                #{naviLevel},
+                #{naviType},
+                #{dsplyOrdr},
+                #{rgstrId},
+                now(),
+                #{chgId},
+                now(),
+                COALESCE(#{naviFolderType},'0'),
+                COALESCE(#{pjtNo}, '') || '::' || COALESCE(#{cntrctNo}, ''),
+                #{refSysKey},
+                #{svrType}
+            )
+    </insert>
+
+    <select id="selectAllDcSearchData" resultType="dcSearch">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectAllDcSearchData][thkim] */
+        SELECT
+            DSM.DOC_NO
+            ,DSM.DOC_ID
+            ,DSM.NAVI_NO
+            ,DSM.NAVI_ID
+            ,DN.NAVI_NM
+            ,DSM.UP_DOC_NO
+            ,DSM.UP_DOC_ID
+            ,DSM.DOC_TYPE
+            ,DSM.DOC_PATH
+            ,DSM.DOC_NM
+            ,DSM.DOC_DISK_NM
+            ,DSM.DOC_DISK_PATH
+            ,DSM.DOC_URL_PATH
+            ,DSM.DOC_SIZE
+            ,DSM.DOC_HIT_NUM
+            ,DSM.DOC_TRASH_YN
+            ,DN.PJT_NO
+            ,DN.CNTRCT_NO
+            ,DN.NAVI_DIV
+            ,DN.NAVI_PATH
+            ,DN.UP_NAVI_NO
+            ,DN.UP_NAVI_ID
+            ,DN.NAVI_LEVEL
+            ,DN.NAVI_TYPE
+            ,DN.DSPLY_ORDR
+            ,DN.NAVI_SHAR_YN
+            ,DN.NAVI_FOLDER_TYPE
+            ,(SELECT U.USR_NM FROM SM_USER_INFO U WHERE U.USR_ID = DSM.RGSTR_ID) AS RGSTR_NM
+            ,DSM.RGSTR_ID
+            ,DSM.RGST_DT
+            ,(SELECT U.USR_NM FROM SM_USER_INFO U WHERE U.USR_ID = DSM.CHG_ID)   AS CHG_NM
+            ,DSM.CHG_ID
+            ,DSM.CHG_DT
+            ,DSM.CBGN_KEY
+            ,DN.REF_SYS_KEY
+            ,COALESCE(DN.PJT_NO, '') || '::' || COALESCE(DN.CNTRCT_NO, '') AS NAVI_KEY
+            ,(
+                SELECT JSONB_STRIP_NULLS(
+                JSONB_OBJECT_AGG(
+                    A.ATTRBT_CD,
+                    CASE
+                        WHEN A.ATTRBT_TYPE = 'SEL' THEN (
+                            SELECT C.CMN_CD_NM_KRN
+                            FROM SM_COM_CODE C
+                            WHERE C.CMN_CD = B.ATTRBT_CNTNTS
+                              AND C.DLT_YN = 'N'
+                              AND C.USE_YN = 'Y'
+                            LIMIT 1
+                        )
+                        WHEN A.ATTRBT_TYPE = 'ATCH' THEN (
+                            SELECT D.FILE_NM
+                            FROM DC_ATTACHMENTS D
+                            WHERE D.FILE_NO::TEXT = B.ATTRBT_CNTNTS
+                              AND D.DLT_YN = 'N'
+                            LIMIT 1
+                        )
+                        ELSE B.ATTRBT_CNTNTS
+                    END
+                ))
+                FROM DC_PROPERTY A
+                JOIN DC_PROPERTY_DATA B
+                  ON A.ATTRBT_CD = B.ATTRBT_CD
+                 AND A.DLT_YN = 'N'
+                WHERE A.NAVI_NO = DSM.NAVI_NO
+                  AND A.NAVI_ID = DSM.NAVI_ID
+                  AND B.DOC_NO = DSM.DOC_NO
+                  AND B.DOC_ID = DSM.DOC_ID
+            )::TEXT AS PROPERTY_DATA
+        FROM
+            DC_STORAGE_MAIN DSM
+        JOIN
+            DC_NAVIGATION DN
+          ON DSM.NAVI_NO = DN.NAVI_NO
+         AND DSM.NAVI_ID = DN.NAVI_ID
+        WHERE DSM.DLT_YN = 'N'
+    </select>
+    <insert id="createDocSharedHistory" parameterType="hashmap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.createDocSharedHistory][dsjung]  */
+        insert into dc_shared_history(
+            uuid
+            ,doc_ids
+            ,share_type
+            ,share_usr_id
+            ,share_status
+            ,share_req_dt
+            ,share_req_data
+        ) values(
+            #{uuid}
+            ,#{docIds}
+            ,#{shareType}
+            ,#{shareUsrId}
+            ,#{shareStatus}
+            ,now()
+            ,#{shareReqData}
+        )
+    </insert>
+    <!-- 전자결재 연동 관련 쿼리 start -->
+    <update id="updateDocSharedHistory" parameterType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.updateDocSharedHistory][thkim]  */
+        UPDATE dc_shared_history
+        SET
+            share_type = COALESCE(#{shareType},'1'),
+            share_status =  COALESCE(#{shareStatus}, '2'),
+            share_res_data = #{shareResData},
+            share_target_key = #{shareTargetKey},
+            share_res_dt = NOW()
+        WHERE uuid = #{uuid}
+    </update>
+    <!-- 전자결재 연동 관련 쿼리 end -->
+
+    <select id="selectNavigationAncestorsById" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcNavigation">
+        WITH RECURSIVE NAV_TREE AS (
+            SELECT
+                NAVI_NO,
+                NAVI_ID,
+                UP_NAVI_NO,
+                UP_NAVI_ID,
+                pjt_no,
+                cntrct_No,
+                navi_div,
+                NAVI_PATH,
+                NAVI_NM,
+                NAVI_LEVEL,
+                navi_type,
+                navi_folder_type,
+                dsply_ordr,
+                navi_shar_yn,
+                ref_sys_key,
+                navi_key,
+                svr_type
+            FROM
+                DC_NAVIGATION
+            WHERE
+                NAVI_ID = #{naviId}
+                AND DLT_YN = 'N'
+            UNION ALL
+
+            SELECT
+                N.NAVI_NO,
+                N.NAVI_ID,
+                N.UP_NAVI_NO,
+                N.UP_NAVI_ID,
+                N.pjt_no,
+                N.cntrct_No,
+                N.navi_div,
+                N.NAVI_PATH,
+                N.NAVI_NM,
+                N.NAVI_LEVEL,
+                N.navi_type,
+                N.navi_folder_type,
+                N.dsply_ordr,
+                N.navi_shar_yn,
+                N.ref_sys_key,
+                N.navi_key,
+                N.svr_type
+            FROM
+                DC_NAVIGATION N
+            INNER JOIN
+                    NAV_TREE T
+                ON N.NAVI_NO = T.UP_NAVI_NO
+                AND DLT_YN = 'N'
+        )
+
+        SELECT
+            *
+        FROM
+            NAV_TREE
+        ORDER BY NAVI_LEVEL, dsply_ordr;
+    </select>
+
+    <!-- 속성 정의 생성-->
+    <insert id="createProperty"
+           parameterType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcProperty"
+           useGeneratedKeys="true"
+           keyProperty="attrbtNo"
+           keyColumn="ATTRBT_NO">
+
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.createProperty][thkim]  */
+        INSERT INTO
+        	GAIA_CMIS.DC_PROPERTY(
+        	NAVI_NO,
+        	NAVI_ID,
+        	ATTRBT_CD,
+        	ATTRBT_CD_TYPE,
+        	ATTRBT_TYPE,
+        	ATTRBT_TYPE_SEL,
+        	ATTRBT_NM_ENG,
+        	ATTRBT_NM_KRN,
+        	ATTRBT_DSPLY_ORDER,
+        	ATTRBT_DSPLY_YN,
+        	ATTRBT_CHG_YN,
+        	DLT_YN,
+        	RGSTR_ID,
+        	RGST_DT,
+        	CHG_ID,
+        	CHG_DT
+        	)
+        VALUES(
+        	#{naviNo},
+        	#{naviId},
+        	#{attrbtCd},
+        	#{attrbtCdType},
+        	#{attrbtType},
+        	#{attrbtTypeSel},
+        	#{attrbtNmEng},
+        	#{attrbtNmKrn},
+        	 (
+                SELECT COALESCE(MAX(attrbt_dsply_order) + 1, 1)
+                FROM GAIA_CMIS.DC_PROPERTY dp
+                WHERE dp.navi_id = #{naviId}
+              ),
+        	COALESCE(#{attrbtDsplyYn}, 'Y'),
+        	COALESCE(#{attrbtChgYn}, 'Y'),
+        	'N',
+        	COALESCE(#{rgstrId},'SYSTEM'),
+        	NOW(),
+        	COALESCE(#{rgstrId},'SYSTEM'),
+        	NOW()
+        )
+
+        RETURNING ATTRBT_NO;
+    </insert>
+
+    <!-- 속성 정의 단건 조회-->
+    <select id="selectOneProperty" parameterType="int" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcProperty">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectOneProperty][thkim]  */
+        SELECT
+                ATTRBT_NO,
+                NAVI_NO,
+                NAVI_ID,
+                ATTRBT_CD,
+                ATTRBT_CD_TYPE,
+                ATTRBT_TYPE,
+                ATTRBT_TYPE_SEL,
+                ATTRBT_NM_ENG,
+                ATTRBT_NM_KRN,
+                ATTRBT_DSPLY_ORDER,
+                ATTRBT_DSPLY_YN,
+                ATTRBT_CHG_YN,
+                DLT_YN,
+                RGSTR_ID,
+                RGST_DT,
+                CHG_ID,
+                CHG_DT
+        FROM
+            DC_PROPERTY
+        WHERE
+            ATTRBT_NO = #{value}
+    </select>
+
+    <!-- 문서 논리 삭제 원복 처리 S-->
+    <update id="rollbackDeleteDocumentByDocId" parameterType="string">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.rollbackDeleteDocumentByDocId][thkim]  */
+        UPDATE dc_storage_main
+        SET
+            dlt_yn = 'N',
+            dlt_id = null,
+            dlt_dt = null
+        WHERE doc_id = #{docId}
+    </update>
+
+    <update id="rollbackDeleteDcAttachmentByDocId" parameterType="string">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.rollbackDeleteDcAttachmentByDocId][thkim]  */
+        UPDATE dc_attachments
+        SET
+            dlt_yn = 'N',
+            dlt_id = null,
+            dlt_dt = null
+        WHERE doc_id = #{docId}
+    </update>
+    <!-- 문서 논리 삭제 원복 처리 E-->
+
+    <select id="selectDcStorageMainByDocId" resultType="dcStorageMain">
+        select * from dc_storage_main where doc_id = #{docId}
+    </select>
+
+    <!-- 문서 리스트 조회 - navi_id-->
+    <select id="selectDcStorageMainListByNaviId" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcStorageMain">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.document.document.selectDcStorageMainListByNaviId][thkim]  */
+        SELECT
+            DOC_NO,
+            DOC_ID,
+            UP_DOC_ID,
+            UP_DOC_NO,
+            NAVI_NO,
+            NAVI_ID,
+            DOC_TYPE,
+            DOC_PATH,
+            DOC_NM,
+            DOC_DISK_NM,
+            DOC_DISK_PATH,
+            DOC_SIZE
+       FROM DC_STORAGE_MAIN
+       WHERE
+            NAVI_ID = #{naviId}
+       AND DLT_YN = 'N';
+    </select>
+
+    <!-- 하위 문서 리스트 조회 - up_doc_id-->
+    <select id="selectSubDocumentListByUpDocId" parameterType="string" resultType="kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcStorageMain">
+        WITH RECURSIVE FolderHierarchy AS (
+                                            SELECT
+                                                DOC_ID,
+                                                DOC_NO,
+                                                UP_DOC_NO,
+                                                UP_DOC_ID,
+                                                NAVI_NO,
+                                                NAVI_ID,
+                                                DOC_NM,
+                                                DOC_TYPE,
+                                                1 AS LEVEL
+                                            FROM DC_STORAGE_MAIN
+                                            WHERE DOC_ID = #{upDocId} AND dlt_yn = 'N'
+
+                                            UNION ALL
+
+                                            SELECT
+                                                d.DOC_ID,
+                                                d.DOC_NO,
+                                                d.UP_DOC_NO,
+                                                d.UP_DOC_ID,
+                                                d.NAVI_NO,
+                                                d.NAVI_ID,
+                                                d.DOC_NM,
+                                                d.DOC_TYPE,
+                                                fh.LEVEL + 1 AS LEVEL
+                                            FROM DC_STORAGE_MAIN d
+                                            INNER JOIN FolderHierarchy fh
+                                            ON fh.DOC_ID = d.UP_DOC_ID
+        )
+
+        SELECT * FROM FolderHierarchy WHERE LEVEL != 1
+
+    </select>
+
+</mapper>

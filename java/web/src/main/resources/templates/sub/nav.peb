@@ -1,0 +1,20 @@
+<style>
+    .lnb_nav::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<nav class="lnb_nav" style="padding-top: 0; overflow: auto; -ms-overflow-style: none;">
+    <button type="button" class="btn lnb_expansion" style="position: sticky;background: var(--color-default);z-index: 1;">
+        <i class="ic ic-arrow-back"></i>
+        <span class="blind">메뉴접기</span>
+    </button>
+    <ul class="lnb_list" id="menuItem">
+        <li class="lnb_item">
+            <a class="depth1" href="javascript:;" onclick="gaiaPortal.menuMove('/dashboard');">
+                <i class="ic ic-dashboard"><span class="path1"></span><span class="path2"></span><span
+                        class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                <span class="m_name" attr1="대시보드">대시보드</span>
+            </a>
+        </li>
+    </ul>
+</nav>

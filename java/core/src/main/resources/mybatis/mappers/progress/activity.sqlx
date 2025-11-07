@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity">
+
+    <!--
+        변경사항
+        20250630 ACTIVITY_KIND 추가, 시작마일스톤, 종료마일스톤 일때 PLAN_START, PLAN_FINISH 분기처리 추가
+    -->
+    <select id="getActivityList" parameterType="activityListInput" resultType="activityListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity.getActivityList][jhkim]  */
+        WITH RECURSIVE PR_WBS_LIST(    CNTRCT_CHG_ID,
+                                        REVISION_ID,
+                                        WBS_CD,
+                                        WBS_PATH,
+                                        WBS_NM,
+                                        UP_WBS_CD,
+                                        WBS_LEVEL,
+                                        EARLY_START,
+                                        EARLY_FINISH,
+                                        ACTUAL_START,
+                                        ACTUAL_FINISH,
+                                        RMRK,
+                                        DEPTH,
+                                        PATH,
+                                        CYCLE  ) 
+        AS (	SELECT	A.CNTRCT_CHG_ID,
+                        A.REVISION_ID,
+                        A.WBS_CD,
+                        A.WBS_PATH,
+                        A.WBS_NM,
+                        A.UP_WBS_CD,
+                        A.WBS_LEVEL,
+                        A.EARLY_START,
+                        A.EARLY_FINISH,
+                        A.ACTUAL_START,
+                        A.ACTUAL_FINISH,
+                        A.RMRK,
+                        1,
+                        ARRAY[A.WBS_CD::TEXT],
+                        FALSE 
+                FROM 	PR_WBS A,
+                        SELECT_REVISION_ID B
+                WHERE 	A.CNTRCT_CHG_ID = #{cntrctChgId}
+                AND 	A.REVISION_ID = B.REVISION_ID
+                <if test="wbsCd == ''">
+                    AND WBS_LEVEL = 0
+                </if>
+                <if test="wbsCd != ''">
+                    AND WBS_CD = #{wbsCd}
+                </if>
+                AND 	A.DLT_YN = 'N'     
+                UNION ALL         
+                SELECT 	A.CNTRCT_CHG_ID,
+                        A.REVISION_ID,
+                        A.WBS_CD,
+                        A.WBS_PATH,
+                        A.WBS_NM,
+                        A.UP_WBS_CD,
+                        A.WBS_LEVEL,
+                        A.EARLY_START,
+                        A.EARLY_FINISH,
+                        A.ACTUAL_START,
+                        A.ACTUAL_FINISH,
+                        A.RMRK,
+                        B.DEPTH + 1,
+                        ARRAY_APPEND(B.PATH, A.WBS_CD::TEXT),
+                        A.WBS_CD = ANY(B.PATH)
+                FROM 	PR_WBS A,
+                        PR_WBS_LIST B,
+                        SELECT_REVISION_ID C
+                WHERE	A.UP_WBS_CD = B.WBS_CD
+                AND 	A.DLT_YN = 'N'
+                AND 	A.CNTRCT_CHG_ID = #{cntrctChgId}
+                AND 	A.REVISION_ID = C.REVISION_ID
+                AND NOT CYCLE),
+        PR_ACTIVITY_SUM AS (	SELECT	A.WBS_CD,
+                                        SUM(A.INTL_DURATION) AS TOTAL_INTL_DURATION,
+                                        SUM(A.REMNDR_DURATION) AS TOTAL_REMNDR_DURATION,
+                                        SUM(A.EXPT_COST) AS TOTAL_EXPT_COST,
+                                        SUM(A.REMNDR_COST) AS TOTAL_REMNDR_COST
+                                FROM 	PR_ACTIVITY A,
+                                        SELECT_REVISION_ID B
+                                WHERE 	A.CNTRCT_CHG_ID = #{cntrctChgId}
+                                AND 	A.REVISION_ID = B.REVISION_ID
+                                <choose>
+                                    <when test="searchType == ''">
+                                        AND 1=1
+                                    </when>
+                                    <when test="searchType == 0">
+                                        AND A.ACTUAL_START != '' AND A.ACTUAL_FINISH = ''
+                                    </when>
+                                    <when test="searchType == 1">
+                                        AND A.ACTUAL_START != '' AND A.ACTUAL_FINISH != ''
+                                    </when>
+                                    <when test="searchType == 2">
+                                        AND A.ACTUAL_START = '' AND A.ACTUAL_FINISH = ''
+                                    </when>
+                                </choose>
+                                <if test="searchTerm != null and searchTerm != '' and endDate != null and endDate != '' and startDate != null and startDate != '' ">
+                                    <![CDATA[
+                                        AND (   A.EARLY_START BETWEEN #{startDate} AND #{endDate}
+                                                OR A.EARLY_FINISH BETWEEN #{startDate} AND #{endDate}
+                                                OR (A.EARLY_START <= #{startDate}
+                                                AND A.EARLY_FINISH >= #{endDate}) )
+                                    ]]>
+                                </if>
+                                <if test="activityId != null and activityId != ''">
+                                    AND A.ACTIVITY_ID ILIKE CONCAT('%',#{activityId},'%')
+                                
+                                </if>
+                                <if test="activityNm != null and activityNm != ''">
+                                    AND A.ACTIVITY_NM ILIKE CONCAT('%',#{activityNm},'%')
+                                </if>
+                                <if test="searchText != null and searchText != ''">
+                                    AND (A.ACTIVITY_ID ILIKE CONCAT('%',#{searchText},'%')
+                                        OR A.ACTIVITY_NM ILIKE CONCAT('%',#{searchText},'%'))
+                                </if> 
+                                GROUP BY WBS_CD ), 
+        SELECT_REVISION_ID AS (	SELECT 	PR.REVISION_ID
+                                FROM 	PR_REVISION PR
+                                WHERE	PR.LAST_REVISION_YN = 'Y'
+                                AND 	PR.CNTRCT_CHG_ID = #{cntrctChgId}
+                                AND 	PR.DLT_YN = 'N'),
+        DAILY_REPORT_COST AS (
+        SELECT
+            CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, SUM(COST) AS ACMTL_COST
+            FROM (
+                SELECT
+                    DR.CNTRCT_CHG_ID,
+                    DR.REVISION_ID,
+                    DR.ACTIVITY_ID,
+                    DR.CNSTTY_CD,
+                    DR.DTL_CNSTTY_SN,
+                    DR.RSCE_TP_CD,
+                    DR.RSCE_CD,
+                    DR.RSCE_QTY,
+                    TRUNC(DR.RSCE_QTY * (CCD.MTRL_UPRC + CCD.LBR_UPRC + CCD.GNRLEXPNS_UPRC)) AS COST
+                FROM (
+                    SELECT CNTRCT_CHG_ID,
+                        REVISION_ID,
+                        ACTIVITY_ID,
+                        CNSTTY_CD,
+                        DTL_CNSTTY_SN,
+                        RSCE_TP_CD,
+                        RSCE_CD,
+                        SUM(WORK_QTY) AS RSCE_QTY
+                    FROM CW_DAILY_REPORT_QDB
+                    WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+                    AND REVISION_ID = '1'
+                    AND DLT_YN = 'N'
+                    GROUP BY CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID, CNSTTY_CD, DTL_CNSTTY_SN, RSCE_TP_CD, RSCE_CD
+                ) DR
+                INNER JOIN CT_CBS_DETAIL CCD
+                ON DR.CNTRCT_CHG_ID = CCD.CNTRCT_CHG_ID
+                AND DR.DTL_CNSTTY_SN = CCD.DTL_CNSTTY_SN
+                ORDER BY DR.DTL_CNSTTY_SN
+            ) ACT
+            GROUP BY CNTRCT_CHG_ID, REVISION_ID, ACTIVITY_ID
+        )
+        <![CDATA[
+        SELECT 
+                A.REVISION_ID,
+                A.WBS_LEVEL,
+                A.WBS_NM,
+                A.WBS_CD,
+                A.ACTIVITY_ID,
+                A.ACTIVITY_NM,
+                A.ACTIVITY_KIND,
+                A.ACTIVITY_KIND_KRN,
+                A.INTL_DURATION,
+                A.REMNDR_DURATION,
+                A.EXPT_COST,
+                A.REMNDR_COST,
+                COALESCE(D.ACMTL_COST, 0) AS ACMTL_COST,
+                CASE WHEN A.ACTIVITY_KIND = 'FN' THEN NULL
+                     ELSE A.PLAN_START END AS PLAN_START,
+                CASE WHEN A.ACTIVITY_KIND = 'SM' THEN NULL
+                     ELSE A.PLAN_FINISH END AS PLAN_FINISH,
+                A.ACTUAL_START,
+                A.ACTUAL_FINISH,
+                A.CNTRCT_CHG_ID,
+                A.PATH,
+                A.DEPTH
+        FROM (
+                    SELECT 
+                            A.REVISION_ID,
+                            A.WBS_LEVEL,
+                            A.WBS_NM,
+                            A.WBS_CD,
+                            A.WBS_CD AS ACTIVITY_ID,
+                            A.WBS_NM AS ACTIVITY_NM,
+                            '' AS ACTIVITY_KIND,
+                            '' AS ACTIVITY_KIND_KRN,
+                            COALESCE(
+                                (SELECT SUM(TOTAL_INTL_DURATION)
+                                FROM PR_ACTIVITY_SUM PAS
+                                JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                                WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                                ), 0
+                            ) AS INTL_DURATION,
+                            COALESCE(
+                                (SELECT SUM(TOTAL_REMNDR_DURATION)
+                                FROM PR_ACTIVITY_SUM PAS
+                                JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                                WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                                ), 0
+                            ) AS REMNDR_DURATION,
+                            COALESCE(
+                                (SELECT TRUNC(SUM(TOTAL_EXPT_COST))
+                                FROM PR_ACTIVITY_SUM PAS
+                                JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                                WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                                ), 0
+                            ) AS EXPT_COST,
+                            COALESCE(
+                                (SELECT TRUNC(SUM(TOTAL_REMNDR_COST))
+                                FROM PR_ACTIVITY_SUM PAS
+                                JOIN PR_WBS_LIST PWL ON PAS.WBS_CD = PWL.WBS_CD
+                                WHERE PWL.PATH @> ARRAY[B.WBS_CD]::TEXT[]
+                                ), 0
+                            ) AS REMNDR_COST,
+                            A.EARLY_START AS PLAN_START,
+                            A.EARLY_FINISH AS PLAN_FINISH,
+                            A.ACTUAL_START AS ACTUAL_START,
+                            A.ACTUAL_FINISH AS ACTUAL_FINISH,
+                            A.CNTRCT_CHG_ID,
+                            B.PATH,
+                            B.DEPTH
+                    FROM 	PR_WBS A
+                    RIGHT JOIN PR_WBS_LIST B ON A.WBS_CD = B.WBS_CD AND A.CNTRCT_CHG_ID = #{cntrctChgId}
+                    INNER JOIN SELECT_REVISION_ID C ON A.REVISION_ID = C.REVISION_ID
+                    ]]>
+                    <if test="wbsNm != null and wbsNm != ''">
+                        WHERE A.WBS_NM LIKE CONCAT('%',#{wbsNm},'%')
+                    </if>
+                    <![CDATA[
+                    UNION ALL
+                    SELECT	A.REVISION_ID,
+                            NULL AS WBS_LEVEL,
+                            '' AS WBS_NM,
+                            A.WBS_CD,
+                            A.ACTIVITY_ID,
+                            A.ACTIVITY_NM,
+                            A.ACTIVITY_KIND,
+                            (SELECT CMN_CD_NM_KRN FROM SM_COM_CODE WHERE CMN_GRP_CD = '6a02785d-e476-13a9-4055-a5e8509d000b' AND CMN_CD = A.ACTIVITY_KIND) AS ACTIVITY_KIND_KRN,
+                            A.INTL_DURATION,
+                            A.REMNDR_DURATION,
+                            A.EXPT_COST,
+                            A.REMNDR_COST,
+                            A.PLAN_START,
+                            A.PLAN_FINISH,
+                            A.ACTUAL_START,
+                            A.ACTUAL_FINISH,
+                            A.CNTRCT_CHG_ID,
+                            B.PATH,
+                            B.DEPTH
+                    FROM 	PR_ACTIVITY A,
+                            PR_WBS_LIST B,
+                            SELECT_REVISION_ID C
+                    WHERE 	A.CNTRCT_CHG_ID = #{cntrctChgId}
+                    AND		A.WBS_CD = B.WBS_CD
+                    AND     A.REVISION_ID = C.REVISION_ID
+                    ]]>
+                    <choose>
+                        <when test="searchType == ''">
+                            AND 1=1
+                        </when>
+                        <when test="searchType == 0">
+                            AND A.ACTUAL_START != '' AND A.ACTUAL_FINISH = ''
+                        </when>
+                        <when test="searchType == 1">
+                            AND A.ACTUAL_START != '' AND A.ACTUAL_FINISH != ''
+                        </when>
+                        <when test="searchType == 2">
+                            AND A.ACTUAL_START = '' AND A.ACTUAL_FINISH = ''
+                        </when>
+                    </choose>
+                    <if test="searchTerm != null and searchTerm != '' and endDate != null and endDate != '' and startDate != null and startDate != '' ">
+                        <![CDATA[
+                        AND ( A.EARLY_START BETWEEN #{startDate} AND #{endDate}
+                        OR A.EARLY_FINISH BETWEEN #{startDate} AND #{endDate}
+                        OR (A.EARLY_START <= #{startDate}
+                            AND A.EARLY_FINISH >= #{endDate}) )
+                        ]]>
+                    </if>
+                    <if test="activityId != null and activityId != ''">
+                        AND A.ACTIVITY_ID ILIKE CONCAT('%',#{activityId},'%')
+                    
+                    </if>
+                    <if test="activityNm != null and activityNm != ''">
+                        AND A.ACTIVITY_NM ILIKE CONCAT('%',#{activityNm},'%')
+                    </if>
+                    <if test="searchText != null and searchText != ''">
+                        AND (A.ACTIVITY_ID ILIKE CONCAT('%',#{searchText},'%')
+                            OR A.ACTIVITY_NM ILIKE CONCAT('%',#{searchText},'%'))
+                    </if> 
+                    <if test="wbsNm != null and wbsNm != ''">
+                        AND B.WBS_NM LIKE CONCAT('%',#{wbsNm},'%')
+                    </if> 
+        <![CDATA[
+        ) AS A
+        LEFT JOIN DAILY_REPORT_COST D
+        ON A.CNTRCT_CHG_ID = D.CNTRCT_CHG_ID
+        AND A.REVISION_ID = D.REVISION_ID
+        AND A.ACTIVITY_ID = D.ACTIVITY_ID
+        ORDER BY A.PATH, A.DEPTH, A.WBS_LEVEL, A.ACTIVITY_ID;
+        ]]>
+    </select>
+
+    <!--
+        2025-01-22 choisr
+        테이블 외래키 사용으로 인한 미사용처리
+    -->
+    <update id="updateActivityWbsCd" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity.updateActivityWbsCd][srchoi]  */
+        UPDATE PR_ACTIVITY A
+        SET WBS_CD = B.WBS_CD
+            FROM PR_WBS B
+        WHERE
+            A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+            AND A.REVISION_ID = #{REVISION_ID}
+            AND A.CNTRCT_CHG_ID = B.CNTRCT_CHG_ID
+            AND A.REVISION_ID = B.REVISION_ID
+            AND A.WBS_CD = B.P6_WBS_OBJ_ID;
+    </update>
+
+    <!-- ACTIVITY 물리 삭제(REVISION 생성 시점) -->
+    <delete id="deleteActivityList" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity.deleteActivityList][srchoi]  */
+        DELETE FROM PR_ACTIVITY A
+        WHERE
+        A.CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND A.REVISION_ID = #{REVISION_ID}
+    </delete>
+
+    <!-- ACTIVITY 논리 삭제(REVISION 삭제 시점) -->
+    <update id="updateActivityDeleteState" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity.updateActivityDeleteState][srchoi]  */
+        UPDATE PR_ACTIVITY
+        SET DLT_ID = #{USR_ID},
+            DLT_DT = NOW(),
+            DLT_YN = 'Y'
+        WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID}
+        AND REVISION_ID = #{REVISION_ID}
+    </update>
+
+
+    
+     <select id="getDeffecttrackingActivity" parameterType="DeffecttrackingActivityInput" resultType="DeffecttrackingActivityOutput">
+        /*[kr.co.ideait.platform.gaiacairos.mybatis.mappers.progress.activity.getDeffecttrackingActivity][jhkim] */
+        <![CDATA[
+         WITH RECURSIVE PR_WBS_LIST as (
+ 					SELECT  PA.CNTRCT_CHG_ID,
+                            PA.REVISION_ID,
+                            PA.WBS_CD,
+                            PA.WBS_NM,
+                            PA.UP_WBS_CD,
+                            PA.EARLY_START,
+                            PA.EARLY_FINISH,
+                            PA.ACTUAL_START,
+                            PA.ACTUAL_FINISH,
+                            PA.RMRK,
+                            1 AS DEPTH,
+                            ARRAY[PA.REVISION_ID || ':' || PA.WBS_CD] AS path,
+                            FALSE AS CYCLE
+                    FROM 	PR_WBS PA,
+                            SELECT_REVISION_ID SRI
+                    WHERE 	PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
+                    AND 	PA.DLT_YN = 'N'
+                    AND		PA.WBS_LEVEL = 0
+                    UNION ALL         
+                    SELECT 	PA.CNTRCT_CHG_ID,
+                            PA.REVISION_ID,
+                            PA.WBS_CD,
+                            PA.WBS_NM,
+                            PA.UP_WBS_CD,
+                            PA.EARLY_START,
+                            PA.EARLY_FINISH,
+                            PA.ACTUAL_START,
+                            PA.ACTUAL_FINISH,
+                            PA.RMRK,
+                            PWL.DEPTH + 1,
+                            ARRAY_APPEND(PWL.PATH, PA.REVISION_ID || ':' || PA.WBS_CD),
+                            PA.WBS_CD = ANY(PWL.PATH)
+                    FROM 	PR_WBS PA,
+                                    PR_WBS_LIST PWL,
+                            SELECT_REVISION_ID SRI
+                    WHERE 	PA.UP_WBS_CD = PWL.WBS_CD
+                    AND 	PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
+                    AND 	PA.DLT_YN = 'N'
+                    AND NOT CYCLE),
+                SELECT_REVISION_ID AS (	
+                                    SELECT 	PR.REVISION_ID,
+                                            PR.CNTRCT_CHG_ID
+                                    FROM 	PR_REVISION PR
+                                    WHERE	PR.LAST_REVISION_YN = 'Y'
+                                    AND 	PR.CNTRCT_CHG_ID ilike CONCAT(#{cntrctNo},'%') 
+                                    AND 	PR.DLT_YN = 'N'	),
+                WBS_HIERARCHY AS (
+                                    SELECT
+                                    PWL.REVISION_ID,
+                                    PWL.CNTRCT_CHG_ID,
+                                    PWL.WBS_CD,
+                                    CASE 
+                                            WHEN ARRAY_LENGTH(PWL.PATH, 1) >= 2 THEN (
+                                                    SELECT STRING_AGG(DISTINCT PW.WBS_NM, '/') 
+                                                    FROM PR_WBS PW,SELECT_REVISION_ID SRI
+                                                    WHERE CONCAT(PW.REVISION_ID, ':', PW.WBS_CD) = ANY(PWL.PATH[2:ARRAY_LENGTH(PWL.PATH, 1)])
+                                                    AND PW.REVISION_ID = SRI.REVISION_ID
+                                                    AND PW.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
+                                            )
+                                            ELSE PWL.WBS_NM
+                                    END AS WBS_HIERARCHY_NM,
+                                    PWL.DEPTH,
+                                    PWL.PATH
+                                    FROM PR_WBS_LIST PWL
+                                ),
+                FINAL AS (
+                    SELECT
+                            H.WBS_HIERARCHY_NM AS WBS_NM,
+                            H.PATH,
+                            A.ACTIVITY_NM,
+                            A.PLAN_START,
+                            A.PLAN_FINISH,
+                            A.ACTUAL_START,
+                            A.ACTUAL_FINISH,
+                            CASE
+                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NULL
+                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL THEN '미완료'
+                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NOT NULL
+                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL THEN '진행중'
+                                ELSE '완료'
+                            END AS STATE,
+                            ROW_NUMBER() OVER (PARTITION BY A.ACTIVITY_ID
+                    ORDER BY    
+                            CARDINALITY(H.PATH) DESC) AS RN
+                    FROM (
+                            SELECT  PA.REVISION_ID,
+                                    NULL AS WBS_LEVEL,
+                                    PA.WBS_CD,
+                                    PA.ACTIVITY_ID,
+                                    PA.ACTIVITY_NM,
+                                    PA.PLAN_START,
+                                    PA.PLAN_FINISH,
+                                    PA.ACTUAL_START,
+                                    PA.ACTUAL_FINISH,
+                                    PA.CNTRCT_CHG_ID
+                            FROM    GAIA_CMIS.PR_ACTIVITY PA,
+                                    SELECT_REVISION_ID SRI
+                            WHERE   PA.REVISION_ID = SRI.REVISION_ID
+                                    AND PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
+                                    AND PA.DLT_YN = 'N'
+                                    AND PA.ACTIVITY_ID IN (
+                                    SELECT
+                                                ACTIVITY_ID
+                                    FROM
+                                                GAIA_CMIS.DT_DEFICIENCY_ACTIVITY
+                                    WHERE
+                                                DFCCY_NO = #{dfccyNo}
+                                )
+                            ) A
+                    INNER JOIN 
+                            WBS_HIERARCHY H 
+                    ON      A.WBS_CD = H.WBS_CD
+                    AND     A.REVISION_ID = H.REVISION_ID
+                    AND     A.CNTRCT_CHG_ID = H.CNTRCT_CHG_ID
+                    )
+                    SELECT  *
+                    FROM    FINAL
+                    WHERE   RN = 1
+                    ORDER BY    WBS_NM;
+                ]]>
+     </select>
+
+    <!-- FIXME REVISION_ID 최종여부 확인필요 -->
+    <!-- ACTIVITY 리스트 조회 (For. 프리마베라 실적 업데이트) -->
+    <select id="getActivityListForPrimavera" parameterType="hashMap" resultType="hashMap">
+        SELECT
+            CNTRCT_CHG_ID,
+            REVISION_ID,
+            ACTUAL_START_DATE,
+            ACTUAL_FINISH_DATE,
+            P6_WBS_OBJ_ID,
+            P6_ACTIVITY_OBJ_ID
+        FROM PR_ACTIVITY
+        WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+        AND REVISION_ID = (SELECT REVISION_ID WHERE CNTRCT_CHG_ID = #{cntrctChgId} AND DLT_YN = 'N' AND LAST_REVISION_YN = 'Y')
+        AND DLT_YN = 'N'
+
+    </select>
+</mapper>

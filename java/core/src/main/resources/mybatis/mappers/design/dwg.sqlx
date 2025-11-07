@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.dwg">
+	<insert id="insertDwg">
+		insert into dm_dwg (
+		    dwg_no
+			,dwg_cd
+			,dwg_dscrpt
+			,sno
+			,atch_file_no
+			,dlt_yn
+			,rgstr_id
+			,rgst_dt
+			,chg_id
+			,chg_dt
+		) values (
+		    #{dwgNo}
+			,#{dwgCd}
+			,#{dwgDscrpt}
+			,#{sno}
+			,#{atchFileNo}
+			,'N'
+			,#{rgstrId}
+			,now()
+			,#{chgId}
+			,now()
+		)
+	</insert>
+	<select id="selectDwg" parameterType="string" resultType="dmDwg">
+		select * from dm_dwg
+		where dwg_no = #{dwgNo}
+	</select>
+	<update id="updateDwg" parameterType="dmDwg">
+		update dm_dwg
+		set
+		    <if test="dwgDscrpt != null and dwgDscrpt != ''">
+				dwg_dscrpt = #{dwgDscrpt},
+			</if>
+			<if test="atchFileNo != null and atchFileNo != ''">
+				atch_file_no = #{atchFileNo},
+			</if>
+			<if test="dltYn != null and dltYn != ''">
+				dlt_yn = #{dltYn},
+			</if>
+			chg_id = #{chgId}, chg_dt = now()
+		where dwg_no = #{dwgNo}
+	</update>
+	<update id="deleteDwg" parameterType="dmDwg">
+		update dm_dwg
+		set
+		    dlt_yn = 'Y', dlt_id = #{dltId}, dlt_dt = now()
+		where dwg_no = #{dwgNo}
+	</update>
+</mapper>

@@ -1,0 +1,513 @@
+{% extends header ? 'layout/base_popup' : 'layout/base_content' %}
+{% block content %}
+<article class="conts_area">
+    <div class="conts">
+        <h3 class="conts_tit" id="company_cu_tit"></h3>
+        <div class="conts_form">
+            <div class="btn_area s_default">
+                <button type="button" class="btn _outline" id="action-button" onclick="page.validateWithFileUpload()">{{ message('btn.006') }}</button>
+                <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">{{ message('btn.007') }}</button>
+            </div>
+            <div class="form_box">
+				<!--필수항목 문구 표시 Start-->
+				<div class="container" style="display: flex; align-items: center;">
+					<span class="caption">
+						<span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+					</span>
+				</div>
+				<!--필수항목 문구 표시 End-->
+				<!--입력항목 필드 Start-->
+				<div class="row cols2">
+					<div class="col">
+						<div class="form_label required">교육일자</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="date" id="eduDt" class="date w-md">
+							</div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="form_label required">교육구분</div>
+						<div class="form_data">
+							<div class="selectbox sort" style="margin-left: 0;">
+								<span class="selectbox" id="eduType_box"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row cols2">
+					<div class="col">
+						<div class="form_label">교육자 직위(직책)</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="edu_rank" name="edu_rank" maxlength="100">
+							</div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="form_label">교육자 성명</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="edu_nm" name="edu_nm" maxlength="20">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">교육인원</div>
+						<div class="form_data">
+							<div class="item_group">
+								<table class="table ta_c table-scroll">
+									<colgroup>
+										<col width="20%">
+										<col width="10%">
+										<col width="10%">
+										<col width="10%">
+										<col>
+									</colgroup>
+									<thead>
+										<tr>
+											<th>구분</th>
+											<th>남</th>
+											<th>여</th>
+											<th>계</th>
+											<th>비고</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>교육 대상 근로자수</td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_surv_m" onchange="page.sumEducPersonnelCnt('edu_surv_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_surv_f" onchange="page.sumEducPersonnelCnt('edu_surv_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_surv_sum" value="0" disabled /></td>
+											<td><input type="text" id="edu_surv_note"></td>
+										</tr>
+										<tr>
+											<td>교육 실시 근로자수</td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_acti_m" onchange="page.sumEducPersonnelCnt('edu_acti_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_acti_f" onchange="page.sumEducPersonnelCnt('edu_acti_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_acti_sum" value="0" disabled /></td>
+											<td><input type="text" id="edu_acti_note"></td>
+										</tr>
+										<tr>
+											<td>교육 미실시 근로자수</td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_no_acti_m" onchange="page.sumEducPersonnelCnt('edu_no_acti_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_no_acti_f" onchange="page.sumEducPersonnelCnt('edu_no_acti_')"></td>
+											<td><input type="number" pattern="[0-9]" min="0" id="edu_no_acti_sum" value="0" disabled /></td>
+											<td><input type="text" id="edu_no_acti_note"></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">교육내용의 개요</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="outline" rows="3" cols="22"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row cols2">
+					<div class="col">
+						<div class="form_label">과목 또는 사항</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="subject" rows="3" cols="22" maxlength="200"></textarea>
+							</div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="form_label">교육방법</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="method" rows="3" cols="22" maxlength="500"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row cols2">
+					<div class="col">
+						<div class="form_label">교육시간</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="time" rows="3" cols="22" maxlength="100"></textarea>
+							</div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="form_label">사용교재등</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="textbook" rows="3" cols="22" maxlength="200"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row cols2">
+					<div class="col">
+						<div class="form_label">교육장소</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="location" rows="3" cols="22" maxlength="200"></textarea>
+							</div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="form_label">비고</div>
+						<div class="form_data">
+							<div class="item_group">
+								<textarea id="note" rows="3" cols="22"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">교육 참석자</div>
+						<div class="form_data">
+							<div class="col">
+								<div style="display: flex; gap: 6px; align-items: center;">
+									<button class="btn icon_btn _outline" onclick="page.addPersonnelRow()"><i class="ic ic-plus"></i><span class="tooltip">교육참석자 추가</span></button>
+									<button class="btn icon_btn _outline" onclick="page.delPersonnelRow()"><i class="ic ic-delete"></i><span class="tooltip">교육참석자 삭제</span></button>
+								</div>
+							</div>
+							<div class="col">
+								<table class="table ta_c table-scroll">
+									<colgroup>
+										<col width="2%">
+										<col width="49%">
+										<col>
+									</colgroup>
+									<thead>
+										<tr>
+											<th><input class="check_mark" id="personnel_allCheck" type="checkbox" name="check" onclick="page.allCheckBtn()"></th>
+											<th>직위 (직책)</th>  
+											<th>성명</th>
+										</tr>
+									</thead>
+									<tbody id="personnel">
+										<tr id="eduDefault">
+											<td colspan="3">교육 참석자를 추가해주세요.</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row cols">
+					<div class="col">
+						<div class="form_label">첨부파일</div>
+						<div id="batchUploaderApp" class="form_data">
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+</article>
+{% endblock content %} 
+{% block footer_script %}
+<script>
+
+    /**
+     * 파일 업로드 관련 변수
+     */
+    const limitSize = 1024 * 1024 * 100; // 100MB
+    var uploader; // uploader 객체
+
+    var page = {
+        init: function () {
+			//오늘 날짜 셋팅
+			const today = new Date().toLocaleDateString("en-CA");  // "2025-08-02"
+			//교육일자 미래 선택 못하도록 설정
+			$("#eduDt").attr("max", today);
+
+			//교육구분 박스 만들기 호출
+			page.makeSelectBox(
+				"16dd335b-a54b-4aca-b5e8-f7df56e8d629",
+				"eduType",
+				"eduType_box"
+            );
+
+        },
+
+		//교육구분 selectBox 만들기
+		makeSelectBox: function (cmnGrpCd, selectBoxId, elementId) {
+            let initText = "{{ message('msg.038', message('item.education.004')) }}";
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+                ckeckedValue: "",
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "this.value",
+                funtype: "onchange",
+            };
+
+            gaiaCommon.post("/api/util/make-selectBox",[requestData],
+                    function(result) {
+                        let returnMap = result.details.returnMap;
+                        let addAppLineContent = document.getElementById(elementId);
+                        addAppLineContent.innerHTML = returnMap[selectBoxId];
+                    },
+                    function (error){
+                        console.error("Error making select box:", error);
+                    }
+            );
+        },
+
+		// 교육인원 입력 시 계 자동 입력 함수
+		sumEducPersonnelCnt:function (classNm){
+			console.log('계 구하시오.');
+			$('#'+classNm+'sum').val(Number($('#'+classNm+'m').val()) + Number($('#'+classNm+'f').val()));
+		},
+
+		// 교육참석자 라인 추가
+		addPersonnelRow:function (){
+
+			if($('input[name=personnel_occu]').length < 1) {
+				$('#eduDefault').remove();
+			}
+			
+			let subTr = document.createElement('tr');
+			subTr.innerHTML =	`
+									<td><input class="check_mark" id="personnel_check" name="personnel_check" type="checkbox" name="check" onclick="page.checkBtn()" /></td>
+									<td><input type="text" id="personnel_occu" name="personnel_occu" maxlength="100" /></td>
+									<td><input type="text" id="personnel_nm" name="personnel_nm" maxlength="20" /></td>
+								`;
+			
+			$('#personnel').append(subTr);
+
+			$('#personnel_allCheck').prop("checked", false); // 전체 체크 여부 체크설정하기
+		},
+
+		// 교육참석자 라인 삭제
+		delPersonnelRow:function (classNm){
+			if($('input[name=personnel_check]:checked').length === 0) {
+				gaiaCommon.customAlert('삭제 할 교육참석자를 선택해 주세요.');
+				return;
+			}
+
+			let checked =  $('input[name=personnel_check]:checked');
+			for (var i = checked.length-1; i > -1; i--){
+				checked.eq(i).closest('tr').remove()
+			}
+
+			if($('input[name=personnel_occu]').length < 1) {
+				let subTr = document.createElement('tr');
+				subTr.setAttribute('id', 'eduDefault');
+				subTr.innerHTML =	`
+										<td colspan="3">교육 참석자를 추가해주세요.</td>
+									`;
+				
+				$('#personnel').append(subTr);
+			}
+
+			$('#personnel_allCheck').prop("checked", false);  // 전체 체크 여부 체크설정하기
+		},
+
+		// 교육참석자 전체 체크박스 클릭 이벤트
+		allCheckBtn:function (){
+
+			if($('#personnel_allCheck').is(":checked")) {
+				$('input[name=personnel_check]').prop("checked", true);
+			} else {
+				$('input[name=personnel_check]').prop("checked", false);
+			} 
+		},
+
+		// 교육참석자 단일 체크박스 클릭 이벤트
+		checkBtn:function (){
+
+			let totalCnt = $('input[name=personnel_check]').length; 			//전체 체크박스 카운트
+			let checkedCnt = $('input[name=personnel_check]:checked').length; //체크된 체크박스 카운드
+			
+			if(totalCnt === checkedCnt) {
+				$('#personnel_allCheck').prop("checked", true);
+			}else {
+				$('#personnel_allCheck').prop("checked", false); 
+			}
+		},
+
+		// vaidation 수행 밑 파일업로드 Callback
+		create: function(files) {
+			let eduDiaryPersonnelList = [];
+
+			if($('input[name=personnel_occu]').length > 0) {
+				$('input[name=personnel_occu]').each(function(index) {
+					eduDiaryPersonneParam = {
+						eduVicOccu: $('input[name=personnel_occu]:eq(' + index + ')').val(),
+						eduVicNm: $('input[name=personnel_nm]:eq(' + index + ')').val()
+					};
+
+					eduDiaryPersonnelList.push(eduDiaryPersonneParam);
+				});
+			}
+
+			console.log('eduDiaryPersonnelList :: ', eduDiaryPersonnelList);
+
+			eduDiaryParam = {
+				cntrctNo: pjtInfo.cntrctNo,
+				eduDt: $("#eduDt").val(),
+				eduType: $("#eduType").val(),
+				eduRank: $("#edu_rank").val(),
+				eduNm: $("#edu_nm").val(),
+				eduSurvM: !$('#edu_surv_m').val() ? 0 : $('#edu_surv_m').val(),
+				eduSurvF: !$('#edu_surv_f').val() ? 0 : $('#edu_surv_f').val(),
+				eduSurvNote: $('#edu_surv_note').val() ,
+				eduActiM: !$('#edu_acti_m').val() ? 0 : $('#edu_acti_m').val(),
+				eduActiF: !$('#edu_acti_f').val() ? 0 : $('#edu_acti_f').val(),
+				eduActiNote: $('#edu_acti_note').val(),
+				eduNoActiM: !$('#edu_no_acti_m').val() ? 0 : $('#edu_no_acti_m').val(),
+				eduNoActiF: !$('#edu_no_acti_f').val() ? 0 : $('#edu_no_acti_f').val(),
+				eduNoActiNote: $('#edu_no_acti_note').val(),
+				outline: $('#outline').val(),
+				subject: $('#subject').val(),
+				method: $('#method').val(),
+				time: $('#time').val(),
+				textbook: $('#textbook').val(),
+				location: $('#location').val(),
+				note: $('#note').val(),
+				eduDiaryPersonnelList: eduDiaryPersonnelList,
+				fileList: files	// 첨부파일
+			};
+
+			console.log('eduDiaryParam :: ', eduDiaryParam);			
+
+			gaiaCommon.post(
+				"/api/safety/educationdiary/eduDiary-add",
+				eduDiaryParam,
+				function (result) {
+					gaiaCommon.customAlert("{{ message('msg.005') }}", function () {
+						page.afterClose();
+						//gaiaCommon.LoadingOverlay('body', false);
+					});
+				}, function (error) {
+					console.log("오류 처리 로직 추후 추가!!!!!!");
+				}
+			);
+			//resolve();
+		},
+
+		//교육일지 등록처리
+		validateWithFileUpload: function () {
+			
+			if(!page.createValidCheck()) {
+				return false;
+			} else {
+				gaiaCommon.customConfirm("교육일지 등록", "작성하신 교육일지를 등록합니다.", "저장하시겠습니까?", function () {
+					//gaiaCommon.LoadingOverlay('body', true);
+					
+					uploader.upload();
+				});
+			}		
+        },
+
+		//교육일지 등록 전 Vaiid 체크
+		createValidCheck: function () {			
+
+			if(!$('#eduDt').val()){
+				gaiaCommon.customAlert('교육일지 교육일자를 선택하세요.');
+				$('#eduDt').focus();
+				return false; 
+			}
+
+			if(!$('#eduType').val()){
+				gaiaCommon.customAlert('교육구분을 선택해주세요.');
+				$('#eduType').focus();
+				return false; 
+			}
+
+			if($('input[name=personnel_occu]').length > 0) {	
+				let validValue = true;			
+				$('input[name=personnel_occu]').each(function(index) {
+					if(!$('input[name=personnel_occu]:eq(' + index + ')').val()){
+						gaiaCommon.customAlert('직위(직책)을 입력하거나 참석자 ROW를 삭제해주세요.');
+						$('input[name=personnel_occu]:eq(' + index + ')').focus();
+						validValue = false;
+						return false; 
+					}
+					if(!$('input[name=personnel_nm]:eq(' + index + ')').val()){
+						gaiaCommon.customAlert('성명을 입력하거나 참석자 ROW를 삭제해주세요.');
+						$('input[name=personnel_nm]:eq(' + index + ')').focus();
+						validValue = false;
+						return false; 
+					}
+				});
+				
+				if(!validValue) {
+					return false;
+				}
+			}
+
+			// 첨부파일 validation
+			if (uploader.totalSize > limitSize) {
+				gaiaCommon.customAlert(`제한용량 ${page.getfileSize(limitSize)}를 초과하였습니다.`);
+				return false;
+			}
+			return true;
+        },
+
+		//닫기 이벤트
+		close: function () {
+			gaiaCommon.customConfirm('이전 페이지로 돌아가기', '작성중인 교육일지가 사라집니다.', '이동하시겠습니까?', function () {
+				page.afterClose();
+			});	
+        },    
+
+		//저장 후 닫기 이벤트
+		afterClose: function () {
+			window.location.replace(`/safety/educationdiary?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`);
+        },
+		
+		//파일 용량 MB로 변환
+		getfileSize: function (size) {
+			var s = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+			var e = Math.floor(Math.log(size) / Math.log(1024));
+			return (size / Math.pow(1024, e)).toFixed(2) + " " + s[e];
+		},
+	};
+
+	$(function () {
+        gaia.create({
+            $init: async function ($params) {
+                page.init();
+				gaiaPortal.navMenuInit("M10_EDU", "{{ message('item.education.003') }}");
+				$("#menuDepth").append('<li class=\"breadcrumb_item\">'+ "{{ message('item.education.003') }}" +'</li>');
+
+				// 파일 업로드 CALLBACK 후 비즈니스로직 save()
+				const files = [];
+				uploader = await gaia.utils.createUploader({
+					mode: 'C',
+					type: 'batch',
+					wrapId: 'batchUploaderApp',
+					limitFileSize: limitSize,
+					files: files,
+					url: '/resource/upload',
+					params: {},
+					callbackHandler: (data) => {
+						console.log('callback()', data)
+						
+						if(data) {
+							page.create(data);
+						}
+					}
+				});
+
+                gaia.loaded = true
+            }
+        });
+    });
+</script>
+{% endblock footer_script %}

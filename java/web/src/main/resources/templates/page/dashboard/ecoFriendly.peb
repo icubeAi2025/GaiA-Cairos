@@ -1,0 +1,247 @@
+{% extends 'layout/base_popup' %}
+{% block content %} 
+{% include 'sub/grid' %}
+<article id="content">
+    <div class="conts" id="container" style="min-height: unset;">
+        <div class="group">
+            <div class="conts_grid">
+                <div class="grid" id="eco-grid"></div>
+                <div class="btn_area jc_e">
+                    <button type="button" class="btn _outline" id="close-popup" onclick="self.close()">
+                        {{ message("btn.007") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+{% endblock content %}
+{% block footer_script %}
+<script>
+
+	const viewType = `{{viewType}}`;
+    const tableBody = document.querySelector("#list-grid tbody");
+    const selectBoxElement = document.querySelector("#selectBox");
+    const params = new URLSearchParams(window.location.search);
+    const ecoTpCd = params.get("ecoTpCd");
+
+    let ecogrid = {    // 계약목록 그리드 초기화(+데이터 가져오기)
+        init: function () {
+            const bodyHeight = window.innerHeight - 280;
+            const Grid = tui.Grid;
+            let _this = this;
+            
+            if (this.ecogrid) {
+                this.ecogrid.destroy(); // 기존 인스턴스 제거
+                this.ecogrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/dashboard/eco-friendly-list",
+                    method: "GET",
+                    initParams: {
+                        viewType: viewType,
+                        pjtNo: pjtInfo.pjtNo,
+                        cntrctNo: $('#cntrctNo').val(),
+                        ecoTpCd: ecoTpCd
+                    },
+                }
+            });
+
+            if (!this.ecogrid) {
+                this.ecogrid = new Grid({
+                    el: document.getElementById('eco-grid'),
+                    data: dataSource,
+                    minBodyHeight: bodyHeight,
+                    bodyHeight: bodyHeight,
+                    scrollX: false,
+                    scrollY: true,
+                    contextMenu: null,
+                    columns: [
+                        {
+                            header: "{{ message('item.com.086') }}", // 순번
+                            name: "seq",
+                            align: "center",
+                            width:70,
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "예비인증 적용자재", // 예비인증 적용자재
+                            name: "pre_cert",
+                            align: "center",
+                            width:150,
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "본인증 적용가능 자재", // 본인증 적용가능 자재
+                            name: "final_cert",
+                            align: "center",
+                            width:150,
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "제조사", // 제조사
+                            name: "makr_nm",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "{{ message('item.projectcost.001') }}", // 자원코드
+                            name: "gnrlexpns_cd",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        { header: "{{ message('item.projectcost.002') }}",
+                            name: "rsce_nm",
+                            width: 200,
+                            resizable: true,
+                            ellipsis: true,}, // 회사명
+                        {
+                            header: "{{ message('item.projectcost.003') }}", // 규격
+                            name: "spec_nm",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "{{ message('item.projectcost.004') }}", // 단위
+                            name: "unit",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "{{ message('item.projectcost.005') }}", // 수량
+                            name: "rsce_qty",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                            formatter: function (e) {
+                                let value = e.value != null ? e.value : "0";
+                                return value;
+                            },
+                        },
+                        {
+                            header: "{{ message('item.projectcost.006') }}", // 단가
+                            name: "unit_price",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                            formatter: function (e) {
+                                const value = e.value;
+                                if (value != null && !isNaN(value)) {
+                                    return Number(value).toLocaleString(); // 1,111,111 형식
+                                }
+                                return "0";
+                            },
+                        },
+                        {
+                            header: "{{ message('item.projectcost.007') }}", // 금액
+                            name: "amount",
+                            align: "center",
+                            resizable: true,
+                            ellipsis: true,
+                            formatter: function (e) {
+                                const value = e.value;
+                                if (value != null && !isNaN(value)) {
+                                    return Number(value).toLocaleString(); // 1,111,111 형식
+                                }
+                                return "0";
+                            },
+                        },
+                    ],
+                });
+
+                this.ecogrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+
+                refreshGrid(this.ecogrid);
+            }
+        },
+    }
+
+    var cntrctList = {
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+            const self = this;
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                var param = {pjtNo: pjtNo};
+
+                gaiaCommon.makeCntrctSelectBox(
+                        "#container",
+                        () => {
+                            const ecogridContainer = document.getElementById("eco-grid");
+                            ecogridContainer.innerHTML = ""; // 기존 내용 제거
+
+                            const msg = " 친환경 자재가 없습니다."; // 친환경 자재가 없습니다.
+                            const div = document.createElement("div");
+
+                            div.style.height = "80px";
+                            div.style.display = "flex";
+                            div.style.justifyContent = "center";
+                            div.style.alignItems = "center";
+
+                            div.innerHTML = `<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${msg}</span>`;
+
+                            ecogridContainer.appendChild(div);
+                        },
+                        (cntrctNo) => {
+                            ecogrid.init();
+                        },
+                        (cntrctNo) => {
+                            ecogrid.init();
+                        }
+                );
+            } else if (isCAIROS()) {
+                $("#container").append(
+                        `<input type='hidden' id='cntrctNo' value='${cntrctNo}'/>`
+                );
+                ecogrid.init();
+            }
+
+        },
+    }
+
+	$(document).ready(()=>{
+		gaia.create({
+			$init: function ($params) {
+                let msg;
+                switch (ecoTpCd) {
+                    case "E01":
+                        msg = "환경성선언 제품 목록";
+                        break;
+                    case "E02":
+                        msg = "저탄소자재 목록";
+                        break;
+                    case "E03":
+                        msg = "친환경자재 목록";
+                        break;
+                    default:
+                        msg = "친환경 인증";
+                        break;
+                }
+
+                $("#pageNav").append( `<h2 class="page_tit" id="menuName">${msg}</h2>` );
+                cntrctList.init();
+				gaia.loaded = true;
+            }
+        });
+	}) 
+</script>
+{% endblock footer_script %}

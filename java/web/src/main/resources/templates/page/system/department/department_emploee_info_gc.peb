@@ -1,0 +1,213 @@
+<div class="modal open">
+	<div class="pop_box _lg">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="emploee_info_tit"></h5>
+			<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<!-- <article class="conts_area">
+				<div class="conts"> -->
+					<div class="s_conts">
+						<span class="tree_route" id="dept-breadcrumb"></span>
+						<div class="group">
+							<h4 class="conts_s-tit"></h4>
+							<div class="form_box readonly">
+								<!-- row -->
+								<div class="row cols2">
+									<div class="col">
+										<div class="form_label">{{ message('item.user.001') }}</div>
+										<div class="form_data">
+											<input type="text" id="loginId" value="">
+										</div>
+									</div>
+									<div class="col">
+										<div class="form_label">{{ message('item.user.002') }}</div>
+										<div class="form_data">
+											<input type="text" id="phoneNo" value="">
+										</div>
+									</div>
+								</div>
+								<!-- row -->
+								<div class="row cols2">
+									<div class="col">
+										<div class="form_label">{{ message('item.user.003') }}</div>
+										<div class="form_data">
+											<input type="text" id="usrNm" value="">
+										</div>
+									</div>
+									<div class="col">
+										<div class="form_label">{{ message('item.user.004') }}</div>
+										<div class="form_data">
+											<input type="text" id="telNo" value="">
+										</div>
+									</div>
+								</div>
+								<!-- row -->
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.user.007') }}</div>
+										<div class="form_data">
+											<input type="email" id="emailAdrs" value="">
+										</div>
+									</div>
+								</div>
+								<!-- row -->
+								<div class="row">
+									<div class="col">
+										<div class="form_label">{{ message('item.com.003') }}</div>
+										<div class="form_data">
+											<div class="item_group" role="group" aria-label="Basic radio group">
+												<label class="form_check">
+													<input class="check_mark" type="radio" name="radio" checked>
+													<span class="check_label">{{ message('btn.008') }}</span>
+												</label>
+												<label class="form_check">
+													<input class="check_mark" type="radio" name="radio">
+													<span class="check_label">{{ message('btn.009') }}</span>
+												</label>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+		
+						<div class="group">
+							<h4 class="conts_s-tit">{{ message('item.dept.017') }}</h4>
+							<div class="conts_grid">
+								<div class="grid" id="department-grid"></div>
+							</div>
+						</div>
+		
+					</div>
+				<!-- </div>
+			</article> -->
+		</div>
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	var popup = {
+		data: {
+			details: {},
+			breadCrumb: null,
+			employeeData: {},
+		},
+		init() {
+			if (opener) {
+				page = opener.page;
+			}
+			this.data.details = page.department.data.details;
+			this.data.breadCrumb = page.tree2.data.breadCrumb;
+
+			const employeeData = $("#popup").data("employee-info");
+
+
+			this.data.employeeData = employeeData;
+
+			$("#emploee_info_tit").text("{{ message('item.dept.016') }}");
+			$("#dept-breadcrumb").text(this.data.breadCrumb);
+
+			popup.employeeDepartment.gridInit(employeeData.usrId);
+
+			gaia.loaded = true;
+		},
+
+		close() {
+			$("#popup").html("");
+		},
+
+		employeeDepartment: {
+			grid: null,
+			gridInit: function(employeeId){
+				this.grid = new tui.Grid({
+					el: document.getElementById('department-grid'),
+					scrollX: false,
+					scrollY: true,
+					minBodyHeight: 40,
+					useClientSort: false,
+					columns:[
+						{
+							header: "{{ message('item.dept.009') }}", //부서
+							name: 'deptNm',
+							align: 'center',
+						},
+						{
+							header: "{{ message('item.com.027') }}", //직급
+							name: 'ratngNm',
+							align: 'center',
+						},
+						{
+							header: "{{ message('item.com.026') }}", //직책
+							name: 'pstnNm',
+							align: 'center',
+						},
+						{
+							header: "{{ message('item.com.028') }}", //근무 상태
+							name: 'flagNm',
+							align: 'center',
+						},
+					],
+				});
+				this.loadData(employeeId);
+			},
+
+			loadData: function(employeeId){
+				const pjtData = pjtInfo;
+				// const pjtData = commonJs.getSessionStorage("pageCommonData");
+
+				let param = {
+                        pjtNo: pjtData.pjtNo,
+                        cntrctNo: pjtData.cntrctNo,
+						employeeId: employeeId
+                    }
+
+				gaiaCommon.get("/api/system/department/employee/details", param,
+                    function (result) {
+                        if(result.ok){
+                            let data = {};
+                            if (result.details?.employeeDetailList) {
+                                data = result.details.employeeDetailList;
+                            }
+                            // 사용자 정보 설정
+                            const userInfo = data[0];
+                            $("#loginId").val(userInfo.loginId);
+                            $("#phoneNo").val(userInfo.phoneNo);
+                            $("#usrNm").val(userInfo.usrNm);
+                            $("#telNo").val(userInfo.telNo);
+                            $("#emailAdrs").val(userInfo.emailAdrs);
+
+                            // 그리드의 높이를 동적으로 설정
+                            const rowCount = data.length;
+                            const rowHeight = 40; // 행당 높이 (임의로 40px로 설정)
+                            const maxHeight = 160; // 그리드의 최대 높이
+                            const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행의 개수에 맞춰 높이 조정
+
+                            popup.employeeDepartment.grid.setBodyHeight(newHeight);
+                            popup.employeeDepartment.grid.resetData(data);
+                        }
+            	    },
+                    function (error) {
+                        console.error(error);
+                        gaiaCommon.customAlert(error.responseJSON?.message);
+                    }
+                );
+			}
+		}
+
+	};
+
+
+	$(function(){
+		popup.init();
+    });
+
+</script>

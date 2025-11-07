@@ -1,0 +1,325 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<section class="contents_wrap g-row">
+
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_form">
+                <div class="btn_area s_default _outline">
+                    {{ btnHtml | raw }}
+                    <button type="button" class="btn" onclick="page.close()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 버튼 -->
+                </div>
+
+                <div class="form_box" id="contract-form">
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge3">
+                            <div class="form_label">{{ message('item.contract.009') }}</div> <!-- 공사계약명 -->
+                            <div class="form_data">
+                                <span id="cntrctNm"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.007') }}</div> <!-- 공사기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <span id="conPrd"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge">
+                            <div class="form_label">{{ message('item.contract.033') }}</div> <!-- 관리계약번호 -->
+                            <div class="form_data">
+                                <span id="mngCntrctNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.010') }}</div> <!-- 계약 주공종 -->
+                            <div class="form_data">
+                                <span id="majorType"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.053') }}</div> <!-- 계약구분 -->
+                            <div class="form_data">
+                                <span id="cntrctType"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.011') }}</div> <!-- 계약종류 -->
+                            <div class="form_data">
+                                <span id="contractType"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.022') }}</div> <!-- 계약일자 -->
+                            <div class="form_data">
+                                <span id="cntrctDate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.037') }}</div> <!-- 보증일 -->
+                            <div class="form_data">
+                                <span id="grntyDate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.010') }}</div> <!-- 착공일자 -->
+                            <div class="form_data">
+                                <span id="cbgnDate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.012') }}</div> <!-- 준공일자 -->
+                            <div class="form_data">
+                                <span id="ccmpltDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.025') }}</div> <!-- 최초계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="cntrctCost"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.013') }}</div> <!-- 계약보증금 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="grntyCost"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.014') }}</div> <!-- 지체상금율 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _per">
+                                    <span id="dfrcmpnstRate"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.015') }}</div> <!-- 부가세율 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _per">
+                                    <span id="vatRate"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols3" id="this-box" style="display: none;">
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.contract.054') }}</div> <!-- 금차계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <span class="item_wrap put_txt _won">
+                                        <span id="thisCntrctCost"></span>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.055') }}</div> <!-- 금차준공일자 -->
+                            <div class="form_data">
+                                <span id="thisCcmpltDate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.056') }}</div> <!-- 금차공사기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <span id="thisConPrd"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.010') }}</div> <!-- 사업자등록번호 -->
+                            <div class="form_data">
+                                <span class="item_wrap">
+                                    <span id="bsnsmnNo"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.016') }}</div> <!-- 대표계약 회사명 -->
+                            <div class="form_data">
+                                <span id="corpNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.017') }}</div> <!-- 업체 대표자 -->
+                            <div class="form_data">
+                                <span id="corpCeo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.org.005') }}</div> <!-- 담당자명 -->
+                            <div class="form_data">
+                                <span id="ofclNm"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.018') }}</div> <!-- 사무실번호 -->
+                            <div class="form_data">
+                                <span id="telNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.019') }}</div> <!-- 팩스번호 -->
+                            <div class="form_data">
+                                <span id="faxNo"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.020') }}</div> <!-- 업체주소 -->
+                            <div class="form_data">
+                                <span id="corpAdrs"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 모달창 내용 -->
+</div>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    .item_wrap.put_txt {
+        color: #494853;
+    }
+</style>
+<script src="/assets/js/validation.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const pjtNo = params.get("pjtNo")
+    const cntrctNo = params.get('cntrctNo');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+            }
+        });
+    });
+
+    var popup = {
+        data: {},
+        close: function () {
+            $("#popup").html("");
+        },
+        add: function () {
+            if (popup.data.ofclNm) { $("#ofclNm").val(popup.data.ofclNm); }
+            $("#popup").html("");
+        },
+    }
+
+    var page = {
+        data: {},
+        type: "read",
+
+        init: function () {
+
+            gaiaCommon.LoadingOverlay('body', true);
+            this.loadContractData(cntrctNo);
+
+            // nav 주소 바꾸기
+            const titleElement = document.querySelector('h3.conts_tit');
+            var title = "{{ message('item.contract.027') }}"    // 계약 조회
+            gaiaPortal.navMenuInit('M010201', title);
+            $("#menuDepth").append(`<li class=\"breadcrumb_item\" name=\"new_item\">${title}</li>`);
+
+            $('input[name="cbgnDate"], input[name="ccmpltDate"]').on('change', function () {
+                const startDateStr = $('input[name="cbgnDate"]').val();
+                const endDateStr = $('input[name="ccmpltDate"]').val();
+                page.calculateConstructionPeriod(startDateStr, endDateStr);
+            });
+            $('input[name="cbgnDate"], input[name="thisCcmpltDate"]').on('change', function () {
+                const startDateStr = $('input[name="cbgnDate"]').val();
+                const endDateStr = $('input[name="thisCcmpltDate"]').val();
+                page.calculateConstructionPeriod(startDateStr, endDateStr, "this");
+            });
+        },
+        // 수정 버튼 클릭 이벤트
+        update: function () {
+            window.location.href = `/project/contractstatus/updateContract?cntrctNo=${cntrctNo}`;
+        },
+        // 데이터 출력
+        loadContractData: function () {
+            gaiaCommon.get("/api/project/contractstatus/get/" + cntrctNo + "/read", {}, function (result) {
+                let data = result.details.contract;
+
+                if (data.cntrct_div_cd === "0104") {
+                    $('#this-box').show();
+                } else {
+                    $('#this-box').hide();
+                }
+
+                $('#cntrctNm').text(gaiaCommon.decodeSafeText(data.cntrct_nm));
+                $('#conPrd').text(data.con_prd);
+                $('#mngCntrctNo').text(gaiaCommon.decodeSafeText(data.mng_cntrct_no));
+                $('#majorType').text(data.work_type_nm_krn);
+                $('#cntrctType').text(data.cntrct_type_nm_krn);
+                $('#contractType').text(data.contract_type_nm_krn);
+
+                $('#cntrctDate').text(formatDateFromYYYYMMDD(data.cntrct_date));
+                $('#grntyDate').text(formatDateFromYYYYMMDD(data.grnty_date));
+                $('#cbgnDate').text(formatDateFromYYYYMMDD(data.cbgn_date));
+                $('#ccmpltDate').text(formatDateFromYYYYMMDD(data.ccmplt_date));
+                $('#thisCcmpltDate').text(formatDateFromYYYYMMDD(data.this_ccmplt_date));
+
+                $('#cntrctCost').text(data.cntrct_cost.toLocaleString());
+                $('#grntyCost').text(data.grnty_cost.toLocaleString());
+                $('#thisCntrctCost')
+                    .text(data.this_cntrct_cost.toLocaleString());
+
+                $('#dfrcmpnstRate').text(data.dfrcmpnst_rate);
+                $('#vatRate').text(data.vat_rate);
+
+                $('#bsnsmnNo').text(gaiaCommon.decodeSafeText(data.bsnsmn_no));
+                $('#corpNm').text(gaiaCommon.decodeSafeText(data.corp_nm));
+                $('#corpCeo').text(gaiaCommon.decodeSafeText(data.corp_ceo));
+                $('#ofclNm').text(gaiaCommon.decodeSafeText(data.ofcl_nm));
+                $('#telNo').text(gaiaCommon.decodeSafeText(data.tel_no));
+                $('#faxNo').text(gaiaCommon.decodeSafeText(data.fax_no));
+                $('#corpAdrs').text(gaiaCommon.decodeSafeText(data.corp_adrs));
+
+                $('#thisConPrd').text(data.this_con_prd);
+
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        },
+        close: function () {
+            window.location.replace(`/project/contractstatus?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+        }
+    };
+    function formatDateFromYYYYMMDD(rawDate) {
+        if (!rawDate || rawDate.length !== 8) return '';
+        return rawDate.slice(0, 4) + '-' + rawDate.slice(4, 6) + '-' + rawDate.slice(6, 8);
+    }
+</script>
+{% endblock footer_script %}

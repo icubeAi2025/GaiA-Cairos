@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ platform }} Login Page</title>
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/reset.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/jui/jui-ui.classic.css">
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/iframe_layout.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/feather.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/xeicon.min.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/login/css/login.css">
+
+    <script type="text/javascript" src="/assets/js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="/assets/static/rsa/jsbn.js"></script>
+    <script type="text/javascript" src="/assets/static/rsa/rsa.js"></script>
+    <script type="text/javascript" src="/assets/static/rsa/prng4.js"></script>
+    <script type="text/javascript" src="/assets/static/rsa/rng.js"></script>
+    <script type="text/javascript" src="/assets/js/gaia_common.js"></script>
+    <script type="text/javascript" src="/assets/js/main_common.js"></script>
+</head>
+<body class="jui feather">
+    
+    <div id="app">
+        <div id="wrap" class="login_wrap">
+            <div class="login-inner" id="mainListLoading">
+                <a href="#!"><img class="login-logo" src="/assets/images/logo/logo.svg" ></a>
+                <div class="login-tab-menu border-top">
+                    <a href=""><h2 id="login-title">G-IDEA <span>PLATFORM</span></h2></a>
+                </div>
+                <div class="login-form">
+                    <!-- <form id="frmLogin" action="/assets/login" method="POST">
+                        <input type="hidden" name="uid" id="uid" />
+                        <input type="hidden" name="upw" id="upw" />
+                        <input type="hidden" name="key" id="key" />
+                        <input type="hidden" name="exKey" id="exKey" />
+                        <input type="hidden" name="loginType" id="loginType" />
+                        <input type="hidden" name="returnUrl" id="returnUrl" />
+                    </form> -->
+                    <!-- <form> -->
+                        <div class="input-wrap icon-user">
+                            <label>ID</label>
+                            <input type="text" class="size-l" placeholder="아이디를 입력하세요" id="loginId">
+                        </div>
+                        <!-- <div class="input-wrap icon-lock">
+                            <label>PASSWORD</label>
+                            <input type="password" class="size-l" placeholder="비밀번호를 입력하세요" id="loginPw">
+                        </div> -->
+                        <!-- <div class="input-wrap" style="display: flex; justify-content: center; gap: 20px;">
+                            <label style="width: auto;"><input type="radio" name="systemType" value="PGAIA" style="margin-right: 4px;" checked>GAIA</label>
+                            <label style="width: auto;"><input type="radio" name="systemType" value="CMIS" style="margin-right: 4px;">CMIS</label>
+                            <label style="width: auto;"><input type="radio" name="systemType" value="WBSGEN" style="margin-right: 4px;">WBSGEN</label>
+                        </div> -->
+                        <div class="checks">
+                            <input type="checkbox" id="ex_chk">
+                            <label for="ex_chk">아이디저장</label>
+                        </div>
+                        <input type="button" class="btn-login" value="LOGIN" id="btnLogin" style="cursor:pointer;" onclick="page.onLogin()">
+                    <!-- </form> -->
+                </div>
+
+
+                <!-- <div class="login-menu">
+                    <div class="login-menu-left">
+                        <a href="signup_terms.html" title="회원가입"><i class="xi-face xi-x"></i>회원가입</a>
+                    </div>
+                    <div class="login-menu-right">
+                        <a href="findid.html" title="아이디 찾기">아이디 찾기</a>
+                        <a href="findpw.html" title="비밀번호 분실">비밀번호 분실</a>
+                    </div>
+                </div>
+                <div class="login-menu">
+                    <div class="login-menu-left">
+                    </div>
+                    <div class="login-menu-right">
+                        <a href="#!" title="개인정보처리방침" onclick="modal_open('privacyModal')">개인정보처리방침</a>
+                    </div>
+                </div> -->
+            </div>
+
+            <div class="modal-layer-wrap">
+                <div id="signModal" class="modal-layer modal-small">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <p class="modal-title">본인인증</p>
+                        </div>
+                        <div class="modal-content" id="modalLoading">
+                            <div class="col s12 l12 col-form-txt">
+                                <small class="form-txt">이메일에서 인증번호를 확인해주세요.</small>
+                            </div>
+                            <div class="row form-row">
+                                <div class="form-group col s12 m12 xl12">
+                                    <label class="label-type01">인증번호</label>
+                                       <input class="size-m" type="text" id="key"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer center">
+                            <input type="button" class="btn type02 size-m layer_close" onclick="page.onLogin()" value="인증완료">
+                            <input type="button" class="btn type01 size-m layer_close" onclick="page.modal_close('signModal')" value="닫기">
+                        </div>
+                        <div class="btn-r">
+                            <a href="#" class="cbtn" style="display: inline-block;" title="모달창 닫기"><span class="icon-exit"></span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-layer-wrap">
+                <div id="privacyModal" class="modal-layer modal-large">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <p class="modal-title">개인정보처리방침</p>
+                        </div>
+                        <div class="modal-content">
+                            <div id="viewer">
+                            </div>
+                        </div>
+                        <div class="modal-footer center">
+                            <input type="button" class="btn type01 size-m layer_close" onclick="modal_close('privacyModal')" value="닫기">
+                        </div>
+                        <div class="btn-r">
+                            <a href="#" class="cbtn" style="display: inline-block;" title="모달창 닫기"><span class="icon-exit"></span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="copyright">
+            <div >Copyright(C) IDEA IT. Co.,Ltd. All Rights Reserved.</div>
+        </footer>
+    </div>
+</body>
+<script>
+    let rsa = new RSAKey();
+
+	$(document).keyup(function(e) {
+   		// focus 되고 enter눌렀을 경우 
+   		if (e.key == "Enter") {
+			page.onLogin();
+   		}
+	});
+
+    var page = {
+		data: {
+            exKey: ''
+        },
+
+		//초기화 함수 화면 시작 함수
+		init() {
+			// URL에서 파라미터를 가져옴
+            // console.log('location.search : >>>>>>>>>>>>>> ' + location.search);
+			const urlParams = new URLSearchParams(window.location.search);
+            params = page.getQueryParams();
+            // console.log('리턴 URL : >> ' + decodeURIComponent(urlParams));
+            if(localStorage.getItem('saveId')){
+                $('#loginId').val(localStorage.getItem('saveId'));
+                $('#ex_chk').prop('checked',true);
+            }	
+		},	
+
+        login() {
+            if(page.loginValid()){
+                page.sendKey();
+            }
+        },
+        
+        loginValid() {
+            if (!$("#loginId").val()) {
+                alert('아이디를 입력해 주세요');
+                $("#loginId").select();
+                return false;
+            }
+            // if ($.trim($('#pw').val()) == '') {
+            //     alert('비밀번호를 입력해 주세요');
+            //     $('#pw').select();
+            //     return false;
+            // }            
+            return true;
+        },
+
+        sendKey(){
+			var self = this;
+			key = '';
+
+			$.ajax({
+				url: '/api/login/publickeys',
+				cache: false,
+				success: function(data) {					
+					rsa.setPublic(data.details.modulus, data.details.publicExponent);
+					var checkParam = {
+						encId : rsa.encrypt($('#loginId').val()),
+						encPw : rsa.encrypt($('#loginId').val()),
+                        // loginType   : $('input:radio[name=systemType]:checked').val()
+                        loginType  : '{%  if platform == "gaia" %} PGAIA {% elseif platform == "cairos" %} CMIS {% else %} WBSGEN {% endif %}'.trim()
+					}
+					$.ajax({
+						url: '/api/login/loginValidCheck',
+						cache: false,
+		    			type: 'POST',
+		    			data: checkParam,
+		    			success: function(data) {
+                            console.log("처리 결과 : >>>> " + data.details.msg);
+		    				if(data.details.msg === 'PASS'){
+		    					var params = {
+	    							id : $('#loginId').val(),
+                                    // loginType   : $('input:radio[name=systemType]:checked').val()
+                                    loginType  : '{%  if platform == "gaia" %} PGAIA {% elseif platform == "cairos" %} CMIS {% else %} WBSGEN {% endif %}'.trim()
+	    						}
+                                // console.log('params : >>>> ' +  JSON.stringify(params));
+                                $.ajax({
+                                    url: '/api/login/sendKey',
+                                    cache: false,
+                                    type: 'POST',
+                                    data: params,
+                                    success: function(data) {
+                                        if(data.details?.result == '-1'){
+                                            page.modal_close('signModal');
+                                            alert('해당시스템에 등록된 계정정보가 존재하지않습니다.');
+                                        }else{
+                                            console.log(data.details?.result);
+                                            page.data.exKey = data.details?.result;
+                                            page.modal_open('signModal');
+                                        }  
+                                    },
+                                    error(error) {
+                                        alert(error.responseJSON?.message);
+                                        modal_close('signModal');
+                                    },				
+                                });
+		    				} else {
+                                alert(data.details.msg);
+		    				}
+		    			}					
+					});
+				}
+			});
+		},
+
+        onLogin(){
+            if (page.loginValid()) {
+                if(document.getElementById('ex_chk').checked){
+                    localStorage.setItem('saveId',$('#loginId').val());
+                }else{
+                    localStorage.removeItem('saveId');
+                }
+                params = page.getQueryParams();  
+                // var loginParam = {
+                //     loginId     : rsa.encrypt($('#loginId').val()),
+                //     loginPw     : rsa.encrypt($('#loginId').val()),
+                //     key         : rsa.encrypt($('#key').val()),
+                //     exKey       : page.data.exKey,
+                //     loginType   : $('input:radio[name=systemType]:checked').val(),
+                //     lastPage    : params.lastPage
+                // }
+
+                var loginParam = {
+                    loginId     : $('#loginId').val(),
+                    loginPw     : $('#loginId').val(),
+                    key         : $('#key').val(),
+                    exKey       : page.data.exKey,
+                    // loginType   : $('input:radio[name=systemType]:checked').val(),
+                    loginType  : '{%  if platform == "gaia" %} PGAIA {% elseif platform == "cairos" %} CMIS {% else %} WBSGEN {% endif %}'.trim(),
+                    lastPage    : params.lastPage
+                }
+                // console.log('---------------------------------------------------');
+                // console.log('location.search : >>>>>>>>>>>>>> ' + location.search);
+                // console.log('---------------------------------------------------');
+                // console.log('---------------------------------------------------');
+                // console.log('params             : >>>>>>>>>>>>>> ' + JSON.stringify(loginParam));
+                // console.log('params.fullUrl    : >>>>>>>>>>>>>> ' + params.fullUrl);
+                // console.log('---------------------------------------------------');
+                $.ajax({
+                    url: "/login",
+                    method: "POST",
+                    dataType: "json",
+                    // contentType: "application/json; charset-utf-8",
+                    // data: JSON.stringify(loginParam),
+                    data: loginParam,
+                    success(resp) {
+                        //  console.log('location.search : >>>>>>>>>>>>>> ' + location.search);
+                        
+                        //  console.log('---------------------------------------------------');
+                        //  console.log('resp: >>>>>>>>>>>>>> ' + resp);
+                        //  console.log('---------------------------------------------------');
+
+                        const data = resp.result;
+                        if (data.ok) {
+                            //console.log('location.search : >>>>>>>>>>>>>> ' + location.search);
+
+                            if (data.details.result === 'fail') {
+                                alert(data.details.message);
+                                // location.href = '/';
+                                return;
+                            }
+
+                            if (location.search) {
+                                // console.log('params             : >>>>>>>>>>>>>> ' + JSON.stringify(params));
+                                // console.log('params.redirectUrl : >>>>>>>>>>>>>> ' + JSON.stringify(params.redirectUrl));
+                                // console.log('params.fullUrl     : >>>>>>>>>>>>>> ' + JSON.stringify(params.fullUrl));
+
+                                if (params.redirectUrl) {
+                                    url = params.fullUrl;
+
+                                    //let path = decodeURIComponent(result.details.url);
+                                    //url = `${window.location.origin}${path}`;
+                                    url = decodeURIComponent(url);
+
+                                    // if (params.lastPage) {
+                                    //     if (params.lastPage.substr(0, 26) === '/eapproval/approval/detail') {
+                                    //         url += "&lastPage=" + params.lastPage + '%26apDocNo=' + params.apDocNo + '%26apDocId=' + params.apDocId + '%26pjtNo=' + params.pjtNo + '%26cntrctNo=' + params.cntrctNo + '%26pjtNm=' + encodeURI(encodeURIComponent(params.pjtNm)) + '%26cntrctNm=' + encodeURI(encodeURIComponent(params.cntrctNm));
+                                    //     }else {
+                                    //         url += "&lastPage=" + params.lastPage;
+                                    //     }
+                                    // }
+                                    // console.log('url : >>>>>>>>>>>>>> ' + url);
+                                    location.href = url;
+                                // } else if(params.lastPage) {
+                                //     alert("2");
+                                //     location.href = params.lastPage;
+                                } else {
+                                    location.href = "/";
+                                }
+                            }else {
+                                location.href = data.details.url;
+                            }
+                        } else {
+                            alert(data.message || "error");
+                        }
+                    },
+                    error(error) {
+                        alert(error.responseJSON?.message);
+                    },
+                });
+            }
+        },
+
+        modal_open(el) {
+            try{
+                var temp = $('#' + el);
+            
+                temp.fadeIn();
+            
+                if (temp.outerWidth() < $(document).width()) temp.css('margin-left', '-' + temp.outerWidth() / 2 + 'px');
+                else temp.css('left', '0px');
+            
+                temp.find('a.cbtn, a.layer_close, .cbtn2').off('click');
+                temp.find('a.cbtn, a.layer_close, .cbtn2').click(function(e) {
+                    if($(this).parents('.modal-container').length <= 1){
+                        temp.fadeOut();
+                        $("html").css("overflow", "auto");
+                        $(this).parents('.modal-layer-wrap').eq(0).removeClass('on');
+                        e.preventDefault();
+                    }
+                });
+                
+                $("html").css("overflow", "hidden");
+                temp.parents('.modal-layer-wrap').eq(0).find(temp).parent().addClass('on');
+                return true;
+            }catch(err){
+                return false;
+            }
+        },
+
+        modal_close(el) {
+            try{
+                var temp = $('#'+el); //레이어의 id를 temp변수에 저장var temp = $('#'+el); //레이어의 id를 temp변수에 저장
+                $("html").css("overflow", "auto");
+                temp.hide();
+                $('#' + el).parents('.modal-layer-wrap').eq(0).removeClass('on');
+                return true;
+            }catch(err){
+                return false;
+            }
+        },
+
+        getQueryParams() {
+            var params = {};
+            var queryString = window.location.search.substring(1);
+            var regex = /([^&=]+)=([^&]*)/g;
+            var match;
+            var fullUrl = '';
+            var index = 0;
+
+            while ((match = regex.exec(queryString))) {
+                var key = decodeURIComponent(match[1]);
+                var value = decodeURIComponent(match[2]);
+                if(index === 0) {
+                    fullUrl = match[2];
+                }else {
+                    fullUrl = fullUrl + '&' + key + '=' + match[2];
+                }
+                
+                // console.log('================================================');
+                // console.log('regex      : >>>> ' +regex);
+                // console.log('match[1]   : >>>> ' + match[1]);
+                // console.log('match[2]   : >>>> ' + match[2]);
+                // console.log('key        : >>>> ' + key);
+                // console.log('value      : >>>> ' + value);
+                // console.log('fullUrl    : >>>> ' + fullUrl);
+                // console.log('================================================');
+                params[key] = value;
+                index++;
+            }
+            params['fullUrl'] = fullUrl;
+            return params;
+        }
+    }
+
+    page.init();
+</script>
+</html>

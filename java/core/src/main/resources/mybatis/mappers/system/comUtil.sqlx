@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.comUtil">
+
+    <select id="selectComCodeList" parameterType="comCodeSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.comUtil.selectComCodeList][hsjang]  */
+        SELECT  CMN_CD AS CMN_CD, 
+                COALESCE(NULLIF(CMN_CD_NM_KRN, ''), 'N/A') AS KOR_NM, 
+                COALESCE(NULLIF(CMN_CD_NM_ENG, ''), 'N/A') AS ENG_NM 
+        FROM    SM_COM_CODE 
+        WHERE   CMN_GRP_CD = #{cmnGrpCd}
+        <choose>
+			<when test="orderByCol == 'cmn_cd_nm_krn'">
+        		ORDER BY cmn_cd_nm_krn ASC
+		  	</when>
+		  	<otherwise>
+        		ORDER BY cmn_cd_dsply_order ASC
+		  	</otherwise>
+		</choose>
+    </select>
+
+    <select id="selectMakeDataListUsingCondition" parameterType="hashMap" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.comUtil.selectMakeDataListUsingCondition][hsjang]  */
+        <choose>
+			<when test="tName == 'cw_daily_report_activity'">
+		        SELECT activity_id AS ITEM_VALUE, 
+		               activity_id || ': ' || activity_nm AS ITEM_TEXT
+	    		  FROM cw_daily_report_activity
+	    		 WHERE cntrct_no = #{param1} 
+	    		   AND dlt_yn = 'N' 
+	    		   AND daily_report_id = #{param2} 
+	    		   AND work_dt_type = 'TD'
+		  	</when>
+		  	<otherwise>
+		        SELECT payprce_sno AS ITEM_VALUE, 
+		               payprce_tmnum AS ITEM_TEXT
+	    		  FROM cw_pay_mng
+	    		 WHERE cntrct_no = #{param1} 
+	    		   AND dlt_yn = 'N'
+	    	  ORDER BY payprce_tmnum ASC
+		  	</otherwise>
+		</choose>
+    </select>
+</mapper>

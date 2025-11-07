@@ -1,0 +1,191 @@
+{% block content %}
+<div class="modal open">
+	<div class="pop_box _md">
+		<div class="pop_header">
+			<h3 class="pop_tit">공정 사진</h3>
+			<div class="btn_area">
+				<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+					<i class="ic ic-close"></i>
+					<span class="blind">창닫기</span>
+				</button>
+			</div>
+		</div>
+		<div class="pop_body">
+			<form id="inputForm">
+				<div class="conts_form">
+					<div class="form_box">
+						<div class="row">
+							<div class="col">
+								<div class="form_label required">{{ message("item.construction.052") }}</div>
+								<div class="form_data">
+									<span class="selectbox">
+										<select id="activityIdSelect" name="activityId"></select>
+									</span>
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col">
+								<div class="form_label required">{{ message("item.app.001") }}</div>
+								<div class="form_data">
+									<input type="text" id="titl_nm" name="titl_nm">
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col">
+								<div class="form_label required">{{ message("item.commonCode.005") }}</div>
+								<div class="form_data">
+									<input type="text" id="dscrpt" name="dscrpt">
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col">
+								<div class="form_label">{{ message("item.construction.053") }}</div>
+								<div class="form_data">
+									<input type="date" class="date w-md" id="shot_date" name="shot_date">
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col">
+								<div class="form_label required">{{ message("item.construction.054") }}</div>
+								<div class="form_data" style="position: relative;height: 340px;">
+									<div style="top: 0;position: absolute;" id="photoDiv">
+										<button type="button" class="btn icon_btn" onclick="popup.addphoto()">
+											<i class="ic ic-picture-one"></i>
+											<span class="blind">추가</span>
+										</button>
+									</div>
+									<div style="margin-top: 15px; height: 300px">
+										<img name="uploadImg" id="uploadImg"
+											style="max-width: 100%; max-height: 100%; object-fit: contain;">
+									</div>
+								</div>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			</form>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" id="addButton" onclick="popup.save()">{{ message('btn.006')
+					}}</button>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block footer_script %}
+<script>
+	var localActivityData = [];
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				popup.init();
+			}
+		});
+	});
+
+	var popup = {
+		selectedFile: null,
+		selectedBase64: null,
+
+		init: function () {
+			localActivityData = JSON.parse(JSON.stringify(activityData || []));
+
+			const select = document.getElementById("activityIdSelect");
+			if (!select) return;
+
+			select.innerHTML = '';
+			localActivityData.forEach((item, idx) => {
+				const opt = document.createElement('option');
+				opt.value = item.activityId;
+				opt.textContent = `${item.activityId}: ${item.activityNm}`;
+				if (idx === 0) opt.selected = true;
+				select.appendChild(opt);
+			});
+		},
+
+		addphoto: function () {
+			const fileInput = document.createElement('input');
+			fileInput.type = 'file';
+			fileInput.accept = 'image/*';
+			fileInput.style.display = 'none';
+
+			fileInput.addEventListener('change', function (event) {
+				const file = event.target.files?.[0];
+				if (!file) return;
+
+				const reader = new FileReader();
+				reader.onload = function () {
+					const result = reader.result;
+					const img = document.getElementById('uploadImg');
+					img.style.width = '100%';
+					img.style.height = 'auto';
+					img.src = result;
+
+					popup.selectedFile = file;
+					popup.selectedBase64 = result;
+				};
+				reader.readAsDataURL(file);
+
+				document.body.removeChild(fileInput);
+			});
+
+			document.body.appendChild(fileInput);
+			fileInput.click();
+		},
+
+		save: function () {
+			const titlNm = document.getElementById('titl_nm').value;
+			const dscrpt = document.getElementById('dscrpt').value;
+			const shotDate = document.getElementById('shot_date')?.value;
+			const imgSrc = document.getElementById('uploadImg')?.src;
+
+			if (!titlNm) return gaiaCommon.customAlert("제목을 입력하세요.");
+			if (!dscrpt) return gaiaCommon.customAlert("설명을 입력하세요.");
+			if (!shotDate) return gaiaCommon.customAlert("날짜를 선택하세요.");
+			if (!imgSrc || !imgSrc.startsWith('data:')) {
+				return gaiaCommon.customAlert("사진을 등록해주세요.");
+			}
+
+			const activityId = document.getElementById('activityIdSelect')?.value || '';
+			const activityNm = document.getElementById('activityIdSelect')?.selectedOptions[0]?.textContent || '';
+
+			const data = {
+				titlNm: titlNm,
+				dscrpt: dscrpt,
+				shotDate: shotDate,
+				base: imgSrc,
+				file: popup.selectedFile,
+				activityId: activityId,
+				activityNm: activityNm,
+			};
+
+			if (typeof photo?.setPhoto === 'function') {
+				photo.setPhoto(data);
+			}
+			console.log("popup.selectedFile", popup.selectedFile);
+			popup.close();
+		},
+
+		close: function () {
+			popup.selectedFile = null;
+			popup.selectedBase64 = null;
+			$("#photoPopup").css("display", "none");
+		}
+	}
+</script>
+{% endblock footer_script %}

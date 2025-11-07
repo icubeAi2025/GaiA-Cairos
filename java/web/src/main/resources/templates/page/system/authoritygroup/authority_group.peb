@@ -1,0 +1,854 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+	#list_grid .tui-grid-cell-current-row {
+		background-color: var(--select-list-bg);
+	}
+</style>
+{% endblock head %}
+{% block content %}
+<section class="contents_wrap">
+    <article class="conts g-row" id="container" style="">
+        <div class ="group">
+            <h3 class="conts_tit">{{ message('item.authority.001') }}</h3>
+            <div class="conts_grid">
+                <!-- S: search wrap ---------------------------------------------- -->
+                <div class="search_wrap">
+                    <div name="form_search1" class="uu-box-search">
+                        <div class="search_wrap" id = "addSelect">
+                            <span class="selectbox"> 
+                                <select id="grp_search_type" name="grp_search_type">
+                                    <option selected value="">{{ message('item.com.083') }}</option> 
+                                    <option value="rght_grp_nm">{{ message('item.authority.016') }}</option>
+                                    <option value="rght_grp_ty_nm">{{ message('item.authority.006') }}</option>
+                                    <option value="rght_grp_role_nm">{{ message('item.authority.007') }}</option>
+                                    <option value="rght_grp_dscrpt">{{ message('item.authority.005') }}</option>
+                                </select>
+                            </span>
+                            <div class="searchbox_wrap">
+                                <input type="text" name="keyword1" id="keyword1" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){page.authorityGroup.searchData();}">
+                                <button type="button" class="icon_btn search" onclick="page.authorityGroup.searchData()" style="width: auto;">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">검색</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- S: Button ---------------------------------------------- -->
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">
+                        {{ grpBtnHtml | raw }}
+                        <!-- <button type="button" class="btn" onclick="page.authorityGroup.delete()">{{ message('btn.002') }}</button> -->
+                        <!-- <button type="button" class="btn" onclick="page.authorityGroup.update()">{{ message('btn.003') }}</button>
+                        <button type="button" class="btn _fill" onclick="page.authorityGroup.create()">{{ message('btn.001') }}</button> -->
+                    </div>                   
+                </div>
+                <div class="grid" id="list_grid"></div>
+            </div>
+        </div>
+        <div  class ="group">
+            <h3 class="conts_tit">{{ message('item.authority.002') }}</h3>
+            <div class="conts_grid">
+                <!-- S: search wrap ---------------------------------------------- -->
+                <div class="search_wrap">
+                    <div name="form_search1" class="uu-box-search">
+                        <div class="search_wrap" id = "addSelect">
+                            <span class="selectbox">
+                                <select name="grp_user_search_type" id="grp_user_search_type">
+                                    <option selected value="">{{ message('item.com.083') }}</option>
+                                    <option value="login_id">{{ message('item.com.025') }}</option>
+                                    <option value="usr_nm">{{ message('item.com.024') }}</option>
+                                    <option value="dept_nm">{{ message('item.dept.009') }}</option>
+                                    <option value="dept_id">{{ message('item.dept.002') }}</option>
+                                    <option value="pstn_nm">{{ message('item.com.026') }}</option>
+                                    <option value="ratng_nm">{{ message('item.com.027') }}</option>
+                                </select>
+                            </span>
+                            <div class="searchbox_wrap">
+                                <input type="text" name="keyword2" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){page.authorityGroupUser.searchData();}">
+                                <button type="button" class="icon_btn search" onclick="page.authorityGroupUser.searchData()" style="width: auto;">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">검색</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- S: Button ---------------------------------------------- -->
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">
+                        {{ userBtnHtml | raw }}
+                        <!-- <button type="button" class="btn" onclick="page.authorityGroupUser.delete()">{{ message('btn.002') }}</button>
+                        <button type="button" class="btn _fill" onclick="page.authorityGroupUser.create()">{{ message('btn.001') }}</button> -->
+                    </div>
+                </div>
+                <!-- S: Auth group Grid ---------------------------------------------- -->
+                <div class="grid" id="group_user_grid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+<div id="popup" class="popup_overlay modal_base" style="display: none;">
+    <!-- 팝업 내용 -->
+</div>
+{% endblock content %} {% block footer_script %}
+
+<script>
+    let pjtNo;
+    let cntrctNo;
+
+    $(function() {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+
+            }
+        });
+    });
+
+    var page = {
+        pjtData: {},
+        isDelAuth: "{{ isDelAuth }}", //삭제 권한 여부 설정 (추후에 model로 넘어오는 값으로 설정)
+        init() {
+            gaiaPortal.navMenuInit('M070302', "{{ message('item.authority.017') }}");
+
+            // const pjtData = commonJs.getSessionStorage("pageCommonData");
+            const pjtData = pjtInfo;
+            this.pjtData = pjtData;
+
+            // URL에서 pjtNo와 cntrctNo를 가져오기 (메뉴 권한을 추가한 후 가져오는 값)
+			const urlParams = new URLSearchParams(window.location.search);
+
+			if(urlParams.get('pjtNo') && urlParams.get('cntrctNo')){
+                const pjtNo = urlParams.get('pjtNo');
+				const cntrctNo = urlParams.get('cntrctNo');
+
+                this.pjtData.pjtNo = pjtNo;
+                this.pjtData.cntrctNo = cntrctNo;
+
+				// 계약 코드가 URL에 있을 경우 콤보박스 초기 선택 설정
+                pjtType = PLATFORM.CURRENT.toUpperCase();
+				if (cntrctNo && pjtType === PLATFORM.GAIA) {
+					this.pjtData.cntrctNo = pjtNo;
+				}
+			}
+
+            this.initContract(pjtData);
+
+            // // 쿼리스트링 제거하고 새로고침
+            // if (urlParams.toString()) {
+            //     // 쿼리스트링이 있으면 제거하고 새로고침
+            //     const newUrl = window.location.origin + window.location.pathname;
+            //     window.history.replaceState({}, document.title, newUrl);
+            // }
+
+        },
+        refresh: function (grid1, grid2) {
+            if (grid1) {
+                this.authorityGroup.list();
+                page.authorityGroupUser.gridInit();
+            }
+
+            if (grid2) {
+                this.authorityGroupUser.grid.reloadData();
+            }
+        },
+
+        searchClear: function(grp, user){
+			if(grp){
+				// 그룹 검색 초기화
+				$('#grp_search_type').val('');          // 검색 콤보박스 초기화
+				$('input[name="keyword1"]').val('');    // 검색어 입력창 초기화
+			}
+
+			if(user){
+				// 사용자 검색 초기화
+				$('#grp_user_search_type').val('');     // 검색 콤보박스 초기화
+				$('input[name="keyword2"]').val('');    // 검색어 입력창 초기화
+			}
+		},
+
+        initContract: function (pjtData) {
+            // ADMIN이 CMIS 접속 시 계약코드 콤보박스 생성
+            const systemType = (PLATFORM.CURRENT).toUpperCase();
+
+            // 그리드 초기화
+            page.authorityGroup.gridInit();
+            page.authorityGroupUser.gridInit();
+
+            // CAIROS의 관리자(admin)인 경우,
+            if (systemType === 'CAIROS' && gaiaCommon.me.info.admin) {
+                const param = {
+                    pjtNo: pjtData.pjtNo,
+                };
+
+                gaiaCommon.post('/api/portal/select-cntrctList', param,
+                        function (result) {
+                            if(result.ok){
+                                var list = result.details.contractList;
+
+                                if (list.length > 0) {
+                                    // 1. 콤보박스 동적 삽입 및 옵션 추가
+                                    $("#container").prepend(
+                                            "<div class='group'><h3 class='conts_tit'>{{ message('item.com.018') }}</h3>" +
+                                            "<div class='conts_form'><span class='selectbox'>" +
+                                            "<select name='cntrctNo' id='cntrctNo' class=''>" +
+                                            "</select></span></div></div>"
+                                    );
+
+                                    $("#cntrctNo").empty();
+
+                                    for (let i = 0; i < list.length; i++) {
+                                        const option = $("<option>")
+                                                .val(list[i].cntrct_no)
+                                                .text(`${gaiaCommon.decodeSafeText(list[i].cntrct_nm)}`);
+                                        $("#cntrctNo").append(option);
+                                    }
+
+                                    // 2. 최초 진입이면 첫 번째 계약 선택, 아니면 기존 값 사용
+                                    const selectedCntrctNo = (pjtData.cntrctNo === pjtData.pjtNo)
+                                            ? list[0].cntrct_no
+                                            : pjtData.cntrctNo;
+
+                                    $("#cntrctNo").val(selectedCntrctNo);
+
+                                    // 3. pjtData 업데이트
+                                    page.pjtData.cntrctNo = selectedCntrctNo;
+                                    page.pjtData.cntrctNm = $("#cntrctNo option:selected").text();
+
+                                    // 4. 이후에 change 이벤트 바인딩
+                                    $("#cntrctNo").change(function (e) {
+                                        if (page.authorityGroupUser.data.selectedAuthorityGroup) {
+                                            page.authorityGroupUser.data.selectedAuthorityGroup = null;
+                                        }
+
+                                        const cntrctNo = e.target.value;
+                                        const cntrctNm = e.target.options[e.target.selectedIndex].text;
+
+                                        page.pjtData.cntrctNo = cntrctNo;
+                                        page.pjtData.cntrctNm = cntrctNm;
+
+                                        page.searchClear(true, true);
+                                        page.authorityGroup.list(cntrctNo);
+                                        page.authorityGroupUser.gridInit(null, null, null);
+                                    });
+
+                                    // 그리드 리스트 조회
+                                    page.authorityGroup.list(page.pjtData.cntrctNo);
+                                }
+                                else{
+                                    gaiaCommon.customAlert("계약 정보가 존재하지 않습니다.", function (){location.replace('/')});
+                                }
+                            }
+                        },
+                        function (error) {
+                            console.error(error);
+                            gaiaCommon.customAlert(error.responseJSON?.message);
+                        }
+                );
+
+            }else{ //gaia 또는 cmis 사용자의 경우
+
+                //그리드 영역만 CSS 세팅
+                $("#container").css("grid-template-rows", "1fr 1fr");
+                // 그리드 리스트 조회
+                page.authorityGroup.list(page.pjtData.cntrctNo);
+            }
+
+
+        },
+
+        // 권한 그룹
+        authorityGroup: {
+            data: {
+                project: {},
+                list: [],
+                selectedAuthorityGroup: null, //선택된 권한 그룹 
+            },
+            grid: null,
+            obj: null,
+            gridInit: function(){
+                // const bodyHeight = window.innerHeight - 755;
+                this.grid = new tui.Grid({
+                    el: document.getElementById('list_grid'),
+                    scrollX: false,
+                    scrollY: true,
+                    useClientSort: false,
+                    // bodyHeight: bodyHeight,
+                    minBodyHeight: 200, // 최소 높이 : row 1개
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: 'checkbox',
+                            header: `
+                                    <input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+                            `,
+                            width: 100,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+                                    {
+                                        type:'checkBox',
+                                    },
+                                    {
+                                        type:'trash',
+                                        //휴지통 클릭 삭제 시 필요한 값 설정
+										url: '/api/system/authority-group/delete',
+										idField: 'rghtGrpNo', 
+										keyName: 'authorityGroupNoList',
+                                        auth: page.isDelAuth == "true" ? true : false,
+										msgList: {
+                                            confirmTit: "{{ message('item.authority.019') }}", //권한그룹 삭제
+											confirmMsg: "{{ message('msg.009') }}", //정말 삭제하시겠습니까?,
+											completeMsg: "{{ message('msg.006') }}" //삭제되었습니다.
+										},
+                                        success: (rowData) => {
+                                            page.refresh(true, false);
+                                        }
+								    }
+                                ]
+                            }
+                        },
+                        
+                    ],
+                    columns:[
+                        { 
+                            header: "{{ message('item.authority.016') }}", //그룹명
+                            name: 'rghtGrpNm',
+                            align: 'center',
+                            width: 200,
+                        },
+                        { 
+                            header: "{{ message('item.authority.005') }}", //그룹 설명
+                            name: 'rghtGrpDscrpt',
+                            align: 'center',
+                        },
+                        { 
+                            header: "{{ message('item.authority.006') }}", //그룹 구분
+                            name: 'rghtGrpTyNm',
+                            align: 'center',
+                            width: 150,
+                        },
+                        { 
+                            header: "{{ message('item.authority.007') }}", //역할 구분
+                            name: 'rghtGrpRoleNm',
+                            align: 'center',
+                            width: 150,
+                        },
+                        { 
+                            header: "{{ message('item.com.003') }}", //사용여부
+                            name: 'useYn',
+                            align: 'center',
+                            width: 100,
+                        },
+                        { 
+                            header: "{{ message('item.com.002') }}", //수정일
+                            name: 'chgDt',
+                            align: 'center',
+                            width: 150,
+                        },
+                        
+                    ],
+                });
+
+                refreshGrid(this.grid);
+
+                this.grid.on("click", function (e) {
+                    const rowKey = e.rowKey; // 클릭된 행의 키를 가져옴
+
+                    if (e.columnName == "_checked") {
+                        if(e.nativeEvent.target.className == "checkGroup"){
+                            let temp = page.authorityGroup.grid.getRow(rowKey);
+                            temp._attributes.checked = page.authorityGroup.grid.getRow(rowKey)._attributes.checked ? false : true;
+                            page.authorityGroup.grid.setRow(rowKey, temp);
+                        }
+                    }
+
+                    if (rowKey !== undefined && e.columnName !== "_checked") {
+                        const subRowData = page.authorityGroup.grid.getRow(rowKey); // 그리드에서 해당 행 데이터 가져오기
+
+                        const cntrctNo = subRowData.cntrctNo;   // 권한 그룹의 계약번호
+                        const pjtNo = subRowData.pjtNo;         // 권한 그룹의 프로젝트 번호
+                        const rghtGrpNo = subRowData.rghtGrpNo; // 권한 그룹의 번호
+                        const rghtGrpTy = subRowData.rghtGrpTy; // 권한 그룹 사용자 타입
+                        const pjtType = subRowData.pjtType;     // 권한 그룹 프로젝트 구분
+
+                        let authorityGroupUserGet = {};
+                        if(rghtGrpNo && cntrctNo && rghtGrpTy){
+                            authorityGroupUserGet = {
+                                rghtGrpNo: rghtGrpNo,
+                                cntrctNo: cntrctNo,
+                                rghtGrpTy: rghtGrpTy
+                            }
+                        }
+                        page.authorityGroupUser.gridInit(cntrctNo, rghtGrpNo, rghtGrpTy);
+
+                        // 그룹 사용자 추가에 필요한 값 설정.
+                        page.authorityGroupUser.data.cntrctNo = cntrctNo;
+                        page.authorityGroupUser.data.pjtNo = pjtNo;
+                        page.authorityGroupUser.data.rghtGrpNo = rghtGrpNo;
+                        page.authorityGroupUser.data.rghtGrpTy = rghtGrpTy;
+                        page.authorityGroupUser.data.pjtType = pjtType;
+
+                        page.authorityGroupUser.data.selectedAuthorityGroup = subRowData;
+
+                        //그룹 구분이 부서인 경우, 그룹 사용자 검색 콤보 값 변경
+                        page.authorityGroup.changeGrpUserOptionData(rghtGrpTy);
+
+                        page.searchClear(false, true); //검색데이터 초기화
+                    }
+                });
+            },
+            changeGrpUserOptionData: function(rghtGrpTy){
+                //그룹 구분이 부서인 경우, 그룹 사용자 검색 콤보 값 변경
+                const userSearchType = document.getElementById("grp_user_search_type");
+
+                // 기존 옵션들을 제거
+                while (userSearchType.options.length > 0) {
+                    userSearchType.remove(0);
+                }
+
+                if(rghtGrpTy == "D"){
+
+                    userSearchType.innerHTML = 
+                        `   <option selected value="">{{ message('item.com.083') }}</option>
+                            <option value="dept_nm">{{ message('item.dept.009') }}</option>
+                            <option value="dept_id">{{ message('item.dept.002') }}</option> `
+
+                }else{
+                    userSearchType.innerHTML = 
+                        `   <option selected value="">{{ message('item.com.083') }}</option>
+                            <option value="login_id">{{ message('item.com.025') }}</option>
+                            <option value="usr_nm">{{ message('item.com.024') }}</option>
+                            <option value="dept_nm">{{ message('item.dept.009') }}</option>
+                            <option value="dept_id">{{ message('item.dept.002') }}</option>
+                            <option value="pstn_nm">{{ message('item.com.026') }}</option>
+                            <option value="ratng_nm">{{ message('item.com.027') }}</option>`
+                }
+            },
+
+            // 권한 그룹 목록 조회
+            list: function (cntrctNo) {
+                this.data.list = [];
+                let params = {};
+                //콤보박스에서 선택한 계약번호의 권한 그룹 리스트 조회 (default : 헤더에서 선택한 프로젝트의 계약번호)
+                params.cntrctNo = cntrctNo || page.pjtData.cntrctNo;
+                params.pjtNo = page.pjtData.pjtNo;
+
+                gaiaCommon.get("/api/system/authority-group/list", params, function (result) {
+
+                    if (result.details?.authorityGroupList) {
+                        page.authorityGroup.data.list = result.details.authorityGroupList;
+
+                        // 그리드의 높이를 동적으로 설정
+						const rowCount = page.authorityGroup.data.list.length;
+						const rowHeight = 40; // 행당 높이 (임의로 40px로 설정)
+						const maxHeight = window.innerHeight - 675; // 그리드의 최대 높이 
+						const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행의 개수에 맞춰 높이 조정
+						
+						page.authorityGroup.grid.setBodyHeight(newHeight);
+                        page.authorityGroup.grid.resetData(page.authorityGroup.data.list);
+                    }
+                });
+            },
+
+            // 권한 그룹 추가 페이지 이동
+            create: function () {
+                location.href = `/system/authority-group-popup/create?pjtNo=${page.pjtData.pjtNo}&cntrctNo=${page.pjtData.cntrctNo}`;
+            },
+
+            // 권한 그룹 수정 화면 이동
+            update: function () {
+                // 선택된 행의 사이즈를 체크 (길이는 1이어야 함.)
+                let checkedRowLength = page.authorityGroup.grid.getCheckedRows().length;
+                let checkedRowData = page.authorityGroup.grid.getCheckedRows()[0];
+
+                if(checkedRowLength === 1){
+                    location.href = `/system/authority-group-popup/update?rghtGrpNo=${checkedRowData.rghtGrpNo}&pjtNo=${page.pjtData.pjtNo}&cntrctNo=${page.pjtData.cntrctNo}`;
+                }else if(checkedRowLength > 1){
+                    gaiaCommon.customAlert("{{ message('msg.rght.010') }}"); //하나의 그룹을 선택해주세요.
+                    return;
+                }else{
+                    gaiaCommon.customAlert("{{ message('msg.rght.011') }}"); //수정할 그룹을 선택해주세요.
+                    return;
+                }
+            },
+
+            // 권한 그룹 삭제
+            delete: function () {
+                var rghtGrpNoList = [];
+
+                this.grid.getData().forEach(function(v){
+					if(v._attributes.checked){
+						rghtGrpNoList.push(v.rghtGrpNo);
+					}
+				});
+
+                if (rghtGrpNoList.length > 0) {
+                    //선택한 권한 그룹을 삭제하시겠습니까?
+                    gaiaCommon.customConfirm("{{ message('item.authority.018') }}", "{{ message('item.authority.018') }}", "{{ message('msg.rght.012') }}", function(){
+                        gaiaCommon.post("/api/system/authority-group/delete", { authorityGroupNoList : rghtGrpNoList },
+                            function (result) {
+                                if(result.ok){
+                                    gaiaCommon.customAlert("{{ message('msg.006') }}"); //삭제되었습니다.
+                                    page.refresh(true, false);
+                                }
+                            },
+                            function (error) {
+                                console.error(error);
+                                gaiaCommon.customAlert(error.responseJSON?.message);
+                            }
+                        );
+                    });
+                        
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.rght.013') }}"); //삭제할 권한 그룹을 선택해주세요.
+                }
+            },
+
+            // 권한 그룹 검색
+            searchData(){
+                const pjtData = page.pjtData; //선택된 프로젝트, 계약
+                
+                let param = {
+                    cntrctNo: pjtData.cntrctNo,
+                    pjtNo: pjtData.pjtNo,
+                }
+                let columnNm = $('select[name="grp_search_type"]').val();
+                let text = $('input[name="keyword1"]').val();
+
+                // 값이 없거나 빈 문자열이면 알림창 띄우고, 그렇지 않으면 param에 추가
+                if (!columnNm || columnNm === "") {
+                    gaiaCommon.customAlert("{{ message('msg.003') }}"); //구분을 선택해주세요.
+                    $('input[name="keyword1"]').val('');
+                    $('select[name="grp_search_type"]').focus();
+                    // return;
+                }
+
+                if (text && text.trim() !== "") {
+                    param.columnNm = columnNm;  // param에 columnNm 추가
+                    param.text = text;          // param에 text 추가
+                }else{
+                    // gaiaCommon.customAlert("{{ message('msg.004') }}"); //검색어를 입력해주세요.
+                    $('select[name="grp_search_type"]').val("");
+                }
+
+                // 서버 전송
+                gaiaCommon.get(`/api/system/authority-group/list`, param,
+                    function (result) {
+                        if(result.ok){
+                            if (result.details?.authorityGroupList) {
+                                page.authorityGroup.data.list = result.details.authorityGroupList;
+                            }
+
+                            page.authorityGroup.grid.resetData(page.authorityGroup.data.list);
+                        }
+                    },
+                    function (error) {
+                        console.error(error);
+                        gaiaCommon.customAlert(error.responseJSON?.message);
+                    }
+                );
+            },
+
+        },
+
+        // 그룹 사용자
+        authorityGroupUser: {
+            grid: null,
+            data: {
+				selectedAuthorityGroup: null
+			},
+
+            gridInit: function(cntrctNo, rghtGrpNo, rghtGrpTy) {
+                // const bodyHeight = window.innerHeight - 755;
+                let initRequest = false; 
+                let authorityGroupUserGet = {};
+                if(rghtGrpNo && cntrctNo && rghtGrpTy){
+                    authorityGroupUserGet = {
+                        rghtGrpNo: rghtGrpNo,
+                        pjtNo: page.pjtData.pjtNo,  // 프로젝트 번호가 없으면 Authfilter에서 걸림.
+                        cntrctNo: cntrctNo,
+                        rghtGrpTy: rghtGrpTy
+                    }
+                }
+
+                if(authorityGroupUserGet.rghtGrpTy){
+                    initRequest = true;
+                }
+
+                if (this.grid) { // 이미 그리드가 있으면 제거하고 새로 생성.
+                    this.grid.destroy();
+                    this.grid = null;
+                }
+
+                const dataSource = createDataSource({
+                    readData: {
+                        url: "/api/system/authority-group/users/list",
+                        method: "GET",
+                        initParams: authorityGroupUserGet,
+                    },
+                })
+                dataSource.initialRequest = initRequest; //초기 그리드 생성 시에는 api 호출 X
+                // 동적으로 그리드 컬럼 세팅
+                const columns = this.setGridColumn(authorityGroupUserGet.rghtGrpTy);
+
+                if (!this.grid) {
+                    this.grid = new tui.Grid({
+                        el: document.getElementById('group_user_grid'),
+                        data: dataSource,
+                        scrollX: false,
+                        scrollY: true,					
+                        useClientSort: false,
+                        // bodyHeight: bodyHeight,
+                        minBodyHeight: 400,
+                        contextMenu: null,
+                        rowHeaders: [
+                            {
+                                type: 'checkbox',
+                                header: `
+                                    <input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+                                `,
+                                width: 100,
+                                renderer: {
+                                    type: window.IconRenderer,
+                                    options: [
+                                        {
+                                            type:'checkBox',
+                                        },
+                                        {
+                                            type:'trash',
+                                            //휴지통 클릭 삭제 시 필요한 값 설정
+                                            url: '/api/system/authority-group/users/delete',
+                                            idField: 'rghtGrpUsrNo',
+                                            keyName: 'authorityGroupUserNoList',
+                                            auth: page.isDelAuth == "true" ? true : false,
+                                            msgList: {
+                                                confirmTit: "{{ message('item.authority.019') }}", //그룹 사용자 삭제
+                                                confirmMsg: "{{ message('msg.009') }}", //정말 삭제하시겠습니까?
+                                                completeMsg: "{{ message('msg.006') }}" //삭제되었습니다.
+                                            },
+                                            success: () => {
+                                                page.refresh(false, true);
+                                            }
+                                        }
+                                    ]
+                                }
+                            }						
+                        ],
+                        columns: columns
+                    });
+
+                    refreshGrid(this.grid);
+                };
+                // 데이터를 읽은 후 높이를 동적으로 설정
+                this.grid.on('onGridUpdated', () => {
+                    const rowCount = this.grid.getRowCount(); // 그리드의 행 개수를 가져옴
+                    const rowHeight = 40; // 각 행의 높이
+                    const maxHeight = window.innerHeight - 715; // 그리드의 최대 높이
+                    const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행 개수에 맞춘 그리드 높이 설정
+
+                    page.authorityGroupUser.grid.setBodyHeight(newHeight);
+                });
+
+                this.grid.on("click", (ev) => { //체크박스 상태 설정
+					if(ev.columnName == "_checked"){
+                        if(ev.nativeEvent.target.className == "checkGroup"){
+                            let temp = this.grid.getRow(ev.rowKey);
+                            temp._attributes.checked = this.grid.getRow(ev.rowKey)._attributes.checked ? false : true;
+                            this.grid.setRow(ev.rowKey, temp);
+                        }
+					}
+				});
+            },
+
+            setGridColumn: function(rghtGrpTy){
+                let columns = 
+                        [
+                            { 
+                                header: "{{ message('item.dept.002') }}", //부서 코드
+                                name: 'deptId',
+                                align: 'center',
+                            },
+                            { 
+                                header: "{{ message('item.dept.009') }}", //부서
+                                name: 'deptNm',
+                                align: 'center'
+                            },
+                            { 
+                                header: "{{ message('item.com.025') }}", //계정
+                                name: 'loginId',
+                                align: 'center',
+                            },
+                            { 
+                                header: "{{ message('item.com.024') }}", //이름
+                                name: 'usrNm',
+                                align: 'center',
+                            },
+                            { 
+                                header: "{{ message('item.com.027') }}", //직급
+                                name: 'ratngNm',
+                                align: 'center',
+                            },
+                            { 
+                                header: "{{ message('item.com.026') }}", //직책
+                                name: 'pstnNm',
+                                align: 'center',
+                            },
+                            { 
+                                header: "{{ message('item.com.028') }}", //근무상태
+                                name: 'flagNm',
+                                align: 'center',
+                            }
+                        ];
+
+                // rghtGrpTy가 'D'인 경우, 부서 컬럼에 커스텀 렌더러 추가
+                if (rghtGrpTy === 'D') {
+                    columns = [
+                        { 
+                            header: "{{ message('item.dept.002') }}", //부서 코드
+                            name: 'deptId',
+                            align: 'center',
+                        },
+                        { 
+                            header: "{{ message('item.dept.009') }}", //부서
+                            name: 'deptNm',
+                            align: 'center'
+                        },
+                        {
+                            header: "사용자", //사용자
+                            name: 'deptUsers',
+                            align: 'center',
+                        },
+                    ]
+                }
+
+                return columns;
+            },
+
+            create: function () {
+                const rghtGrpTy = page.authorityGroupUser.data.rghtGrpTy;
+                const pjtNo = page.pjtData.pjtNo;
+                const cntrctNo = page.pjtData.cntrctNo;
+                
+                this.data.existAuthUsers = page.authorityGroupUser.grid.getData(); // 이미 권한 있는 그룹 사용자 정보 저장
+
+                if(rghtGrpTy){
+
+                    //권한 그룹이 부서(D)인 경우,
+                    if(rghtGrpTy == "D"){
+                        gaiaCommon.checkAuth("AUTHORITY_GROUP_C_02", () => {
+                            $("#popup").load(`/system/authority-group-dept-popup?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            $("#popup").css({"display":"flex"});
+                        });
+                    }else{
+                        //권한 그룹이 사용자, 역할(U,R)인 경우,
+                        gaiaCommon.checkAuth("AUTHORITY_GROUP_C_03", () => {
+                            $("#popup").load(`/system/authority-group-user-popup?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                            $("#popup").css({"display":"flex"});
+                        });
+
+                    }
+                }else{
+                    gaiaCommon.customAlert("{{ message('msg.rght.014') }}"); //권한 그룹을 선택해주세요.
+                    return;
+                }
+            },
+
+            delete: function () {
+                var rghtGrpUsrNoList = [];
+
+                this.grid.getData().forEach(function(v){
+					if(v._attributes.checked){
+						rghtGrpUsrNoList.push(v.rghtGrpUsrNo);
+					}
+				});
+
+                if (rghtGrpUsrNoList.length > 0) {
+                    //선택한 그룹 사용자를 삭제하시겠습니까?
+                    gaiaCommon.customConfirm("{{ message('item.authority.019') }}", "{{ message('item.authority.019') }}", "{{ message('msg.rght.015') }}", function(){
+                        gaiaCommon.post("/api/system/authority-group/users/delete", { authorityGroupUserNoList : rghtGrpUsrNoList },
+                            function (result) {
+                                if(result.ok){
+                                    gaiaCommon.customAlert("{{ message('msg.006') }}", function(){//삭제되었습니다.
+                                        page.refresh(false, true);
+                                    });
+                                }
+                            },
+                            function (error) {
+                                console.error(error);
+                                gaiaCommon.customAlert(error.responseJSON?.message);
+                            }
+                        );
+                    });
+                        
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.rght.016') }}"); //삭제할 그룹 사용자를 선택해주세요.
+                }
+            },
+
+            //그룹 사용자 검색
+            searchData(){
+                if(!this.data.selectedAuthorityGroup){
+                    gaiaCommon.customAlert("{{ message('msg.rght.014') }}"); //권한그룹을 선택해주세요.
+                    return;
+                }
+
+                let rghtGrpNo = this.data.selectedAuthorityGroup.rghtGrpNo;
+                let rghtGrpTy = this.data.selectedAuthorityGroup.rghtGrpTy;
+
+                const pjtData = page.pjtData; //선택된 프로젝트, 계약 데이터
+                
+                let param = {
+                    rghtGrpNo: rghtGrpNo,
+                    rghtGrpTy: rghtGrpTy,
+                    cntrctNo: pjtData.cntrctNo,
+                    pjtNo: pjtData.pjtNo,
+                }
+
+                let columnNm = $('select[name="grp_user_search_type"]').val();
+                let text = $('input[name="keyword2"]').val();
+
+                // 값이 없거나 빈 문자열이면 알림창 띄우고, 그렇지 않으면 param에 추가
+                if (!columnNm || columnNm == "") {
+                    gaiaCommon.customAlert("{{ message('msg.003') }}"); //구분을 선택해주세요.
+                    $('select[name="grp_user_search_type"]').focus();
+                    $('input[name="keyword2"]').val('');
+                    // return;
+                }
+                    
+                if (text || text.trim() !== "") {
+                    param.columnNm = columnNm; // param에 columnNm 추가
+                    param.text = text; // param에 text 추가
+                }else{
+                    // gaiaCommon.customAlert("{{ message('msg.004') }}"); //검색어를 입력해주세요.
+                    $('select[name="grp_user_search_type"]').val("");
+                }
+
+                // 서버 전송
+                gaiaCommon.get(`/api/system/authority-group/users/list`, param,
+                        function (response) {
+                            if(response.result){
+                                page.authorityGroupUser.data.userList = response.data.contents;
+                                page.authorityGroupUser.grid.resetData(page.authorityGroupUser.data.userList);
+                            }
+                        },
+                        function (error) {
+                            console.error(error);
+                            gaiaCommon.customAlert(error.responseJSON?.message);
+                        }
+                );
+            },
+        },
+        popup: {
+            mode: null,
+            close() {
+                this.mode = null;
+                $("#popup").html("");
+            },
+        },
+    }
+</script>
+
+{% endblock footer_script %}

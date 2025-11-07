@@ -1,0 +1,382 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+<section class="contents_wrap g-row">
+
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_form">
+                <div class="btn_area s_default _outline">
+                    {{ btnHtml | raw }}
+                    <button type="button" class="btn" onclick="page.close()">{{ message('btn.007') }}</button>
+                </div>
+
+                <div class="form_box" id="change-form">
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge3">
+                            <div class="form_label">{{ message('item.contract.009') }}</div> <!-- 공사계약명 -->
+                            <div class="form_data readonly">
+                                <span id="cntrctNm"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.025') }}</div> <!-- 계약 공종 -->
+                            <div class="form_data readonly">
+                                <span id="majorCnsttyNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.005') }}</div> <!-- 계약번호 -->
+                            <div class="form_data readonly">
+                                <span id="cntrctNo"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.020') }}</div> <!-- 업체명 -->
+                            <div class="form_data readonly">
+                                <span id="corpNm"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col" id="cntrctPhaseCol">
+                            <div class="form_label">계약차수</div> <!-- 계약차수 -->
+                            <div class="form_data readonly">
+                                <span id="cntrctPhase"></span>
+                            </div>
+                        </div>
+                        <div class="col" id="cntrctChgNoCol">
+                            <div class="form_label">{{ message('item.contract.052') }}</div> <!-- 계약변경회차 -->
+                            <div class="form_data readonly">
+                                <span class="item_wrap put_txt">
+                                    <span id="cntrctChgNo"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.sub.027') }}</div> <!-- 계약변경 구분 -->
+                            <div class="form_data">
+                                <span id="cntrctChgType"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row cols2">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.028') }}</div> <!-- 변경 승인일자 -->
+                            <div class="form_data">
+                                <span id="chgApprDate"></span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.029') }}</div> <!-- 계약변경 일자 -->
+                            <div class="form_data">
+                                <span id="cntrctChgDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col merge2">
+                            <div class="form_label">{{ message('item.sub.030') }}</div> <!-- 계약기간 -->
+                            <div class="form_data">
+                                <span class="item_group">
+                                    <input type="date" name="cbgnDate" class="date" data-date-format="DD
+                                    /MM/YYYY">
+                                    <span class="tlide">~</span>
+                                    <input type="date" name="chgCbgnDate" class="date" data-date-format="DD/MM/YYYY">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.sub.031') }}</div> <!-- 공사기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <span id="chgConPrd"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.026') }}</div> <!-- 최종 변경 여부 -->
+                            <div class="form_data">
+                                <div class="item_group" role="group" aria-label="Basic radio group">
+                                    <label class="form_check">
+                                        <input type="checkbox" id="lastChgYn" name="useYn" class="check_mark" />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols2" id="this-box-date" style="display: none;">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.043') }}</div> <!-- 변경 금차계약 기간 -->
+                            <div class="form_data">
+                                <span class="item_group">
+                                    <input type="date" name="cbgnDate" class="date" data-date-format="DD
+                                    /MM/YYYY">
+                                    <span class="tlide">~</span>
+                                    <input type="date" name="chgThisCbgnDate" class="date"
+                                        data-date-format="DD/MM/YYYY">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.044') }}</div> <!-- 변경 금차공사 기간 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _day">
+                                    <span id="chgThisConPrd"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.info.025') }}</div> <!-- 최초계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="cntrctCost"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.045') }}</div> <!-- 변경 계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="cntrctAmt"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.046') }}</div> <!-- 이전 회차 변경 계약금액 -->
+                            <div class="form_data readonly">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="prevCntrctAmt"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.047') }}</div> <!-- 변경 차액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="difference"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols4" id="this-box-cost" style="display: none;">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.048') }}</div> <!-- 최초 금차 계약 금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="thisCntrctCost"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.049') }}</div> <!-- 변경 금차 계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="thisCntrctAmt"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.050') }}</div> <!-- 이전 회차 금차 변경 계약금액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="thisPrevCntrctAmt"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message('item.contract.051') }}</div> <!-- 금차 변경 차액 -->
+                            <div class="form_data">
+                                <span class="item_wrap put_txt _won">
+                                    <span id="thisDifference"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.com.022') }}</div> <!-- 비고 -->
+                            <div class="form_data">
+                                <span id="rmrk"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    #lastChgYn {
+        display: block;
+    }
+
+    .item_wrap.put_txt {
+        color: #494853;
+    }
+</style>
+<script src="/assets/js/validation.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const pjtNo = params.get('pjtNo');
+    const cntrctChgId = params.get('cntrctChgId');
+    const cntrctNo = params.get('cntrctNo');
+
+    var page = {
+        data: {},
+        originalChgCbgnDate: "",
+        originalConPrd: "",
+        originalChgThisCbgnDate: "",
+        originalChgThisConPrd: "",
+
+        init: function () {
+            gaiaCommon.LoadingOverlay('body', true);
+
+            var title = "{{ message('item.contract.031') }}"
+            gaiaPortal.navMenuInit('M010201', title);
+            $("#menuDepth").append(`<li class=\"breadcrumb_item\" name=\"new_item\">${title}</li>`);
+
+            this.loadChangeData();
+        },
+
+        loadChangeData: function () {
+            gaiaCommon.get("/api/project/contractstatus/change/get/" + cntrctChgId + "/" + cntrctNo, {}, function (result) {
+                let data = result.details.change;
+
+                $('#cntrctNm').text(gaiaCommon.decodeSafeText(data.cntrctNm));
+                $('#majorCnsttyNm').text(gaiaCommon.decodeSafeText(data.majorCnsttyNm));
+                $('#cntrctNo').text(gaiaCommon.decodeSafeText(data.mngCntrctNo));
+                $('#corpNm').text(gaiaCommon.decodeSafeText(data.corpNm));
+                $('#cntrctPhase').text(data.cntrctPhase + "차");
+                $('#cntrctChgNo').text(data.cntrctChgNo);
+                $('input[name="cbgnDate"]').val(formatDate2(data.cbgnDate)).prop('readonly', true);
+                $('#cntrctChgType').text(data.cntrctChgTypeNm); // 계약구분
+                $('#chgApprDate').text(formatDate2(data.chgApprDate));
+                $('#cntrctChgDate').text(formatDate2(data.cntrctChgDate));
+                $('#cbgnDate').text(formatDate2(data.cbgnDate));
+                $('input[name="chgCbgnDate"]').val(formatDate2(data.chgCbgnDate)).prop('readonly', true);
+                $('#chgConPrd').text(data.chgConPrd);
+                $('input[name="chgThisCbgnDate"]').val(formatDate2(data.chgThisCbgnDate)).prop('readonly', true);
+                $('#chgThisConPrd').text(data.chgThisConPrd);
+                $('#cntrctCost').text(formatNumber(data.cntrctCost));
+                $('#cntrctAmt').text(formatNumber(data.cntrctAmt));
+                $('#prevCntrctAmt').text(formatNumber(data.cntrctAmtBefore));
+                $('#difference').text(formatNumber(data.difference));
+                $('#thisCntrctCost').text(formatNumber(data.thisCntrctCost));
+                $('#thisCntrctAmt').text(formatNumber(data.thisCntrctAmt));
+                $('#thisPrevCntrctAmt').text(formatNumber(data.thisCntrctAmtBefore));
+                $('#thisDifference').text(data.thisDifference);
+                $('#rmrk').text(gaiaCommon.decodeSafeText(data.rmrk));
+
+                const representativeCheck = $('#lastChgYn');
+                if (data.lastChgYn === 'Y') {
+                    representativeCheck.prop('checked', true);
+                    representativeCheck.prop('disabled', true);
+                } else {
+                    representativeCheck.prop('checked', false);
+                    representativeCheck.prop('disabled', false);
+
+                }
+
+                // '장기계속계약_차수별'일 경우
+                const contractType = data.cntrctDivCd;
+                if (contractType === "0104") {
+                    $('#this-box-date').show();
+                    $('#this-box-cost').show();
+                    $('#cntrctPhaseCol').show();
+                    $('#cntrctChgNoCol').removeClass("merge2");
+                } else {
+                    $('#this-box-date').hide();
+                    $('#this-box-cost').hide();
+                    $('input[name="thisCbgnDate"]').val(formatDate2(data.cbgnDate)).prop('readonly', true);
+                    $('#cntrctPhaseCol').hide();
+                    $('#cntrctChgNoCol').addClass("merge2");
+                }
+                const prevCntrctAmt = data.cntrctAmtBefore   // 이전회차 변경 계약 금액
+                const cntrctAmt = data.cntrctAmt // 변경 계약 금액
+                const cntrctCost = data.cntrctCost     // 최초계약금액
+                calculateDifference(prevCntrctAmt, cntrctAmt, cntrctCost, "n");
+
+                const thisPrevCntrctAmt = data.thisCntrctAmtBefore   // 이전회차 금차 변경 계약 금액
+                const thisCntrctAmt = data.thisCntrctAmt  // 변경 금차 계약 금액
+                const thisCntrctCost = data.thisCntrctCost  // 최초 금차 계약금액
+                calculateDifference(thisPrevCntrctAmt, thisCntrctAmt, thisCntrctCost, "t");
+
+
+                // 체크박스 상태 설정
+                $('#lastChgYn').prop('checked', data.lastChgYn === 'Y').prop('disabled', true);
+
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+        },
+        update: function () {
+            window.location.href = `/project/contractstatus/updateChange?pjtNo=${pjtNo}&cntrctChgId=${cntrctChgId}&cntrctNo=${cntrctNo}`;;
+        },
+        close: function () {
+            window.location.replace(`/project/contractstatus?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+        }
+    };
+    // 변경 차액 계산 함수
+    function calculateDifference(prevAmount, currentAmount, cntrctCost, param) {
+        const prevNumeric = parseFloat(prevAmount) || 0;
+        const currentNumeric = parseFloat(currentAmount) || 0;
+        const cntrctNumeric = parseFloat(cntrctCost) || 0;
+        let difference;
+
+        if (param === "n") {
+            if (prevNumeric) {
+                difference = prevNumeric - currentNumeric;
+            } else {
+                difference = cntrctNumeric - currentNumeric;
+            }
+            $('#difference').text(difference.toLocaleString());
+            $('#difference').css('color', difference < 0 ? 'red' : 'blue');
+        }
+
+        if (param === "t") {
+            if (prevNumeric) {
+                difference = prevNumeric - currentNumeric;
+            } else {
+                difference = cntrctNumeric - currentNumeric;
+            }
+            $('#thisDifference').text(difference.toLocaleString());
+            $('#thisDifference').css('color', difference < 0 ? 'red' : 'blue');
+        }
+    }
+    function formatNumber(value) {
+        if (value == null || value === '' || isNaN(value)) return '0';
+        return Number(value).toLocaleString();
+    }
+    // YYYY-MM-DD 형식으로 변환
+    function formatDate2(dateStr) {
+        if (!dateStr || dateStr.length !== 8) return "";
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return `${year}-${month}-${day}`;
+    }
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+                
+                gaia.loaded = true;
+            }
+        });
+    })    
+
+</script>
+{% endblock footer_script %}

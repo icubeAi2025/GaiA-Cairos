@@ -1,0 +1,299 @@
+{% extends 'layout/base_content' %} {% block head %}
+{% endblock %} {% block content %}
+<section class="contents_wrap">
+    <article class="conts" id="container">
+        <div class="group">
+            <h3 class="conts_tit">{{ message('item.resources.002') }}</h3>
+
+            <div class="conts_grid">
+                <div class="search_wrap">
+                    <span class="selectboxContainer" id="selectBox">
+
+                    </span>
+                    <span class="selectboxContainer" id="selectBox2">
+                        <select name="searchName" id="searchName">
+                            <option selected value="">{{ message('item.resources.002') }}</option>
+                        </select>
+                    </span>
+
+					<div class="search_wrap">
+						<span class="selectbox">
+							<select name="searchType" id="searchType">
+								<option selected value="">통합 검색</option>
+								<option value="menuNm">메뉴명</option>
+								<option value="rghtKindNm">역할명</option>
+							</select>
+						</span>
+						<div class="searchbox_wrap">
+							<input type="text" id="keyword" name="keyword1" onfocus="this.value=''" placeholder="{{ message('msg.004') }}">
+							<button type="button" class="icon_btn search" onclick='page.search()'>
+								<i class='ic ic-search'></i><span class='blind'>검색</span>
+							</button>
+						</div>
+					</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="btn_area s_default _outline">{{ btnHtml | raw }}</div>
+                    <div class="selectbox sort">
+                        <select name="items-per-page" id="items-per-page" onchange="page.changePerPage()">
+                            <option selected disabled value="">
+                                {{ message("item.com.004") }}
+                            </option>
+                            <option selected value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid" id="user-grid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %} {% block footer_script %}
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+	const params = new URLSearchParams(window.location.search);
+
+    let searchType;
+    let keyword;
+
+	$('#keyword').keyup(function(e) {
+   		if (e.key == "Enter") {
+			page.search();
+   		}
+	});
+
+    var page = {
+        init() {
+			let searchData = gaia.getSearchData(params);
+            if (searchData && Object.keys(searchData).length !== 0) {
+                Object.entries(searchData).forEach(([key, value]) => {
+					if(key === 'keyword') {						
+                    	$("#keyword").val(value);
+					}					
+					if(key === 'searchType') {
+						$("#searchType").val(`${value}`).attr("selected", "selected");	
+					}
+                });
+				page.search();
+            }else {
+				this.grid.init();
+			}           
+        },
+        grid: {
+            init() {
+                const Grid = tui.Grid;
+                let _this = this;
+                if (this.userGrid) {
+                    this.userGrid.destroy(); // 기존 인스턴스 제거
+                    this.userGrid = null;
+                }
+
+                const dataSource = createDataSource( {
+                    readData: {
+                        url: "/api/system/resources/list",
+                        method: "GET",
+                        initParams: {
+                            searchType: searchType,
+                            searchValue: keyword,
+                        },
+                    }
+                })
+
+                if (!this.userGrid) {
+                    this.userGrid = new Grid({
+                        el: document.getElementById("user-grid"),
+                        data: dataSource,
+                        scrollX: false,
+                        scrollY: true,
+                        draggable: false,
+                        contextMenu: null,
+                        minBodyHeight: 682,
+                        bodyHeight: 682,
+                        pageOptions: {
+                            perPage: parseInt($('select[id="items-per-page"]').val(), 10),
+                        },
+                        rowHeaders: [
+                            {
+                                type: "checkbox",
+                                header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                                width: 100,
+                                renderer: {
+                                    type: window.IconRenderer,
+                                    options: [
+                                        {
+                                            type:"checkBox",
+                                        },
+                                        {
+                                            type:"trash",
+                                            url: "/api/system/resources/resources-delete",
+                                            auth: `{{ isDelAuth | raw }}` == 'true',
+                                            idField: "rescId",
+                                            keyName: "rescIdList",
+                                            msgList: {
+                                                confirmTit: "{{ message('item.resources.014') }}",
+                                                confirmMsg: "{{ message('msg.009') }}",
+                                                completeMsg: "{{ message('msg.006') }}"
+                                            }
+                                        }
+                                    ],
+                                },
+                            },
+                        ],
+                        columns: [
+                            {
+                                header: "{{ message('item.resources.003') }}",
+								width: 180,
+                                name: "rescId",
+                                align: "left",
+                            },
+                            {
+                                header: "{{ message('item.resources.005') }}",
+								width: 222,
+                                name: "rescNm",
+                                align:"left",
+                                renderer: {
+                                    type: window.IconRenderer,
+                                    options: [{
+                                        type:"newWindow",
+                                        isHover:true,
+                                        open:{
+                                            url : `/system/resources/read/{id}`,
+                                        },
+                                        idField: "rescId",
+                                        gridId: "user-grid",
+                                    }],
+                                },
+                            },
+                            {
+                                header: "{{ message('item.resources.006') }}",
+                                name: "rescUrl",
+								className: "rescUrl",
+                                align: "left",
+                            },
+                            {
+                                header: "{{ message('item.resources.017') }}",
+								width: 100,
+                                name: "rghtKindNmKr",
+                                align: "center",
+                            },
+                            {
+                                header: "{{ message('item.resources.004') }}",
+								width: 200,
+                                name: "menuNm",
+                            },
+                            {
+                                header: "{{ message('item.resources.008') }}",
+								width: 80,
+                                name: "useYn",
+                                align: "center",
+                            },
+                        ],
+                    });
+                }
+            },
+        },
+		changePerPage() {
+			var size = $('select[id="items-per-page"]').val();
+			page.grid.limit = size;
+			page.grid.userGrid.setPerPage(page.grid.limit);
+
+			page.grid.pagination = page.grid.userGrid.paginationManager.getPagination();
+			page.grid.pagination.setItemsPerPage(page.grid.limit);
+			page.grid.pagination.reset();
+		},
+		search() {
+			searchType = $("#searchType").val();
+			keyword = $("#keyword").val();
+
+			if(searchType) {
+				if(!keyword) {
+					gaiaCommon.customAlert("{{ message('msg.004') }}");
+					return;
+				}
+			}
+
+			let params = {
+				searchType: searchType,
+				keyword: keyword
+			};
+
+			gaia.setSearchData(params);
+
+			page.grid.init();
+
+			page.grid.pagination = page.grid.userGrid.paginationManager.getPagination();
+			page.grid.pagination.setItemsPerPage(page.grid.limit);
+			page.grid.pagination.reset();
+		},
+		create() {
+			window.location.href = `/system/resources/create_ready`;
+		},	
+		delete() {
+			const url = "/api/system/resources/resources-delete";
+			const listName = "rescIdList";
+			let checked = [];
+
+            page.grid.userGrid.getCheckedRows().forEach(rowData => {
+                const rescId = rowData.rescId;
+                checked.push(rescId);
+            })
+
+			console.log("선택 값 : >> " + checked);
+			console.log("선택 값 : >> " + checked.length);
+			if (checked.length > 0) {
+				gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('item.resources.014') }}", "{{ message('msg.009') }}", function () {
+					let data = { [listName]: checked };
+                    gaiaCommon.post(url,data,(response)=>{
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+                        page.grid.userGrid.reloadData();
+                    }, (xhr)=>{
+                        console.error(
+                            "Error deleting data:",
+                            xhr.responseText
+                        );
+                    })
+				});
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}");
+			}
+		},
+		update() {
+			let checked = [];
+            page.grid.userGrid.getCheckedRows().forEach(rowData => {
+                const rescId = rowData.rescId;
+                checked.push(rescId);
+            })
+
+			if (checked.length > 0) {
+				if(checked.length > 1) {
+					gaiaCommon.customAlert("{{ message('msg.020') }}");
+				}else {
+					window.location.href = `/system/resources/update/`+checked[0];
+				}
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}");
+			}
+		},
+    };
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+                gaiaPortal.navMenuInit("SYSTEM11", "{{ message('item.resources.001') }}");
+
+                var userType = $("#userType").text().toLowerCase();
+                if (userType != "admin") {
+                    $(".selectboxContainer").hide()
+                }
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

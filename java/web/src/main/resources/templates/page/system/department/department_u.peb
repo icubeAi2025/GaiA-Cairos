@@ -1,0 +1,320 @@
+<div class="modal open">
+	<div class="pop_box _sm">
+		<div class="pop_header">
+			<h5 class="pop_tit" id="dept_cu_tit"></h5>
+			<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<div class="form_box">
+				<form id="dept-form">
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.dept.010') }}</div>
+						<div class="form_data">
+							<input type="text" id="pop-upDeptId" name="upDeptId" required readonly>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.dept.002') }}</div>
+						<div class="form_data">
+							<div class="item_group">
+								<input type="text" id="pop-deptId" name="deptId" required maxlength="20">
+								<button type="button" class="btn _fill s_small" id="existCheckBtn" onclick="popup.exist()" style="display: none;">{{ message('btn.028') }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.dept.003') }}</div>
+						<div class="form_data">
+							<input type="text" id="pop-deptNm" name="deptNm" required maxlength="100">
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.dept.006') }}</div>
+						<div class="form_data">
+							<textarea class="maxlength" id="pop-deptDscrpt" name="deptDscrpt" maxlength="500"></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.dept.004') }}</div>
+						<div class="form_data">
+							<input type="text" id="pop-pstnNm" name="pstnNm" maxlength="100">
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.dept.005') }}</div>
+						<div class="form_data">
+							<input type="text" id="pop-mngNm" name="mngNm" maxlength="20">
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.dept.019') }}</div>
+						<div class="form_data">
+							<div class="selectbox sort" style="margin-left: 0; z-index: 1;">
+								<span class="selectbox" id="pop-svrType_box">
+
+								</span>
+								<!-- <select name="pop-svrType" class="" id="pop-svrType">
+									<option value="" style="display: none">
+									</option>
+								</select> -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.com.003') }}</div>
+						<div class="form_data">
+							<div class="item_group" role="group" aria-label="Basic radio group">
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="useY" name="deptUseYn" value="Y" checked>
+									<span class="check_label">{{ message('btn.008') }}</span>
+								</label>
+								<label class="form_check">
+									<input class="check_mark" type="radio" id="useN" name="deptUseYn" value="N">
+									<span class="check_label">{{ message('btn.009') }}</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="popup.save()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	var popup = {
+		data: {
+			details: {},
+		},
+		existChecked: false,
+
+		init: function () {
+
+			if (opener) {
+				page = opener.page;
+			}
+
+			this.data.details = page.department.data.details;
+			this.data.breadCrumb = page.tree2.data.breadCrumb;
+			this.data.upBreadCrumb = page.tree2.data.upBreadCrumb;
+
+			this.setInput();
+
+			gaia.loaded = true;
+
+		},
+
+		// 셀렉트박스 호출
+        makeSelectBox: function (cmnGrpCd, selectBoxId, elementId, initText, ckeckedValue) {
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+                ckeckedValue: ckeckedValue,
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "this.value",
+                funtype: "onchange",
+            };
+
+            gaiaCommon.post("/api/util/make-selectBox",[requestData],
+                    function(result) {
+                        let returnMap = result.details.returnMap;
+                        let addAppLineContent = document.getElementById(elementId);
+                        addAppLineContent.innerHTML = returnMap[selectBoxId];
+                    },
+                    function (error){
+                        console.error("Error making select box:", error);
+                    }
+            );
+        },
+		initializeSelectBoxes(ckeckedValue) {
+            popup.makeSelectBox(
+                "54c24f40-f4cd-4391-b217-b06bcd821391",
+                "pop-svrType",
+                "pop-svrType_box",
+				"{{ message('msg.dept.008') }}", //업무구분을 선택하세요.
+				ckeckedValue
+            );
+        },
+
+		close() {
+			page.popup.close();
+			if (opener) {
+				window.close();
+			}
+		},
+		setInput() {
+			$("#dept_cu_tit").text("{{ message('item.dept.011') }}"); // 부서 수정
+
+			$("#pop-upDeptId").val(this.data.upBreadCrumb);
+			$("#pop-deptId").val(gaiaCommon.decodeSafeText(this.data.details.deptId));
+			$("#pop-deptNm").val(gaiaCommon.decodeSafeText(this.data.details.deptNm));
+			$("#pop-deptDscrpt").val(gaiaCommon.decodeSafeText(this.data.details.deptDscrpt));
+			$("#pop-pstnNm").val(gaiaCommon.decodeSafeText(this.data.details.pstnNm));
+			this.initializeSelectBoxes(this.data.details.svrType);
+			// $("#pop-svrType").val(this.data.details.svrType);
+			$("#pop-mngNm").val(gaiaCommon.decodeSafeText(this.data.details.mngNm));
+			$("input[name=deptUseYn][value='" + this.data.details.useYn + "']").prop("checked", true);
+			$("#pop-deptId").prop("readonly", true);
+
+		},
+
+		save() {
+			this.update();
+		},
+
+		// 부서 수정
+		update() {
+			// 필수 값 유효성 확인
+            if (!popup.validate()) return false;
+
+			data = {
+				deptNo: this.data.details.deptNo,
+				deptNm: $("#pop-deptNm").val(),
+				deptDscrpt: $("#pop-deptDscrpt").val(),
+				pstnNm: $("#pop-pstnNm").val(),
+				mngNm: $("#pop-mngNm").val(),
+				svrType: $("#pop-svrType").val(),
+				useYn: $("input[name=deptUseYn]:checked").val(),
+                deptUuid:this.data.details.deptUuid,
+			};
+
+			gaiaCommon.LoadingOverlay('body', true); // 로딩 바 활성화
+			gaiaCommon.post("/api/system/department/update", data,
+                function (result) {
+                    if(result.ok){
+                        gaiaCommon.LoadingOverlay('body', false); // 로딩 바 비활성화
+                        gaiaCommon.customAlert("{{ message('msg.044') }}"); // 저장되었습니다.
+                        page.refresh(true); // 부서 트리 새로고침
+                        popup.close();
+                    }
+			    },
+                function (error) {
+                    console.error(error);
+                    gaiaCommon.customAlert(error.responseJSON?.message);
+                }
+            );
+		},
+
+		// 유효성 검사
+		validate(){
+			let isValid = true;
+			const addRegex = /^(?!\s)[^\/:*?"<>|]+$/;
+
+			$(".required").each(function () {
+                const inputElement = $(this).closest(".row").find("input, select");
+                if (!inputElement.val()) {
+                    gaiaCommon.customAlert("{{ message('msg.008') }}"); // 필수 값이 누락되었습니다.
+                    inputElement.focus();
+                    isValid = false;
+                    return false;
+                }
+            });
+
+
+			if (!isValid) return false; // 필수 값 체크에서 실패한 경우 종료
+
+			// 유효성 검사 대상 필드 리스트
+            const fieldsToValidate = ['#pop-deptNm', '#pop-deptDscrpt', '#pop-pstnNm', '#pop-mngNm'];
+
+			// 각 필드에 이벤트 리스너 추가
+            fieldsToValidate.forEach(selector => {
+                const value = $(selector).val();
+
+                // 값이 없는 경우 유효성 검사 패스
+                if (!value || value === "") return;
+
+                if (!addRegex.test(value)) {
+                    gaiaCommon.customAlert("{{ message('msg.079') }}" + '/ , : , * , ? , " , < , >  , |'); // 유효하지 않은 값이 포함되어 있습니다 : [/, :, *, ?, ", <, >, ., |]
+                    // $(selector).val(''); // 유효하지 않은 입력 제거
+                    $(selector).focus();
+                    isValid = false;
+                    return false;
+                }
+            });
+
+			return isValid;
+
+		}
+	};
+    $(function(){
+		popup.init();
+
+		// 모든 .maxlength 요소 처리
+		$('.maxlength').each(function () {
+			let maxLength = $(this).attr('maxlength'); // maxlength 속성 값 가져오기
+
+			if ($(this).is('textarea')) {
+				let parentElement = $(this).parent();
+				let content = $(this).val();
+				let currentLength = content.length || 0;
+				parentElement.css({
+					'display': 'block'
+				});
+
+				// textarea의 경우 글자 수 카운터 추가
+				let counter = $(`<div class="char-counter" style="display:flex; justify-content: end; padding: 3px; font-size: var(--font-xs); color: var(--color-gray);">
+								<span class="current-count">${currentLength}</span>/<span class="max-count">${maxLength}</span>
+							 </div>`);
+				$(this).after(counter); // textarea 뒤에 추가
+			}
+		});
+
+		// input 이벤트 바인딩 (중복 바인딩 방지)
+		$('.maxlength').on('input', function () {
+			let content = $(this).val();
+			let currentLength = content.length;
+			let maxLength = $(this).attr('maxlength');
+
+			// 글자수 제한
+			if (currentLength >= maxLength) {
+				$(this).val(content.substring(0, maxLength));
+				currentLength = maxLength;
+                gaiaCommon.customAlert(`글자수는 최대 ${maxLength}자까지 입력 가능합니다.`);
+
+			}
+
+			// textarea의 경우 글자 수 카운터 업데이트
+			if ($(this).is('textarea')) {
+				$(this).next('.char-counter').find('.current-count').text(currentLength);
+			}
+		});
+
+
+    })
+
+</script>

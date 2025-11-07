@@ -1,0 +1,202 @@
+<style>
+    .filter_list {
+        cursor: pointer;
+    }
+
+    .autoMakeList {
+        margin-bottom: 5px;
+    }
+
+    .autoMakeList:hover {
+        color: var(--color-blue);
+        font-weight: 700;
+    }
+
+</style>
+<div class="modal" id="deptTreeModal">
+    <div class="pop_box _lg">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message('item.dept.001') }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close" onclick="deptModal.close();">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">창닫기</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="pop_body">
+            <div class="s_conts ty1">
+                <div class="g-group g-col2" style="height: 550px;">
+                    <div class="group" id="deptTree" style="border-right: 1px solid var(--form-bd); overflow: auto; width: 600px;">
+                        <!--트리 영역-->
+                    </div>
+                    <div class="group" id="modalEmpList" style="overflow: auto; width: 380px;">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var deptModal = {
+        init(modalType) {
+            deptModal.deptTree.init(modalType);
+        },
+        deptTree: {
+            treeObj: null,
+            nodeData: null,
+            refresh: function () {
+                this.treeObj.jstree(true).refresh();
+            },
+
+            getNode: function (id) {
+                return this.treeObj.jstree("get_node", id);
+            },         
+            init: function(type) {
+                if (this.treeObj) {
+                    this.treeObj.jstree(true).destroy(); 
+                    $('#deptTree').empty(); 
+                }
+                let cntrctNo = $('#cntrctNo').val() ? $('#cntrctNo').val() : pjtInfo.cntrctNo;
+                let api = type === 'my' ? '/api/eapproval/approval/search-deptInfo' : `/api/eapproval/lineset/admin-lineset-deptInfo/${cntrctNo}`;
+                let openLevel = type === 'my' ? 2 : 4;
+                this.treeObj = $("#deptTree").jstree({
+                    plugins: ["search"],
+                    core: {
+                        data: function (obj, cb) {
+                            
+                            gaiaCommon.get(api, "", function (result) {
+                                var data = [];
+                                if (result.details?.deptInfo) {
+                                    
+                                    result.details?.deptInfo.forEach((item, index) => {
+                                        let isOpend = item.dept_lvl < openLevel ? true : false;
+                                        data.push({
+                                            id: item.dept_id,
+                                            parent: item.up_dept_id ? item.up_dept_id : '#',
+                                            text: item.dept_nm,
+                                            state: { opened: isOpend },
+                                            data: item,
+                                            icons: 'fa-solid fa-caret-right',
+                                        });
+                                    });
+                                    cb.call(obj, data);
+                                }
+                            });
+                        },
+                        check_callback: true, 
+                        themes : {
+                                "theme" : "default",
+                                "dots": false,
+                                "responsive": false,
+                                "icons" : false
+                        }
+                    },
+                });
+
+                this.treeObj.on("ready.jstree", () => {
+                    let deptNode = this.treeObj.jstree("get_node", "#").children[0]; 
+                    this.nodeData = this.treeObj.jstree("get_node", deptNode).data; 
+                    this.treeObj.jstree("select_node", deptNode);
+                    deptModal.searchEmp(this.nodeData.dept_id);
+
+                })
+
+                this.treeObj.on("select_node.jstree", function (e, data) {
+                    this.nodeData = data.node.data;
+                    if(this.nodeData) {
+                        deptModal.searchEmp(this.nodeData.dept_id);
+                    }
+                    
+                });
+            }
+        },
+        // 조직트리에서 부서별 직원 조회
+        searchEmp(selectedDeptId){
+            let data = {
+                deptId: selectedDeptId
+            };
+
+            gaiaCommon.get("/api/eapproval/approval/search-emp", data, function(result) {
+                let empList = result.details.empList;
+                $('#modalEmpList').empty();
+                $('#modalEmpList').removeClass('no_result');
+                if(empList && empList.length > 0) {
+                    $.each(empList, function(index, obj){
+                        let jsonObj = JSON.stringify(obj).replace(/"/g, '&quot;');
+
+                        let html = `<div class="person_info">
+                                        <strong data-item="name" style="cursor:pointer;" onclick="deptModal.addUser(${jsonObj})">${obj.usr_nm}</strong>
+                                        <span data-item="affiliation">
+                                            <span>${obj.dept_nm}</span>
+                                        </span>
+                                        ${obj.phone_no ? `<span data-item="tel">${obj.phone_no}</span>` : `<span data-item="tel">{{ message('item.app.046') }}</span>`}
+                                        ${obj.email_adrs
+                                            ? `<a href="mailto:${obj.email_adrs}" data-item="email">${obj.email_adrs}</a>`
+                                            : `<a href="mailto:''" data-item="email">{{ message('item.app.046') }}</a>`}
+                                    </div>`
+                        $('#modalEmpList').append(html);
+                    })
+                } else {
+                    $('#modalEmpList').addClass('no_result');
+                    $('#modalEmpList').append(`<p class="data_info" id="info_msg">소속된 사용자가 없습니다.</p>`);
+                }
+            }, function (error) {
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            });
+        },
+        addUser(userInfo){
+            if (currentLineIndex > 0) {
+                // 현재 설정된 결재라인
+                var appLineList = document.querySelectorAll(".appLine");
+
+                let currentLine = $('.appLine[data-index="' + currentLineIndex + '"]');
+                let selectApDiv = currentLine.find('#apDivType').val();
+                let selectUserId = userInfo.usr_id;
+
+                // 중복검사 진행
+                let isDuplicate = false;
+                $.each(selectUsers, function(index, item) {
+                    if (selectUserId === item.userId && selectApDiv === item.apDivType) {
+                        isDuplicate = true;
+                        return false;  // 루프 종료
+                    }
+                });
+
+                if (isDuplicate) {
+                    gaiaCommon.customAlert("{{ message('msg.app.023') }}");
+                    return;  
+                }
+                // 중복검사 종료
+
+                currentLine.find('#addAppLineName').val(userInfo.usr_nm +' / '+userInfo.dept_nm);
+                currentLine.find('#choiceStatus').val("true"); // 사용자 이름 입력
+                currentLine.find('#add_usr_id').val(selectUserId);
+                currentLine.find('#add_login_id').val(userInfo.login_id);
+                currentLine.find('#usr_nm').val(userInfo.usr_nm);
+
+                selectUsers.push({userId: selectUserId, apDivType:selectApDiv});
+                if($('#autoMaker').hasClass('on')) {
+                    $('#autoMaker').removeClass('on');
+                }
+
+            }
+            deptModal.close();
+        },
+        open(lineCnt, modalType){
+            currentLineIndex = lineCnt;
+            $('#deptTreeModal').addClass('open');
+            $('#modalEmpList').empty();
+            deptModal.init(modalType);
+        },
+        close(){
+            $('#deptTreeModal').removeClass('open');
+        },
+        add(){
+
+        }
+    }
+</script>

@@ -1,0 +1,721 @@
+{% extends 'layout/base_content' %} {% block head %}
+<style>
+    #subcontract-grid .tui-grid-cell-current-row {
+        background-color: var(--select-list-bg);
+    }
+</style>
+{% endblock %} {% block content %}
+<section class="contents_wrap g-row">
+    <article class="conts g-row" id="container">
+        <div class="group">
+            <h3 class="conts_tit">{{ message("item.sub.001") }}</h3>
+            <div class="conts_grid">
+                <div class="toolbar">
+                    <div class="btn_area s_default">
+                        {{ btnHtml | raw }}
+                    </div>
+                </div>
+
+                <div class="grid" id="subcontract-grid"></div>
+            </div>
+        </div>
+
+        <div class="group">
+            <h3 class="conts_tit">{{ message("item.sub.002") }}</h3>
+            <div class="conts_grid">
+                <div class="toolbar">
+                    <div class="btn_area s_default">
+                        {{ btnHtml2 | raw }}
+                    </div>
+                </div>
+
+                <div class="grid" id="subcontractChange-grid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %} {% block footer_script %}
+
+<script>
+    const bodyHeight = (window.innerHeight - 630)/2;
+    const minBodyHeight = 200;
+    const params = new URLSearchParams(window.location.search);
+    var pjtNo;
+    var cntrctNo;
+
+    var returnScontrctCorpId = params.get("scontrctCorpId");
+
+    var isSubDelAuth = "{{ isSubDelAuth }}" === "true";
+    var isChgDelAuth = "{{ isChgDelAuth }}" === "true";
+    var init = function () {
+        pjtNo = pjtInfo.pjtNo;
+        cntrctNo = pjtInfo.cntrctNo;
+
+        if (performance.navigation.type === 1) {    // 페이지 새로고침 시 returnScontrctCorpId삭제
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('scontrctCorpId')) {
+                urlParams.delete('scontrctCorpId');
+                window.history.replaceState({}, '', '/project/subcontract');
+            }
+            returnScontrctCorpId = null;
+        }
+
+        gaiaCommon.makeCntrctSelectBox(
+                "#container",
+                () => {
+                    $(".btn_area").hide();
+                    subGrid.init(null);
+                    changeGrid.init(null, null);
+                },
+                (cntrctNo) => {
+                    subGrid.init(cntrctNo);
+                    changeGrid.init(null, null);
+                },
+                (cntrctNo) => {
+                    returnScontrctCorpId = null;
+                    subGrid.init(cntrctNo);
+                    changeGrid.init(null, null);
+                }
+        );
+    };
+
+    //하도급 목록 그리드
+    var subGrid = {
+        init: function (cntrctNo) {
+            const Grid = tui.Grid;
+            let _this = this;
+
+            if (this.subcontractGrid) {
+                this.subcontractGrid.destroy(); // 기존 인스턴스 제거
+                this.subcontractGrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/subcontract/subList",
+                    method: "GET",
+                    initParams: {
+                        pjtNo: pjtNo,
+                        cntrctNo: cntrctNo,
+                    },
+                }
+            });
+
+            if (!this.subcontractGrid) {
+                this.subcontractGrid = new Grid({
+                    el: document.getElementById("subcontract-grid"),
+                    data: dataSource,
+                    scrollX: false,
+                    scrollY: true,
+                    draggable: false,
+                    contextMenu: null,
+                    minBodyHeight: minBodyHeight,
+                    bodyHeight: bodyHeight,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `
+    					<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+
+    			`,
+                            width: 100,
+                            renderer: {
+                                type: IconRenderer,
+                                options: [
+                                    {
+                                        type:"checkbox",
+                                    },
+                                    {
+                                        type:"trash",
+                                        url: "/api/project/subcontract/subDelete",
+                                        idFields: "cntrctNo,scontrctCorpId",
+                                        keyName: "subcontractList",
+                                        auth: isSubDelAuth,
+                                        msgList: {
+                                            confirmTit: "{{ message('item.sub.047') }}",
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        }
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: "{{ message('item.sub.015') }}",
+                                name: "gcontrctCorpNo",
+                                childNames: ["bsnsmnNo", "corpNm"],
+                            },
+                            {
+                                header: "{{ message('item.sub.016') }}",
+                                name: "scontrctCorpNo",
+                                childNames: [
+                                    "scontrctCorpBsnsmnNo",
+                                    "scontrctCorpNm",
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {
+                            header: "{{ message('item.sub.017') }}",
+                            name: "scontrctCnsttyCdKrn",
+                            align: "center",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.005') }}",
+                            name: "scontrctCntrctNo",
+                            className: "scontrctCntrctNo",
+                            renderer: {
+                                type: IconRenderer,
+                                options: [{
+                                    type:"newwindow",
+                                    idFields: "cntrctNo,scontrctCorpId",
+                                    align:"right",
+                                    isHover:true,
+                                    open:{
+                                        url:`/project/subcontract/read?pjtNo=${pjtNo}&cntrctNo={id1}&scontrctCorpId={id2}`, //상세조회
+                                    }
+                                }],
+                            },
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.018') }}",
+                            name: "cntrctChgNo",
+                            formatter: function (e) {
+                                return e.value + "차";
+                            },
+                            align: "center",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.007') }}",
+                            name: "scontrctCntrctNm",
+                            ellipsis: true,
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.019') }}",
+                            name: "bsnsmnNo",
+                            align: "center",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.020') }}",
+                            name: "corpNm",
+                            resizable: true,
+                            ellipsis: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.019') }}",
+                            name: "scontrctCorpBsnsmnNo",
+                            align: "center",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.020') }}",
+                            name: "scontrctCorpNm",
+                            resizable: true,
+                            ellipsis: true,
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.021') }}",
+                            name: "scontrctIndstrytyCdKrn",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.022') }}",
+                            name: "cntrctDate",
+                            align: "center",
+                            formatter: function (e) {
+                                if (e.value) {
+                                    let valueStr = e.value.toString();
+                                    let year = valueStr.substring(0, 4);
+                                    let month = valueStr.substring(4, 6);
+                                    let day = valueStr.substring(6, 8);
+
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return "";
+                            },
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.013') }}",
+                            name: "cntrctBgnDate",
+                            align: "center",
+                            formatter: function (e) {
+                                if (e.value) {
+                                    let valueStr = e.value.toString();
+                                    let year = valueStr.substring(0, 4);
+                                    let month = valueStr.substring(4, 6);
+                                    let day = valueStr.substring(6, 8);
+
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return "";
+                            },
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.014') }}",
+                            name: "cntrctEndDate",
+                            align: "center",
+                            formatter: function (e) {
+                                if (e.value) {
+                                    let valueStr = e.value.toString();
+                                    let year = valueStr.substring(0, 4);
+                                    let month = valueStr.substring(4, 6);
+                                    let day = valueStr.substring(6, 8);
+
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return "";
+                            },
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.012') }}",
+                            name: "scontrctCntrctAmt",
+                            formatter: function (e) {
+                                if (e.value) {
+                                    const formatter = new Intl.NumberFormat(
+                                        "ko-KR"
+                                    );
+                                    return formatter.format(e.value);
+                                }
+                                return "";
+                            },
+                            align: "right",
+                            resizable: true,
+                        },
+                    ],
+                });
+                this.subcontractGrid.on('onGridUpdated', () => {
+                    const rows = this.subcontractGrid.getData();
+
+                    if (returnScontrctCorpId != null) {
+                        rows.forEach((row, rowKey) => {
+                            if (String(row.scontrctCorpId).trim() === String(returnScontrctCorpId).trim()) {
+                                subGrid.handleSubcontractRowClick(rowKey);
+                                this.subcontractGrid.focusAt(rowKey, 1, true);
+                            }
+                        });
+                    } else if (rows.length > 0){
+                        subGrid.handleSubcontractRowClick(0);
+                        this.subcontractGrid.focusAt(0, 1, true);
+                    }
+                });
+
+                this.subcontractGrid.on("click", function (e) {
+                    const rowKey = e.rowKey ?? e?.nativeEvent?.detail.rowKey;
+
+                    if (rowKey !== undefined) {
+                        subGrid.handleSubcontractRowClick(rowKey);
+                    }
+                });
+
+                this.subcontractGrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+            }
+            refreshGrid(subGrid.subcontractGrid);
+        },
+
+        // 하도급 행 클릭 처리 함수 (subGrid에 정의)
+        handleSubcontractRowClick: function (rowKey) {
+            const rowData = this.subcontractGrid.getRow(rowKey);
+            if (!rowData) return;
+
+            // 필요한 변수 설정
+            changeGrid.data.cntrctNo = rowData.cntrctNo;
+            changeGrid.data.scontrctCorpId = rowData.scontrctCorpId;
+            console.log("선택된 하도급 rowData:", rowData);
+
+            changeGrid.init(rowData.cntrctNo, rowData.scontrctCorpId);
+        },
+
+        //하도급 추가
+        subCreate: function () {
+            let cntrctNo = document.getElementById("cntrctNo").value
+
+            if (cntrctNo.length > 1) {
+                window.location.href = `/project/subcontract/create?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+            } else {
+                gaiaCommon.customAlert("선택된 계약이 없습니다");
+            }
+        },
+
+        //하도급 수정
+        subUpdate: function () {
+            let checkedNos = []; // 체크된 행
+            const allRows = subGrid.subcontractGrid.getCheckedRows();
+            allRows.forEach(row => {
+                const cntrctNo = row.cntrctNo;
+                const scontrctCorpId = row.scontrctCorpId;
+                checkedNos.push({ cntrctNo, scontrctCorpId });
+            });
+
+            if (checkedNos.length == 1) {
+                const selectedRow = checkedNos[0];
+                const { cntrctNo, scontrctCorpId } = selectedRow;
+
+                window.location.href = `/project/subcontract/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&scontrctCorpId=${scontrctCorpId}`;
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.020') }}");
+            }
+        },
+
+        //하도급 삭제
+        subDelete: function () {
+            const listName = "subcontractList";
+            let checked = []; // 체크된 행
+            const allRows = subGrid.subcontractGrid.getCheckedRows();
+
+            allRows.forEach(row => {
+                const cntrctNo = row.cntrctNo;
+                const scontrctCorpId = row.scontrctCorpId;
+                checked.push({ cntrctNo, scontrctCorpId });
+            });
+
+            if (checked.length > 0) {
+                gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('item.sub.047') }}", "{{ message('msg.009') }}", function () {
+                    let data = { [listName]: checked };
+                    gaiaCommon.post("/api/project/subcontract/subDelete", data, function (response) {
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+                        subGrid.subcontractGrid.reloadData();
+                    }, function (xhr) {
+                        console.error("Error deleting data:", xhr.responseText);
+                    })
+                });
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+            }
+        },
+
+        exportToExcel: function () {
+            const options = {
+                includeHiddenColumns: false,
+                onlySelected: true,
+                fileName: "{{ message('item.sub.046') }}",
+            };
+
+            this.subcontractGrid.export("xlsx", options);
+        },
+    };
+
+    //하도급 변경 목록 그리드
+    var changeGrid = {
+        data: {},
+        init: function (cntrctNo, scontrctCorpId) {
+            const Grid = tui.Grid;
+            let _this = this;
+
+            if (this.subcontractChangeGrid) {
+                this.subcontractChangeGrid.destroy();
+                this.subcontractChangeGrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/subcontract/changeList",
+                    method: "Get",
+                    initParams: {
+                        pjtNo: pjtNo,
+                        cntrctNo: cntrctNo,
+                        scontrctCorpId: scontrctCorpId,
+                    },
+                },
+            });
+
+            if (!this.subcontractChangeGrid) {
+                this.subcontractChangeGrid = new Grid({
+                    el: document.getElementById("subcontractChange-grid"),
+                    data: dataSource,
+                    scrollX: false,
+                    scrollY: true,
+                    draggable: false,
+                    contextMenu: null,
+                    minBodyHeight: minBodyHeight,
+                    bodyHeight: bodyHeight,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 100,
+                            renderer: {
+                                type: IconRenderer,
+                                options: [
+                                    {
+                                        type:"checkbox",
+                                    },
+                                    {
+                                        type:"trash",
+                                        url: "/api/project/subcontract/changeDelete",
+                                        idFields:
+                                            "cntrctNo,scontrctCorpId,cntrctChgId",
+                                        keyName: "subcontractChangeList",
+                                        auth: isChgDelAuth,
+                                        msgList: {
+                                            confirmTit: "{{ message('item.sub.048') }}",
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        }
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    columns: [
+                        {
+                            header: "{{ message('item.sub.040') }}",
+                            name: "cntrctChgNo",
+                            className: "cntrctChgNo",
+                            align:"center",
+                            formatter: function (e) {
+                                return e.value + "차";
+                            },
+                            renderer: {
+                                type: IconRenderer,
+                                options: [{
+                                    type:"newwindow",
+                                    isHover:true,
+                                    align:"right",
+                                    absolute:true,
+                                    idFields:
+                                        "cntrctNo,scontrctCorpId,cntrctChgId",
+                                    open:{
+                                        url:
+                                            `/project/subcontract/changeRead?pjtNo=${pjtNo}&cntrctNo={id1}&scontrctCorpId={id2}&cntrctChgId={id3}`, //상세조회
+                                    }
+                                }],
+                            },
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.041') }}",
+                            name: "chgApprDate",
+                            align: "center", resizable: true,
+                            formatter: function (e) {
+                                if (e.value) {
+                                    let valueStr = e.value.toString();
+                                    let year = valueStr.substring(0, 4);
+                                    let month = valueStr.substring(4, 6);
+                                    let day = valueStr.substring(6, 8);
+
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return "";
+                            },
+                        },
+                        {
+                            header: "{{ message('item.sub.042') }}",
+                            name: "cntrctChgDate",
+                            align: "center", resizable: true,
+                            formatter: function (e) {
+                                if (e.value) {
+                                    let valueStr = e.value.toString();
+                                    let year = valueStr.substring(0, 4);
+                                    let month = valueStr.substring(4, 6);
+                                    let day = valueStr.substring(6, 8);
+
+                                    // "YYYY-MM-DD" 형식으로 반환
+                                    return `${year}-${month}-${day}`;
+                                }
+                                return "";
+                            },
+                        },
+                        {
+                            header: "{{ message('item.sub.043') }}",
+                            name: "cntrctAmt",
+                            formatter: function (e) {
+                                if (e.value) {
+                                    const formatter = new Intl.NumberFormat(
+                                        "ko-KR"
+                                    );
+                                    return formatter.format(e.value);
+                                }
+                                return 0;
+                            },
+                            align: "right", resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.sub.044') }}",
+                            name: "chgConPrd",
+                            formatter: function (e) {
+                                const { cntrctBgnDate, chgCbgnDate } = e.row;
+                                const startDate = formatDate(cntrctBgnDate);
+                                const endDate = formatDate(chgCbgnDate);
+
+                                if (!startDate || !endDate) { return ""; }
+                                // 날짜 포맷 변환 (예: "YYYY-MM-DD")
+                                return `${startDate} ~ ${endDate}`;
+                            },
+                            align: "center", resizable: true,
+                        },
+                        { header: "{{ message('item.sub.045') }}", name: "cntrctChgTypeKrn", align: "center", resizable: true, },
+                        { header: "{{ message('item.sub.036') }}", name: "rmrk", resizable: true, },
+                    ],
+                });
+
+                this.subcontractChangeGrid.on("click", function (e) {
+                    const rowKey = e.rowKey;
+                    if (e.columnName === "_checked" && e.nativeEvent.target.className === "checkGroup") {
+                        let temp = changeGrid.subcontractChangeGrid.getRow(rowKey);
+                        temp._attributes.checked = changeGrid.subcontractChangeGrid.getRow(rowKey)._attributes.checked ? false : true;
+                        changeGrid.subcontractChangeGrid.setRow(rowKey, temp);
+                        return e.stop();
+                    }
+                })
+
+                this.subcontractChangeGrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+            }
+            refreshGrid(changeGrid.subcontractChangeGrid);
+        },
+
+        //계약 변경 추가
+        changeCreate: function () {
+            const cntrctNo = changeGrid.data.cntrctNo;
+            const scontrctCorpId = changeGrid.data.scontrctCorpId;
+
+            if (!cntrctNo || !scontrctCorpId) {
+                gaiaCommon.customAlert("{{ message('msg.sub.001') }}");
+                return false;
+            } else {
+                window.location.href = `/project/subcontract/changeCreate?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&scontrctCorpId=${scontrctCorpId}`;
+            }
+        },
+
+        //계약 변경 수정
+        changeUpdate: function () {
+            const cntrctNo = changeGrid.data.cntrctNo;
+            const scontrctCorpId = changeGrid.data.scontrctCorpId;
+
+            let checkedNos = []; // 체크된 행
+            const allRows = changeGrid.subcontractChangeGrid.getCheckedRows();
+            allRows.forEach(row => {
+                const cntrctNo = row.cntrctNo;
+                const scontrctCorpId = row.scontrctCorpId;
+                const cntrctChgId = row.cntrctChgId;
+                checkedNos.push({ cntrctNo, scontrctCorpId, cntrctChgId });
+            });
+
+            if (!cntrctNo || !scontrctCorpId) {
+                gaiaCommon.customAlert("{{ message('msg.sub.001') }}");
+                return false;
+            } else {
+                if (checkedNos.length === 1) {
+                    const selectedRow = checkedNos[0];
+                    const { cntrctNo, scontrctCorpId, cntrctChgId } = selectedRow;
+
+                    window.location.href = `/project/subcontract/changeUpdate?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&scontrctCorpId=${scontrctCorpId}&cntrctChgId=${cntrctChgId}`;
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.020') }}");
+                }
+            }
+        },
+
+        //계약 변경 삭제
+        changeDelete: function () {
+            const cntrctNo = changeGrid.data.cntrctNo;
+            const scontrctCorpId = changeGrid.data.scontrctCorpId;
+
+            const subAllRowKey = changeGrid.subcontractChangeGrid.getData();
+            const rowKeys = subAllRowKey.map(function (e) {
+                return e.rowKey;
+            });
+            const maxRowKey = Math.max.apply(null, rowKeys);
+            checkedRowkey = null;
+
+            const listName = "subcontractChangeList";
+            let checked = []; // 체크된 행
+            const allRows = changeGrid.subcontractChangeGrid.getCheckedRows();
+
+            allRows.forEach(row => {
+                const cntrctNo = row.cntrctNo;
+                const scontrctCorpId = row.scontrctCorpId;
+                const cntrctChgId = row.cntrctChgId;
+                checked.push({ cntrctNo, scontrctCorpId, cntrctChgId });
+                checkedRowkey = row.rowKey;
+            });
+
+            if (!cntrctNo || !scontrctCorpId) {
+                gaiaCommon.customAlert("{{ message('msg.sub.001') }}");
+                return false;
+            }
+
+            if (checked.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.031') }}");
+            } else if (checked.length == 0) {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+            } else if (checkedRowkey != maxRowKey) {
+                gaiaCommon.customAlert("{{ message('msg.032') }}");
+            } else if (checkedRowkey == 0) {
+                gaiaCommon.customAlert("{{ message('msg.033') }}");
+            } else {
+                gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('item.sub.048') }}", "{{ message('msg.009') }}", function () {
+                    let data = { [listName]: checked };
+                    gaiaCommon.post("/api/project/subcontract/changeDelete", data, function (response) {
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+                        changeGrid.subcontractChangeGrid.reloadData();
+                        subGrid.subcontractGrid.reloadData();
+                    }, function (xhr) {
+                        console.error("Error deleting data:", xhr.responseText);
+                    })
+                });
+            }
+        },
+    };
+
+    function formatDate(dateStr) {
+        if (!dateStr) {
+            return null;
+        }
+        const year = dateStr.slice(0, 4);
+        const month = dateStr.slice(4, 6);
+        const day = dateStr.slice(6, 8);
+        return `${year}-${month}-${day}`;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const alertMessage = localStorage.getItem("alertMessage");
+        if (alertMessage) {
+            gaiaCommon.customAlert(alertMessage);
+            localStorage.removeItem("alertMessage");
+        }
+    });
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("M010202", "{{ message('item.sub.046') }}");
+                init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

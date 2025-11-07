@@ -1,0 +1,982 @@
+{% extends 'layout/base_content' %} {% block content %}
+<section class="contents_wrap g-row">
+	<article class="conts g-row" id="container">
+		<div class="group">
+			<h3 class="conts_tit">{{ message('item.contract.002') }}</h3> <!-- 계약목록 -->
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ ctBtnHtml | raw }}
+						{{ cbBtnHtml | raw }}
+					</div>
+				</div>
+				<div class="grid" id="contractstatus-grid"></div>
+			</div>
+		</div>
+
+		<div class="group">
+			<h3 class="conts_tit">{{ message('item.contract.003') }}</h3> <!-- 도급사 목록 -->
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ cpBtnHtml | raw }}
+					</div>
+				</div>
+				<div class="grid" id="contractcompany-grid"></div>
+			</div>
+		</div>
+
+		<div class="group">
+			<h3 class="conts_tit">{{ message('item.contract.004') }}</h3> <!-- 계약변경 목록 -->
+			<div class="conts_grid">
+				<div class="toolbar">
+					<div class="btn_area s_default">
+						{{ ccBtnHtml | raw }}
+					</div>
+				</div>
+				<div class="grid" id="contractchange-grid"></div>
+			</div>
+		</div>
+	</article>
+</section>
+
+{% endblock content %} {% block footer_script %}
+<script src="https://unpkg.com/dayjs"></script>
+<style>
+	#contractstatus-grid .tui-grid-cell-current-row {
+		background-color: var(--select-list-bg);
+	}
+</style>
+<script>
+    const bodyHeight = (window.innerHeight - 620)/3;
+    const minBodyHeight = 200;
+	var pjtNo;
+	var cntrctNo;
+
+	const params = new URLSearchParams(window.location.search);
+    var returnCntrctNo = commonJs.getSessionStorage("cntrctSelectBox")?.cntrctNo;
+
+
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				console.log('$params', $params, gaiaCommon.me.info);
+
+				page.init();
+			}
+		});
+	});
+
+	var page = {
+        isCntDelAuth: "{{ isCntDelAuth }}" === "true",
+        isCompDelAuth: "{{ isCompDelAuth }}" === "true",
+        isChgDelAuth: "{{ isChgDelAuth }}" === "true",
+		init() {
+			pjtNo = pjtInfo.pjtNo;
+            if(gaiaCommon.me.isAdmin() || isGAIA()){
+                cntrctNo = pjtInfo.pjtNo;
+            }else if(isCAIROS()){
+                cntrctNo = pjtInfo.cntrctNo;
+            }
+
+			$(function () {  // 페이지 로딩 시
+				gaiaPortal.navMenuInit("M010201", "{{ message('item.contract.001') }}"); // 계약 현황
+
+				if (isCAIROS() && !gaiaCommon.me.info.admin) {
+					contractgrid.init();
+				}
+				if (gaiaCommon.me.info.admin || isGAIA()) {
+					contractgrid.init();
+				}
+			});
+
+			if (performance.navigation.type === 1) {
+				const urlParams = new URLSearchParams(window.location.search);
+				if (urlParams.has('returnCntrctNo')) {
+					urlParams.delete('returnCntrctNo');
+					window.history.replaceState({}, '', '/project/contractstatus');
+				}
+				returnCntrctNo = null;
+			}
+		}
+	};
+
+	let contractgrid = {    // 계약목록 그리드 초기화(+데이터 가져오기)
+		init: function () {
+            const Grid = tui.Grid;
+            let _this = this;
+
+            if (this.contractgrid) {
+                this.contractgrid.destroy();
+                this.contractgrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/contractstatus/list",
+                    method: "GET",
+                    initParams: {
+                        pjtNo: pjtNo,
+                        cntrctNo: cntrctNo,
+                    },
+                }
+            });
+
+			if (!this.contractgrid) {
+				this.contractgrid = new Grid({
+					el: document.getElementById('contractstatus-grid'),
+                    data: dataSource,
+                    minBodyHeight: minBodyHeight,
+					bodyHeight: bodyHeight,
+					scrollX: false,
+					scrollY: true,
+					contextMenu: null,
+					rowHeaders: [
+						{
+							type: "checkbox",
+							header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+							width: 100,
+							renderer: {
+								type: IconRenderer,
+								options: [
+									{
+										type:"checkbox",
+									},
+									{
+										type:"trash",
+										url: "/api/project/contractstatus/delete",
+										idField: "cntrctNo",
+										keyName: "contractList",
+										auth: page.isCntDelAuth,
+										msgList: {
+											confirmTit: "{{ message('item.contract.039') }}", //계약 삭제
+											confirmMsg: "{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										},
+										condition:function(rowData) {
+											if(rowData.rprsYn === "Y"){
+												gaiaCommon.customAlert("대표계약자는 삭제할 수 없습니다.");
+												return false;
+											}
+											return true;
+										},
+										success: function (rowData) {
+											location.reload()
+										}
+									}
+								],
+
+							},
+						},
+					],
+
+					columns: [
+						{
+							header: "{{ message('item.contract.033') }}", // 관리계약번호
+							name: "mngCntrctNo",
+							align: "center",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.contract.009') }}", // 공사계약명
+							name: "cntrctNm",
+							className: "cntrctNm",
+							renderer: {
+								type: IconRenderer,
+								options: [{
+									type:"newwindow",
+									idFields: "pjtNo,cntrctNo",
+                                    isHover:true,
+									align:"right",
+									open:{
+										url:"/project/contractstatus/contract?pjtNo={id1}&cntrctNo={id2}",
+									}
+								}],
+							},
+							resizable: true,
+							width: 350,
+						},
+						{
+							header: "{{ message('item.contract.010') }}", // 주공종
+							name: "majorCnsttyNmKrn",
+							align: "center",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.org.010') }}", // 사업자등록번호
+							name: "bsnsmnNo",
+							align: "center",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{ header: "{{ message('item.contract.016') }}", name: "corpNm", width: 200,
+                            resizable: true,
+                            ellipsis: true,}, // 회사명
+						{
+							header: "{{ message('item.sub.022') }}", // 계약일자
+							name: "cntrctDate",
+							align: "center",
+							formatter: function (e) {
+								const dateValue = e.value ? e.value.toString() : "";
+								if (dateValue && dayjs(dateValue, "YYYYMMDD").isValid()) {
+									return dayjs(dateValue, "YYYYMMDD").format("YYYY-MM-DD");
+								}
+								return "";
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.projectcost.029') }}", // 계약금액
+							name: "cntrctCost",
+							align: "right",
+							formatter: function (e) {
+								if (e.value) {
+									return e.value.toLocaleString();
+								}
+								return 0;
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.sub.029') }}", // 계약 변경일자
+							name: "latestCntrctChgDate",
+							align: "center",
+							formatter: function (e) {
+								const dateValue = e.value ? e.value.toString() : "";
+								if (dateValue && dayjs(dateValue, "YYYYMMDD").isValid()) {
+									return dayjs(dateValue, "YYYYMMDD").format("YYYY-MM-DD");
+								}
+								return "";
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+					],
+				});
+                // 그리드 업데이트 후 특정 row 처리
+                this.contractgrid.on('onGridUpdated', () => {
+                    const rows = this.contractgrid.getData();
+
+                    if (rows.length === 0) return;
+
+                    if (!returnCntrctNo) {
+                        contractgrid.handleContractRowClick(0);
+                        this.contractgrid.focusAt(0, 1, true);
+                    } else {
+                        rows.forEach((row, rowKey) => {
+                            if (String(row.cntrctNo).trim() === String(returnCntrctNo).trim()) {
+                                contractgrid.handleContractRowClick(rowKey);
+                                this.contractgrid.focusAt(rowKey, 1, true);
+                            }
+                        });
+                    }
+                });
+                this.contractgrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+
+                // 클릭 이벤트 핸들러
+                this.contractgrid.on('click', function (e) {
+                    const rowKey = e.rowKey ?? e?.nativeEvent?.detail.rowKey;
+                    if (rowKey !== undefined) {
+                        contractgrid.handleContractRowClick(rowKey);
+                    }
+                });
+			}
+
+			if (returnCntrctNo === null) {
+				setTimeout(() => {
+					// 첫 번째 행 클릭 이벤트 실행
+					const firstRowKey = 0;
+					$(`#contractstatus-grid [data-column-name='cntrctNm'][data-row-key="${firstRowKey}"]`).trigger("click");
+
+					// 첫 번째 행에 focusAt 적용
+					this.contractgrid.focusAt(firstRowKey, 1, true);
+				}, 200);
+			}
+		},
+        handleContractRowClick:function (rowKey){
+            const rowData = this.contractgrid.getRow(rowKey);
+            if (!rowData) return;
+
+            cntrctNo = rowData.cntrctNo;
+
+            companygrid.init(cntrctNo);
+            changegrid.init(cntrctNo);
+
+        },
+
+		addContract() {
+			window.location.href = `/project/contractstatus/addContract?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+		},
+
+		updateContract() {
+			let checked = []; // 체크된 행
+
+			// 그리드의 모든 데이터 가져오기
+			const checkedRows = contractgrid.contractgrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				checked.push(cntrctNo);
+			});
+
+			if (checked.length == 1) {
+				const selectedRow = checked[0];
+				const cntrctNo = selectedRow;
+
+				window.location.href = `/project/contractstatus/updateContract?&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`;
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.020') }}"); // 수정할 항목을 하나만 선택하세요.
+			}
+		},
+		deleteContract() {
+			const listName = "contractList";
+			let checked = [];
+
+			const checkedRows = contractgrid.contractgrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				checked.push(cntrctNo);
+			});
+
+			if (checked.length > 0) {
+				gaiaCommon.customConfirm("{{ message('item.contract.039') }}", "{{ message('item.contract.039') }}", "{{ message('msg.009') }}", function () {
+					let data = { [listName]: checked };
+					gaiaCommon.post('/api/project/contractstatus/delete', data, function(){
+                            gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+                            location.reload();
+                    }, function(){
+                        gaiaCommon.customAlert("{{ message('msg.api.001') }}");
+                    })
+				});
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.055') }}"); // 삭제할 항목을 선택해주세요.
+			}
+		},
+		addContractBid() {
+			let checked = [];
+
+			const checkedRows = contractgrid.contractgrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				checked.push(cntrctNo);
+			});
+
+			if (checked.length == 0 || checked == null) {
+				gaiaCommon.customAlert("{{ message('msg.contract.006') }}");    // 내역서를 등록할 항목을 선택하세요.
+			} else if (checked.length == 1) {
+				const selectedRow = checked[0];
+				const cntrctNo = selectedRow;
+
+				window.location.href = `/project/contractstatus/bidform?type=d&cntrctNo=${cntrctNo}`;
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.contract.007') }}"); // 내역서를 등록할 항목을 하나만 선택하세요.
+			}
+		},
+		getContractBid() {
+			let checked = [];
+
+			const checkedRows = contractgrid.contractgrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				checked.push(cntrctNo);
+			});
+
+			if (checked.length == 0 || checked == null) {
+				gaiaCommon.customAlert("{{ message('msg.contract.008') }}"); // 내역서를 조회할 항목을 선택하세요.
+			} else if (checked.length == 1) {
+				const selectedRow = checked[0];
+				const cntrctNo = selectedRow;
+
+                const width = 1200;
+                const height = 900;
+                let left = Math.ceil((window.screen.width - width) / 2);
+                left += window.screenLeft;
+                const top = Math.ceil((window.screen.height - height) / 2);
+                window.open(`/project/contractstatus/bid?cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`, '_blank', `scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`);
+
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.contract.009') }}");    // 내역서를 조회할 항목을 하나만 선택하세요.
+			}
+		},
+		exportToExcel() {
+			const options = {
+				includeHiddenColumns: false,
+				onlySelected: true,
+				fileName: "{{ message('item.contract.001') }}",
+			};
+			this.contractgrid.export("xlsx", options);
+		},
+	}
+
+	let companygrid = {
+		init: function (cntrctNo) {
+			let _this = this;
+
+            if (this.companygrid) {
+                this.companygrid.destroy();
+                this.companygrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/contractstatus/company/list",
+                    method: "GET",
+                    initParams: {
+                        pjtNo: pjtNo,
+                        cntrctNo: cntrctNo,
+                    },
+                }
+            });
+
+			if (!this.companygrid) {
+				this.companygrid = new tui.Grid({
+					el: document.getElementById('contractcompany-grid'),
+                    data: dataSource,
+                    contextMenu: null,
+					scrollX: false,
+					scrollY: true,
+					minBodyHeight: minBodyHeight,
+					bodyHeight: bodyHeight,
+					rowHeaders: [
+						{
+							type: "checkbox",
+							header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+							width: 100,
+							renderer: {
+								type: IconRenderer,
+								options: [
+									{
+										type:"checkbox",
+									},
+									{
+										type:"trash",
+										url: "/api/project/contractstatus/company/delete",
+										idFields: "cntrctId,cntrctNo",
+										keyName: "companyList",
+										auth: page.isCompDelAuth,
+										msgList: {
+											confirmTit: "{{ message('item.contract.040') }}", //도급 삭제
+											confirmMsg: "{{ message('msg.009') }}",
+											completeMsg: "{{ message('msg.006') }}"
+										},
+										rprsYn: function (rowData) {
+											return rowData.rprsYn;
+										},
+										success: function (rowData) {
+											_this.get();
+										}
+									}
+								],
+							},
+						},
+					],
+					columns: [
+						{
+							header: "{{ message('item.contract.034') }}", // 대표계약자
+							name: "rprsYn",
+							formatter: function (e) {
+								let isChecked = e.value === 'Y'; // rprsYn 값이 'Y'인 경우 체크
+								return createCheckbox(isChecked);
+							},
+							align: "center",
+							width: 100,
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.org.010') }}", // 사업자등록번호
+							name: "bsnsmnNo",
+							align: "center",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.org.011') }}", // 회사명
+							name: "corpNm",
+							renderer: {
+								type: IconRenderer,
+								options: [{
+									type:"newwindow",
+									idFields: "pjtNo,cntrctId,cntrctNo",
+									isHover:true,
+									align:"right",
+									open:{
+										url:
+											"/project/contractstatus/company?pjtNo={id1}&cntrctId={id2}&cntrctNo={id3}",
+									}
+								}],
+							},
+							resizable: true,
+							width: 300,
+							align: "left",
+                            ellipsis: true,
+						},
+						{ header: "{{ message('item.contract.035') }}", name: "corpCeo", align: "center" }, // 대표자
+						{ header: "{{ message('item.contract.036') }}", name: "telNo", align: "center" }, // 전화번호
+						{
+							header: "{{ message('item.contract.022') }}", // 지분율
+							name: "shreRate",
+							align: "center",
+							formatter: function (e) {
+								if (e.value) {
+									return e.value.toLocaleString() + '%';
+								}
+								return 0;
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.org.004') }}", // 공종 구분
+							name: "cnsttyCdNmKrn",
+							align: "center",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{ header: "{{ message('item.org.005') }}", name: "ofclNm", align: "center" , resizable: true, ellipsis: true,}, // 담당자명
+					],
+				});
+                this.companygrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+			}
+			refreshGrid(this.companygrid);
+		},
+		addCompany() {
+			if (!cntrctNo) {
+				gaiaCommon.customAlert("{{ message('msg.contract.001') }}");    // 추가할 계약을 선택해주세요.
+				return;
+			}
+			window.location.href = `/project/contractstatus/createCompany?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+		},
+		updateCompany() {
+			let checked = [];
+
+			const checkedRows = companygrid.companygrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				const cntrctId = row.cntrctId;
+				checked.push({ cntrctNo, cntrctId });
+			});
+			if (checked.length == 1) {
+				const selectedRow = checked[0];
+				const { cntrctId, cntrctNo } = selectedRow;
+
+
+				window.location.href = `/project/contractstatus/updateCompany?pjtNo=${pjtNo}&cntrctId=${cntrctId}&cntrctNo=${cntrctNo}`;
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.020') }}"); // 수정할 항목을 하나만 선택하세요.
+			}
+		},
+		deleteCompany() {
+			const listName = "companyList";
+			let checked = []; // 체크된 행의 계약 도급Id, cntrctNo
+			let isRepresent = false; // 대표계약 여부 확인용
+
+			const checkedRows = companygrid.companygrid.getCheckedRows();
+
+			checkedRows.forEach(row => {
+				const cntrctNo = row.cntrctNo;
+				const cntrctId = row.cntrctId;
+				const rprsYn = row.rprsYn;
+
+				if (rprsYn === 'Y') {
+					isRepresent = true;
+				} else {
+					checked.push({ cntrctId, cntrctNo });
+				}
+			});
+
+			if (isRepresent) {
+				gaiaCommon.customAlert("{{ message('msg.contract.002') }}");    // 대표계약자는 삭제할 수 없습니다.
+			} else if (checked.length > 0) {
+				gaiaCommon.customConfirm("{{ message('item.contract.040') }}", "{{ message('item.contract.040') }}", "{{ message('msg.009') }}", function () {
+					let data = { [listName]: checked };
+					gaiaCommon.post('/api/project/contractstatus/company/delete', data, function(){
+                        gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+                        companygrid.companygrid.reloadData();
+                    })
+				});
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}"); // 선택된 항목이 없습니다.
+			}
+		},
+	}
+
+	let changegrid = {
+		init: function (cntrctNo) {
+			let _this = this;
+
+            if (this.changegrid) {
+                this.changegrid.destroy();
+                this.changegrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/project/contractstatus/change/list",
+                    method: "GET",
+                    initParams: {
+                        cntrctNo: cntrctNo,
+                    },
+                }
+            });
+
+			if (!this.changegrid) {
+				this.changegrid = new tui.Grid({
+					el: document.getElementById('contractchange-grid'),
+                    data: dataSource,
+                    contextMenu: null,
+					scrollX: false,
+					scrollY: true,
+					minBodyHeight: minBodyHeight,
+					bodyHeight: bodyHeight,
+					rowHeaders: [
+						{
+							type: "checkbox",
+							header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+							width: 100,
+							renderer: {
+								type: IconRenderer,
+								options: [
+									{
+										type:"checkbox"
+									},
+									{
+										type:"trash",
+										url: "/api/project/contractstatus/change/delete",
+										idField: "cntrctChgId",
+										keyName: "changeList",
+										auth: page.isChgDelAuth,
+										msgList: {
+											confirmTit: "{{ message('item.contract.041') }}", //변경 삭제
+											confirmMsg: "{{ message('msg.009') }}",
+											completeAlert: "{{ message('msg.006') }}"
+										},
+										condition:(rowData)=>{
+											const allRowData = this.changegrid.getData();
+											const rowKeys = allRowData.map((row) => row.rowKey);
+											const maxRowKey = Math.max(...rowKeys);
+
+											if (rowData.rowKey === 0) {
+												gaiaCommon.customAlert("최초 항목은 삭제할 수 없습니다.");
+												return false;
+											}
+											if(rowData.lastChgYn === 'Y') {
+												gaiaCommon.customAlert("최종 변경내역은 삭제할 수 없습니다.");
+												return false;
+											}
+											if (rowData.rowKey !== maxRowKey) {
+												gaiaCommon.customAlert("최근 항목만 삭제 가능합니다.");
+												return false;
+											}
+											return true;
+										},
+										success: function (rowData) {
+											_this.get();
+										}
+									}
+								],
+							},
+						},
+					],
+					columns: [
+						{
+							header: "{{ message('item.contract.026') }}", // 최종변경여부
+							name: "lastChgYn",
+							formatter: function (e) {
+								let isChecked = e.value === 'Y'; // lastChgYn 값이 'Y'인 경우 체크
+								return createCheckbox(isChecked);
+							},
+							align: "center",
+							width: 100,
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "계약차수", // 계약차수
+							name: "cntrctPhase",
+							hidden: true,
+							align: "center",
+							width: 100,
+							formatter: ({ value }) => value ? `${value}차` : "",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.contract.057') }}", // 변경회차
+							name: "cntrctChgNo",
+							className: "cntrctChgNo",
+							align:"center",
+							renderer: {
+								type:IconRenderer,
+								options: [{
+									type:"newwindow",
+									idFields: "pjtNo,cntrctChgId,cntrctNo",
+									align: "right",
+									absolute:true,
+									isHover:true,
+									open:{
+										url:"/project/contractstatus/change?pjtNo={id1}&cntrctChgId={id2}&cntrctNo={id3}",
+									}
+								}],
+							},
+                            resizable: true,
+                            ellipsis: true,
+							width: 100,
+						},
+						{
+							header: "{{ message('item.contract.058') }}", // 변경계약일자
+							name: "cntrctChgDate",
+							align: "center",
+							formatter: function (e) {
+								const dateValue = e.value ? e.value.toString() : "";
+								if (dateValue && dayjs(dateValue, "YYYYMMDD").isValid()) {
+									return dayjs(dateValue, "YYYYMMDD").format("YYYY-MM-DD");
+								}
+								return "";
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.contract.059') }}", // 변경준공일자
+							name: "chgCbgnDate",
+							align: "center",
+							formatter: function (e) {
+								const dateValue = e.value ? e.value.toString() : "";
+								if (dateValue && dayjs(dateValue, "YYYYMMDD").isValid()) {
+									return dayjs(dateValue, "YYYYMMDD").format("YYYY-MM-DD");
+								}
+								return "";
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.contract.060') }}", // 변경준공일자(금차준공일자)
+							name: "chgThisCbgnDate",
+							hidden: true,
+							align: "center",
+							formatter: function (e) {
+								const dateValue = e.value ? e.value.toString() : "";
+								if (dateValue && dayjs(dateValue, "YYYYMMDD").isValid()) {
+									return dayjs(dateValue, "YYYYMMDD").format("YYYY-MM-DD");
+								}
+								return "";
+							},
+                            width: 200,
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.sub.043') }}", // 변경 계약금액
+							name: "cntrctAmt",
+							align: "right",
+							formatter: function (e) {
+								if (e.value) {
+									return e.value.toLocaleString();
+								}
+								return 0;
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						// 금차 변경 계약금액
+						{
+							header: "{{ message('item.sub.044') }}", // 변경 계약기간
+							name: "cbgnDateRange",
+							align: "center",
+							formatter: function (e) {
+								const dates = e.value.split(" ~ ");
+								if (dates.length === 2) {
+									// 앞의 날짜와 뒤의 날짜를 포맷팅
+									const startDate = dayjs(dates[0], "YYYYMMDD").isValid() ? dayjs(dates[0], "YYYYMMDD").format("YYYY-MM-DD") : "";
+									const endDate = dayjs(dates[1], "YYYYMMDD").isValid() ? dayjs(dates[1], "YYYYMMDD").format("YYYY-MM-DD") : "";
+									if (startDate && endDate) {
+										return `${startDate} ~ ${endDate}`; // 두 날짜를 연결하여 반환
+									}
+								}
+								return "";
+							},
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{
+							header: "{{ message('item.sub.045') }}", // 변경 구분
+							name: "cntrctChgTypeNmKrn",
+                            resizable: true,
+                            ellipsis: true,
+						},
+						{ header: "{{ message('item.com.022') }}", name: "rmrk", align: "left" ,resizable: true, ellipsis: true,}, // 비고
+					],
+				});
+                this.changegrid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert(SESSION_EXPIRED_MSG, () => { location.reload(); });
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+                this.changegrid.on('onGridUpdated', () => {
+                    const firstRow = this.changegrid.getRowAt(0);
+                    if (!firstRow) return;
+
+                    if (firstRow.cntrctDivCd === "0104") {
+                        this.changegrid.showColumn('chgThisCbgnDate');
+                        this.changegrid.showColumn('cntrctPhase');
+                    } else {
+                        this.changegrid.hideColumn('chgThisCbgnDate');
+                        this.changegrid.hideColumn('cntrctPhase');
+                    }
+                });
+			}
+			refreshGrid(this.changegrid);
+		},
+		addChange() {
+			if (!cntrctNo) {
+				gaiaCommon.customAlert("{{ message('msg.contract.001') }}");    // 추가할 계약을 선택해주세요.
+				return;
+			}
+			window.location.href = `/project/contractstatus/createChange?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`;
+		},
+		updateChange() {
+			let checked = [];
+
+            const checkedRows = changegrid.changegrid.getCheckedRows();
+
+            checkedRows.forEach(row => {
+                const cntrctNo = row.cntrctNo;
+                const cntrctChgId = row.cntrctChgId;
+                checked.push({ cntrctNo, cntrctChgId });
+			});
+			if (checked.length == 1) {
+				const selectedRow = checked[0];
+				const { cntrctChgId, cntrctNo } = selectedRow;
+
+				window.location.href = `/project/contractstatus/updateChange?pjtNo=${pjtNo}&cntrctChgId=${cntrctChgId}&cntrctNo=${cntrctNo}`;
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.020') }}"); // 수정할 항목을 하나만 선택하세요.
+			}
+		},
+		deleteChange() {
+			const listName = "changeList";
+			let checked = [];
+			let hasOldestId = false; // 최초 변경계약 찾기
+			let hasLastChgYn = false; // 최종 변경 여부 확인
+			let latestRowKey = null; // 최근 항목
+
+            const checkedRows = changegrid.changegrid.getCheckedRows();
+
+            checkedRows.forEach(row => {
+				const rowKey = row.rowKey;
+				// 최신 rowKey 갱신
+				if (latestRowKey === null || rowKey > latestRowKey) {
+					latestRowKey = rowKey;
+				}
+
+                const cntrctChgId = row.cntrctChgId;
+                const lastChgYn = row.lastChgYn;
+
+                if (cntrctChgId.endsWith(".V01")) {
+                    hasOldestId = true;
+                }
+                if (lastChgYn === "Y") {
+                    hasLastChgYn = true;
+                }
+                checked.push({ cntrctChgId, rowKey });
+			});
+
+			if (checked.length > 0) {
+				if (hasOldestId) {
+					gaiaCommon.customAlert("{{ message('msg.033') }}");    // 최초 항목은 삭제할 수 없습니다.
+				} else if (hasLastChgYn) {
+					gaiaCommon.customAlert("{{ message('msg.contract.004') }}");    // 최종 변경계약은 삭제할 수 없습니다.
+				} else {
+					// 가장 최근 rowKey를 가진 항목 필터링
+					const recentItem = checked.find(item => item.rowKey === latestRowKey);
+					if (checked.length === 1 && recentItem) {
+						gaiaCommon.customConfirm("{{ message('item.contract.041') }}", "{{ message('item.contract.041') }}", "{{ message('msg.009') }}", function () {
+							const { rowKey, ...dataToSend } = recentItem;
+							let data = { [listName]: [dataToSend] };
+                            gaiaCommon.post("/api/project/contractstatus/change/delete", data, function(){
+                                gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제가 완료되었습니다.
+                                changegrid.changegrid.init();
+                            })
+						});
+					} else {
+						gaiaCommon.customAlert("{{ message('msg.contract.005') }}");    // 최근 항목만 삭제 가능합니다.
+					}
+				}
+			} else {
+				gaiaCommon.customAlert("{{ message('msg.021') }}"); // 선택된 항목이 없습니다.
+			}
+		},
+        contractcost() {
+            // 선택된 행 저장
+            const checkedRows = changegrid.changegrid.getCheckedRows();
+
+            if (checkedRows.length === 1) {
+                const selectedRow = checkedRows[0];
+                const { cntrctChgId, cntrctNo } = selectedRow;
+
+                const width = 1200;
+                const height = 900;
+                let left = Math.ceil((window.screen.width - width) / 2) + window.screenLeft;
+                const top = Math.ceil((window.screen.height - height) / 2);
+
+                window.open(
+                        `/projectcost/contract?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${cntrctNo}&id=${cntrctChgId}&type=p`,
+                        '_blank',
+                        `scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`
+                );
+
+            } else if (checkedRows.length === 0) {
+                gaiaCommon.customAlert("{{ message('msg.contract.008') }}"); // 내역서를 조회할 항목을 선택하세요.
+            } else if (checkedRows.length > 1) {
+                gaiaCommon.customAlert("{{ message('msg.contract.009') }}"); // 내역서를 조회할 항목을 하나만 선택하세요.
+            }else {
+                gaiaCommon.customAlert("{{ message('msg.contract.010') }}");    // 변경 항목을 하나만 선택하세요.
+            }
+        },
+	}
+
+	function createCheckbox(isChecked) {
+		return `
+                <div class="item_group" role="group" aria-label="Basic radio group" style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                    <label class="form_check">
+                        <input type="checkbox" name="useYn"
+                        class="check_mark" ${isChecked ? "checked" : ""} disabled />
+                    </label>
+                </div>`;
+	}
+</script>
+{% endblock footer_script %}

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.designSetting">
+    <select	id="selectDesignPhaseList" parameterType="designPhaseDetailInput" resultType="map">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.designSetting.selectDesignPhaseList][dhjung]  */
+        <![CDATA[
+            SELECT ddp.dsgn_phase_no
+                 , ddp.cntrct_no
+                 , ddp.dsgn_phase_nm
+                 , ddp.dsply_ordr
+                 , MAX(dds.dsgn_phase_cd) FILTER (WHERE dds.dsgn_phase_cd = '0101') AS review_cd
+                 , MAX(scc.cmn_cd_nm_krn) FILTER (WHERE dds.dsgn_phase_cd = '0101') AS review_nm
+                 , TO_CHAR(MAX(dds.bgn_date) FILTER (WHERE dds.dsgn_phase_cd = '0101'), 'YYYY-MM-DD') AS review_bgn_date
+                 , TO_CHAR(MAX(dds.end_date) FILTER (WHERE dds.dsgn_phase_cd = '0101'), 'YYYY-MM-DD') AS review_end_date
+                 , MAX(CASE WHEN CURRENT_DATE BETWEEN dds.bgn_date::DATE AND dds.end_date::DATE THEN 'ing'
+                             WHEN CURRENT_DATE > dds.end_date::DATE THEN 'finish'
+                             WHEN CURRENT_DATE < dds.bgn_date::DATE THEN 'waiting'
+                     END) FILTER (WHERE dds.dsgn_phase_cd = '0101') AS review_status
+                 , MAX(dds.dsgn_phase_cd) FILTER (WHERE dds.dsgn_phase_cd = '0102') AS response_cd 
+                 , MAX(scc.cmn_cd_nm_krn) FILTER (WHERE dds.dsgn_phase_cd = '0102') AS response_nm
+                 , TO_CHAR(MAX(dds.bgn_date) FILTER (WHERE dds.dsgn_phase_cd = '0102'), 'YYYY-MM-DD') AS response_bgn_date
+                 , TO_CHAR(MAX(dds.end_date) FILTER (WHERE dds.dsgn_phase_cd = '0102'), 'YYYY-MM-DD') AS response_end_date
+                 , MAX(CASE WHEN CURRENT_DATE BETWEEN dds.bgn_date::DATE AND dds.end_date::DATE THEN 'ing'
+                             WHEN CURRENT_DATE > dds.end_date::DATE THEN 'finish'
+                             WHEN CURRENT_DATE < dds.bgn_date::DATE THEN 'waiting'
+                     END) FILTER (WHERE dds.dsgn_phase_cd = '0102') AS response_status
+                 , MAX(dds.dsgn_phase_cd) FILTER (WHERE dds.dsgn_phase_cd = '0103') AS evalue_cd  
+                 , MAX(scc.cmn_cd_nm_krn) FILTER (WHERE dds.dsgn_phase_cd = '0103') AS evalue_nm
+                 , TO_CHAR(MAX(dds.bgn_date) FILTER (WHERE dds.dsgn_phase_cd = '0103'), 'YYYY-MM-DD') AS evalue_bgn_date
+                 , TO_CHAR(MAX(dds.end_date) FILTER (WHERE dds.dsgn_phase_cd = '0103'), 'YYYY-MM-DD') AS evalue_end_date
+                 , MAX(CASE WHEN CURRENT_DATE BETWEEN dds.bgn_date::DATE AND dds.end_date::DATE THEN 'ing'
+                             WHEN CURRENT_DATE > dds.end_date::DATE THEN 'finish'
+                             WHEN CURRENT_DATE < dds.bgn_date::DATE THEN 'waiting'
+                     END) FILTER (WHERE dds.dsgn_phase_cd = '0103') AS evalue_status
+                 , MAX(dds.dsgn_phase_cd) FILTER (WHERE dds.dsgn_phase_cd = '0104') AS backcheck_cd  
+                 , MAX(scc.cmn_cd_nm_krn) FILTER (WHERE dds.dsgn_phase_cd = '0104') AS backcheck_nm
+                 , TO_CHAR(MAX(dds.bgn_date) FILTER (WHERE dds.dsgn_phase_cd = '0104'), 'YYYY-MM-DD') AS backcheck_bgn_date
+                 , TO_CHAR(MAX(dds.end_date) FILTER (WHERE dds.dsgn_phase_cd = '0104'), 'YYYY-MM-DD') AS backcheck_end_date
+                 , MAX(CASE WHEN CURRENT_DATE BETWEEN dds.bgn_date::DATE AND dds.end_date::DATE THEN 'ing'
+                             WHEN CURRENT_DATE > dds.end_date::DATE THEN 'finish'
+                             WHEN CURRENT_DATE < dds.bgn_date::DATE THEN 'waiting'
+                     END) FILTER (WHERE dds.dsgn_phase_cd = '0104') AS backcheck_status
+        ]]>
+              FROM dm_design_phase ddp 
+              JOIN dm_design_schedule dds ON ddp.dsgn_phase_no = dds.dsgn_phase_no
+               AND dds.dlt_yn = 'N'
+              JOIN sm_com_code scc ON scc.cmn_cd = dds.dsgn_phase_cd
+               AND scc.cmn_grp_cd = '54ff11b6-1208-4f7e-a0da-1ef9d1432df1'
+             WHERE ddp.dlt_yn = 'N'
+               AND ddp.cntrct_no = #{cntrctNo}
+            <if test="dsgnPhaseNo != null and dsgnPhaseNo != ''">
+               AND ddp.dsgn_phase_no = #{dsgnPhaseNo}
+            </if> 
+          GROUP BY ddp.dsgn_phase_no, ddp.cntrct_no, ddp.dsgn_phase_nm, ddp.dsply_ordr
+          ORDER BY DSPLY_ORDR ASC;
+    </select>     
+
+      <select id="getDesignDashboardList" parameterType="designDashboardListInput" resultType="map">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.designSetting.getDesignDashboardList][dhjung]  */
+        <![CDATA[  
+        SELECT
+                DDP.DSGN_PHASE_NO,
+                DDP.DSGN_PHASE_NM,
+                TO_CHAR(DDS.BGN_DATE::TIMESTAMP ,'YYYY-MM-DD') AS BGN_DATE,
+                TO_CHAR(DDS.END_DATE::TIMESTAMP ,'YYYY-MM-DD') AS END_DATE,
+                COUNT(DDR.DSGN_NO) AS TOTAL_COUNT,
+                (	SELECT  COUNT(*)
+                        FROM    DM_DESIGN_REVIEW DDR2
+                        WHERE   DDR2.RGSTR_ID = #{usrId}
+                        AND     DDP.dsgn_phase_no = DDR2.dsgn_phase_no
+                        AND     DDR2.CNTRCT_NO = #{cntrctNo}
+                        AND     DDR2.DLT_YN = 'N') AS MY_COUNT,
+                COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0201' THEN 1 ELSE 0 END), 0) AS REPLY_A_COUNT,
+                COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0202' THEN 1 ELSE 0 END), 0) AS REPLY_D_COUNT,
+                COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0203' THEN 1 ELSE 0 END), 0) AS REPLY_C_COUNT,
+                COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0204' THEN 1 ELSE 0 END), 0) AS REPLY_I_COUNT,
+                COALESCE(SUM(CASE WHEN DDR.APPRER_CD = '0301' THEN 1 ELSE 0 END), 0) AS APPRER_A_COUNT,
+                COALESCE(SUM(CASE WHEN DDR.APPRER_CD = '0302' THEN 1 ELSE 0 END), 0) AS APPRER_D_COUNT,
+                COALESCE(SUM(CASE WHEN DDR.BACKCHK_CD = '0401' THEN 1 ELSE 0 END), 0) AS BACKCHK_P_COUNT,
+                COALESCE(SUM(CASE WHEN DDR.BACKCHK_CD = '0402' THEN 1 ELSE 0 END), 0) AS BACKCHK_C_COUNT
+        FROM    DM_DESIGN_PHASE DDP
+        LEFT JOIN 
+                DM_DESIGN_REVIEW DDR
+        ON      DDP.dsgn_phase_no = DDR.dsgn_phase_no
+        AND 	DDR.CNTRCT_NO = #{cntrctNo}
+        AND		DDR.dlt_yn = 'N'
+        LEFT JOIN 
+                DM_DESIGN_SCHEDULE DDS
+        ON      DDP.dsgn_phase_no = DDS.dsgn_phase_no
+        AND     DDS.DSGN_PHASE_CD = '0101'
+        AND 	DDS.dlt_yn = 'N'
+        LEFT JOIN 
+                DM_RESPONSE DR 
+        ON      DDR.DSGN_NO = DR.DSGN_NO
+	    AND     DR.DLT_YN = 'N'
+        WHERE   DDP.CNTRCT_NO = #{cntrctNo}
+        AND     DDP.DLT_YN = 'N'
+        GROUP BY DDP.dsgn_phase_no, DDP.DSGN_PHASE_NM, DDS.BGN_DATE, DDS.END_DATE
+        ORDER BY MAX(DSPLY_ORDR) ASC
+            ]]>
+         <include refid="sqlx.commonPageable"></include>	
+    </select>   
+
+    <select id="getDesignDashboardListCount" parameterType="designDashboardListInput" resultType="Long">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.designSetting.getDesignDashboardListCount][dhjung]  */
+        <![CDATA[  
+        WITH dsgn_list AS (
+                SELECT
+                        DDP.DSGN_PHASE_NO,
+                        DDP.DSGN_PHASE_NM,
+                        TO_CHAR(DDS.BGN_DATE::TIMESTAMP ,'YYYY-MM-DD') AS BGN_DATE,
+                        TO_CHAR(DDS.END_DATE::TIMESTAMP ,'YYYY-MM-DD') AS END_DATE,
+                        COUNT(DDR.DSGN_NO) AS TOTAL_COUNT,
+                        (	SELECT  COUNT(*)
+                                FROM    DM_DESIGN_REVIEW DDR2
+                                WHERE   DDR2.RGSTR_ID = #{usrId}
+                                AND     DDP.dsgn_phase_no = DDR2.dsgn_phase_no
+                                AND     DDR2.CNTRCT_NO = #{cntrctNo}
+                                AND     DDR2.DLT_YN = 'N') AS MY_COUNT,
+                        COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0201' THEN 1 ELSE 0 END), 0) AS REPLY_A_COUNT,
+                        COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0202' THEN 1 ELSE 0 END), 0) AS REPLY_D_COUNT,
+                        COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0203' THEN 1 ELSE 0 END), 0) AS REPLY_C_COUNT,
+                        COALESCE(SUM(CASE WHEN DR.RPLY_CD = '0204' THEN 1 ELSE 0 END), 0) AS REPLY_I_COUNT,
+                        COALESCE(SUM(CASE WHEN DDR.APPRER_CD = '0301' THEN 1 ELSE 0 END), 0) AS APPRER_A_COUNT,
+                        COALESCE(SUM(CASE WHEN DDR.APPRER_CD = '0302' THEN 1 ELSE 0 END), 0) AS APPRER_D_COUNT,
+                        COALESCE(SUM(CASE WHEN DDR.BACKCHK_CD = '0401' THEN 1 ELSE 0 END), 0) AS BACKCHK_P_COUNT,
+                        COALESCE(SUM(CASE WHEN DDR.BACKCHK_CD = '0402' THEN 1 ELSE 0 END), 0) AS BACKCHK_C_COUNT
+                FROM    DM_DESIGN_PHASE DDP
+                LEFT JOIN
+                        DM_DESIGN_REVIEW DDR
+                ON      DDP.dsgn_phase_no = DDR.dsgn_phase_no
+                AND 	DDR.CNTRCT_NO = #{cntrctNo}
+                AND		DDR.dlt_yn = 'N'
+                LEFT JOIN
+                        DM_DESIGN_SCHEDULE DDS
+                ON      DDP.dsgn_phase_no = DDS.dsgn_phase_no
+                AND     DDS.DSGN_PHASE_CD = '0101'
+                AND 	DDS.dlt_yn = 'N'
+                LEFT JOIN
+                        DM_RESPONSE DR
+                ON      DDR.DSGN_NO = DR.DSGN_NO
+                AND     DR.DLT_YN = 'N'
+                WHERE   DDP.CNTRCT_NO = #{cntrctNo}
+                AND     DDP.DLT_YN = 'N'
+                GROUP BY DDP.dsgn_phase_no, DDP.DSGN_PHASE_NM, DDS.BGN_DATE, DDS.END_DATE
+        )
+        SELECT  COUNT(*) AS total_count 
+        FROM    dsgn_list
+        ]]>
+    </select>   
+</mapper>
+    
+
+    

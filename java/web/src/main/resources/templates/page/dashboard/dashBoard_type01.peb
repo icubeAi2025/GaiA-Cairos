@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    {% include "sub/head" %}
+    {% block head %}
+    <style>
+        .project-row .ta_l>div {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .notice_tit {
+            display: inline-block;
+            max-width: 900px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+        }
+    </style>{% endblock %}
+</head>
+
+<body>
+    {% include "sub/head_content" %}
+    <main class="m_container">
+        <section class="project c_site">
+
+            <h2 class="sec_tit">
+                {{ message('item.dash.001') }}
+                <small class="label _primary" style="cursor: pointer;"
+                    onclick="dashBoard_type01.makeRegionList(null),dashBoard_type01.makeBigData(null)">
+                    <small>{{ message('item.com.069') }}</small> <b class="num" id="totalProjectCount"></b> <small>{{
+                        message('item.com.070') }}</small>
+                </small>
+            </h2>
+            <div class="in_container">
+                <div class="today_data">
+                    <h3 class="conts_tit" id="todayTitle"></h3>
+                    <div class="today_status" id="todayStatus">
+                    </div>
+                    <!-- S: Slick Slider -->
+                    <div class="today_photo">
+                        <div class="photo_list" id="photoList">
+                        </div>
+
+                        <div class="slick_nav">
+                            <div class="btn_area vertical slick_indigator">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="blind">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="blind">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- //E: Slick Slider -->
+                </div>
+
+                <div class="site_info">
+                    <h3 class="blind">"{{ message('item.dash.001') }}"</h3> <!--공공조달 건설현장-->
+                    <!-- 
+                        * 관리하는 지역: m_area
+                        * 데이터가 없는 지역 : blank_area
+                        * 지역 클릭/ 선택된 지역 : current
+                    -->
+                    <div class="map_wrap" id="regionList">
+                        <div class="map_col">
+                            <div class="area blank_area"></div>
+                            <div class="area blank_area"></div>
+                        </div>
+                        <div class="map_col" id="regionLv1" style="min-height: 760px;"> </div>
+                        <div class="map_col" id="regionLv2"> </div>
+                        <div class="map_col" id="regionLv3"> </div>
+                        <div class="map_col" id="regionLv4"> </div>
+                    </div>
+
+                    <div class="c_info">
+                        <!-- 관리하는 지역에 m_area -->
+                        <h3 class="conts_tit m_area">
+                            <span class="area_name" id="currentRegion">전체</span>
+                            {{ message('item.dash.004') }}
+                        </h3>
+                        <div class="slick_wrap">
+                            <div class="slick_nav">
+                                <div class="slick_paging"></div>
+                                <div class="btn_area slick_indigator">
+                                    <div class="btn_group _outline">
+                                        <button type="button" class="btn icon_btn prev">
+                                            <span class="blind">{{ message('btn.016') }}</span>
+                                        </button>
+                                        <button type="button" class="btn icon_btn next">
+                                            <span class="blind">{{ message('btn.017') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="c_list" id="projectList">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </section>
+
+        <!-- notice Slider -->
+        <section class="support">
+            <article class="dashboard_notice">
+                <div class="in_container">
+                    <h3 class="conts_tit">{{ message('item.dash.002') }}</h3> <!--알려드립니다-->
+                    <div class="slick_wrap">
+                        <div class="notice_list" id="noticeList">
+                        </div>
+                    </div>
+                    <a href="#" onclick="dashBoard_type01.noticeList();  return false;" class="more">{{
+                        message('item.dash.003') }}</a>
+                    <!--{{ message('item.com.059') }}보기-->
+
+                </div>
+            </article>
+        </section>
+        <!-- notice Slider -->
+
+        <!-- Ranking Slider -->
+        <section class="project rank">
+            <h2 class="sec_tit">{{ message('item.dash.005') }} Ranking 10</h2>
+            <div class="in_container" id="rankListWrap" style="display: none">
+                <div class="btn_group _outline s_default" id="rankOrder">
+                    <!-- 
+                        * 버튼 클릭시  _fill 추가 / 기본 오름차순 
+                        * 선택된 버튼 한 번 더 클릭 시 내림차순 : _desc 추가
+                        * 다른 버튼 선택 시 기본 _fill 제거 후 새 선택 버튼에 추가
+                        * 정렬 기준 항목에 mark 태그 삽입?
+                    -->
+                    <button type="button" class="btn sort _fill" id="process"
+                        onclick="dashBoard_type01.orderByRank('process')">{{ message('item.dash.006') }}</button>
+                    <!--공정율-->
+                    <button type="button" class="btn sort" id="ntpDate"
+                        onclick="dashBoard_type01.orderByRank('ntpDate')">{{ message('item.dash.007') }}</button>
+                    <!--착공일-->
+                    <button type="button" class="btn sort" id="cnstwkCst"
+                        onclick="dashBoard_type01.orderByRank('cnstwkCst')">{{ message('item.dash.008') }}</button>
+                    <!--사업비-->
+                    <button type="button" class="btn sort" id="cnstwkDaynum"
+                        onclick="dashBoard_type01.orderByRank('cnstwkDaynum')">{{ message('item.com.049') }}</button>
+                    <!--기간-->
+                </div>
+                <div class="slick_wrap">
+                    <div class="slick_nav">
+                        <div class="btn_area slick_indigator">
+                            <div class="btn_group _outline">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="blind">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="blind">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pj_list rank_list ty_card" id="rankList">
+                    </div>
+                </div>
+            </div>
+            <div class="nodata">
+                <p style="height: 200px; width: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: rgb(153, 153, 153);">데이터가 없습니다.</p>
+            </div>
+        </section>
+        <!-- Ranking Slider -->
+    </main>
+    {% include "sub/footer" %}
+</body>
+
+</html>
+<script>
+    var dashBoard_type01 = {
+        init: function () {
+            gaiaCommon.post("/api/dashboard/dashBoard_type01", '', function (data) {
+                gaiaCommon.customAlert("{{ message('msg.005') }}", function () {
+
+                let userInfo = data.details.userInfo;
+
+                /**
+                 * 2025-02-04
+                 * #795 워크샵 피드백 - 포털 상단에 메일이 아닌 이름 노출로 변경
+                 */
+                let userName = document.cookie.includes('ko') ? `${userInfo[4]} 님` : userInfo[4]
+                document.getElementById('userNm').innerHTML = decodeURIComponent(userName);
+                document.getElementById('userType').innerHTML = userInfo[1];
+
+                //금일 빅데이터
+                var bigData = data.details.bigData[0];
+
+                $("#todayTitle").text("[{{ message('item.com.059') }}] Today Big Data")
+                var bigDataContent = `
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img1"></i>
+                        <span class="status_name">{{ message('item.dash.009') }}</span>
+                        <div><span class="status_count"><b>${bigData.laborCount ? bigData.laborCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img2"></i>
+                        <span class="status_name">{{ message('item.dash.010') }}</span>
+                        <div><span class="status_count"><b>${bigData.materialCount ? bigData.materialCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img3"></i>
+                        <span class="status_name">{{ message('item.info.024') }}</span>
+                        <div><span class="status_count"><b>${bigData.dminsttCount ? bigData.dminsttCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img4"></i>
+                        <span class="status_name">{{ message('item.dash.011') }}</span>
+                       <div> <span class="status_count"><b>${bigData.corpCount ? bigData.corpCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img5"></i>
+                        <span class="status_name">{{ message('item.dash.012') }}</span>
+                        <div><span class="status_count"><b>${bigData.scontrctCorpCount ? bigData.scontrctCorpCount : 0}</b> 개</span></div>
+                    </span>`;
+                $("#todayStatus").append(bigDataContent);
+                var photoLists = data.details.bigDataPhotoList;
+                photoLists.forEach((photoList, index) => {
+                    var photoList = `
+                        <a href="javascript:void(0)" onclick="return false;" style="cursor: unset;">
+                            <figure class="p_photo_info">
+                                <img style='object-fit: cover; border-style: unset; width: 100%; height: 150px;' src="${photoList.fileDiskPath}/${photoList.fileDiskNm}" alt="${photoList.fileNm}">
+                                <figcaption>
+                                    <p class="tit">${photoList.titlNm}</p>
+                                    <p class="desc">${photoList.dscrpt}</p>
+                                </figcaption>
+                            </figure>
+                        </a> `;
+                    $("#photoList").append(photoList);
+                });
+                dashBoard_type01.makePhotoSlide();
+
+                // 건설현장 맵 생성
+                var regionList = data.details.region;
+
+                $("#currentRegion").text("{{ message('item.com.059') }}")
+                const createRegionMap = (rgnCd, rgnNm, count, isMArea, lv1Count, lv2Count, lv3Count) => {
+                    return `<a href="#" class="area ${isMArea ? 'm_area' : ''}">
+                        <div class="in_wrap">
+                            <span class="area_name" id="${rgnCd}">${rgnNm}</span>
+                            <span class="site_count">${count}</span>
+                            <span class="status_info">
+                                <b class="status_tit lv lv1">${lv1Count}</b>
+                                <b class="status_tit lv lv2">${lv2Count}</b>
+                                <b class="status_tit lv lv3">${lv3Count}</b>
+                            </span>
+                        </div>
+                    </a>`;
+                };
+
+                regionList.forEach((region, index) => {
+                    const rgnNm = region.cmnCdNmKrn;
+                    const rgnCd = region.cmnCd;
+                    const count = region.count;
+                    const lv1Count = region.lv1Count;
+                    const lv2Count = region.lv2Count;
+                    const lv3Count = region.lv3Count;
+
+                    if (index === 0) {
+                        $("#regionLv1").append(`<div class="area blank_area"></div>${createRegionMap(rgnCd, rgnNm, count, true, lv1Count, lv2Count, lv3Count)}<div class="area blank_area"></div><div class="area blank_area"></div>`);
+                    } else if (index <= 6) {
+                        $("#regionLv2").append(createRegionMap(rgnCd, rgnNm, count, index > 2, lv1Count, lv2Count, lv3Count));
+                    } else if (index <= 12) {
+                        $("#regionLv3").append(createRegionMap(rgnCd, rgnNm, count, index > 9, lv1Count, lv2Count, lv3Count));
+                    } else if (index <= 16) {
+                        $("#regionLv4").append(createRegionMap(rgnCd, rgnNm, count, index > 13, lv1Count, lv2Count, lv3Count));
+                    }
+
+                });
+
+                $(document).on("click", ".area:not(.blank_area)", function (e) {
+                    e.preventDefault();
+                    $(".area").removeClass("current");
+                    $(this).addClass("current");
+                    $("#currentRegion").text($(".current .area_name").text())
+                    $("#todayTitle").text("[" + $(".current .area_name").text() + "] Today Big Data")
+                    dashBoard_type01.makeRegionList($(".current .area_name").attr("id"));
+                    dashBoard_type01.makeBigData($(".current .area_name").attr("id"));
+                });
+
+                var projectList = data.details.projectList;
+                $("#projectList").empty();
+                if (projectList.length === 0) {
+                    $("#totalProjectCount").text("0")
+                    var noDataContent = `
+                                        <div>
+                                            <table class="table ty_list ta_c">
+                                                <colgroup>
+                                                    <col>
+                                                    <col span="3" width="80px">
+                                                </colgroup>
+                                                <thead>
+                                                    <tr>
+                                                        <th class="ta_l">{{ message('item.com.007') }}</th>
+                                                        <th>{{ message('item.dash.006') }}</th>
+                                                        <th>{{ message('item.dash.017') }}</th>
+                                                        <th>{{ message('item.dash.018') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="nodata">
+                                                        <td colspan="4">{{ message('msg.dash.001') }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>`;
+                    $("#projectList").append(noDataContent);
+                } else {
+                    $("#totalProjectCount").text(projectList[0].totalProjectCount);
+                    // 4개씩 그룹화하여 테이블 생성
+                    for (let i = 0; i < projectList.length; i += 4) {
+                        let tableList = ""; // 각 4개 그룹마다 초기화
+
+                        for (let j = i; j < i + 4 && j < projectList.length; j++) {
+                            const project = projectList[j];
+
+                            let levelClass;
+                            if (project.process >= 100) {
+                                levelClass = "lv3"
+                                console.log(project.process)
+                            } else if (project.process >= 80) {
+                                levelClass = "lv2";
+                            } else {
+                                levelClass = "lv1";
+                            }
+
+                            tableList += `
+                                        <tr class="project-row" title="${project.pjtNm}" >
+                                            <td class="ta_l" ><div>${project.pjtNm}</div><span class="blind">naver</span></td>
+                                            <td><b class="status_tit lv ${levelClass}">${project.process}%</b></td>
+                                            <td>${project.cnstwkCst}</td>
+                                            <td>${project.insptrNm}</td>
+                                        </tr>
+                                        <tr class="more_info">
+                                            <td colspan="4" class="ta_l">
+                                                <dl class="more_data">
+                                                    <dt>{{ message('item.com.007') }}</dt><dd>${project.pjtNm}</dd>
+                                                    <dt>{{ message('item.info.024') }}</dt><dd>${project.dminsttNm}</dd>
+                                                    <dt>{{ message('item.dash.013') }}</dt><dd>${project.cntrctCorpNm}</dd>
+                                                    <dt>{{ message('item.info.010') }}</dt><dd>${project.ntpDate}</dd>
+                                                    <dt>{{ message('item.contract.012') }}</dt><dd>${project.pjtEndDate}</dd>
+                                                    <dt>{{ message('item.dash.018') }}</dt><dd>${project.insptrNm}</dd>
+                                                    <dt>CM</dt><dd>${project.cmNm}</dd>
+                                                    <dt>{{ message('item.dash.014') }}</dt><dd>${project.spvsCorpNm}</dd>
+                                                    <dt>{{ message('item.dash.006') }}</dt><dd>(${project.process}%) ${project.planPer}% / ${project.actualPer}%</dd>
+                                                    <dt>{{ message('item.dash.015') }}</dt><dd>( {{ message('item.dash.019') }} ) {{ message('item.dash.020') }}</dd>
+                                                </dl>
+                                            </td>
+                                        </tr>`;
+                        }
+
+                        // 4개의 행을 포함하는 테이블 생성
+                        var tableContent = `
+                                    <div>
+                                        <table class="table ty_list ta_c">
+                                            <colgroup>
+                                                <col>
+                                                <col span="3" width="80px">
+                                            </colgroup>
+                                            <thead>
+                                                <tr>
+                                                    <th class="ta_l">{{ message('item.com.007') }}</th>
+                                                    <th>{{ message('item.dash.006') }}</th>
+                                                    <th>{{ message('item.dash.017') }}</th>
+                                                    <th>{{ message('item.dash.018') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${tableList}
+                                            </tbody>
+                                        </table>
+                                    </div>`;
+
+                        // 만들어진 테이블을 DOM에 추가
+                        $("#projectList").append(tableContent);
+                    }
+                }
+
+                dashBoard_type01.makeRegionSilde();
+
+                // 공지사항 생성
+                var noticeList = data.details.noticeList;
+                noticeList.forEach((boardList, index) => {
+                    const boardTitle = boardList.boardTitle;
+                    const boardNo = boardList.boardNo;
+                    const boardType = boardList.boardType;
+
+                    const width = 1100;
+                    const height = 700;
+                    let left = Math.ceil((window.screen.width - width) / 2);
+                    left += window.screenLeft; // 듀얼 모니터일 때
+                    const top = Math.ceil((window.screen.height - height) / 2);
+
+
+                    var noticeList = `
+                        <div class="notice_item">
+                            <span class="notice_label">{{ message('item.board.007') }}</span>
+                            <a href="#"
+                                onclick="window.open('/board/readMain?boardType=${boardType}&boardNo=${boardNo}', '_blank', 'width=${width},height=${height},left=${left},top=${top}'); return false;"
+                                class="notice_tit">${boardTitle}</a>
+                        </div> `;
+                    $("#noticeList").append(noticeList);
+
+                });
+                dashBoard_type01.makeNoticeSlide();
+
+                // 현장랭킹 생성
+                var rankLists = data.details.rankList;
+
+                if (rankLists.length > 0) {
+                    rankLists.forEach((rankList, index) => {
+                        var rankList = `
+                            <div class="slick_item">
+                                <div class="box card">
+                                    <div class="pj_info">
+                                        <strong class="pj_name"><a href="javascript:void(0)">${rankList.pjtNm}</a></strong>
+                                        <p class="pj_etc_info">
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">수요기관 : ${rankList.dminsttNm ? rankList.dminsttNm : "미등록"}</span>
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">계약회사 : ${rankList.cntrctCorpNm ? rankList.cntrctCorpNm : "미등록"}</span>
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">감리회사 : ${rankList.spvsCorpNm ? rankList.spvsCorpNm : "미등록"}</span>
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">CM명 : ${rankList.cmNm ? rankList.cmNm : "미등록"}</span>
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">감독관 : ${rankList.insptrNm ? rankList.insptrNm : "미등록"}</span>
+                                            <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">기간 : ${rankList.periodDate ? rankList.periodDate : "미등록"}</span>
+                                            <!-- <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">{{ message('item.dash.016') }}</span> -->
+                                            <!-- <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">{{ message('item.dash.015') }}</span> -->
+                                        </p>
+                                    </div>
+                                </div>
+                            </div> `;
+                        $("#rankList").append(rankList);
+                    });
+
+                    $('.nodata').hide();
+                    $('#rankListWrap').show();
+                // } else {
+                    // $('#rankList').hide();
+                }
+
+                dashBoard_type01.makeRankSlide();
+                });
+            },function (xhr, status, error){
+                console.error(status, error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+                gaiaCommon.LoadingOverlay('body', false);
+            });
+            gaiaCommon.LoadingOverlay('body', false);
+        },
+
+        // today big data
+        makeBigData: function (rgnCd) {
+            gaiaCommon.get("/api/dashboard/makebigData/" + rgnCd, '',  function(data){
+                var $slideTodayPhoto = $('.photo_list');
+                if ($slideTodayPhoto.hasClass("slick-initialized")) {
+                    $slideTodayPhoto.slick("unslick");
+                }
+
+                $("#todayStatus").empty();
+                $("#photoList").empty();
+
+                if (rgnCd == null) {
+                    $("#todayTitle").text("[{{ message('item.com.059') }}] Today Big Data")
+                }
+
+                var bigData = data.details.bigData[0];
+                var bigDataContent = `
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img1"></i>
+                        <span class="status_name">{{ message('item.dash.009') }}</span>
+                        <div><span class="status_count"><b>${bigData.laborCount ? bigData.laborCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img2"></i>
+                        <span class="status_name">{{ message('item.dash.010') }}</span>
+                        <div><span class="status_count"><b>${bigData.materialCount ? bigData.materialCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img3"></i>
+                        <span class="status_name">{{ message('item.info.024') }}</span>
+                        <div><span class="status_count"><b>${bigData.dminsttCount ? bigData.dminsttCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img4"></i>
+                        <span class="status_name">{{ message('item.dash.011') }}</span>
+                       <div> <span class="status_count"><b>${bigData.corpCount ? bigData.corpCount : 0}</b> 개</span></div>
+                    </span>
+                    <span class="t_s_item">
+                        <i class="d_ic ic_img5"></i>
+                        <span class="status_name">{{ message('item.dash.012') }}</span>
+                        <div><span class="status_count"><b>${bigData.scontrctCorpCount ? bigData.scontrctCorpCount : 0}</b> 개</span></div>
+                    </span>`;
+                $("#todayStatus").append(bigDataContent);
+
+
+
+                var photoLists = data.details.bigDataPhotoList;
+                photoLists.forEach((photoList, index) => {
+                    var photoList = `
+                        <a href="javascript:void(0)">
+                            <figure class="p_photo_info">
+                                <img style='object-fit: cover; border-style: none; width: 100%; height: 150px;' src="${photoList.fileDiskPath}/${photoList.fileDiskNm}" alt="${photoList.fileNm}">
+                                <figcaption>
+                                    <p class="tit">${photoList.titlNm}</p>
+                                    <p class="desc">${photoList.dscrpt}</p>
+                                </figcaption>
+                            </figure>
+                        </a> `;
+                    $("#photoList").append(photoList);
+                });
+                dashBoard_type01.makePhotoSlide();
+            },function (error){
+                console.error("Error loading contract list:", error);
+            })
+        },
+
+
+        // 공공조달건설현장
+        makeRegionList: function (rgnCd) {
+            gaiaCommon.get("/api/dashboard/makeRegionList/" + rgnCd, '', function (data){
+                var $slideC_List = $('.c_list');
+                if ($slideC_List.hasClass("slick-initialized")) {
+                    $slideC_List.slick("unslick");
+                }
+
+                var projectList = data.details.projectList;
+                $("#projectList").empty();
+                if (rgnCd == null) {
+                    $(".area").removeClass("current");
+                    $("#currentRegion").text("{{ message('item.com.059') }}")
+                }
+                if (projectList.length === 0) {
+                    var noDataContent = `
+                                        <div>
+                                            <table class="table ty_list ta_c">
+                                                <colgroup>
+                                                    <col>
+                                                    <col span="3" width="80px">
+                                                </colgroup>
+                                                <thead>
+                                                    <tr>
+                                                        <th class="ta_l">{{ message('item.com.007') }}</th>
+                                                        <th>{{ message('item.dash.006') }}</th>
+                                                        <th>{{ message('item.dash.017') }}</th>
+                                                        <th>{{ message('item.dash.018') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="nodata">
+                                                        <td colspan="4">{{ message('msg.dash.001') }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>`;
+                    $("#projectList").append(noDataContent);
+                } else {
+                    for (let i = 0; i < projectList.length; i += 4) {
+                        let tableList = "";
+
+                        for (let j = i; j < i + 4 && j < projectList.length; j++) {
+                            const project = projectList[j];
+
+                            let levelClass;
+                            if (project.process >= 100) {
+                                levelClass = "lv3"
+                                console.log(project.process)
+                            } else if (project.process >= 90) {
+                                levelClass = "lv2";
+                            } else {
+                                levelClass = "lv1";
+                            }
+
+                            tableList += `
+                                        <tr class="project-row" title="${project.pjtNm}" >
+                                            <td class="ta_l" ><div>${project.pjtNm}</div><span class="blind">naver</span></td>
+                                            <td><b class="status_tit lv ${levelClass}">${project.process}%</b></td>
+                                            <td>${project.cnstwkCst}</td>
+                                            <td>${project.insptrNm}</td>
+                                        </tr>
+                                        <tr class="more_info">
+                                            <td colspan="4" class="ta_l">
+                                                <dl class="more_data">
+                                                    <dt>{{ message('item.com.007') }}</dt><dd>${project.pjtNm}</dd>
+                                                    <dt>{{ message('item.info.024') }}</dt><dd>${project.dminsttNm}</dd>
+                                                    <dt>{{ message('item.dash.013') }}</dt><dd>${project.cntrctCorpNm}</dd>
+                                                    <dt>{{ message('item.info.010') }}</dt><dd>${project.ntpDate}</dd>
+                                                    <dt>{{ message('item.contract.012') }}</dt><dd>${project.pjtEndDate}</dd>
+                                                    <dt>{{ message('item.dash.018') }}</dt><dd>${project.insptrNm}</dd>
+                                                    <dt>CM</dt><dd>${project.cmNm}</dd>
+                                                    <dt>{{ message('item.dash.014') }}</dt><dd>${project.spvsCorpNm}</dd>
+                                                    <dt>{{ message('item.dash.006') }}</dt><dd>(${project.process}%) ${project.planPer}% / ${project.actualPer}%</dd>
+                                                    <dt>{{ message('item.dash.015') }}</dt><dd>( {{ message('item.dash.019') }} ) {{ message('item.dash.020') }}</dd>
+                                                </dl>
+                                            </td>
+                                        </tr>`;
+                        }
+
+                        var tableContent = `
+                                    <div>
+                                        <table class="table ty_list ta_c">
+                                            <colgroup>
+                                                <col>
+                                                <col span="3" width="80px">
+                                            </colgroup>
+                                            <thead>
+                                                <tr>
+                                                    <th class="ta_l">{{ message('item.com.007') }}</th>
+                                                    <th>{{ message('item.dash.006') }}</th>
+                                                    <th>{{ message('item.dash.017') }}</th>
+                                                    <th>{{ message('item.dash.018') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${tableList}
+                                            </tbody>
+                                        </table>
+                                    </div>`;
+
+                        $("#projectList").append(tableContent);
+                    }
+                }
+
+                dashBoard_type01.makeRegionSilde();
+            },function (error){
+                console.error("Error loading contract list:", error);
+            })
+        },
+        makeRegionSilde: function () {
+            var enableNav = true;
+            var speed = 1000;
+            var $slideC_List = $('.c_list');
+
+            // 지역 공사정보
+            $slideC_List.on('init reInit afterChange', function (event, slick, currentSlide, nextSlide) {
+                var currentSlide = slick.currentSlide + 1;
+                var totalSlide = slick.$dots[0].children.length;
+                $(".c_info .slick_paging").html('<b class="page">' + currentSlide + '</b> / ' + totalSlide);
+            });
+
+            $slideC_List.slick({
+                arrows: true,
+                prevArrow: $('.c_info .prev'),
+                nextArrow: $('.c_info .next'),
+                vertical: false,
+                dots: true,
+                infinite: false,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                autoplay: false,
+                speed: speed,
+                draggable: true
+            });
+
+
+        },
+
+        // 공지사항
+        noticeList: function () {
+            const width = 1100;
+            const height = 700;
+            let left = Math.ceil((window.screen.width - width) / 2);
+            left += window.screenLeft; // 듀얼 모니터일 때
+            const top = Math.ceil((window.screen.height - height) / 2);
+            window.open('/board/listReadMain?boardType=' + "1", '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+        },
+        makeNoticeSlide: function () {
+            // Slick slide
+            var $slideNoticeList = $('.notice_list');
+            var enableNav = true;
+            var speed = 1000;
+            // Notice
+            $slideNoticeList.slick({
+                arrows: true,
+                prevArrow: false,
+                nextArrow: false,
+                vertical: true,
+                dots: false,
+                infinite: true,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                autoplay: true,
+                speed: 500,
+                draggable: false
+            });
+        },
+
+        // 현장랭킹
+        orderByRank: function (buttonId) {
+            const clickedButton = document.getElementById(buttonId);
+            const buttons = document.querySelectorAll('.btn.sort');
+
+            var rankOrder;
+
+            buttons.forEach(button => {
+                if (button !== clickedButton) {
+                    button.classList.remove('_fill');
+                }
+            });
+
+            if (clickedButton.classList.contains('_fill')) {
+                clickedButton.classList.toggle('_desc');
+            } else {
+                clickedButton.classList.add('_fill');
+            }
+
+            if (clickedButton.classList.contains('_desc')) {
+                rankOrder = buttonId + ' desc';
+            } else {
+                rankOrder = buttonId
+            }
+            dashBoard_type01.makeRankList(rankOrder)
+        },
+        makeRankList: function (rankOrder) {
+            gaiaCommon.get("/api/dashboard/makeRankList/" + rankOrder, '', function (data){
+                var $slideRankList = $('.rank_list.ty_card');
+                if ($slideRankList.hasClass("slick-initialized")) {
+                    $slideRankList.slick("unslick");
+                }
+
+                var rankLists = data.details.rankList;
+
+                $("#rankList").empty();
+
+                rankLists.forEach((rankList, index) => {
+                    var rankList = `
+                             <div class="slick_item">
+                            <div class="box card">
+                                <div class="pj_info">
+                                    <strong class="pj_name"><a href="javascript:void(0)">${rankList.pjtNm}</a></strong>
+                                    <p class="pj_etc_info">
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">수요기관 : ${rankList.dminsttNm ? rankList.dminsttNm : "미등록"}</span>
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">계약회사 : ${rankList.cntrctCorpNm ? rankList.cntrctCorpNm : "미등록"}</span>
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">감리회사 : ${rankList.spvsCorpNm ? rankList.spvsCorpNm : "미등록"}</span>
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">CM명 : ${rankList.cmNm ? rankList.cmNm : "미등록"}</span>
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">감독관 : ${rankList.insptrNm ? rankList.insptrNm : "미등록"}</span>
+                                        <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">기간 : ${rankList.periodDate ? rankList.periodDate : "미등록"}</span>
+                                        <!-- <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">{{ message('item.dash.016') }}</span> -->
+                                        <!-- <span class="pj_etc_item" style="overflow: hidden; text-overflow: ellipsis;">{{ message('item.dash.015') }}</span> -->
+                                    </p>
+                                </div>
+                            </div>
+                        </div> `;
+
+                    $("#rankList").append(rankList);
+                });
+                dashBoard_type01.makeRankSlide();
+            },function (error){
+                console.error("Error :", error);
+            })
+        },
+        makeRankSlide: function () {
+            var $slideRankList = $('.rank_list.ty_card');
+
+            var enableNav = true;
+            var speed = 1000;
+
+            // Project List 
+            $slideRankList.slick({
+                arrows: true,
+                prevArrow: $('.rank .prev'),
+                nextArrow: $('.rank .next'),
+                dots: true,
+                infinite: true,
+                slidesToShow: 3,
+                slidesToScroll: 3,
+                autoplay: true,
+                speed: speed,
+                draggable: true
+            });
+        },
+        makePhotoSlide: function () {
+            var $slideTodayPhoto = $('.photo_list');
+            var enableNav = true;
+            var speed = 1000;
+
+            // Today Photo
+            $slideTodayPhoto.slick({
+                arrows: true,
+                prevArrow: $('.today_photo .prev'),
+                nextArrow: $('.today_photo .next'),
+                vertical: true,
+                dots: false,
+                infinite: false,
+                slidesToShow: 2,
+                slidesToScroll: 2,
+                autoplay: false,
+                speed: speed,
+                draggable: false
+            });
+
+        },
+
+    }
+
+    //지역별 공사 리스트 클릭 이벤트
+    $("#projectList").on("click", ".project-row", function () {
+        if ($(this).next(".more_info").hasClass("open")) {
+            $(".more_info").removeClass("open");
+        } else {
+            $(".more_info").removeClass("open");
+            $(this).next(".more_info").toggleClass("open");
+        }
+    });
+
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaCommon.LoadingOverlay('body', true);
+
+                document.getElementById("selectDbdItem").style.display = 'flex';
+                document.getElementById("selectPjtItem").style.display = 'none';
+                dashBoard_type01.init();
+
+                gaia.loaded = true
+            }
+        });
+    })
+
+</script>

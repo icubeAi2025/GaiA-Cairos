@@ -1,0 +1,131 @@
+<div class="modal open">
+	<div class="pop_box _sm">
+		<div class="pop_header">
+			<h5 class="pop_tit">{{ message('item.menu.029') }}</h5>
+			<button type="button" class="icon_btn pop_close" onclick="popup.close()">
+				<i class="ic ic-close"></i>
+				<span class="blind">창닫기</span>
+			</button>
+		</div>
+
+		<div class="pop_body">
+			<div class="form_box">
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.menu.017') }}</div>
+						<div class="form_data">
+							<div class="selectbox sort" style="margin-left: 0; z-index: 1;">
+							<select name="billingCode" class="required" id="billingCode" required>
+								<option value="" style="display: none">
+									{{ message('msg.menu.015') }}
+								</option>
+							</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label required">{{ message('item.menu.018') }}</div>
+						<div class="form_data">
+							<input type="text" id="cmnCdNmKrn" name="cmnCdNmKrn" required >
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<div class="form_label">{{ message('item.menu.019') }}</div>
+						<div class="form_data">
+							<input type="text" id="cmnCdDscrpt" name="cmnCdDscrpt" required >
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="pop_footer">
+			<div class="btn_area jc_e">
+				<button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+				<button type="button" class="btn _fill" onclick="popup.create()">{{ message('btn.006') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+  var popup = {
+    menu: "",
+    billingCodes: [],
+
+    init: function () {
+      	// combo init
+		$.ajax({
+			url: "/api/system/common-code/code-combo/28808d16-4317-4999-b3a2-4d17d5dc7173",
+			method: "GET",
+			dataType: "json",
+			xhrFields: { withCredentials: true },
+			contentType: "application/json; charset=UTF-8",
+			traditional: true,
+			success: function (result) {
+				billingCodes = result.details?.codeCombo;
+				billingCodes.forEach(function (code) {
+					$("#billingCode").append(
+						$("<option>", {
+						value: gaiaCommon.decodeSafeText(code.cmnCd),
+						text: gaiaCommon.decodeSafeText(code.cmnCd),
+						})
+					);
+				});
+				popup.billingCodes = billingCodes;
+			},
+			error: function (xhr, status, error) {
+				console.error("Error making select box:", status, error);
+			},
+		});
+
+		$("#billingCode").change(function () {
+			popup.show($(this).val());
+		});
+
+		gaia.loaded = true;
+
+    },
+
+    create: function () {
+		if (!$("#billingCode").val()) {
+            gaiaCommon.customAlert("{{ message('msg.menu.015') }}"); //기능 코드를 선택해주세요.
+			return;
+		}
+
+		const data = {
+			menuNo: this.menu.menuNo,
+			menuCd: this.menu.menuCd,
+			bilCode: $("#billingCode").val(),
+		};
+
+		gaiaCommon.LoadingOverlay('body', true); // 로딩 바 활성화
+		gaiaCommon.post("/api/system/menu/billing/create", data, function (result) {
+            gaiaCommon.customAlert("{{ message('msg.menu.016') }}"); //유료 기능이 추가되었습니다.
+			page.clear(false, true, false);
+			popup.close();
+			gaiaCommon.LoadingOverlay('body', false);
+		});
+    },
+
+    show: function (cmnCd) {
+		var code = this.billingCodes.find(function (code) {
+			return code.cmnCd == cmnCd;
+		});
+		$("#cmnCdNmKrn").val(gaiaCommon.decodeSafeText(code.cmnCdNmKrn));
+		$("#cmnCdDscrpt").val(gaiaCommon.decodeSafeText(code.cmnCdDscrpt));
+    },
+
+    close: function () {
+      page.popup.close();
+    },
+  };
+
+  $(function () {
+	  popup.menu = page.menu.obj;
+	  popup.init();
+  });
+</script>

@@ -1,0 +1,517 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+{% include 'sub/grid' %}
+
+
+
+<section class="contents_wrap">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_form">
+				<!-- {{ chkBtnHtml | raw }} -->
+				<div class="btn_area s_default">
+					{{ btnHtml | raw }}
+					<button type="button" class="btn _outline" id="cancel" onclick="cancel()" >{{ message("btn.007") }}</button>
+					<button type="button" class="btn _fill" onclick="paymentDetail.historyRead()"
+						id="payment_history_btn" style="display: none;">기성내역서 보기</button>
+					<div class="btn_group iconbtns">
+						<button class="icon_btn" id="newWindow">
+							<i class="ic ic-sent-to-back"></i>
+							<span class="tooltip">{{ message("item.com.017") }}</span>
+						</button>
+					</div>
+				</div>
+
+				<form id='inputForm'>
+					<div class="form_box">
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<!-- 기성회차 -->
+								<div class="form_label">{{ message("item.projectcost.033") }}</div>
+								<div class="form_data">
+									<input type="text" id="payprceTmnum" name="payprceTmnum">
+								</div>
+							</div>
+							<div class="col">
+								<!-- 기성년월 -->
+								<div class="form_label required">{{ message("item.projectcost.034") }}</div>
+								<div class="form_data">
+									<input type="month" id="payprceYm" name="payprceYm" class="month w-md"
+										data-date-format="MM/YYYY" format="MM/yyyy">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<!-- 기성신청일 -->
+								<div class="form_label">{{ message("item.projectcost.040") }}</div>
+								<div class="form_data">
+									<input type="date" id="payApprvlDate" name="payApprvlDate" class="date w-md"
+										data-date-format="DD/MM/YYYY">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<!-- 금회기성 -->
+								<div class="form_label">{{ message("item.projectcost.035") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="thtmAcomAmt" name="thtmAcomAmt" class="cost"
+											maxlength="16">
+									</span>
+								</div>
+							</div>
+							<div class="col">
+								<!-- 누계금액 -->
+								<div class="form_label">{{ message("item.projectcost.057") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="prevAcmtlAmt" name="prevAcmtlAmt" class="cost"
+											maxlength="16">
+									</span>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<!-- 선급금 공제 금액 -->
+								<div class="form_label">{{ message("item.projectcost.036") }} {{
+									message("item.projectcost.037") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="ppaymnyCacltAmt" name="ppaymnyCacltAmt" class="cost"
+											maxlength="16">
+									</span>
+								</div>
+							</div>
+							<div class="col">
+								<!-- 노무비 공제 금액 -->
+								<div class="form_label">{{ message("item.projectcost.013") }} {{
+									message("item.projectcost.037") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="rsrvAmt" name="rsrvAmt" class="cost" maxlength="16">
+									</span>
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<!-- 실 지급액 -->
+								<div class="form_label">{{ message("item.projectcost.038") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="thtmPaymntAmt" name="thtmPaymntAmt" class="cost"
+											maxlength="16">
+									</span>
+								</div>
+							</div>
+							<div class="col">
+								<!-- 잔여 -->
+								<div class="form_label">{{ message("item.projectcost.039") }}</div>
+								<div class="form_data">
+									<span class="item_wrap put_txt _won">
+										<input type="text" id="remndrAmt" name="remndrAmt" class="cost" maxlength="18"
+											readonly>
+									</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- row -->
+						<div class="row cols2">
+							<div class="col">
+								<!-- 검사일 -->
+								<div class="form_label">{{ message("item.projectcost.041") }}</div>
+								<div class="form_data">
+									<input type="date" id="inspctDate" name="inspctDate" class="date w-md"
+										data-date-format="DD/MM/YYYY">
+								</div>
+							</div>
+							<div class="col">
+								<!-- 대금지급일 -->
+								<div class="form_label">{{ message("item.projectcost.042") }}</div>
+								<div class="form_data">
+									<input type="date" id="paymntDate" name="paymntDate" class="date w-md"
+										data-date-format="DD/MM/YYYY">
+								</div>
+							</div>
+						</div>
+						<!-- row -->
+						<div class="row">
+							<div class="col">
+								<!-- 비고 -->
+								<div class="form_label">{{ message("item.com.022") }}</div>
+								<div class="form_data">
+									<textarea class="maxlength" id="rmrk" name="rmrk" maxlength="2000"></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</article>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<script src="/assets/js/projectcost/payment.js"></script>
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script>
+	let SearchArr = new Array();
+	var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo');
+	var sNo = urlParams.get('sNo');
+	var cntrctChgNo = urlParams.get('cntrctChgNo');
+	var readData = null;
+	const system = "{{ system }}";
+
+	// 금회기성, 선급금공제금액, 노무비공제금액, 실지급액 입력할 경우 잔여 input 세팅함
+	const ids = ["thtmAcomAmt", "ppaymnyCacltAmt", "rsrvAmt", "thtmPaymntAmt"];
+	ids.forEach(id => {
+		document.getElementById(id).addEventListener("input", calculateRemndrAmt);
+	});
+	document.getElementById("remndrAmt").addEventListener("keydown", function (e) {
+		e.preventDefault(); // 키보드 입력 무시
+	});
+	document.getElementById("remndrAmt").addEventListener("paste", function (e) {
+		e.preventDefault(); // 붙여넣기 무시
+	});
+
+
+	//d: 기본, p: 팝업
+	var type = urlParams.get('type');
+
+	//d: 보기, e: 수정하기(input on), a: 추가
+	var sType = urlParams.get('sType');
+
+	var init = function () {
+
+		$("#newWindow").click(function () {
+			if (sType == "a") {
+				window.open("/projectcost/payment/detail?type=p&sType=" + sType + "&cntrctNo=" + cntrctNo, 'targetWindow', 'scrollbars=yes,resizable=yes,width=1200,height=700');
+			} else {
+				window.open("/projectcost/payment/detail?type=p&sType=" + sType + "&cntrctNo=" + cntrctNo + "&sNo=" + sNo, 'targetWindow', 'scrollbars=yes,resizable=yes,width=1200,height=700');
+			}
+			window.history.back();
+		});
+
+		$("#edit").click(function () {
+			editFunc();
+		});
+
+		$("#save").click(function () {
+			goSave();
+		});
+
+
+
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function () {
+			$("#popBox").hide();
+		});
+
+		paymentDetail.init();
+	};
+
+	let paymentDetail = {
+		init: function () {
+			if (type == "d") {
+				$("#newWindow").show();
+			} else {
+				$("#newWindow").hide();
+			}
+
+			if (sType == "d" || sType == "e") {
+				$("#payment_history_btn").show();
+				gaiaCommon.LoadingOverlay('body', true);
+				this.read();
+			}
+			if (sType == "a") {
+				this.readNum();
+			}
+		},
+		read: function () {
+			let data;
+
+			var param = {
+				cntrctNo: cntrctNo
+				, payprceSno: sNo
+			};
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-detail',
+                param,
+                function (response) {
+                    data = response.details.paymentDetail;
+					readData = data; //전역변수에 저장
+					$("#payprceTmnum").val(data.payprceTmnum);
+					$("#payprceYm").val(dateFormat(data.payprceYm, "g"));
+					if (data.payApprvlDate == "" && sType == "d") {
+						$("#payApprvlDate").hide();
+					} else {
+						$("#payApprvlDate").val(dateFormat(data.payApprvlDate, "g"));
+					}
+					$("#thtmAcomAmt").val(numberFormat(data.thtmAcomAmt, "g"));
+					$("#ppaymnyCacltAmt").val(numberFormat(data.ppaymnyCacltAmt, "g"));
+					$("#thtmPaymntAmt").val(numberFormat(data.thtmPaymntAmt, "g"));
+					$("#remndrAmt").val(numberFormat(data.remndrAmt, "g"));
+
+					// 20250218 누계, 노무비공제 추가
+					$('#prevAcmtlAmt').val(numberFormat(data.prevAcmtlAmt, 'g'));
+					$('#rsrvAmt').val(numberFormat(data.rsrvAmt, 'g'));
+
+					if (data.inspctDate == "" && sType == "d") {
+						$("#inspctDate").hide();
+					} else {
+						$("#inspctDate").val(dateFormat(data.inspctDate, "g"));
+					}
+					if (data.paymntDate == "" && sType == "d") {
+						$("#paymntDate").hide();
+					} else {
+						$("#paymntDate").val(dateFormat(data.paymntDate, "g"));
+					}
+					$("#rmrk").val(gaiaCommon.decodeSafeText(data.rmrk))
+
+					if (sType == "d" && data.apprvlStats != null) {
+						$("#approval").show();
+						$("#reject").show();
+					}
+					// 결재요청 및 승인된 데이터 수정 버튼 제거
+					if(data.apprvlStats) {
+                        $("#edit").hide();
+					} else {
+                        $("#edit").show();
+					}
+                },
+                function (error) {
+                    console.error(error);
+					gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+			gaiaCommon.LoadingOverlay('body', false);
+		},
+		readNum: function () {
+			let data;
+
+			var param = {
+				cntrctNo: cntrctNo
+			};
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-tmnum',
+                param,
+                function (response) {
+                    if (response.details.paymentTmnum.length < 1) {
+						$("#payprceTmnum").val(1);
+					} else {
+						data = response.details.paymentTmnum[0];
+						$("#payprceTmnum").val(data.payprce_tmnum);
+					}
+                },
+                function (error) {
+                    console.error(error);
+					gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+		},
+		historyRead() {
+			console.log("system mode:", system);
+
+			if (system === "P") {	// PGaiA일 시
+				window.location.href = `/projectcost/payment/history?cntrctNo=${readData.cntrctNo}&cntrctChgNo=${cntrctChgNo}&sNo=${readData.payprceSno}&id=${readData.cntrctChgId}&dt=${readData.payprceYm}&tmnum=${readData.payprceTmnum}&pjtNo=${pjtInfo.pjtNo}`
+			}
+			if (system === "G") {
+				const width = 1200;
+				const height = 900;
+				let left = Math.ceil((window.screen.width - width) / 2);
+				left += window.screenLeft;
+				const top = Math.ceil((window.screen.height - height) / 2);
+				window.open(`/projectcost/payment/history?cntrctNo=${readData.cntrctNo}&cntrctChgNo=${cntrctChgNo}&sNo=${readData.payprceSno}&id=${readData.cntrctChgId}&dt=${readData.payprceYm}&tmnum=${readData.payprceTmnum}&pjtNo=${pjtInfo.pjtNo}` + `&pjtNo=${pjtInfo.pjtNo}`, '_blank', `scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`);
+			}
+		}
+
+	}
+	function editFunc() {
+		sType = "e";
+        window.location.href = "/projectcost/payment/detail?type=d&sType=e&cntrctNo=" + cntrctNo + "&sNo=" + sNo + "&cntrctChgNo=" + cntrctChgNo + `&pjtNo=${pjtInfo.pjtNo}`;
+	}
+
+	function goSave() {
+		var chk = true;
+		if ($("#payprceYm").val() == "") {
+			gaiaCommon.customAlert("{{ message('msg.projectcost.002') }}");
+			chk = false;
+		}
+
+		if (chk) {
+			var inputForm = $("#inputForm").serializeArray();
+			inputForm.push({ name: 'cntrctNo', value: cntrctNo });
+
+			if (sNo) {
+				inputForm.push({ name: 'payprceSno', value: sNo });
+			}
+			Object.keys(inputForm).forEach(function (v) {
+				if (inputForm[v].name == "payprceYm" || inputForm[v].name == "payApprvlDate" || inputForm[v].name == "inspctDate" || inputForm[v].name == "paymntDate") {
+					inputForm[v].value = inputForm[v].value.replaceAll("-", "");
+				}
+			});
+
+			Object.keys(inputForm).forEach(function (v) {
+				let amt_field =
+					inputForm[v].name == "thtmAcomAmt"
+					|| inputForm[v].name == "ppaymnyCacltAmt"
+					|| inputForm[v].name == "thtmPaymntAmt"
+					|| inputForm[v].name == "remndrAmt"
+					|| inputForm[v].name == "prevAcmtlAmt"
+					|| inputForm[v].name == "rsrvAmt"
+					;
+				if (amt_field) {
+					inputForm[v].value = inputForm[v].value.replaceAll(",", "");
+				}
+			});
+
+			var formData = objectifyForm(inputForm);
+
+			let dt = $("#payprceYm").val().replaceAll("-", "");
+			let dtTxt = dt + "01";
+			dtTxt = dateFormat(dtTxt, "g");
+
+			let dtDate = new Date(dtTxt);
+			dtDate.setMonth(dtDate.getMonth() - 1);
+
+			let year = dtDate.getFullYear();
+			let month = (dtDate.getMonth() + 1).toString().padStart(2, '0');
+
+			formData["dailyReportDate"] = dateFormat(dt, "g");
+			formData["prevPayprceYm"] = year + month;
+
+			let url = "";
+			if (sType == "a") {
+				url = "add-payment";
+			} else if (sType == "e") {
+				url = "update-payment";
+			}
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/' + url,
+                formData,
+                function (response) {
+                    if (type == "p") {
+						gaiaCommon.customAlert("{{ message('msg.034') }}");
+						window.opener.location.reload();
+						window.close();
+					} else {
+						gaiaCommon.customAlert("{{ message('msg.034') }}");
+						window.location.replace("/projectcost/payment");
+					}
+                },
+                function (error) {
+                    console.error(error);
+					gaiaCommon.customAlert("{{ message('msg.045') }}");
+                }
+            );
+
+		}
+	}
+
+	function objectifyForm(formArray) {
+		//serialize data function
+		var returnArray = {};
+		for (var i = 0; i < formArray.length; i++) {
+			returnArray[formArray[i]['name']] = formArray[i]['value'];
+		}
+		return returnArray;
+	}
+
+	// 금회기성, 선급금공제금액, 노무비공제금액, 실지급액 입력할 경우 잔여 input 세팅함
+	function calculateRemndrAmt() {
+		const acom = parseAmount(document.getElementById("thtmAcomAmt").value);
+		const ppay = parseAmount(document.getElementById("ppaymnyCacltAmt").value);
+		const rsrv = parseAmount(document.getElementById("rsrvAmt").value);
+		const pay = parseAmount(document.getElementById("thtmPaymntAmt").value);
+
+		const remndr = acom - (ppay + rsrv + pay);
+
+		document.getElementById("remndrAmt").value = formatAmount(remndr >= 0 ? remndr : 0);
+	}
+
+	// 천 단위 콤마 제거 후 숫자 변환
+	function parseAmount(val) {
+		const parsed = parseFloat(val.replace(/,/g, ''));
+		return isNaN(parsed) ? 0 : parsed;
+	}
+
+	// 천 단위 콤마 추가
+	function formatAmount(val) {
+		return val.toLocaleString("ko-KR", { maximumFractionDigits: 0 });
+	}
+
+	function cancel() {
+	    if (type == "d") {
+            sessionStorage.setItem('cntrctNo', cntrctNo);
+            console.log('*** pjtInfo.cntrctNo=', cntrctNo);
+            window.location.href = `/projectcost/payment?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`;
+        } else {
+            window.open('', '_self').close();
+        }
+	}
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				//readonly 제어
+				if (sType == "d") {
+					$('input').prop('readonly', true);
+					$('textarea').prop('readonly', true);
+				} else if (sType == "a" || sType == "e") {
+					$('input').prop('readonly', false);
+					$('textarea').prop('readonly', false);
+					$("#payprceTmnum").prop('readonly', true);
+				}
+
+				//nav 제어
+				if (sType == "d") {
+					gaiaPortal.navMenuInit('M0302', "{{ message('item.projectcost.075') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.projectcost.075") }}</li>');
+				} else if (sType == "a") {
+					gaiaPortal.navMenuInit('M0302', "{{ message('item.projectcost.048') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.projectcost.048") }}</li>');
+				} else if (sType == "e") {
+					$("[name=new_item]").remove();
+
+					$("#payApprvlDate").show();
+					$("#inspctDate").show();
+					$("#paymntDate").show();
+
+					gaiaPortal.navMenuInit('M0302', "{{ message('item.projectcost.049') }}");
+					$("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.projectcost.049") }}</li>');
+				}
+
+				//버튼 제어
+				if (sType == "d") {
+					$("#edit").show();
+				} else if (sType == "a" || sType == "e") {
+					$("#save").show();
+				}
+
+				init();
+
+				gaia.loaded = true;
+			}
+		});
+	})
+
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

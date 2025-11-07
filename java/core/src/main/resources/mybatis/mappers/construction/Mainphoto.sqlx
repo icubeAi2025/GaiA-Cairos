@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainphoto">
+
+    <select id="selectContractListForMainphoto" parameterType="mainphotoformTypeSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainphoto.selectContractListForMainphoto][mjkang]  */
+		   SELECT cc.*
+		        , scc.cmn_cd_nm_krn AS cmn_cd_nm_krn
+		        , ccc.cntrct_chg_id 
+		     FROM cn_contract cc
+		left join cn_contract_change ccc on cc.cntrct_no = ccc.cntrct_no 
+		left join pr_revision pr on ccc.cntrct_chg_id = pr.cntrct_chg_id 
+		LEFT JOIN sm_com_code scc ON cc.major_cnstty_cd = scc.cmn_cd
+		    WHERE 1 = 1
+			  AND cc.pjt_no = #{pjtNo}
+		      AND cc.dlt_yn = 'N'
+		      AND scc.cmn_grp_cd = '19a8bb53-74b4-405a-8d91-2b38555fc7d9'
+		      and ccc.last_chg_yn = 'Y'
+		      and pr.last_revision_yn = 'Y'
+	     ORDER BY cc.cntrct_no;
+    </select>
+    
+    <select id="selectMainphotoList" parameterType="mainphotoformTypeSelectInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.mainphoto.selectMainphotoList][mjkang]  */
+            SELECT cdra.activity_id
+	        	 , cdra.activity_nm
+	        	 , cdrp.titl_nm
+				 , cdrp.dscrpt 
+				 , COALESCE(cdrp.shot_date, '') AS shot_date 
+				 , ca.file_disk_path 
+				 , ca.file_disk_nm 
+				 , ca.file_nm 
+				 , * 
+			  FROM cw_daily_report_photo cdrp 
+		 LEFT JOIN cw_attachments ca ON cdrp.atch_file_no = ca.file_no and ca.dlt_yn = 'N'
+		 INNER JOIN cw_daily_report_activity cdra on cdra.activity_id = cdrp.activity_id and cdra.daily_report_id = cdrp.daily_report_id and cdra.work_dt_type = 'TD' and cdra.dlt_yn = 'N'
+			 WHERE 1 = 1
+			   AND cdrp.dlt_yn = 'N'
+			   AND cdrp.cntrct_no = #{cntrctNo}
+			   AND cdra.activity_id IN (SELECT activity_id 
+			                              FROM pr_activity pa 
+  				                         WHERE 1 = 1
+		   								   <if test="searchText == null or searchText == ''">
+			   							   <![CDATA[
+  				                           AND pa.wbs_cd LIKE CONCAT(#{wbsCd}, '%')
+    		   							   ]]>
+	   									   </if>
+  				                           AND cntrct_chg_id LIKE #{cntrctNo} || '%')
+			   <if test="searchText != null and searchText != ''">
+			   <![CDATA[
+			   AND (cdra.activity_id LIKE '%' || #{searchText} || '%') OR (cdra.activity_nm LIKE '%' || #{searchText} || '%')
+    		   ]]>
+			   </if>
+    </select>
+    
+</mapper>

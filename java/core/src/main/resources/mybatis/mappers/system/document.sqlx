@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.document">
+	<sql id="usrId">
+		(select usr_id from sm_user_info sui where login_id = #{rgstrId})
+	</sql>
+	<select id="selectNaviList" parameterType="constructionBeginsDocDto" resultType="constructionBeginsDocDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectNaviList][dsjung]*/
+		SELECT
+			child.*
+		FROM
+			sm_construction_begins_doc child
+		LEFT join
+			sm_construction_begins_doc parent
+			ON
+			child.up_cbgn_no = parent.cbgn_no
+		WHERE
+			child.up_cbgn_no = 0
+			or
+			(
+				child.dlt_yn = 'N'
+				AND	parent.dlt_yn = 'N'
+			)
+		order by
+			child.doc_yn asc
+			,child.dsply_ordr asc
+			,child.cbgn_no asc  
+	</select>
+	<select id="selectDropdownList" resultType="smComCode">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectDropdownList][dsjung]*/
+		select
+			cmn_cd
+			,cmn_cd_nm_eng
+			,cmn_cd_nm_krn
+		from
+			sm_com_code scc
+		where
+			cmn_grp_cd = (select cmn_grp_cd from sm_com_code_group where cmn_cd = 'DCTYPE')
+			and	dlt_yn ='N'
+		order by cmn_cd asc
+	</select>
+	<select id="selectMyContractList" resultType="cnContract">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectMyContractList][dsjung]*/
+		select
+			cc.pjt_no
+			,cc.cntrct_no
+			,cc.cntrct_nm
+			,cc.cntrct_date
+			,cc.cbgn_date
+		from
+			cn_contract cc
+		where
+		    dlt_yn = 'N'
+			and pjt_no = #{pjtNo}
+	</select>
+	<select id="selectDocumentFormData" parameterType="integer" resultType="constructionBeginsDocDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectDocumentFormData][dsjung]*/
+		select
+			cbgn_no
+			,cbgn_nm
+			,cbgn_path
+			,up_cbgn_no
+		    ,navi_type
+			,cbgn_level
+			,doc_yn
+			,cbgn_doc_type
+			,cbgn_doc_form
+			,dsply_ordr
+			,orgnl_doc_nm
+			,orgnl_doc_disk_nm
+			,orgnl_doc_disk_path
+			,pdf_doc_nm
+			,pdf_doc_disk_nm
+			,pdf_doc_disk_path
+			,dlt_yn
+			,rgstr_id
+			,rgst_dt
+			,chg_id
+			,chg_dt
+			,dlt_id
+			,dlt_dt
+		from
+			sm_construction_begins_doc scbd
+		where cbgn_no = #{cbgnNo}
+	</select>
+	<select id="selectDocumentForm" parameterType="hashmap" resultType="constructionBeginsDocDto">
+		select
+		    *
+		from sm_construction_begins_doc
+		where cbgn_doc_type = #{cbgnDocType}
+			and dlt_yn = #{dltYn}
+	</select>
+	<select id="selectDocumentListOfContract" parameterType="string" resultType="constructionBeginsDocDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectDocumentListOfContract][dsjung]*/
+		select
+			scbd.cbgn_no
+			,t.doc_nm as cbgn_nm
+			,scbd.cbgn_path
+			,scbd.up_cbgn_no
+			,scbd.cbgn_level
+			,scbd.doc_yn
+			,scbd.cbgn_doc_form
+			,scbd.dsply_ordr
+			,scbd.orgnl_doc_nm
+			,scbd.orgnl_doc_disk_nm
+			,scbd.orgnl_doc_disk_path
+			,scbd.pdf_doc_nm
+			,scbd.pdf_doc_disk_nm
+			,scbd.pdf_doc_disk_path
+			,t.dlt_yn
+			,sui.usr_nm as rgstr_id
+			,t.rgst_dt
+			,sui.usr_nm as chg_id
+			,t.chg_dt
+			,sui.usr_nm as dlt_id
+			,t.dlt_dt
+			,scbd.cbgn_doc_type 
+		from
+			sm_construction_begins_doc scbd
+			,sm_user_info sui
+			,(
+				select
+					cbgn_key,
+					doc_nm,
+					rgstr_id,
+					dlt_yn,
+					rgst_dt,
+					chg_dt,
+					dlt_dt
+				from
+					dc_storage_main dsm
+				where navi_id like ('${contractNo}_%')
+				and dlt_yn = 'N'
+			) t
+		where
+			scbd.cbgn_no = t.cbgn_key
+			and sui.usr_id = t.rgstr_id
+	</select>
+	<select id="selectCbgnPropertyList" parameterType="integer" resultType="cbgnPropertyDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectCbgnPropertyList][dsjung]*/
+		SELECT
+			attrbt_no
+			,attrbt_cd
+			,attrbt_cd_type
+			,attrbt_type
+			,attrbt_type_sel
+			,attrbt_nm_eng
+			,attrbt_nm_krn
+			,attrbt_dsply_order
+			,attrbt_dsply_yn
+			,attrbt_chg_yn
+		FROM
+			sm_cbgn_property
+		WHERE
+			cbgn_no = #{cbgnNo}
+		AND	dlt_yn = 'N'
+		ORDER  BY attrbt_dsply_order ASC
+			
+	</select>
+	<select id="countAttrbtCdOfCbgnNo" parameterType="hashmap" resultType="integer">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.countAttrbtCdOfCbgnNo][dsjung]*/
+		SELECT
+			count(attrbt_no)
+		FROM
+			sm_cbgn_property
+		WHERE
+			attrbt_cd = #{attrbtCd}
+			AND cbgn_no = #{cbgnNo}
+			AND dlt_yn = 'N'
+	</select>
+	<select id="selectPropertyOfAttrbtNo" parameterType="integer" resultType="cbgnPropertyDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectPropertyOfAttrbtNo][dsjung]*/
+		SELECT
+			attrbt_no
+			,attrbt_cd
+			,attrbt_cd_type
+			,attrbt_type
+			,attrbt_type_sel
+			,attrbt_nm_eng
+			,attrbt_nm_krn
+			,attrbt_dsply_order
+		FROM
+			sm_cbgn_property
+		WHERE
+			attrbt_no = #{attrbt_no}
+
+	</select>
+	<select id="selectHtmlPropertyFormList" parameterType="string" resultType="cbgnHtmlFormDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectHtmlPropertyFormList][dsjung]*/
+		select *
+		from sm_cbgn_html_form
+		where dlt_yn = 'N'
+		order by form_no asc
+	</select>
+	<select id="selectHtmlPropertyForm" parameterType="cbgnHtmlFormdto"	resultType="cbgnHtmlFormdto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectHtmlPropertyForm][dsjung]*/
+		select *
+		from sm_cbgn_html_form
+		where form_no = #{formNo}
+		and dlt_yn = 'N'
+	</select>
+	<select id="selectNaviOfCbgnNm" parameterType="hashmap"	resultType="constructionBeginsDocDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.selectNaviOfCbgnNm][dsjung]*/
+		select *
+		from sm_construction_begins_doc
+		where cbgn_nm = #{cbgnNm}
+		and dlt_yn = 'N'
+	</select>
+    <insert id="insertNavi" parameterType="constructionBeginsDocDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.insertNavi][dsjung]*/
+    	<selectKey keyProperty="cbgnNo" resultType="int" order="AFTER">
+	        SELECT currval(pg_get_serial_sequence('sm_construction_begins_doc', 'cbgn_no'))
+	    </selectKey>
+    	insert into sm_construction_begins_doc
+		(
+			cbgn_nm
+			,cbgn_path
+			,up_cbgn_no
+			,navi_type
+			,cbgn_level
+			,doc_yn
+			,dsply_ordr
+			,rgstr_id
+			,rgst_dt
+			,chg_id
+			,chg_dt
+		) values(
+			#{cbgnNm}
+			,#{cbgnPath}
+			,#{upCbgnNo}
+			,#{naviType}
+			,#{cbgnLevel}
+			,#{docYn}
+			,(
+				select
+					coalesce(max(dsply_ordr)+1,0)
+				from sm_construction_begins_doc
+				where up_cbgn_no = #{upCbgnNo} and doc_yn = 'N'
+			)
+			,<include refid="usrId"/>
+			,now()
+			,<include refid="usrId"/>
+			,now()
+		)
+    </insert>
+    <insert id="insertDocumentFormFile" parameterType="constructionBeginsDocDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.insertDocumentFormFile][dsjung]*/
+	    <selectKey keyProperty="cbgnNo" resultType="int" order="AFTER">
+	        SELECT currval(pg_get_serial_sequence('sm_construction_begins_doc', 'cbgn_no'))
+	    </selectKey>
+    	insert into sm_construction_begins_doc
+    	(
+    		cbgn_nm
+    		,cbgn_path
+    		,up_cbgn_no
+    		,cbgn_level
+    		,doc_yn
+    		,cbgn_doc_type
+    		,cbgn_doc_form
+    		,orgnl_doc_nm
+    		,orgnl_doc_disk_nm
+    		,orgnl_doc_disk_path
+    		,pdf_doc_nm
+    		,pdf_doc_disk_nm
+    		,pdf_doc_disk_path
+    		,dlt_yn
+    		,rgstr_id
+    		,rgst_dt
+    		,chg_id
+    		,chg_dt
+    		,dsply_ordr
+		) values(
+			#{cbgnNm}
+			,#{cbgnPath}
+			,#{upCbgnNo}
+			,#{cbgnLevel}
+			,#{docYn}
+			,#{cbgnDocType}
+			,(
+				select
+					LPAD(
+						(count(*)+1)::text,2,'0')
+				from sm_construction_begins_doc scbd
+				where doc_yn='Y'
+		  			and dlt_yn = 'N'
+					and
+				cbgn_doc_type=#{cbgnDocType}
+			)
+			,#{orgnlDocNm}
+			,#{orgnlDocDiskNm}
+			,#{orgnlDocDiskPath}
+			,#{pdfDocNm}
+			,#{pdfDocDiskNm}
+			,#{pdfDocDiskPath}
+			,'N'
+			,<include refid="usrId"/>
+			,now()
+			,<include refid="usrId"/>
+			,now()
+			,(
+				select
+					COALESCE(max(dsply_ordr),0)+1
+				from sm_construction_begins_doc
+				where up_cbgn_no = #{upCbgnNo}
+				and doc_yn = 'Y'
+			)
+		)
+    </insert>
+    <insert id="insertProperty" parameterType="cbgnPropertyDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.insertProperty][dsjung]*/
+	    <selectKey keyProperty="attrbtNo" resultType="integer" order="AFTER">
+	        SELECT currval(pg_get_serial_sequence('sm_cbgn_property', 'attrbt_no'))
+	    </selectKey>
+    	INSERT INTO sm_cbgn_property (
+    		cbgn_no
+    		, attrbt_cd
+    		, attrbt_cd_type
+    		, attrbt_type
+    		, attrbt_type_sel
+    		, attrbt_nm_eng
+    		, attrbt_nm_krn
+    		, attrbt_dsply_order
+    		, attrbt_dsply_yn
+    		, attrbt_chg_yn
+    		, dlt_yn
+    		, rgstr_id
+    		, rgst_dt
+    		, chg_id
+    		, chg_dt
+    	) VALUES(
+	    	#{cbgnNo}
+	    	, #{attrbtCd}
+	    	, 'UDC'
+	    	, #{attrbtType}
+	    	, #{attrbtTypeSel}
+	    	, #{attrbtNmEng}
+	    	, #{attrbtNmKrn}
+	    	,<choose>
+				<when test="attrbtDsplyOrder != null">
+					#{attrbtDsplyOrder}
+				</when>
+				<otherwise>
+					(
+						SELECT
+							COALESCE(MAX(attrbt_dsply_order), 0) + 1
+						FROM sm_cbgn_property
+						WHERE cbgn_no = #{cbgnNo}
+					)
+				</otherwise>
+			</choose>
+	    	, #{attrbtDsplyYn}
+	    	, 'Y'
+	    	, 'N'
+			, #{rgstrId}
+			, now()
+			, #{rgstrId}
+			, now()
+		)
+    </insert>
+	<insert id="insertHtmlPropertyForm">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.insertHtmlPropertyForm][dsjung]*/
+		<selectKey keyProperty="formNo" resultType="integer" order="AFTER">
+			SELECT currval(pg_get_serial_sequence('sm_cbgn_html_form', 'form_no'))
+		</selectKey>
+		insert into sm_cbgn_html_form (
+			form_nm
+			, form_type
+			, dc_form
+			, dlt_yn
+			, rgstr_id
+			, rgst_dt
+			, chg_id
+			, chg_dt
+		) values(
+		    #{formNm}
+			,#{formType}
+			,#{dcForm}
+			,'N'
+			, #{rgstrId}
+			, now()
+			, #{rgstrId}
+			, now()
+		)
+	</insert>
+    <update id="updateNavi" parameterType="constructionBeginsDocDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.updateNavi][dsjung]*/
+   	    <![CDATA[
+		    WITH RECURSIVE descendants AS (
+		        SELECT cbgn_no, up_cbgn_no, cbgn_nm, cbgn_path
+		        FROM sm_construction_begins_doc
+		        WHERE cbgn_no = #{cbgnNo}
+		        
+		        UNION ALL
+		        
+		        SELECT t.cbgn_no, t.up_cbgn_no, t.cbgn_nm, t.cbgn_path
+		        FROM sm_construction_begins_doc t
+		        INNER JOIN descendants d ON t.up_cbgn_no = d.cbgn_no
+		    ),
+		    target AS (
+		        SELECT cbgn_nm
+		        FROM sm_construction_begins_doc
+		        WHERE cbgn_no = #{cbgnNo}
+		    )
+		    UPDATE sm_construction_begins_doc
+		    SET cbgn_path = regexp_replace(
+		        cbgn_path,
+		        '(^| > )' || (SELECT cbgn_nm FROM target) || '( > |$)',
+		        '\1' || #{cbgnNm} || '\2'
+		    )
+		    WHERE cbgn_no IN (SELECT cbgn_no FROM descendants)
+		      AND cbgn_path IS NOT NULL;
+		
+		    UPDATE sm_construction_begins_doc
+		    SET cbgn_nm = #{cbgnNm}
+		    WHERE cbgn_no = #{cbgnNo};
+	    ]]>
+    </update>
+    <update id="updateNaviPath" parameterType="constructionBeginsDocDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.updateNavi][dsjung]*/
+    	update sm_construction_begins_doc 
+    	set
+    		cbgn_nm=#{cbgnNm}
+    		,chg_id=<include refid="usrId"></include>
+    		,chg_dt = now()
+		where
+			cbgn_no=#{cbgnNo}
+    </update>
+    <update id="updateOrdr" parameterType="hashmap">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.updateOrdr][dsjung]*/
+    	update sm_construction_begins_doc
+	    set dsply_ordr = 
+			case 
+				when cbgn_no = #{id1} then #{order2}
+	            when cbgn_no = #{id2} then #{order1}
+	        end
+	    where cbgn_no in (#{id1}, #{id2})
+    </update>
+	<update id="updateProperty" parameterType="cbgnPropertyDto">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.updateProperty][dsjung]*/
+		update sm_cbgn_property
+		set
+			attrbt_cd = #{attrbtCd}
+		  ,attrbt_type = #{attrbtType}
+		  ,attrbt_type_sel = #{attrbtTypeSel}
+		  ,attrbt_nm_eng = #{attrbtNmEng}
+		  ,attrbt_nm_krn = #{attrbtNmKrn}
+		  ,attrbt_dsply_order = #{attrbtDsplyOrder}
+		  ,chg_id = #{chgId}
+		  ,chg_dt = now()
+		where
+			attrbt_no = #{attrbtNo}
+	</update>
+    <update id="deleteDocumentFormData" parameterType="constructionBeginsDocDto">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.deleteDocumentFormData][dsjung]*/
+    	update sm_construction_begins_doc
+    	set
+    		dlt_yn = 'Y'
+    		,dlt_id=<include refid="usrId"></include>
+    		,dlt_dt = now()
+    	where
+    		cbgn_no = #{cbgnNo}
+    </update>
+    <update id="deleteProperty" parameterType="list">
+    	/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.deleteProperty][dsjung]*/
+    	update sm_cbgn_property
+    	set
+    		dlt_yn = 'Y'
+    		,dlt_id = #{usrId}
+    		,dlt_dt = now()
+    	where
+			attrbt_no in
+		<foreach item="attrbtNo" collection="attrbtNoList" open="(" separator="," close=")">
+	    	#{attrbtNo}
+	  	</foreach>
+    </update>
+	<update id="deleteHtmlPropertyForm" parameterType="hashmap">
+		update sm_cbgn_html_form
+		set
+		    dlt_yn = 'Y'
+			,dlt_id = #{usrId}
+			,dlt_dt = now()
+		where
+		    form_no in
+		<foreach item="formNo" collection="formNoList" open="(" separator="," close=")">
+			#{formNo}
+		</foreach>
+	</update>
+	<update id="updateHtmlPropertyForm">
+		/*[kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.document.updateHtmlPropertyForm][dsjung]*/
+		update sm_cbgn_html_form
+		set form_nm = #{formNm}
+		,form_type = #{formType}
+		,dc_form = #{dcForm}
+		,chg_id = #{chgId}
+		,chg_dt = now()
+		where form_no = #{formNo}
+	</update>
+</mapper>
+
+
+
+
+
+
+

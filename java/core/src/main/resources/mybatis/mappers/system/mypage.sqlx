@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.mypage">
+	<select id="selectLoginUserDetail" parameterType="string" resultType="userOutput">
+		/* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.selectLoginUserDetail][dsjung]  */
+		SELECT 
+			usr_id
+			, login_id
+			, usr_nm
+			, ratng_cd
+			, pstn_cd
+			, phone_no
+			, tel_no
+			, email_adrs
+			, use_yn
+			, dlt_yn
+			, rgstr_id
+			, rgst_dt
+			, chg_id
+			, chg_dt
+			, dlt_id
+			, dlt_dt
+		FROM
+			sm_user_info
+		WHERE login_id = #{loginId}
+		
+	</select>
+	<select id="selectAuthInfoByUsrId" parameterType="hashmap" resultType="smAuthorityGroup">
+		/* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.selectAuthInfoByUsrId][dsjung]  */
+		SELECT
+			pjt_no,
+			cntrct_no,
+			STRING_AGG(rght_grp_nm_krn, ',' ORDER BY rght_grp_nm_krn) AS rght_grp_nm_krn
+		FROM sm_authority_group sag
+		WHERE rght_grp_no IN (
+			SELECT rght_grp_no
+			FROM sm_authority_group_users sagu
+			WHERE auth_no IN (
+				SELECT dept_no FROM sm_organization WHERE login_id = #{loginId} and dlt_yn = 'N'
+			)
+		) and dlt_yn = 'N'
+		GROUP BY pjt_no, cntrct_no
+	</select>
+	
+	<!-- Profile 관련 -->
+    <insert id="insertFile" parameterType="profile">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.insertFile][dsjung]  */
+	    INSERT INTO sm_profile (
+	        usr_id
+	        ,file_org_nm
+	        ,file_disk_nm
+	        ,file_disk_path
+	        ,file_size
+	        ,rgst_dt
+	        ,stamp_yn
+	        ,dlt_yn
+			,rgstr_id
+			,chg_id
+			,chg_dt
+	    ) VALUES (
+	        #{usrId}
+	        ,#{fileOrgNm}
+	        ,#{fileDiskNm}
+	        ,#{fileDiskPath}
+	        ,#{fileSize}
+	        ,now()
+	        ,#{stampYn}
+	        ,'N'
+			,#{rgstrId}
+			,#{chgId}
+			,now()
+	    )
+    </insert>
+    <select id="selectFileByDiskNm" resultType="profile" parameterType="string">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.selectFileByDiskNm][dsjung]  */
+	    SELECT
+			usr_id
+			,file_no
+			,file_org_nm
+			,file_disk_nm
+			, file_disk_path
+			, file_size
+			,stamp_yn
+			, dlt_yn
+	        , rgstr_id
+			, rgst_dt
+	        , chg_id
+			, chg_dt
+	        , dlt_id
+			, dlt_dt
+		FROM
+			sm_profile
+	    WHERE file_disk_nm = #{fileDiskNm}
+    </select>
+    <select id="selectFileByFileNo" resultType="profile" parameterType="_int">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.selectFileByFileNo][dsjung]  */
+	    SELECT
+			usr_id
+			, file_no
+			, file_org_nm
+			, file_disk_nm
+			, file_disk_path
+			, file_size
+			, stamp_yn
+			, dlt_yn
+	        , rgstr_id
+			, rgst_dt
+	        , chg_id
+			, chg_dt
+	        , dlt_id
+			, dlt_dt
+		FROM
+			sm_profile
+		WHERE file_no = #{fileNo}
+    </select>
+    <select id="selectFilesByUsrId" resultType="profile" parameterType="string">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.selectFileByUsrId][dsjung]  */
+	    SELECT
+			usr_id
+			, file_no
+			, file_org_nm
+			, file_disk_nm
+			, file_disk_path
+			, file_size
+			, stamp_yn
+			, dlt_yn
+	        , rgstr_id
+			, rgst_dt
+	        , chg_id
+			, chg_dt
+	        , dlt_id
+			, dlt_dt
+		FROM
+			sm_profile sp
+	    WHERE usr_id = #{usrId}
+			AND dlt_yn != 'Y'
+    </select>
+    <update id="updateDltYn" parameterType="hashmap">
+    /* [kr.co.ideait.platform.gaiacairos.core.persistence.mybatis.system.mypage.updateDltYn][dsjung]  */
+	    UPDATE sm_profile
+	    SET
+			dlt_yn = 'Y'
+	      	,chg_id = #{dltId}, chg_dt = now()
+	    	,dlt_id = #{dltId}, dlt_dt = now()
+		WHERE
+		    <if test="fileNo == 0">
+				rgstr_id = #{userId}
+			</if>
+			<if test="fileNo != 0">
+		    	file_no = #{fileNo}
+			</if>
+    </update>
+
+    <select id="selectAllProjectAndContract" parameterType="string" resultType="map">
+        select
+            sd.pjt_no
+            ,(select pjt_nm from cn_project where pjt_no = sd.pjt_no) as pjt_nm
+            ,sd.cntrct_no
+            ,(select cntrct_nm from cn_contract where cntrct_no = sd.cntrct_no) as cntrct_nm
+            ,sd.dept_nm
+            ,(case
+                when
+                    so.flag = 'T'
+                    and (
+                        now() >= so.start_dt
+                        and so.end_dt >= now()
+                    )
+                then '계약중'
+                when
+                    so.flag = 'T'
+                    and (
+                        so.start_dt > now()
+                        or now() > so.end_dt
+                    )
+                then '계약종료'
+                when so.flag = 'I' then '재직중'
+                else '퇴직'
+            end) as status,
+            (case
+                when
+                    sd.pjt_no = sd.cntrct_no
+                then (select pjt_bgn_date from cn_project where pjt_no = sd.pjt_no)
+                else (select cbgn_date from cn_contract where cntrct_no = sd.cntrct_no)
+            end) as start_dt,
+            (case
+                 when
+                     sd.pjt_no = sd.cntrct_no
+                     then (select pjt_end_date from cn_project where pjt_no = sd.pjt_no)
+                 else (select ccmplt_date from cn_contract where cntrct_no = sd.cntrct_no)
+                end) as end_dt
+        from sm_department sd, sm_organization so
+        where sd.dept_no = so.dept_no
+            and so.usr_id = #{usrId}
+            and sd.cntrct_no != 'ADMIN' and sd.pjt_no != 'ADMIN'
+            and sd.dlt_yn = 'N'
+            and so.dlt_yn = 'N'
+    </select>
+</mapper>

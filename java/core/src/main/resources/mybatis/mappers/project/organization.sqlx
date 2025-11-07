@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.organization">
+
+    <select id="getOrgList" parameterType="organizationListInput" resultType="organizationListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.organization.getOrgList][jhkim]  */
+        SELECT
+            c.cntrct_no,
+            c.cntrct_org_id,  
+            c.cnstty_cd,  
+            c.corp_no,  
+            c.bsnsmn_no,          
+            c.corp_nm,  
+            c.ofcl_type,  
+            c.ofcl_id,  
+            c.ofcl_nm,  
+            c.tel_no,  
+            c.email,  
+            c.pstn,  
+            c.use_yn,
+            d.cmn_cd_nm_krn AS cnstty_cd_nm_krn, 
+            s.cmn_cd_nm_krn AS ofcl_type_nm_krn
+            from cn_contract_org c
+            LEFT JOIN sm_com_code d
+                ON c.cnstty_cd = d.cmn_cd
+                AND d.cmn_grp_cd = #{cmnGrpCdMajorCnstty}
+            LEFT JOIN sm_com_code s
+                ON c.ofcl_type = s.cmn_cd
+                AND s.cmn_grp_cd = #{cmnGrpCdOfcl}
+        <where>
+            <choose>
+                <when test="cntrctNo != null and cntrctNo != ''">
+                    c.cntrct_no = #{cntrctNo}
+                </when>
+                <otherwise>
+                    AND 1=0
+                </otherwise>
+            </choose>
+            and c.dlt_yn = 'N'
+        </where>
+            order by c.rgst_dt desc
+    </select>
+    
+
+    <select id="getOrgListCount" parameterType="organizationListInput" resultType="long">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.organization.getOrgListCount][jhkim]  */
+        select
+        count(*)
+        from cn_contract_org c
+        LEFT JOIN sm_com_code d
+            ON c.cnstty_cd = d.cmn_cd
+            AND d.cmn_grp_cd = #{cmnGrpCdMajorCnstty}
+        LEFT JOIN sm_com_code s
+            ON c.ofcl_type = s.cmn_cd
+            AND s.cmn_grp_cd = #{cmnGrpCdOfcl}
+            <where>
+                <choose>
+                    <when test="cntrctNo != null and cntrctNo != ''">
+                        c.cntrct_no = #{cntrctNo}
+                    </when>
+                    <otherwise>
+                        AND 1=0
+                    </otherwise>
+                </choose>
+                and c.dlt_yn = 'N'
+            </where>
+    </select>
+
+    <select id="getOrg" parameterType="organizationInput" resultType="organizationOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.organization.getOrg][jhkim]  */
+         SELECT
+            CCO.CORP_NM,
+            CCO.CNSTTY_CD ,
+            SCC1.CMN_CD_NM_KRN AS CNSTTY_CD_NM,
+            CCO.OFCL_NM,
+            CCO.OFCL_TYPE,
+            SCC2.CMN_CD_NM_KRN AS OFCL_TYPE_NM,
+            CCO.PSTN,
+            CCO.TEL_NO,
+            CCO.EMAIL,
+            CCO.USE_YN
+        FROM
+            CN_CONTRACT_ORG CCO
+            LEFT JOIN SM_COM_CODE SCC1 ON CCO.CNSTTY_CD = SCC1.CMN_CD
+            AND SCC1.CMN_GRP_CD = #{cmnGrpCdMajorCnstty}
+            LEFT JOIN SM_COM_CODE SCC2 ON CCO.OFCL_TYPE = SCC2.CMN_CD
+            AND SCC2.CMN_GRP_CD = #{cmnGrpCdOfcl}
+        WHERE
+            CCO.CNTRCT_NO = #{cntrctNo}
+            AND CCO.CNTRCT_ORG_ID = #{cntrctOrgId}
+            AND CCO.DLT_YN = 'N';
+    </select>
+
+</mapper>

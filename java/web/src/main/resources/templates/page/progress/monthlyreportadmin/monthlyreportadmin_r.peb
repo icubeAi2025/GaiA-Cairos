@@ -1,0 +1,144 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<!-- css -->
+<style>
+    #rmrkCntnts{
+        min-height: 7.6rem;
+        line-height: 1.45;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section class="contents_wrap">
+	<article class="conts_area">
+        <div class="conts">
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    {{ btnHtml | raw }}
+					<button type="button" class="btn _outline" onclick="page.close()">{{ message("btn.007") }}</button>
+                </div>
+
+                <!--개요 S-->
+                <div class="group">
+                    <div class="s_conts">
+                        <span class="tree_route">{{ message("item.construction.012") }}</span>
+                        <div class="form_box">
+                            <div class="group">
+                                <!-- row 1 -->
+                                <div class="row cols2">
+                                    <div class="col">
+                                        <!-- 보고년월 -->
+                                        <div class="form_label">{{ message("item.monthlyreport.004") }}</div>
+                                        <div class="form_data">
+                                            <span class="w-md" id="reportYm"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 보고일자 -->
+                                        <div class="form_label">{{ message("item.construction.002") }}</div>
+                                        <div class="form_data">
+                                            <span class="date w-md" id="monthlyReportDate"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 2 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 제목 -->
+                                        <div class="form_label">{{ message("item.doc.003") }}</div>
+                                        <div class="form_data">
+                                            <span id="title"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 4 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 비고 -->
+                                        <div class="form_label">비고</div>
+                                        <div class="form_data">
+                                            <textarea readonly id="rmrkCntnts"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var urlCntrctNo = urlParams.get('cntrctNo');
+    var cntrctChgId = urlParams.get('cntrctChgId');
+    var monthlyReportAdminId = urlParams.get('monthlyReportAdminId');
+
+    var page = {
+        init: function() {
+            pjtNo = pjtInfo.pjtNo;
+    	    cntrctNo = pjtInfo.cntrctNo;
+
+            this.detail();
+            gaia.loaded = true;
+        },
+
+        // 조회
+        detail: function(){
+            let data = {
+                cntrctChgId: cntrctChgId,
+                monthlyReportAdminId: monthlyReportAdminId
+            }
+
+            gaiaCommon.LoadingOverlay('body', true);
+
+            gaiaCommon.post(
+                '/api/progress/monthlyreportadmin/detail',
+                data,
+                function(data){
+                    let result = data.details.result;
+
+                    $('#reportYm').text(gaiaCommon.decodeSafeText(result.reportYm));
+                    $('#monthlyReportDate').text(gaiaCommon.decodeSafeText(result.monthlyReportDate));
+                    $('#title').text(gaiaCommon.decodeSafeText(result.title));
+                    $('#rmrkCntnts').text(gaiaCommon.decodeSafeText(result.rmrkCntnts));
+
+                },
+                function(){
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                },
+                function() {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            )
+        },
+
+        // 닫기
+        close: function(){
+            window.location.href = `/progress/monthlyreportadmin/list?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`;
+            sessionStorage.setItem('cntrctNo', urlCntrctNo);
+        },
+
+        // 수정
+        update: function (){
+            window.location.href = `/progress/monthlyreportadmin/update?pjtNo=${pjtNo}&cntrctNo=${urlCntrctNo}&cntrctChgId=${cntrctChgId}&monthlyReportAdminId=${monthlyReportAdminId}`;
+        }
+    }
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M0208", "월간공정보고 관리관");
+                $('#menuDepth').append(`<li class="breadcrumb_item">월간공정보고 관리관용 상세조회</li>`);
+                page.init();
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

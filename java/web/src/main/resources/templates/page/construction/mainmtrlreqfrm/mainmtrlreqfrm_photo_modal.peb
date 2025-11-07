@@ -1,0 +1,234 @@
+{% block content %}
+<div class="modal open">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h3 class="pop_tit" id="photo_cu_tit"></h3>
+            <button type="button" class="icon_btn pop_close" onclick="photopopup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <form id="dept-form">
+                <div class="conts_form">
+                    <div class="form_box" id="photo-form">
+                        <div class="container" style="display: flex; align-items: center;">
+                            <span class="caption">
+                                <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                            </span>
+                        </div>
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label required">내용</div>
+                                <div class="form_data">
+                                    <input type="text" id="cntnts" class="maxlength" maxlength="255">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label required">위치</div>
+                                <div class="form_data">
+                                    <textarea id="lct" class="maxlength" maxlength="100"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label required">{{ message('item.quality.042') }}</div>
+                                <div class="form_data">
+                                    <input type="date" class="date w-md" id="shotDate" name="shotDate">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- row -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form_label required">{{ message("item.construction.054") }}</div>
+                                <div class="form_data" style="position: relative;height: 340px;">
+                                    <div style="top: 0;position: absolute;" id="photoDiv">
+                                        <button type="button" class="btn icon_btn" id="addPhoto"
+                                            onclick="photopopup.addphoto()">
+                                            <i class="ic ic-picture-one"></i>
+                                            <span class="blind">추가</span>
+                                        </button>
+                                    </div>
+                                    <div style="position: absolute;bottom: 8px; height:300px; width: 530px;">
+                                        <!-- 여러 장 프리뷰 -->
+                                        <div id="uploadImg"
+                                            style="height:290px; width: 530px; display:flex; flex-wrap:nowrap; overflow-x: auto">
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="file" accept="image/*" id="fileNm" name="fileNm" style="display: none;"
+                                    multiple />
+                            </div>
+                        </div>
+                        <div class="form_help"
+                            style="margin-top: 8px; color: #eb6565; font-size: 12px; position:absolute; bottom:4px; right: 12px">
+                            <i class="ic ic-info" style="margin-right: 4px;"></i>1MB 이상의 파일은 업로드 시 자동으로 크기가 조정됩니다
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="photopopup.close()">{{ message('btn.007') }}</button>
+                <button type="button" class="btn _fill" id="addButton" onclick="photopopup.save()">{{ message('btn.006')
+                    }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}{% block footer_script %}
+<script src="/assets/js/validation.js"></script>
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                photopopup.init();
+            }
+        });
+    });
+
+    var photopopup = {
+        photopopupWindow: null,
+        selectedFiles: [],
+        selectedBase64List: [],
+
+        init: function () {
+            $("#photo_cu_tit").text("주요자재 검수요청서 사진");
+        },
+        close: function () {
+            photopopup.selectedFile = null;
+            photopopup.selectedBase64 = null;
+            $("#uploadImg").empty();
+            $("#photopopup").css("display", "none");
+        },
+        addphoto: function () {
+            $("#fileNm").click(); // 숨겨진 input 클릭
+        },
+        save: function () {
+            const cntnts = document.getElementById('cntnts').value // 제목
+            const lct = document.getElementById('lct').value // 설명
+            const shotDate = document.getElementById('shotDate').value // 날짜
+
+            const photoData = {
+                cntnts: cntnts,
+                lct: lct,
+                shotDate: shotDate,
+                base: document.getElementById('uploadImg').src, // 업로드된 이미지의 경로
+                file: this.selectedFile,
+            };
+
+
+            // 필수 입력값 체크
+            if (!cntnts) {
+                gaiaCommon.customAlert("내용을 입력하세요.");
+                return;
+            }
+            if (!lct) {
+                gaiaCommon.customAlert("위치를 입력하세요.");  
+                return;
+            }
+            if (!shotDate) {
+                gaiaCommon.customAlert("{{ message( 'msg.quality.013') }}"); // 날짜를 선택해 주세요.
+                return;
+            }
+
+            // 업로드된 이미지가 없으면 경고
+            if (!this.selectedFiles.length) {
+                gaiaCommon.customAlert("{{ message( 'msg.quality.014') }}");
+                return;
+            }
+
+            // 여러 장 모두 부모창에 전달
+            this.selectedFiles.forEach((file, idx) => {
+                const photoData = {
+                    cntnts: cntnts,
+                    lct: lct,
+                    shotDate: shotDate,
+                    base: this.selectedBase64List[idx],
+                    file: file
+                };
+                photo.setPhoto(photoData);  // 부모창 메서드 그대로 호출
+            });
+
+            photopopup.close();
+        }
+    }
+    $("#fileNm").on("change", function (e) {
+        const files = e.target.files;
+        if (!files.length) return;
+
+        if (files.length > 10) {
+            gaiaCommon.customAlert("사진은 한 번에 최대 10개까지만 선택할 수 있습니다.");
+            $(this).val('');
+            return;
+        }
+
+        photopopup.selectedFiles = [];
+        photopopup.selectedBase64List = [];
+        $("#uploadImg").empty();
+
+
+        // 로딩 시작 (닫기/저장 버튼 차단)
+        gaiaCommon.LoadingOverlay('body', true);
+
+        let processed = 0;
+        const total = files.length;
+
+        Array.from(files).forEach(file => {
+            if (!(file instanceof File)) {
+                processed++;
+                if (processed === total) gaiaCommon.LoadingOverlay('body', false);
+                return;
+            }
+
+            const tempImg = new Image();
+            tware.utils.resizeImage(tempImg, file, (resData) => {
+                const resizedFile = resData.file;
+                let base64 = resData.data;
+
+                // dataURL prefix 확인
+                let dataUrl;
+                if (base64.startsWith("data:")) {
+                    dataUrl = base64;
+                } else {
+                    const mimeType = file.type || "image/jpeg";
+                    dataUrl = "data:" + mimeType + ";base64," + base64;
+                }
+
+                // 프리뷰 이미지 추가
+                const previewImg = $("<img>")
+                    .attr("src", dataUrl)
+                    .css({
+                        width: "300px", height: "200px",
+                        marginRight: "8px", borderRadius: "4px",
+                        objectFit: "contain", border: "1px solid #e0e0e0"
+                    });
+                $("#uploadImg").append(previewImg);
+
+                photopopup.selectedFiles.push(resizedFile);
+                photopopup.selectedBase64List.push(base64);
+
+                processed++;
+                if (processed === total) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                }
+            });
+        });
+
+        $(this).val('');
+    });
+</script>
+{% endblock %}

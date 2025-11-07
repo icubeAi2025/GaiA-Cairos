@@ -1,0 +1,335 @@
+{% extends 'layout/base_content' %} {% block head %} {% endblock %} {% block
+content %}
+<article class="conts g-row" id="container">
+    <div class="group">
+        <h3 class="conts_tit">{{ message('item.eco.002') }}</h3>
+        <div class="conts_grid">
+            <div class="search_wrap">
+                <span class="selectbox" id="searchBox">
+                </span>
+                <div class="searchbox_wrap">
+                    <input type="text" id="searchText" name="searchText"
+                        onkeypress="if( event.keyCode == 13 ){eco.search(event);}"
+                        placeholder="{{ message('msg.004') }}" />
+                    <button type="button" class="icon_btn" onclick="eco.search(event)">
+                        <i class="ic ic-search"></i>
+                        <span class="blind"> {{ message("item.com.014") }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar">
+                <div class="btn_area s_default">
+{#                    {{ btnHtml | raw }}#}
+                    <button type="button" class="btn _outline" onclick="eco.delete()">{{ message('btn.002') }}</button>
+                    <button type="button" class="btn _outline" onclick="eco.update()">{{ message('btn.003') }} </button>
+                    <button type="button" class="btn _fill" onclick="eco.create()">{{ message('btn.001') }}</button>
+                </div>
+            </div>
+            <div class="grid" id="ecomaterial-grid"></div>
+        </div>
+    </div>
+</article>
+{% endblock content %} {% block footer_script %}
+<script>
+    let pjtNo;
+    let cntrctNo;
+    let searchText;
+    let searchTerm;
+
+    // 친환경 인증 자재 목록 그리드
+    var ecoGrid = {
+        isDelAuth: "{{ isDelAuth }}",
+        init: function () {
+            const Grid = tui.Grid;
+            let _this = this;
+
+            if (this.ecomaterialGrid) {
+                this.ecomaterialGrid.destroy();
+                this.ecomaterialGrid = null;
+            }
+
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/system/ecomaterial/list",
+                    method: "Get",
+                    initParams: {
+                        cntrctNo: cntrctNo,
+                        searchTerm: searchTerm,
+                        searchText: searchText
+                    },
+                },
+            })
+
+            const bodyHeight = window.innerHeight - 400;
+
+            if (!this.ecomaterialGrid) {
+                this.ecomaterialGrid = new Grid({
+                    el: document.getElementById("ecomaterial-grid"),
+                    data: dataSource,
+                    scrollX: false,
+                    scrollY: true,
+                    draggable: false,
+                    contextMenu: null,
+                    minBodyHeight: bodyHeight,
+                    bodyHeight: bodyHeight,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `
+                                        <input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+                                `,
+                            width: 100,
+                            renderer: {
+                                type: window.IconRenderer,
+                                options: [
+                                    {
+                                        type:"checkBox"
+                                    },
+                                    {
+                                        type:"trash",
+                                        url: "/api/system/ecomaterial/delete",
+                                        idFields: "ecoId",
+                                        keyName: "ecoMaterialList",
+                                        auth: ecoGrid.isDelAuth == "true",
+                                        msgList: {
+                                            confirmTit: "{{ message('item.eco.003') }}",
+                                            confirmMsg: "{{ message('msg.009') }}",
+                                            completeMsg: "{{ message('msg.006') }}"
+                                        },
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    columns: [
+                        {
+                            header: "{{ message('item.eco.006') }}",
+                            name: "ecoTpCdNm",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.007') }}",
+                            name: "rsceNm",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.008') }}",
+                            name: "specNm",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.009') }}",
+                            name: "unit",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.010') }}",
+                            name: "preCert",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.011') }}",
+                            name: "finalCert",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.012') }}",
+                            name: "makrNm",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.eco.013') }}",
+                            name: "certRsn",
+                            resizable: true,
+                        },
+                        {
+                            header: "{{ message('item.com.022') }}",
+                            name: "rmrk",
+                            resizable: true,
+                        },
+
+                    ],
+                });
+            }
+            refreshGrid(ecoGrid.ecomaterialGrid);
+        },
+
+    }
+
+    var eco = {
+        isDelAuth: "{{ isDelAuth }}",
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+            cntrctNo = pjtInfo.cntrctNo;
+
+            eco.makeCntrctSelect();
+        },
+
+        makeCntrctSelect: function () {
+            let initialCntrctNo = null;
+
+            var queryString = $.param({
+                pjtNo: pjtNo,
+            });
+
+            if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                var param = {pjtNo: pjtNo};
+                gaiaCommon.post("/api/portal/select-cntrctList", param, (data)=>{
+                    var list = data.details.contractList;
+                    if (list.length > 0) {
+                        $("#container").prepend(
+                            "<div class='group'><h3 class='conts_tit'>{{ message('item.com.018') }}</h3>" +
+                            "<div class='conts_form'><span class='selectbox'>" +
+                            "<select name='cntrctNo' id='cntrctNo' class=''></select></span></div></div>"
+                        );
+
+                        // 기존 옵션 제거
+                        $("#cntrctNo").empty();
+
+                        // 계약 목록을 드롭다운에 추가
+                        list.forEach((contract) => {
+                            $("#cntrctNo").append($("<option>").val(contract.cntrct_no).text(gaiaCommon.decodeSafeText(contract.cntrct_nm)));
+                        });
+
+                        const initialCntrctNo = list[0].cntrct_no;
+                        cntrctNo = initialCntrctNo;
+                        $("#cntrctNo").val(initialCntrctNo)
+
+                        $("#cntrctNo").change(function (e) {
+                            cntrctNo = e.target.value;
+                            ecoGrid.init();
+                        });
+
+                        ecoGrid.init();
+
+                    } else {
+                        $("#container").prepend(
+                            "<div class='group'><h3 class='conts_tit'>{{ message('item.com.018') }}</h3>" +
+                            "<div class='conts_form'><span class='selectbox'>" +
+                            "<select name='cntrctNo' id='cntrctNo' class=''></select></span></div></div>"
+                        );
+                        ecoGrid.init();
+                    }
+                },(xhr, status, error) => {
+                    console.error("Error loading contract list:", error);
+                })
+            } else if (isCAIROS()) {
+                $("#container").append(
+                    `<input type='hidden' id='cntrctNo' value='${cntrctNo}'/>`
+                );
+                ecoGrid.init();
+            }
+        },
+
+        // 추가
+        create: function () {
+            window.location.href = `/system/ecomaterial/create?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&type=d`;
+        },
+
+        // 수정
+        update: function () {
+            const ecoIds = ecoGrid.ecomaterialGrid.getCheckedRows().map(row => row.ecoId);
+            if (ecoIds.length > 0) {
+                const encoded = encodeURIComponent(JSON.stringify(ecoIds));
+                window.location.href = `/system/ecomaterial/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&ecoIdList=${encoded}&type=d`;
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+            }
+
+        },
+
+        // 조직 삭제
+        delete: function () {
+            const url = "/api/system/ecomaterial/delete";
+            const listName = "ecoMaterialList";
+
+            let checked = []; // 체크된 행
+
+            ecoGrid.ecomaterialGrid.getCheckedRows().forEach(rowData => {
+                const ecoId = rowData.ecoId;
+                checked.push({ ecoId });
+            })
+
+            if (checked.length > 0) {
+                gaiaCommon.customConfirm("{{ message('item.com.005') }}", "{{ message('item.eco.003') }}", "{{ message('msg.009') }}", function () {
+                    let data = { [listName]: checked };
+                    gaiaCommon.post(url,data,(response) => {
+                        gaiaCommon.customAlert("{{ message('msg.006') }}");
+                        ecoGrid.ecomaterialGrid.reloadData();
+                    },(xhr) => {
+                        console.error(
+                            "Error deleting data:",
+                            xhr.responseText
+                        );
+                    })
+                });
+            } else {
+                gaiaCommon.customAlert("{{ message('msg.021') }}");
+            }
+        },
+
+        search: function () {
+            searchTerm = $('#ecoTpCd').val();
+            searchText = $('#searchText').val();
+            ecoGrid.init();
+        },
+
+        initializeSelectBoxes: function () {
+            let selectBoxRequests = [
+                {
+                    //친환경 유형
+                    cmnGrpCd: "e2a882a5-7eeb-4f53-b75f-ca803e767b17",
+                    selectBoxId: "ecoTpCd",
+                    selectBoxNmType: "KOR",
+                    ckeckedValue: "",
+                    orderByCol: "",
+                    orderByType: "",
+                    initText: "{{ message('btn.038') }}",
+                    paramNm: "ecoTpCd",
+                    funName: "",
+                    funParam: "this.value",
+                    funtype: "",
+                },
+            ];
+
+            eco.makeSelectBox(selectBoxRequests);
+        },
+
+        // 셀렉트박스 호출
+        makeSelectBox: function (comCodeSelectBoxGets) {
+            gaiaCommon.post("/api/util/make-selectBox", comCodeSelectBoxGets, (data)=>{
+                let returnMap = data.details.returnMap;
+                comCodeSelectBoxGets.forEach(function (item) {
+                    let addAppLineContent = document.getElementById(
+                        item.selectBoxId
+                    );
+                    let categorySelect = `${returnMap[item.selectBoxId]}`;
+                    if (addAppLineContent) {
+                        addAppLineContent.innerHTML =
+                            returnMap[item.selectBoxId];
+                    }
+                    $("#searchBox").prepend(categorySelect);
+                });
+            },(xhr, status, error) => {
+                console.error("Error making select box:", status, error);
+            });
+        },
+    }
+
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                gaiaPortal.navMenuInit("SYSTEM10", "{{ message('item.eco.001') }}");
+                eco.initializeSelectBoxes();
+                eco.init();
+
+                gaia.loaded = true;
+            }
+        });
+    })
+
+
+</script>
+
+{% endblock footer_script %}

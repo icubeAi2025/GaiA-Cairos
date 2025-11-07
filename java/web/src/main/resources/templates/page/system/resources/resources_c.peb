@@ -1,0 +1,311 @@
+{% extends header ? 'layout/base_popup' : 'layout/base_content' %}
+{% block content %}
+<article class="conts_area">
+    <div class="conts">
+        <h3 class="conts_tit" id="company_cu_tit"></h3>
+        <div class="conts_form">
+            <div class="btn_area s_default">
+                <button type="button" class="btn _outline" id="action-button" onclick="page.create()">{{ message('btn.006') }}</button>
+                <button type="button" class="btn _outline" id="close-popup" onclick="page.close()">{{ message('btn.007') }}</button>
+                <!-- <div class="btn_group iconbtns">
+                    <button class="icon_btn" id="open-new-window" onclick="popup.open()">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span class="tooltip">{{ message('item.com.017') }}</span>
+                    </button>
+                </div> -->
+            </div>
+            <div class="form_box">
+                <form id="create-form">
+					<!--필수항목 문구 표시 Start-->
+					<div class="container" style="display: flex; align-items: center;">
+                        <span class="caption">
+                            <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                        </span>
+                    </div>
+					<!--필수항목 문구 표시 End-->
+					<!--입력항목 필드 Start-->
+					<div class="row cols2">
+                        <div class="col">
+                            <div class="form_label required">{{ message("item.resources.003") }}</div>
+                            <div class="form_data">
+                                <div class="item_group">
+                                    <input type="text" id="rescId" name="rescId" maxlength="20" />
+                                    <button type="button" class="btn _fill s_small" id="corp-checked" onclick="page.exist('rescId')" >{{ message('btn.028') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.resources.004") }}</div>
+                            <div class="form_data">
+                                <div class="item_group">
+									<input type="text" id="menuNm" name="menuNm" readonly/>
+                    				<input type="hidden" id="menuCd" name="menuCd">
+									<button type="button" class="btn icon_btn _fill" id="loadView" onclick="page.menuSearchPopup()"> <i class="ic ic-search"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<div class="row cols2">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.resources.005') }}</div>
+                            <div class="form_data">
+                                <input type="text" class="maxlength" id="rescNm" name="rescNm" required maxlength="50">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form_label">{{ message("item.authority.007") }}</div>
+                            <div class="form_data">
+                                <div class="selectbox sort" style="margin-left: 0;">
+                                <span class="selectbox" id="rghtKind_box">
+
+                                </span>
+                                <!-- <select name="compGrpCd" class="required" id="compGrpCd" required>
+                                    <option value="" style="display: none">
+                                       회사그룹을 선택하세요.
+                                    </option>
+                                </select> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.resources.006') }}</div>
+                            <div class="form_data">
+                                <div class="item_group">
+									<input type="text" class="maxlength" id="rescUrl" name="rescUrl" maxlength="100">
+									<button type="button" class="btn _fill s_small" id="corp-checked" onclick="page.exist('rescUrl')" >{{ message('btn.028') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">{{ message('item.resources.010') }}</div>
+                            <div class="form_data">
+                                <textarea class="maxlength" id="rescDscr" name="rescDscr" maxlength="500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.com.003') }}</div>
+                            <div class="form_data">
+                                <div class="item_group" role="group" aria-label="Basic radio group">
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" id="useY" name="useYn" value="Y" checked>
+                                        <span class="check_label">{{ message('btn.008') }}</span>
+                                    </label>
+                                    <label class="form_check">
+                                        <input class="check_mark" type="radio" id="useN" name="useYn" value="N">
+                                        <span class="check_label">{{ message('btn.009') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<!--입력항목 필드 End-->
+                    <!-- 중복 체크 여부를 저장할 hidden input -->
+                    <input type="hidden" id="idExistCheck" name="idExistCheck" value="false">
+                    <input type="hidden" id="urlExistCheck" name="urlExistCheck" value="false">
+                </form>
+            </div>
+        </div>
+		<span class="check_label">&nbsp</span>
+		<span class="check_label" style="color:red;">{{ message('msg.104') }}</span>
+    </div>
+</article>
+{% endblock content %} 
+{% block footer_script %}
+<script>
+	let menuSearchPopup;
+
+    var page = {
+        init: function () {
+			page.makeSelectBox(
+				"17775886-e70e-4602-acdd-d4f92aa9669b",
+				"rghtKind",
+				"rghtKind_box"
+            );
+        },
+
+		//권한 selectBox 만들기
+		makeSelectBox: function (cmnGrpCd, selectBoxId, elementId) {
+            let initText = "{{ message('msg.038', message('item.authority.007')) }}";
+            let requestData = {
+                cmnGrpCd: cmnGrpCd,
+                selectBoxId: selectBoxId,
+                selectBoxNmType: "KOR", //TODO: 영어일 때 항목 가져오는 거 필요.
+                ckeckedValue: "",
+                orderByCol: "",
+                orderByType: "",
+                initText: initText,
+                paramNm: selectBoxId,
+                funName: "",
+                funParam: "this.value",
+                funtype: "onchange",
+            };
+
+            gaiaCommon.post("/api/util/make-selectBox",[requestData],
+                    function(result) {
+                        let returnMap = result.details.returnMap;
+                        let addAppLineContent = document.getElementById(elementId);
+                        addAppLineContent.innerHTML = returnMap[selectBoxId];
+                    },
+                    function (error){
+                        console.error("Error making select box:", error);
+                    }
+            );
+        },
+
+		//프로그램 아이디 & URL 중복검사
+		exist: function (type) {
+
+			if(type === 'rescId') {
+				let existData = {
+					existParam: $("#rescId").val()
+				};
+
+				if ($("#rescId").val()) {
+					gaiaCommon.get(
+						"/api/system/resources/id-exist",
+						existData,
+						function (result) {
+							if (result.details?.exist === "Y") {
+								gaiaCommon.customAlert("{{ message('msg.096') }}");
+								$("#idExistCheck").val(true)
+							} else {
+								gaiaCommon.customAlert("{{ message('msg.095') }}");
+								$("#idExistCheck").val(false)
+							}
+						}
+					);
+				} else {
+					gaiaCommon.customAlert("{{ message('msg.094') }}");
+					$("#rescId").focus();
+					$("#idExistCheck").val(false)
+				}
+
+			}else if(type === 'rescUrl') {
+				let existData = {
+					existParam: $("#rescUrl").val()
+				};
+				
+				if ($("#rescUrl").val()) {
+					gaiaCommon.get(
+						"/api/system/resources/url-exist",
+						existData,
+						function (result) {
+							if (result.details?.exist === "Y") {
+								gaiaCommon.customAlert("{{ message('msg.110') }}");
+								$("#urlExistCheck").val(true)
+							} else {
+								gaiaCommon.customAlert("{{ message('msg.109') }}");
+								$("#urlExistCheck").val(false)
+							}
+						}
+					);
+				} else {
+					gaiaCommon.customAlert("{{ message('msg.108') }}");
+					$("#rescUrl").focus();
+					$("#urlExistCheck").val(false)
+				}
+			}            
+        },
+
+		//메뉴 아이디 검색 팝업창 띄우기
+		menuSearchPopup: function () {
+			menuSearchPopup = window.open("/system/resources/menu-search-popup", 'menuSearchWindow', 'scrollbars=yes, resizable=yes, width=400, height=550, left=100, top=50');
+        },
+		
+		//등록처리
+		create: function () {
+			
+			if($("#idExistCheck").val() === "true" && $("#urlExistCheck").val() === "true") {
+				if($("#rescNm").val() == ''){
+					gaiaCommon.customAlert('{{ message("msg.098") }}');
+					$("#rescNm").focus();
+					return; 
+				}
+
+				if($("#rescUrl").val().substr(0, 1) != '/'){
+					gaiaCommon.customAlert('{{ message("msg.103") }}');
+					$("#rescUrl").focus();
+					return; 
+				}
+
+				createData = {
+                    rescId: $("#rescId").val().trim(),
+                    menuCd: $("#menuCd").val().trim(),
+                    rescNm: $("#rescNm").val(),
+                    rghtKind: $("#rghtKind option:selected").val(),
+                    rescUrl: $("#rescUrl").val(),
+                    rescDscr: $("#rescDscr").val(),
+                    useYn: $("input[name=useYn]:checked").val(),
+                };
+
+				gaiaCommon.customConfirm("{{ message('item.resources.009') }}", "{{ message('msg.102') }}".replace('{명}', $("#rescNm").val()), "{{ message('msg.user.016') }}", function () {
+					   gaiaCommon.LoadingOverlay('body', true);
+
+						gaiaCommon.get(
+							"/api/system/resources/resources-create",
+							createData,
+							function (result) {
+								gaiaCommon.customAlert("{{ message('msg.005') }}", function () {
+									page.close();
+									gaiaCommon.LoadingOverlay('body', false);
+								});
+							}, function (error) {
+								console.log("오류 처리 로직 추후 추가!!!!!!");
+							}
+						);
+				});       
+			}else {
+				if($("#rescId").val() == '') {
+					gaiaCommon.customAlert('{{ message("msg.097") }}');
+					$("#rescId").focus();
+					return; 
+				}else if($("#rescUrl").val() == '') {
+					gaiaCommon.customAlert('{{ message("msg.099") }}');
+					$("#rescUrl").focus();
+					return; 
+				}else if($("#idExistCheck").val() == 'false') {
+					gaiaCommon.customAlert("{{ message('msg.042', message('item.resources.003')) }}");
+					return;	
+				}else if($("#urlExistCheck").val() == 'false') {
+					gaiaCommon.customAlert("{{ message('msg.042', message('item.resources.006')) }}");
+					return;	
+				}
+			}			
+        },
+
+		//닫기 이벤트
+		close: function () {
+			if(menuSearchPopup!= null) menuSearchPopup.close();
+            window.location.replace(`/system/resources?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}&_condition=init`);
+        },        
+	};
+
+	$(function () {
+        gaia.create({
+            $init: function () {
+                page.init();
+				gaiaPortal.navMenuInit("SYSTEM11", "{{ message('item.resources.009') }}");
+				$("#menuDepth").append('<li class=\"breadcrumb_item\">'+ "{{ message('item.resources.009') }}" +'</li>');
+
+                gaia.loaded = true
+            }
+        });
+
+		// 프로그램 아이디 입력창의 값이 변경되면 중복 체크 여부를 false로 변경
+        $('#rescId').on('input', function() {
+            $('#idExistCheck').val('false'); // 중복 체크 여부를 다시 false로 설정
+        });
+
+		// 프로그램 URL 입력창의 값이 변경되면 중복 체크 여부를 false로 변경
+        $('#rescUrl').on('input', function() {
+            $('#urlExistCheck').val('false'); // 중복 체크 여부를 다시 false로 설정
+        });
+    });
+</script>
+{% endblock footer_script %}

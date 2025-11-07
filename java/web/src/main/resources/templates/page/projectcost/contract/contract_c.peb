@@ -1,0 +1,631 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+
+
+<section class="contents_wrap">
+
+    <article class="conts_area">
+        <div class="conts">
+            <h3 class="conts_tit"><span id="chg_no"></span>(<span id="chg_id"></span>)</h3>
+            <div class="conts_form">
+                <!--
+	            <div class="btn_area s_default">
+					<div class="btn_group _fill">
+					    <button type="button" class="btn" id="selectFile">{{ message("item.projectcost.031") }}</button>
+					</div>
+					<button type="button" class="btn _outline" id="save">{{ message("btn.006") }}</button>
+					<button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+					<div class="btn_group iconbtns">
+						<button class="icon_btn" id="newWindow">
+						    <i class="ic ic-sent-to-back"></i>
+						    <span class="tooltip">{{ message("item.com.017") }}</span>
+						</button>
+					</div>
+	            </div>
+                -->
+
+                <!-- row -->
+                <div class="row">
+                    <div class="col">
+                        <div class="form_label">{{ message('btn.021') }}</div> <!-- 파일첨부 -->
+                        <div class="form_data">
+
+                            <div class="attach_wrap">
+                                <div class="attach_toolbar">
+                                    <div class="btn_area s_small">
+                                        <div class="attach_btn">
+                                            <input type="file" id="fileInput" name="files" accept=".xml" multiple>
+                                            <!-- 파일첨부 -->
+                                            <button type="button" class="btn _fill" id="addFileButton">
+                                                <!-- {{ message('btn.021') }}  -->
+                                                {{ message("item.projectcost.031") }}
+                                            </button>
+                                        </div>
+
+                                        <!-- 모두삭제 -->
+                                        <button type="button" class="btn _outline" id="removeAllButton">
+                                            {{ message('btn.020') }}
+                                        </button>
+
+                                        <!-- 저장 -->
+                                        {{ btnHtml | raw }}
+
+                                        <!-- 닫기 -->
+                                        <button type="button" class="btn _outline" id="close">
+                                            {{ message('btn.007') }}
+                                        </button>
+
+                                        <!-- 새 창 팝업 -->
+                                        <div class="btn_group iconbtns">
+                                            <button class="icon_btn" id="newWindow">
+                                                <i class="ic ic-sent-to-back"></i>
+                                                <span class="tooltip">{{ message('item.com.017') }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="attach_info">
+                                        <span class="attach_result">
+                                            <span class="sucess">
+                                                <i class="ic ic-check"></i>
+                                                <b class="num" id="uploadedFileCount">0</b>
+                                            </span>
+                                            <span class="fail">
+                                                <i class="ic ic-close"></i>
+                                                <b class="num" id="failedFileCount">0</b>
+                                            </span>
+                                        </span>
+                                        <span class="attach_capacity">
+                                            <span class="item" id="uploadedFileSize">0 bytes</span>
+                                            <span class="item">25 MB</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="attach_area" style="height:155px;">
+                                    <!-- 첨부파일 미등록 시 -->
+                                    <p class="data_info">
+                                        {{ message('msg.pinstall.003') }}
+                                    </p>
+
+                                    <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                                    <div class="attach_list hide">
+                                        <ul class="file_header">
+                                            <li class="header_item" >
+                                                <button type="button" class="icon_btn" disabled>
+                                                    <i class="ic ic-close"></i>
+                                                    <span class="blind">{{ message('item.com.020') }}</span>
+                                                    <!-- 파일명 -->
+                                                </button>
+                                                <input type="checkbox" disabled />
+                                                <span class="f_name">{{ message('item.com.020') }}</span>
+                                                <!-- 파일명 -->
+                                                <span class="f_progress">
+                                                    {{ message('item.info.036') }}</span> <!-- 진행상태 -->
+                                                <span class="f_capacity">{{ message('item.com.021') }}</span>
+                                                <!-- 크기 -->
+                                            </li>
+                                        </ul>
+                                        <ul class="file_list" id="fileList" style="height: 125px;"></ul>
+                                    </div>
+                                </div> <!-- END .attach_area -->
+                            </div> <!-- END .attach_wrap -->
+                        </div> <!-- END .form_data -->
+                    </div> <!-- END .col -->
+                </div> <!-- END .row -->
+
+                <div class="row">
+                    <div class="col">
+                        <div class="form_label" style="background: #fff; "></div>
+                        <div class="form_data">
+                            <span style="color: red; font-size: 1.1em;">체크박스에서 선택한 공사종류에 대해 삭제 후 저장을 합니다. 삭제를 원하지 않으신다면 체크박스를 해제해주세요.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </article>
+    {% endblock content %}
+
+    {% block footer_script %}
+
+    <style>
+        .file_header .header_item, .file_list .list_item { grid-template-columns: min-content min-content auto 100px 80px; }
+    </style>
+
+    <script src="/assets/js/projectcost/contract.js"></script>
+    <script src="/assets/js/fetch_options_data.js"></script>
+    <script>
+        /* 페이지 글로벌 변수 */
+        var urlParams = new URLSearchParams(location.search);
+        var chgNo = urlParams.get('no');
+        var cntrctNo = urlParams.get('cntrctNo');
+        var cntrctChgId = urlParams.get('id');
+        var type = urlParams.get('type');
+        var majorCnsttyCd = urlParams.get('cd');
+
+        const beforeUnloadHandler = function (event) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+
+        var initEventBinding = function () {
+
+            /******************
+             * EVENT BINDING
+             ******************/
+
+
+            //닫기 이벤트
+            $('#close').click((event) => {
+                if (type == "d") {
+                    window.location.href = "/projectcost/contract";
+                } else {
+                    window.open('', '_self').close();
+                }
+            });
+
+
+            //새창 이벤트
+            $("#newWindow").click(function () {
+                let URL = "/projectcost/contract/create?type=p"
+                        + "&cntrctNo=" + cntrctNo
+                        + "&no=" + chgNo
+                        + "&id=" + cntrctChgId
+                        + "&cd=" + majorCnsttyCd;
+                window.open(URL, 'targetWindow', 'scrollbars=yes,resizable=yes,width=1200,height=400');
+                window.history.back();
+            });
+
+            $('#save').click((event) => {
+
+                gaiaPortal.customConfirm('내역서 등록', '체크한 공사종류 데이터를 초기화 후 저장을 합니다', '저장을 수행하시겠습니까?', function() {
+
+                    // 확인 버튼을 눌렀을 때 수행
+
+                    // validation
+                    let c3rFiles = file.existingFiles.filter(elem => elem instanceof File);
+                    if (c3rFiles.length === 0) {
+                        // 등록된 첨부파일이 없습니다.
+                        gaiaCommon.customAlert("{{ message('msg.029') }}");
+                        return false;
+                    }
+
+                    $('span.sucess, span.fail').hide();
+                    $('span.loader').show();
+                    gaiaCommon.LoadingOverlay('body', true);
+                    window.addEventListener("beforeunload", beforeUnloadHandler);
+
+
+                    // 20250210 추가
+                    let checkFileList = [];
+
+                    $("input[name='f_checkbox']").each(function () {
+                        let fileData = {
+                            fileName: $(this).data('filename'),
+                            isChecked: $(this).prop("checked") // 체크 상태를 true/false로 저장
+                        };
+                        checkFileList.push(fileData);
+                    });
+
+
+                    let url = "/api/projectcost/contract/registC3R";
+                    let params = {
+                        'cntrctNo': cntrctNo,
+                        'cntrctChgId': cntrctChgId,
+                        'cd': majorCnsttyCd,
+                        'checkFileListJson': new Blob([JSON.stringify(checkFileList)], {type: "application/json"}) // JSON 데이터 추가
+                    }
+
+                    let formData = new FormData();
+                    // 일반 param set
+                    $.each(params, function (key, value) {
+                        formData.append(key, value);
+                    });
+
+                    // files set
+                    for (const file of c3rFiles) {
+                        formData.append('c3rFileList', file);
+                    }
+
+                    $.ajax({
+                        url: url,
+                        method: "POST",
+                        dataType: "json",
+                        xhrFields: {withCredentials: true},
+                        contentType: false,
+                        processData: false,
+                        data: formData,
+                        success(result) {
+                            if (result?.ok) {
+                                // callback
+                                $('span.loader').hide();
+                                $('span.sucess').show();
+                                gaiaCommon.LoadingOverlay('body', false);
+
+                                // 팝업일 경우 추가 - 20250211
+                                if (type === 'p') {
+                                    window.removeEventListener("beforeunload", beforeUnloadHandler);
+                                    opener.location.reload();
+                                    setTimeout(() => {
+                                        window.close();
+                                    }, 2000);
+                                }
+
+                                gaiaCommon.customAlert("{{ message('msg.005') }}");    // 추가되었습니다.
+                                setTimeout(() => {
+                                    window.removeEventListener("beforeunload", beforeUnloadHandler);
+                                    history.back();
+                                }, 2000);
+
+                            } else {
+                                gaiaCommon.customAlert(result?.message || "error");
+                            }
+                        },
+                        error(error) {
+                            console.trace(error);
+                            gaiaCommon.customAlert(error.responseJSON?.message);
+                            $('span.fail').show();
+                            $('.loader').hide();
+                            file.updateFailedFileCount(c3rFiles.length);
+                            gaiaCommon.LoadingOverlay('body', false);
+                        },
+                    }); // END ajax call()
+
+                }, null);
+
+            }); // END save()
+
+            /* ******* 함수 ******* */
+            var methods = {
+                //초기화
+                init() {
+                    $("#chg_no").text("{{ message('item.projectcost.023') }}".replace('{0}', chgNo));
+                    $("#chg_id").text(cntrctChgId);
+
+                    if (type == "d") {
+                        $("#newWindow").show();
+                    } else {
+                        $("#newWindow").hide();
+                    }
+                },
+            };
+
+            methods.init();
+        };
+
+        // 파일첨부 SCRIPT 시작
+        const MAX_FILE_COUNT = 5;
+        let file = {    // 파일 첨부 관련
+            uploadedFileCount: null,
+            failedFileCount: null,
+            uploadedFileSize: null,
+            maxTotalFileSize: 25 * 1024 * 1024, // 25 MB
+            totalFileSize: 0,
+            existingFiles: [],
+            allRemovedFiles: [],
+            removedFiles: {},
+            failedFileCounts: 0,
+            successfulFileCount: 0,
+
+            init() {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.cacheElements();
+                    this.addEventListeners();
+                });
+            },
+
+            cacheElements() {
+                this.addFileButton = document.getElementById('addFileButton');
+                this.removeAllButton = document.getElementById('removeAllButton');
+                this.fileInput = document.getElementById('fileInput');
+                this.fileList = document.getElementById('fileList');
+                this.uploadedFileCount = document.getElementById('uploadedFileCount');
+                this.failedFileCount = document.getElementById('failedFileCount');
+                this.uploadedFileSize = document.getElementById('uploadedFileSize');
+            },
+
+            addEventListeners() {
+                document.querySelectorAll('.file-item .remove-button').forEach(button => {   // 파일 목록 단일 삭제(x) 버튼
+                    button.addEventListener('click', (event) => this.removeFile(event));
+                });
+
+                // 드래그 앤 드롭
+                this.attachArea = document.querySelector('.attach_area');
+                this.attachArea.addEventListener('dragover', (event) => this.dragOver(event));
+                this.attachArea.addEventListener('dragleave', () => this.dragLeave());
+                this.attachArea.addEventListener('drop', (event) => this.handleDrop(event));
+
+                this.addFileButton.addEventListener('click', () => this.fileInput.click()); // 파일 첨부
+                this.fileInput.addEventListener('change', (event) => {  // 파일 목록 업데이트
+
+                    // 20241127-파일 대화상자 [취소] 버튼이 아닐 때
+                    if (this.fileInput.value !== '') {
+                        this.updateFileListFromInput()
+                    }
+                });
+                this.removeAllButton.addEventListener('click', () => this.removeAllFiles()); // 파일 모두 삭제
+            },
+
+            // 파일 드래그 앤 드롭
+            dragOver(event) {
+                event.preventDefault();
+                this.attachArea.classList.add('dragging');
+            },
+            dragLeave() {
+                this.attachArea.classList.remove('dragging');
+            },
+            handleDrop(event) {
+                event.preventDefault();
+                this.attachArea.classList.remove('dragging');
+
+                const newFiles = event.dataTransfer.files;
+                const uploadedFileCount = Number(document.getElementById('uploadedFileCount').textContent);
+
+                //최대 첨부파일 갯수 체크
+                if (newFiles.length + uploadedFileCount > MAX_FILE_COUNT) {
+                    gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', MAX_FILE_COUNT));
+                    return;
+                } else {
+                    this.existingFiles = this.existingFiles.concat(newFiles); // 기존 파일 목록에 새 파일 추가
+
+                    // 20241209 추가
+                    let $fileInput = document.querySelector('#fileInput');
+                    if ($fileInput.files.length === 0) $fileInput.files = newFiles;
+                    this.updateFileList(newFiles);
+                }
+            },
+
+            updateFileListFromInput() { // '파일첨부'로 첨부된 파일 추가
+
+                //최대 첨부파일 갯수 체크
+                if (this.existingFiles.length >= MAX_FILE_COUNT) {
+                    gaiaCommon.customAlert("{{ message('msg.app.010') }}".replace('{0}', MAX_FILE_COUNT));
+                    return;
+                }
+
+                const newFiles = this.fileInput.files;
+                this.existingFiles = this.existingFiles.concat(newFiles);
+                if (newFiles.length > 0) {
+                    this.updateFileList(newFiles);
+                }
+            },
+
+            // 파일 삭제(단일)
+            removeFile(event) {
+                const fileItem = event.target.parentElement;
+                const fileNo = fileItem.getAttribute('data-file-no');
+                const sno = fileItem.getAttribute('data-sno');
+
+                this.allRemovedFiles.push({ fileNo, sno });
+                fileItem.remove();
+            },
+
+            removeAllFiles() { // '모두삭제'
+                const fileItems = document.querySelectorAll('.file_list .list_item');
+                fileItems.forEach(fileItem => {
+                    const fileNo = fileItem.dataset.fileNo;
+                    const sno = fileItem.dataset.sno;
+                    this.allRemovedFiles.push({ fileNo, sno });
+                });
+                this.updateFileSizeSummary();
+                this.clearFileList();
+                this.fileInput.value = '';
+            },
+
+            clearFileList() {  // 파일 목록 초기화
+                this.fileList.innerHTML = '';
+                this.totalFileSize = 0;
+                this.successfulFileCount = 0;
+                this.failedFileCounts = 0;
+                this.existingFiles = [];
+                this.updateFileSizeSummary();
+                this.updateFileCount();
+                this.updateFailedFileCount();
+
+                // 파일 목록이 비었을 때 메시지 표시
+                const dataInfo = document.querySelector('.data_info');
+                const attachList = document.querySelector('.attach_list');
+
+                if (this.fileList.querySelectorAll('.list_item').length === 0) {
+                    dataInfo.classList.remove('hide');
+                    attachList.classList.add('hide');
+                }
+            },
+
+            removeFileFromProject(fileNo, sno) {   // 파일 삭제 처리 함수
+                if (!this.removedFiles[this.currentProjectNo]) {
+                    this.removedFiles[this.currentProjectNo] = [];
+                }
+                this.removedFiles[this.currentProjectNo].push({ fileNo, sno });
+            },
+
+            updateFileSizeSummary() {  // 파일 크기 업데이트
+                const totalSizeText = this.formatFileSize(this.totalFileSize);
+                document.getElementById('uploadedFileSize').textContent = `${totalSizeText}`;
+            },
+
+            formatFileSize(size) { // 파일 크기 포맷팅
+                if (size >= 1024 * 1024) {
+                    return (size / (1024 * 1024)).toFixed(2) + ' MB';
+                } else if (size >= 1024) {
+                    return (size / 1024).toFixed(2) + ' KB';
+                } else {
+                    return size + ' bytes';
+                }
+            },
+
+            updateFileList(files) { // 파일 목록 업데이트
+                const existingFileNames = this.existingFiles.map(file => file.name);
+                const fileListElement = document.getElementById('fileList');
+                const dataInfo = document.querySelector('.data_info');
+                const attachList = document.querySelector('.attach_list');
+                this.totalFileSize = this.existingFiles.reduce((sum, file) => sum + (file.size || 0), 0);
+
+                if (files.length === 0 && this.existingFiles.length === 0) {
+                    dataInfo.classList.remove('hide');
+                    attachList.classList.add('hide');
+                } else {
+                    dataInfo.classList.add('hide');
+                    attachList.classList.remove('hide');
+
+                    const allFiles = [...this.existingFiles, ...files];
+
+                    allFiles.forEach(file => {
+                        if (!existingFileNames.includes(file.name)) {
+                            const fileItem = this.createFileItem(file, fileListElement);
+                            this.handleFileItemClick(fileItem, file, fileListElement, dataInfo, attachList);
+                        }
+                    });
+
+                    this.updateFileCount();
+                    this.updateFailedFileCount();
+                }
+            },
+
+            createFileItem(file, fileListElement) {
+                const fileItem = document.createElement('li');
+                fileItem.classList.add('list_item');
+                fileItem.dataset.filename = file.name;
+                fileItem.dataset.fileNo = file.fileNo || '';
+                fileItem.dataset.sno = file.sno || '';
+
+                // 20250210 style 추가
+                const fileCheckBox = document.createElement('input');
+                fileCheckBox.setAttribute('name', 'f_checkbox');
+                fileCheckBox.classList.add('f_checkbox');
+                fileCheckBox.setAttribute('type', 'checkbox');
+                fileCheckBox.setAttribute('checked', 'checked');
+                fileCheckBox.dataset.filename = file.name;
+
+                const fileName = document.createElement('span');
+                fileName.classList.add('f_name');
+                fileName.textContent = file.name;
+
+                const fileSizeText = this.formatFileSize(file.size);
+                const fileSize = document.createElement('span');
+                fileSize.classList.add('f_capacity');
+                fileSize.textContent = fileSizeText;
+
+                const progressContainer = document.createElement('span');
+                progressContainer.classList.add('f_progress');
+
+                const progress = document.createElement('span');
+                progress.classList.add('loader');
+                progress.style.marginRight = '15px';
+                progress.style.display = 'none';
+
+                const successIndicator = document.createElement('span');
+                successIndicator.classList.add(file.size > this.maxTotalFileSize ? 'fail' : 'sucess');
+                successIndicator.innerHTML = file.size > this.maxTotalFileSize ? '<i class="ic ic-close"></i>' : '<i class="ic ic-check"></i>';
+                successIndicator.style.display = 'none';
+                successIndicator.style.marginRight = '15px';
+
+                progressContainer.appendChild(progress);
+                progressContainer.appendChild(successIndicator);
+
+                fileItem.appendChild(this.createRemoveButton(file, fileListElement));
+                fileItem.appendChild(fileCheckBox);
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(progressContainer);
+                fileItem.appendChild(fileSize);
+
+                fileListElement.appendChild(fileItem);
+                this.totalFileSize += file.size;
+                this.updateFileSizeSummary();
+
+                if (file.size <= this.maxTotalFileSize) {
+                    this.successfulFileCount++;
+                    this.existingFiles.push(file);
+
+                }
+
+                return fileItem;
+            },
+
+            createRemoveButton(file, fileListElement) {
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.classList.add('icon_btn');
+                removeButton.innerHTML = '<i class="ic ic-close"></i><span class="blind">삭제</span>';
+
+                if (this.currentProject && this.currentProject.openPstats !== '01') {
+                    removeButton.style.visibility = 'hidden';
+                }
+
+                return removeButton;
+            },
+
+            handleFileItemClick(fileItem, file, fileListElement, dataInfo, attachList) {
+                const removeButton = fileItem.querySelector('.icon_btn');
+                removeButton.addEventListener('click', () => {
+                    this.removeFileFromProject(file.fileNo, file.sno);
+                    fileItem.remove();
+                    this.totalFileSize -= file.size;
+                    this.updateFileSizeSummary();
+
+                    if (file.size <= this.maxTotalFileSize) {
+                        this.successfulFileCount--;
+                        this.updateFileCount();
+                    } else {
+                        this.failedFileCounts--;
+                        this.updateFailedFileCount();
+                    }
+
+                    this.existingFiles = this.existingFiles.filter(f => f.fileNo !== file.fileNo || f.sno !== file.sno);
+
+                    if (fileListElement.querySelectorAll('.list_item').length === 0) {
+                        dataInfo.classList.remove('hide');
+                        attachList.classList.add('hide');
+                    }
+                    document.querySelector('#fileInput').value = '';
+                });
+            },
+
+            updateFileCount() { // 파일 개수 업데이트
+                const uploadedFileCountElement = document.getElementById('uploadedFileCount');
+                uploadedFileCountElement.textContent = this.successfulFileCount > 0 ? this.successfulFileCount : '0';
+            },
+
+            updateFailedFileCount(failedCount) { // 실패한 파일 개수 업데이트
+                this.failedFileCounts = failedCount;
+                const failedFileCountElement = document.getElementById('failedFileCount');
+                failedFileCountElement.textContent = this.failedFileCounts > 0 ? this.failedFileCounts : '0';
+            },
+
+
+
+
+
+            formatFileSize(size) { // 파일 크기 포맷
+                return size < 1024 ? `${size} bytes` : size < 1048576 ? `${(size / 1024).toFixed(2)} KB` : `${(size / 1048576).toFixed(2)} MB`;
+            },
+        };
+
+        // 파일첨부 SCRIPT 끝
+
+        
+        $(function(){
+            gaia.create({
+                $init: function ($params) {
+                    initEventBinding();
+                    file.init();
+                    gaiaPortal.navMenuInit('M0301', "{{ message('item.projectcost.019') }}");
+                    $("#menuDepth").append('<li class=\"breadcrumb_item\">{{ message("item.projectcost.016") }}</li><li class=\"breadcrumb_item\">{{ message("item.projectcost.019") }}</li>');
+                    
+                    if (cntrctNo.indexOf(JSON.parse(localStorage.getItem("pageCommonData")).cntrctNo)) {
+                        sessionStorage.removeItem('cCntrctNo');
+                        sessionStorage.removeItem('cCntrctId');
+                        
+                        window.location.href = "/projectcost/contract";
+                    }
+                    
+                    gaia.loaded = true;
+                }
+            });
+        })
+
+    </script>
+    <script src="/webjars/jstree/jstree.min.js"></script>
+    <script src="/assets/js/tree.js"></script>
+    {% endblock footer_script %}

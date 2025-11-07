@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        p {
+            font-family: Lato;
+        }
+
+        .drag-over {
+            color: blue;
+        }
+
+        .dropzone {
+            background-color: aqua;
+        }
+
+    </style>
+</head>
+<body>
+
+<script src="/assets/js/jquery-3.4.1.min.js"></script>
+<script src="/assets/js/jquery-ui.min.js"></script>
+<!--<script src="/assets/static/jquery-plugins/blueimp-file-upload/js/jquery.fileupload.js"></script>-->
+
+<!--<script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js"></script>-->
+<!--<link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css" />-->
+
+
+<!--<form action="/target" class="dropzone" id="my-dropzone">-->
+<!--    <div class="fallback">-->
+<!--        <input name="file" type="file" multiple />-->
+<!--    </div>-->
+<!--</form>-->
+
+<!--<div style="background-color: #f00; width:100%; height: 200px;">-->
+<!--    <div id="fileupload"></div>-->
+<!--</div>-->
+
+<div id="dropzone" class="dropzone">
+    <h1>Recursively Fetch files of a directory upon dropping a folder</h1>
+
+    Drop files here
+    <ul id="listing">
+        <li *ngFor="let file of files">{{ file.path_components }}</li>
+    </ul>
+</div>
+
+
+<script>
+        // // Note that the name "myDropzone" is the camelized
+        // // id of the form.
+        // Dropzone.options.myDropzone = {
+        // // Configuration options go here
+        // };
+        //
+        // let myDropzone = new Dropzone("div#fileupload", { url: "/file/post"});
+
+
+let files = [];
+
+const getFilesRecursively = async (entry, files, path) => {
+if (entry.kind === 'file') {
+const file = await entry.getFile();
+            file.path_components = path;
+            files.push(file);
+        } else if (entry.kind === 'directory') {
+            for await (const handle of entry.values()) {
+                path.push(handle.name);
+                let newPath = path.map((p) => p);
+                await getFilesRecursively(handle, files, newPath);
+                path.pop();
+            }
+        }
+    }
+
+    window.onload = () => {
+        let dropzone = document.getElementById('dropzone');
+
+        dropzone.addEventListener('dragover', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            // Style the drag-and-drop as a "copy file" operation.
+            dropzone?.classList.add('drag-over');
+            event.dataTransfer.dropEffect = 'copy';
+        });
+
+        dropzone.addEventListener('dragleave', (event) => {
+            dropzone?.classList.remove('drag-over');
+        });
+
+        dropzone.addEventListener('dragend', (event) => {
+            dropzone?.classList.remove('drag-over');
+        });
+
+        dropzone.addEventListener('drop', async (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+
+            const fileHandlesPromises = [...event.dataTransfer.items]
+                .filter((item) => item.kind === 'file')
+                .map((item) => {
+                    console.log('item', item)
+                    return item.getAsFileSystemHandle()
+                });
+
+            console.log('drop err', fileHandlesPromises)
+            let files = [];
+
+            for await (const handle of fileHandlesPromises) {
+                if (handle.kind === 'directory') {
+                    console.log(`Directory: ${handle.name}`);
+                    let path = [handle.name];
+                    let contents = [];
+
+                    await getFilesRecursively(handle, contents, path);
+
+                    contents.forEach((file) => {
+                        file.path_components = file?.path_components?.join('/');
+                    });
+
+                    files.push(...contents);
+                } else {
+                    console.log(`File: ${handle.name}`);
+                    let file = await handle.getFile();
+                    file.path_components = file.name;
+                    files.push(file);
+                }
+            }
+
+            this.files = files;
+            console.log(files);
+        });
+    }
+</script>
+</body>
+</html>

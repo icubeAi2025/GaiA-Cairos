@@ -1,0 +1,359 @@
+{% extends 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+    <article class="conts g-row">
+        <div class="group">
+            <div class="conts_grid">
+                <div class="btn_area s_default _outline">
+                    <button type="button" class="btn" onclick="popup.save()">{{ message('btn.006') }}</button>
+                    <!-- 저장 -->
+                    <button type="button" class="btn" onclick="popup.closePage()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 -->
+                    <button type="button" class="btn" onclick="popup.checkList()">{{ message('btn.046') }}</button>
+                </div>
+            </div>
+            <div class="s_conts">
+                <span class="tree_route" id="tree_route"></span>
+                <p class="selected_list" id="selectedItemsContainer" style="margin-top: 10px;">
+                    <!-- 선택된항목 -->
+                </p>
+                <div class="search_wrap" style="margin: 10px 0 10px 0;">
+                    <div class="searchbox_wrap">
+                        <input type="text" id="searchInput" placeholder="{{ message('item.quality.030') }}" />
+                        <button type="button" class="icon_btn search">
+                            <i class="ic ic-search"></i>
+                            <span class="blind">
+                                {{ message("item.com.014") }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <table class="table ta_c" id="checkListTable">
+                    <colgroup>
+                        <col width="100px">
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />
+                            </th>
+                            <th>{{ message('item.app.035') }}</th>
+                            <th>{{ message('item.quality.030') }}</th>
+                            <th>{{ message('item.quality.031') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checkListBody">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<style>
+    #checkListTable th:nth-child(1),
+    #checkListTable td:nth-child(1) {
+        width: 7%;
+    }
+
+    #checkListTable th:nth-child(2),
+    #checkListTable td:nth-child(2) {
+        width: 5%;
+    }
+
+    #checkListTable th:nth-child(3),
+    #checkListTable td:nth-child(3) {
+        width: 70%;
+    }
+
+    #checkListTable th:nth-child(4),
+    #checkListTable td:nth-child(4) {
+        width: 13%;
+    }
+
+    #checkListTable th:nth-child(5),
+    #checkListTable td:nth-child(5) {
+        width: 5%;
+    }
+
+    #checkListTable td,
+    #checkListTable th {
+        overflow: hidden;
+        white-space: nowrap;
+        /* 줄바꿈 방지 */
+        text-overflow: ellipsis;
+        /* 말줄임표 처리 */
+    }
+
+    .selected_item {
+        width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        /* 넘치는 텍스트는 "..."으로 표시 */
+        display: inline-block;
+    }
+</style>
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var cntrctNo = urlParams.get('cntrctNo');
+    var checkListData = [] // 데이터 저장
+    const workTypeText = urlParams.get('workTypeText');
+    const constructTypeText = urlParams.get('constructTypeText');
+    const resourceTypeText = urlParams.get('resourceTypeText');
+    const workTypeValue = urlParams.get('workTypeValue');
+    const constructTypeValue = urlParams.get('constructTypeValue');
+    const resourceTypeValue = urlParams.get('resourceTypeValue');
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+
+
+                popup.init();
+            }
+        });
+    });
+
+    var popup = {
+        init: function () {
+
+
+            let treeRouteText = workTypeText;
+
+            if (constructTypeText && constructTypeText !== "=선택=") {
+                treeRouteText += " > " + constructTypeText;
+            }
+
+            if (resourceTypeText && resourceTypeText !== "=선택=") {
+                treeRouteText += " > " + resourceTypeText;
+            }
+
+            $("#tree_route").text(treeRouteText);
+
+
+            gaiaPortal.navMenuInit('', '{{ message("item.quality.038") }}');
+
+            checkListTable.init();
+        },
+        save: function () {
+            const selectedRows = checkListData.filter(item => item.isSelected);
+
+            if (selectedRows.length === 0) {
+                gaiaCommon.customAlert('{{ message("msg.quality.011") }}'); // 체크리스트를 선택 해주세요.
+                return
+            }
+
+            // 부모 페이지에 데이터 전달
+            if (window.opener && window.opener.checkList) {
+                window.opener.checkList.checkListData = selectedRows;
+                window.opener.checkList.addUpdateCheckList();
+            }
+            window.close();
+        },
+        checkList: function () {
+            window.location.href = `/construction/qualityinspection/checklist?type=p&cntrctNo=${cntrctNo}` + `&pjtNo=${pjtInfo.pjtNo}`;
+        },
+        closePage: function () {
+            window.close();
+        }
+    }
+
+    let checkListTable = {
+        init: function () {
+            this.renderTable();
+            this.bindEvents();
+            this.getData(); // 초기 데이터 가져오기
+        },
+
+        renderTable: function () {
+            const tbody = document.getElementById('checkListBody');
+            tbody.innerHTML = ''; // 테이블 초기화
+
+            checkListData.forEach((item) => {
+                const row = document.createElement('tr');
+
+                // 체크박스 (선택)
+                const checkBoxCell = document.createElement('td');
+                checkBoxCell.innerHTML = `
+                <input type="checkbox" class="row-checkbox" data-id="${item.chklstId}" ${item.isSelected ? 'checked' : ''}>
+            `;
+                row.appendChild(checkBoxCell);
+
+                // 번호
+                const numCell = document.createElement('td');
+                numCell.textContent = item.chklstSno // 번호가 없으면 인덱스 사용
+                row.appendChild(numCell);
+
+                // 검사항목
+                const dscrptCell = document.createElement('td');
+                dscrptCell.textContent = gaiaCommon.decodeSafeText(item.chklstDscrpt);
+                dscrptCell.style.textAlign = 'left';
+                dscrptCell.style.wordWrap = 'break-word';
+                dscrptCell.style.whiteSpace = 'normal';
+                row.appendChild(dscrptCell);
+
+                // 검사 기준
+                const bssCell = document.createElement('td');
+                bssCell.innerHTML = `
+                <select class="chklstBssCdSelect" data-id="${item.chklstId}">
+                    <option disabled value="">=선택=</option>
+                    <option value="01" ${item.chklstBssCd === '01' ? 'selected' : ''}>{{ message("item.quality.033") }}</option>
+                        <option value="02" ${item.chklstBssCd === '02' ? 'selected' : ''}>{{ message("item.quality.034") }}</option>
+                        <option value="03" ${item.chklstBssCd === '03' ? 'selected' : ''}>{{ message("item.quality.035") }}</option>
+                        <option value="04" ${item.chklstBssCd === '04' ? 'selected' : ''}>{{ message("item.quality.036") }}</option>
+                        <option value="05" ${item.chklstBssCd === '05' ? 'selected' : ''}>{{ message("item.quality.037") }}</option>
+                </select>
+            `;
+                row.appendChild(bssCell);
+
+                tbody.appendChild(row);
+            });
+        },
+
+        bindEvents: function () {
+            const _this = this;
+
+            // 전체 선택 체크박스
+            document.getElementById('checkAll').addEventListener('change', function () {
+                const isChecked = this.checked;
+                checkListData.forEach(item => item.isSelected = isChecked);
+                _this.renderTable(); // 테이블 갱신
+                _this.updateSelectedItems();
+            });
+
+            // 테이블 내부의 이벤트 처리 
+            document.getElementById('checkListBody').addEventListener('change', function (event) {
+
+                // 체크박스 선택
+                if (event.target.classList.contains('row-checkbox')) {
+                    const id = event.target.getAttribute('data-id');
+                    const isChecked = event.target.checked;
+                    const item = checkListData.find(item => String(item.chklstId) === id);
+                    if (item) {
+                        item.isSelected = isChecked;
+                        _this.updateSelectedItems();
+                    }
+                }
+
+                // 셀렉트 박스 값 변경
+                if (event.target.classList.contains('chklstBssCdSelect')) {
+                    const id = event.target.getAttribute('data-id');
+                    const newValue = event.target.value;
+
+                    const item = checkListData.find(item => String(item.chklstId) === id);
+                    item.chklstBssCd = newValue;
+                }
+            });
+
+            // 검색 버튼 클릭 이벤트
+            document.querySelector('.icon_btn.search').addEventListener('click', function () {
+                const searchValue = document.getElementById('searchInput').value;
+                _this.getData(searchValue);
+                const selectedContainer = document.getElementById('selectedItemsContainer');
+                selectedContainer.innerHTML = '';
+                selectedContainer.classList.remove('on')
+            });
+
+            // 검색 입력 필드 엔터키 이벤트
+            document.getElementById('searchInput').addEventListener('keypress', function (event) {
+                if (event.which === 13) {
+                    const searchValue = this.value;
+                    _this.getData(searchValue);
+                }
+                const selectedContainer = document.getElementById('selectedItemsContainer');
+                selectedContainer.innerHTML = '';
+                selectedContainer.classList.remove('on')
+            });
+        },
+
+        updateSelectedItems: function () {
+            const selectedContainer = document.getElementById('selectedItemsContainer');
+            selectedContainer.innerHTML = ''; // 초기화
+
+            // 선택된 항목 필터링
+            const selectedRows = checkListData.filter(item => item.isSelected);
+            this.selectedItems = selectedRows; // 선택된 항목 저장
+
+            if (selectedRows.length > 0) {
+                selectedContainer.classList.add('on'); // 표시
+                selectedRows.forEach((row, index) => {
+                    const item = document.createElement('span');
+                    item.className = 'selected_item';
+                    item.innerHTML = `
+                <span class="item name">${index + 1}. ${row.chklstDscrpt}</span>
+                <button type="button" class="icon_btn" onclick="checkListTable.removeSelectedItem('${row.chklstId}')">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">삭제</span>
+                </button>
+            `;
+                    selectedContainer.appendChild(item);
+                });
+            } else {
+                selectedContainer.classList.remove('on'); // 선택 항목이 없을 때 숨김
+            }
+        },
+
+        removeSelectedItem: function (id) {
+            const item = checkListData.find(item => item.chklstId === id);
+            if (item) item.isSelected = false;
+            this.renderTable();
+            this.updateSelectedItems();
+        },
+
+        getData: function (searchValue = '') {
+            const _this = this;
+
+            const param = {
+                cntrctNo: cntrctNo
+            };
+
+            if (workTypeValue && constructTypeValue && resourceTypeValue) {    // 3레벨 공종의 체크리스트
+                param.upCnsttyCd = constructTypeValue
+                param.cnsttyCd = resourceTypeValue
+            }
+
+            if (workTypeValue && constructTypeValue && !resourceTypeValue) {   // 2레벨 공종의 체크리스트
+                param.upCnsttyCd = workTypeValue
+                param.cnsttyCd = constructTypeValue
+            }
+
+            if (workTypeValue && !constructTypeValue && !resourceTypeValue) {  // 1레벨 공종의 체크리스트
+                param.cnsttyCd = workTypeValue
+            }
+
+            if (searchValue) {
+                param.searchValue = searchValue;
+            }
+
+            $.ajax({
+                url: '/api/construction/qualityinspection/get/checklist',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(param),
+                success: function (response) {
+                    const data = response.details.checkList;
+
+                    checkListData = data.map((item) => ({
+                        chklstSno: item.row_num,
+                        chklstId: item.chklst_id,
+                        chklstDscrpt: item.chklst_dscrpt,
+                        chklstBssCd: item.chklst_bss_cd,
+                        isSelected: false
+                    }));
+
+                    _this.renderTable(); // 테이블 갱신
+                },
+            });
+        }
+    };
+</script>
+{% endblock footer_script %}

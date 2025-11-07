@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.project_billing">
+
+    <select id="selectCmisProjectList" resultType="map">
+        /* [kkr.co.ideait.platform.gaiacairos.mybatis.mappers.system.project_billing.selectCmisProjectList][jiyoung]  */
+        <![CDATA[
+        WITH RECURSIVE CMIS_PROJECT_LIST (PJT_NO
+                                         , CNTRCT_NO
+                                         , PJT_TYPE
+                                         , DEPT_ID
+                                         , UP_DEPT_ID                                         
+                                         , DSPLY_ORDR
+                                         , LEVEL
+                                         , PATH
+                                         , CYCLE) AS (SELECT PJT_NO
+                                                        , CNTRCT_NO
+                                                        , PJT_TYPE
+                                                        , DEPT_ID
+                                                        , (CASE WHEN COALESCE (UP_DEPT_ID, '') = '' THEN '#' ELSE UP_DEPT_ID END) AS UP_DEPT_ID
+                                                        , DSPLY_ORDR
+                                                        , 1
+                                                        , ARRAY [DEPT_ID::TEXT]
+                                                        , FALSE 
+                                                    FROM SM_DEPARTMENT 
+                                                    WHERE DEPT_LVL = 0 
+                                                        AND DEPT_YN = 'N' 
+                                                        AND DEPT_ID = 'C' 
+                                                    UNION ALL
+                                                    SELECT SD.PJT_NO
+                                                        , SD.CNTRCT_NO
+                                                        , SD.PJT_TYPE
+                                                        , SD.DEPT_ID
+                                                        , SD.UP_DEPT_ID
+                                                        , SD.DSPLY_ORDR
+                                                        , LEVEL +1
+                                                        , ARRAY_APPEND(CPL.PATH, CAST(SD.DSPLY_ORDR AS TEXT)::TEXT)
+                                                        , SD.DEPT_ID = ANY(PATH) 
+                                                    FROM SM_DEPARTMENT SD
+                                                        , CMIS_PROJECT_LIST CPL 
+                                                    WHERE SD.UP_DEPT_ID = CPL.DEPT_ID 
+                                                        AND SD.DEPT_YN = 'N' 
+                                                        AND NOT CYCLE)
+        SELECT CPL.DEPT_ID
+            , CPL.UP_DEPT_ID
+            , CPL.PJT_NO
+            , (CASE WHEN COALESCE (CP.PJT_NM, '') <> '' THEN 
+            		(CASE WHEN CPL.LEVEL = 2 THEN CONCAT (CPL.CNTRCT_NO, '(', CP.PJT_NM, ')')
+            		 ELSE CONCAT (CPL.CNTRCT_NO, '(', CC.CNTRCT_NM , ')') 
+                     END) 
+		      ELSE CPL.PJT_NO 
+	          END) AS PJT_NM
+            , CPL.CNTRCT_NO
+            , CPL.PJT_TYPE            
+            , CPL.DSPLY_ORDR
+            , CPL.LEVEL 
+        FROM CMIS_PROJECT_LIST CPL 
+            LEFT OUTER JOIN CN_PROJECT CP 
+                ON CPL.PJT_NO = CP.PJT_NO 
+	        LEFT OUTER JOIN CN_CONTRACT CC 
+                ON CPL.CNTRCT_NO = CC.CNTRCT_NO 
+        ORDER BY PATH 
+        ]]>
+    </select>
+
+    <select id="selectProjectuBillingList" parameterType="projectBillingListInput" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.project_billing.selectProjectuBillingList][jiyoung]*/
+        WITH RECURSIVE AUTH_MENU (MENU_NO
+                                , MENU_CD
+                                , UP_MENU_CD
+                                , MENU_NM
+                                , MENU_URL
+                                , MENU_DSPLY_ORDR
+                                , LEVEL
+                                , PATH
+                                , CYCLE) AS (SELECT MENU_NO
+                                                , MENU_CD
+                                                , UP_MENU_CD
+                                                , MENU_NM
+                                                , MENU_URL
+                                                , MENU_DSPLY_ORDR
+                                                , 1
+                                                , ARRAY [MENU_CD::TEXT]
+                                                , FALSE 
+                                            FROM SM_MENU 
+                                            WHERE MENU_LVL = 1 
+                                                AND DLT_YN = 'N' 
+                                                AND MENU_USE_YN = 'Y'
+                                            UNION ALL
+                                            SELECT A.MENU_NO
+                                                , A.MENU_CD
+                                                , A.UP_MENU_CD
+                                                , CAST(CONCAT(B.MENU_NM, ' <![CDATA[< ]]>', A.MENU_NM) AS character varying(100))
+                                                , A.MENU_URL
+                                                , A.MENU_DSPLY_ORDR
+                                                , LEVEL+1
+                                                , ARRAY_APPEND(B.PATH, A.MENU_CD::TEXT)
+                                                , A.MENU_CD = ANY(PATH) 
+                                            FROM SM_MENU A, AUTH_MENU B
+                                            WHERE A.UP_MENU_CD = B.MENU_CD 
+                                                AND A.DLT_YN = 'N' 
+                                                AND A.MENU_USE_YN = 'Y' 
+                                                AND  NOT CYCLE)
+        SELECT (CASE WHEN SPB.BIL_NO IS NULL 
+                THEN 0 ELSE 1 END) AS IS_BIL
+                , (CASE WHEN SPB.BIL_NO IS NULL 
+                THEN 0 ELSE 1 END) IS_OLD_BIL
+                , (CASE WHEN SPB.PJT_BIL_NO  IS NULL 
+                THEN 0 ELSE SPB.PJT_BIL_NO END) AS PJT_BIL_NO
+	            , SB.BIL_NO
+	            , AM.MENU_NM
+                , SB.MENU_NO
+	            , SB.MENU_CD
+	            , SB.BIL_CODE
+	            , SCC.CMN_CD_NM_KRN AS BIL_NM
+	            , SCC.CMN_CD_DSCRPT AS BIL_DSCRPT
+        FROM AUTH_MENU AM 
+            INNER JOIN SM_BILLING SB 
+                ON AM.MENU_CD = SB.MENU_CD 
+            INNER JOIN SM_COM_CODE SCC 
+                ON SB.BIL_CODE = SCC.CMN_CD 
+            LEFT JOIN SM_PROJECT_BILLING SPB 
+                ON AM.MENU_CD = SPB.MENU_CD 
+                    AND SB.BIL_NO = SPB.BIL_NO 
+                    AND SPB.CNTRCT_NO = #{cntrctNo}
+                    AND SPB.DLT_YN = 'N'
+        WHERE SCC.CMN_GRP_CD = '28808d16-4317-4999-b3a2-4d17d5dc7173' 
+            AND SB.DLT_YN = 'N' 
+            AND SCC.DLT_YN = 'N' 
+            AND SCC.USE_YN = 'Y'
+        ORDER BY SB.MENU_CD
+    </select>
+
+</mapper> 

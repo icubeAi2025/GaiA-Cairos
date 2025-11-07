@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mappers.components.log.userLog">
+
+    <sql id="columns">
+        log_no,
+        platform,
+        trn_id,
+        user_id,
+        user_name,
+        user_ip,
+        log_type,
+        exec_type,
+        result,
+        referer,
+        user_agent,
+        req_header,
+        req_data,
+        req_dt,
+        error_reason,
+        rgst_dt
+    </sql>
+
+    <select id="selectList" resultType="smUserLog">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.userLog.selectList][bjkim]  */
+        SELECT <include refid="columns" />
+        FROM sm_user_log log
+        <where>
+           /* AND DEPTH <![CDATA[<]]> */
+        </where>
+        ORDER BY log_no DESC
+    </select>
+
+    <select id="selectOne" resultType="smUserLog">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.userLog.selectOne][bjkim]  */
+        SELECT <include refid="columns" />
+        FROM sm_user_log log
+        <where>
+            <if test=' logNo != null '>
+                AND log_no = #{logNo}
+            </if>
+            <if test=' !"".equals(serviceKey) '>
+                AND service_key = #{serviceKey}
+            </if>
+            <if test=' !"".equals(userId) '>
+                AND rgstr_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.userLog.insert][bjkim]  */
+        INSERT INTO sm_user_log (
+            platform,
+            trn_id,
+            user_id,
+            user_name,
+            user_ip,
+        <if test=' logType != null and logType != "" '>
+            log_type,
+        </if>
+        <if test=' execType != null and execType != "" '>
+            exec_type,
+        </if>
+            result,
+            referer,
+            user_agent,
+            req_url,
+            req_header,
+            req_data,
+            req_dt,
+            error_reason,
+            rgst_dt
+        ) values (
+            #{platform}
+            , #{trnId}
+            , #{userId}
+            , #{userName}
+            , #{userIp}
+        <if test=' logType != null and logType != "" '>
+            , #{logType}
+        </if>
+        <if test=' execType != null and execType != "" '>
+            , #{execType}
+        </if>
+            , #{result}
+            , #{referer}
+            , #{userAgent}
+            , #{reqUrl}
+            , #{reqHeader}
+            , #{reqData}
+            , #{reqDt}
+            , #{errorReason}
+            , now()
+        )
+    </insert>
+</mapper>

@@ -1,0 +1,213 @@
+{% extends header ? 'layout/base_content' : 'layout/base_popup' %}
+{% block content %}
+<section class="contents_wrap g-row">
+	<article class="conts g-row">
+		<div class="group" id="formBox">
+			<div class="conts_form">
+				<div class="btn_area s_default _outline">
+					<button type="button" class="btn _outline" onclick="page.saveSadtag()">
+						{{ message('btn.006') }}</button>
+					<button type="button" class="btn" id="deleteButton" onclick="page.closePage()">{{
+						message('btn.007')}}</button> <!-- 닫기 -->
+					<button class="icon_btn" onclick="newWindow()" id="newWindow">
+						<i class="fa-solid fa-up-right-from-square"></i>
+						<span class="tooltip" style="position: absolute; z-index: 1000;">{{ message('item.com.017') }}
+						</span>
+					</button> <!-- 새창으로 열기 -->
+				</div>
+				<div class="form_box">
+					<div class="container" style="display: flex; align-items: center;">
+						<span class="caption">
+							<span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+						</span>
+					</div>
+					<!-- row -->
+					<div class="row cols">
+						<div class="col">
+							<div class="form_label required">{{ message('item.app.035') }}</div>
+							<div class="form_data">
+								<input type="text" name="sadtagDocNo" class="maxlength" maxlength="100" required>
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.doc.024') }}</div>
+							<div class="form_data" style="justify-content: space-between;">
+								<span class="selectbox">
+									<select name="dfccyTyp" id="dfccyTyp">
+										<option value="A" selected>
+											{{ message('item.sadtag.009') }}
+										</option>
+										<option value="B">
+											{{ message('item.sadtag.010') }}
+										</option>
+										<option value="C">
+											{{ message('item.sadtag.011') }}
+										</option>
+										<option value="D">
+											{{ message('item.sadtag.012') }}
+										</option>
+									</select>
+								</span>
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols">
+						<div class="col">
+							<div class="form_label">{{ message('item.doc.003') }}</div>
+							<div class="form_data">
+								<input type="text" name="title" class="maxlength" maxlength="255">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols">
+						<div class="col">
+							<div class="form_label">{{ message('item.sadtag.013') }}</div>
+							<div class="form_data">
+								<input type="date" name="findDt" id="findDt" class="date">
+							</div>
+						</div>
+						<div class="col">
+							<div class="form_label">{{ message('item.sadtag.008') }}</div>
+							<div class="form_data">
+								<input type="text" name="findId" class="maxlength" maxlength="50">
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols">
+						<div class="col">
+							<div class="form_label">{{ message('item.sadtag.014') }}</div>
+							<div class="form_data">
+								<textarea id="" name="dfccyCntnts" class="maxlength" maxlength="1000"></textarea>
+							</div>
+						</div>
+					</div>
+					<!-- row -->
+					<div class="row cols">
+						<div class="col">
+							<div class="form_label">{{ message('item.sadtag.005') }}</div>
+							<div class="form_data">
+								<input type="text" class="form-control maxlength" name="dfccyLct" maxlength="255">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</article>
+</section>
+{% endblock content %}
+{% block footer_script %}
+<script>
+	var pjtNo;
+	var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo')
+	var sadtagNo = urlParams.get('sadtagNo')
+	var type = urlParams.get('type');
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				page.init();
+			}
+		});
+	});
+
+	var page = {
+		init: function () {
+			pjtNo = pjtInfo.pjtNo;
+
+			$(function () {
+				var title = "{{ message('item.sadtag.018') }}"
+
+				if (type === 'p') {
+					$("#newWindow").hide();  // 버튼 숨기기
+				}
+				gaiaPortal.navMenuInit('M1002', title);
+				$("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
+			});
+
+			$('input[name="findId"]').val(decodeURIComponent(gaiaCommon.me.info.name))
+		},
+		saveSadtag: function () {
+			const sadtagDocNo = $('input[name="sadtagDocNo"]').val();
+
+			if (!sadtagDocNo) {
+				gaiaCommon.customAlert("{{ message('msg.089') }}");
+				$('input[name="sadtagDocNo"]').focus()
+				return;
+			}
+
+			let param;
+			let url;
+			let message;
+
+			param = {
+				cntrctNo: cntrctNo,
+				sadtagDocNo: sadtagDocNo,
+				dfccyTyp: $('#dfccyTyp').val(),
+				title: $('input[name="title"]').val(),
+				findDt: $('input[name="findDt"]').val(),
+				findId: $('input[name="findId"]').val(),
+				dfccyCntnts: $('textarea[name="dfccyCntnts"]').val(),
+				dfccyLct: $('input[name="dfccyLct"]').val(),
+				actnTmlmt: $('input[name="actnTmlmt"]').val(),
+				pstats: $('#pstats').val(),
+				actnDt: $('input[name="actnDt"]').val(),
+				actnId: $('input[name="actnId"]').val(),
+				actnRslt: $('textarea[name="actnRslt"]').val(),
+			}
+			url = '/api/safetymgmt/sadtag/create'
+			message = '{{ message("msg.044") }}'	// 저장되었습니다
+
+			gaiaCommon.LoadingOverlay('body', true);
+			$.ajax({
+				url: url,
+				method: "POST",
+				dataType: "json",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify(param),
+				success: function (response) {
+					if (response.ok) {
+						gaiaCommon.customAlert(message, function () {
+							gaiaCommon.LoadingOverlay('body', false);
+							if (type === 'p') {
+								if (window.opener) {
+									window.opener.location.href = `/safetymgmt/sadtag?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&returnCntrctNo=${cntrctNo}`
+								}
+								window.close();
+							} else {
+								window.location.href = `/safetymgmt/sadtag?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&returnCntrctNo=${cntrctNo}`
+							}
+						});
+					}
+				},
+				error: function (xhr, status, error) {
+					gaiaCommon.LoadingOverlay('body', false);
+					gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+				},
+			});
+		},
+		closePage: function () {
+			if (type === 'p') {
+				window.close();
+			}
+			window.location.href = `/safetymgmt/sadtag?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&returnCntrctNo=${cntrctNo}&_condition=init`;
+		},
+	}
+	function newWindow() {
+		const width = 1300;
+		const height = 600;
+		let left = Math.ceil((window.screen.width - width) / 2);
+		left += window.screenLeft; // 듀얼 모니터일 때
+		const top = Math.ceil((window.screen.height - height) / 2);
+
+		window.open(
+			`/safetymgmt/sadtag/add?type=p&cntrctNo=${cntrctNo}&sadtagNo=${sadtagNo}`, "_blank", `scrollbars=yes,resizable=yes,width=${width},height=${height},left=${left},top=${top}`
+		);
+		window.location.href = window.location.href = `/safetymgmt/sadtag?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&returnCntrctNo=${cntrctNo}`;
+	}
+</script>
+{% endblock footer_script %}

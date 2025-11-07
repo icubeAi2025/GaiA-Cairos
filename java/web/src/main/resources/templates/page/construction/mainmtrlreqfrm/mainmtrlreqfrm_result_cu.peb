@@ -1,0 +1,338 @@
+{% include "page/construction/mainmtrlreqfrm/mainmtrlreqfrm_r" %}
+<div id="partialFailPopup" class="popup_overlay modal_base">
+    <div class="modal">
+        <div class="pop_box _lg" style="width: 40rem;">
+            <div class="pop_header">
+                <h3 class="pop_tit">일부불합격</h3>
+                <button type="button" class="icon_btn pop_close" onclick="partialFailPopup.close()">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.038') }}</span>
+                </button>
+            </div>
+            <div class="pop_body">
+                <div class="group">
+                    <div class="conts_grid">
+                        <!-- 자재 목록 테이블 -->
+                        <div class="mat-table">
+                            <div class="scrollable-thead" style="overflow-y: scroll">
+                                <table class="table wbs-table" >
+                                    <colgroup>
+                                        <col style="width:20%;"> <!-- 품명 -->
+                                        <col style="width:20%;"> <!-- 규격 -->
+                                        <col style="width:20%;"> <!-- 단위 -->
+                                        <col style="width:20%;"> <!-- 반입수량 -->
+                                        <col style="width:20%;"> <!-- 불합격 -->
+                                    </colgroup>
+                                    <thead>
+                                    <tr>
+                                        <th>품명</th>
+                                        <th>규격</th>
+                                        <th>단위</th>
+                                        <th>반입수량</th>
+                                        <th>불합격</th>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+
+                            <div class="scrollable-tbody" style="max-height: 495px; overflow-y: scroll; border: 1px solid var(--tb-bd);">
+                                <table class="table wbs-table">
+                                    <colgroup>
+                                        <col style="width:20%;"> <!-- 품명 -->
+                                        <col style="width:20%;"> <!-- 규격 -->
+                                        <col style="width:20%;"> <!-- 단위 -->
+                                        <col style="width:20%;"> <!-- 반입수량 -->
+                                        <col style="width:20%;"> <!-- 불합격 -->
+                                    </colgroup>
+                                    <tbody id="partialFailList">
+                                    <!-- 여기에 동적으로 행이 추가됨 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pop_footer">
+                <div class="btn_area jc_e">
+                    <button type="button" class="btn _outline" onclick="partialFailPopup.close()">{{ message('btn.007') }}</button>
+                    <!-- 닫기 -->
+                    <button type="button" class="btn _fill" id="action-button" onclick="partialFailPopup.save()">
+                        저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const partialFailList = []
+
+    $(function () {
+        var title = '주요자재 검수결과 등록'
+
+        setTimeout(function() {
+            $("#menuName").text(title);
+            $("#depth_txt").text(title);
+            result.makeSelectBox();
+            result.init();
+        }, 100);
+
+    });
+
+    var result = {
+        init: function (){
+            this.createRusultContainer();
+            this.getRusult();
+        },
+
+        createRusultContainer: function (){
+
+            // 등록 폼양식
+            $('#paymentresult-group').empty()
+            $('#resultForm').empty()
+            $('#resultForm').append(
+                    `
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col merge">
+                            <div class="form_label required">판정</div>
+                            <div class="form_data" style="gap: 5px;">
+                                <span id="rsltSelectBox" class="selectbox" style="width: max-content"></span>
+	                            <button type="button" class="btn icon_btn _outline" onclick="partialFailPopup.open()" id="partialFailPopupBtn" style="display: none">
+									<i class="ic ic-plus"></i>
+									<span class="blind">추가</span>
+								</button>
+                            </div>
+                        </div>
+                        <div class="col merge">
+                            <div class="form_label required">검수일</div>
+                            <div class="form_data">
+                                <input type="date" id="cmDt" class="date">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row cols">
+                        <div class="col">
+                            <div class="col merge">
+                                <div class="form_label">자재검사 의견</div>
+                                <div class="form_data">
+                                    <textarea id="rsltOpnin" class="maxlength" maxlength="1000"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`
+            )
+
+            // 등록버튼
+            $('#addButton').remove();
+            $('#btnArea').prepend(
+                    `<button type="button" class="btn save-btn" id="addButton" onclick="result.save()">등록</button>`
+            )
+
+            // 새창버튼
+            $('#newWindow').off('click').attr('onclick', 'result.newWindow()');
+        },
+
+        getRusult: function (){
+            gaiaCommon.get("/api/construction/mainmtrlreqfrm/get/" + cntrctNo + "/" + reqfrmNo, {}, function (result) {
+                let data = result.details.mainmtrlReqfrm;
+                let addRsltCd = gaiaCommon.decodeSafeText(data.rsltCd);
+
+                if(addRsltCd !== null && addRsltCd !== ''){
+                    $('#addRsltCd').val(addRsltCd);
+                    if (addRsltCd === '02') {
+                        $("#partialFailPopupBtn").show();
+                    } else {
+                        $("#partialFailPopupBtn").hide();
+                    }
+                }
+                $('#cmDt').val(gaiaCommon.decodeSafeText(data.cmDt));
+                $('#rsltOpnin').val(gaiaCommon.decodeSafeText(data.rsltOpnin));
+            })
+        },
+
+        // 셀렉트박스 호출
+        makeSelectBox: function () {
+            let selectBoxRequests = [
+                {
+                    //카테고리
+                    cmnGrpCd: "2d505507-345c-4b58-9052-6757df6b46f8",
+                    selectBoxId: "addRsltCd",
+                    selectBoxNmType: "KOR",
+                    ckeckedValue: "",
+                    orderByCol: "",
+                    orderByType: "",
+                    paramNm: "addRsltCd",
+                    funName: "",
+                    funParam: "",
+                    funtype: "onchange",
+                },
+            ];
+
+            gaiaCommon.post("/api/util/make-selectBox",selectBoxRequests,(data) => {
+                let returnMap = data.details.returnMap;
+                selectBoxRequests.forEach(function (item) {
+                    let categorySelect = returnMap[item.selectBoxId];
+                    $("#rsltSelectBox").prepend(categorySelect);
+                });
+                // 일부불합격 선택시 모달창버튼 여부
+                $(document).off('change', '#addRsltCd').on('change', '#addRsltCd', function () {
+                    const value = $(this).val();
+
+                    if (value === '02') {
+                        $("#partialFailPopupBtn").show();
+                    } else {
+                        $("#partialFailPopupBtn").hide();
+                    }
+                });
+            },(xhr, status, error) => {
+                console.error("Error making select box:", status, error);
+            })
+        },
+
+        save: function (){
+            let addRsltCd = $('#addRsltCd').val();
+            let cmDt =  $('#cmDt').val();
+            let rsltOpnin =  $('#rsltOpnin').val();
+
+            if (!cmDt) {
+                gaiaCommon.customAlert('검수일 선택해주세요');
+                $('#cmDt').focus();
+                return;
+            }
+
+            if(addRsltCd === '01'){
+                partialFailList.length = 0;
+                partialFailList.push({
+                    cntrctNo : cntrctNo,
+                    reqfrmNo : reqfrmNo,
+                    passYn : "Y",
+                });
+            }else if(addRsltCd === '03'){
+                partialFailList.length = 0;
+                partialFailList.push({
+                    cntrctNo : cntrctNo,
+                    reqfrmNo : reqfrmNo,
+                    passYn : "N",
+                });
+            }
+
+            param = {
+                cntrctNo: cntrctNo,
+                reqfrmNo: reqfrmNo,
+                rsltCd: addRsltCd,
+                cmDt: cmDt + 'T00:00:00',
+                rsltOpnin: rsltOpnin,
+
+                partialFailList : partialFailList
+            }
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+                url: '/api/construction/mainmtrlreqfrm/addMtrlReqfrmResult',
+                method: 'POST',
+                processData: false,
+                contentType: 'application/json',
+                data: JSON.stringify(param),
+                success: function (response) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.044") }}', function () {
+                        if (type === 'p') {
+                            window.close();
+                        } else {
+                            window.location.href = `/construction/mainmtrlreqfrm?cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&_condition=init`;
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                }
+            });
+        },
+
+        newWindow: function (){
+            const width = 1300;
+            const height = 800;
+            let left = Math.ceil((window.screen.width - width) / 2);
+            left += window.screenLeft; // 듀얼 모니터일 때
+            const top = Math.ceil((window.screen.height - height) / 2);
+
+            window.open(`/construction/mainmtrlreqfrm/addMtrlReqfrmResult?type=p&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&reqfrmNo=${reqfrmNo}`, '_blank', `scrollbars=yes,resizable=yes,width=${width},height=${height},left=${left},top=${top}`);
+            window.history.back();
+        },
+    }
+
+    // 일부불합격 모달창
+    var partialFailPopup = {
+        // 창열기
+        open: function (){
+            $("#partialFailPopup .modal").addClass('open');
+            this.getPartialFailList();
+        },
+
+        // 창닫기
+        close: function () {
+            $("#partialFailPopup .modal").removeClass('open');
+        },
+
+        // 저장
+        save:function (){
+            partialFailList.length = 0;
+            $('#partialFailList .partialFailContent').each(function () {
+                const $row = $(this);
+                const gnrlexpnsCd = $row.data('gnrlexpns-cd');
+                const passQty = $row.find('.todayQty').text() - $row.find('input.failQty').val();
+                const failQty = $row.find('input.failQty').val();
+
+                partialFailList.push({
+                    cntrctNo : cntrctNo,
+                    reqfrmNo : reqfrmNo,
+                    gnrlexpnsCd : gnrlexpnsCd,
+                    passQty : passQty,
+                    failQty : failQty,
+                });
+            });
+            $("#partialFailPopup .modal").removeClass('open');
+        },
+
+        // 일부불합격 처리 할 자재목록
+        getPartialFailList: function (){
+            let params = {
+                cntrctNo : cntrctNo,
+                reqfrmNo : reqfrmNo,
+            }
+            gaiaCommon.get("/api/construction/mainmtrlreqfrm/getPartialFailList", params, function (result) {
+                let partialFailLists = result.details.partialFailList;
+
+                $("#partialFailList").empty();
+                if (partialFailLists.length >= 0) {
+                    partialFailLists.forEach((partialFailList) => {
+                        const todayQty = Number(partialFailList.todayQty || 0).toFixed(0);
+                        const failQty = Number(partialFailList.failQty || 0).toFixed(0);
+
+                        let dataContent = `
+                                    <tr class='partialFailContent' data-gnrlexpns-cd="${partialFailList.gnrlexpnsCd}">
+                                        <td class="rsceNm">${partialFailList.rsceNm}</td>
+                                        <td class="specNm t-center">${partialFailList.specNm}</td>
+                                        <td class="unit t-center">${partialFailList.unit}</td>
+                                        <td class="todayQty t-right">${todayQty}</td>
+                                        <td class="t-right"><input type="text" class="failQty maxlength" maxlength="27" value="${failQty}" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                                    </tr>`;
+                        $("#partialFailList").append(dataContent);
+                    })
+                } else {
+                    let dataContent = ` <tr>
+                                            <td class="ta_c" colspan="8">조회된 데이터가 없습니다.</td>
+                                        </tr>`
+                    $("#partialFailList").append(dataContent);
+                }
+            })
+        },
+
+
+    }
+</script>

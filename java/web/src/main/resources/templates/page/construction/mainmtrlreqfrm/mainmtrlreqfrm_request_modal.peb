@@ -1,0 +1,215 @@
+<div class="modal open">
+    <div class="pop_box _lg" style="width: 40rem;">
+        <div class="pop_header">
+            <h5 class="pop_tit" id="code_cu_tit">사용자 선택</h5>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">{{ message('item.com.038') }}</span>
+            </button>
+        </div>
+        <div class="pop_body">
+            <div class="group">
+                <div class="conts_grid">
+                    <!-- S: search wrap ---------------------------------------------- -->
+                    <div class="toolbar">
+                        <div class="search_wrap">
+                            <div class="searchbox_wrap">
+                                <input type="text" id="searchText" onkeypress="if( event.keyCode == 13 ){userGrid.search();}" placeholder='이름 및 공종' />
+                                <button type="button" class="icon_btn search" onclick="userGrid.search()">
+                                    <i class="ic ic-search"></i>
+                                    <span class="blind">
+                                        {{ message("item.com.014") }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid" id="construction-grid">
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <input type="hidden" id="codeCheck" value="true">
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+                <!-- 닫기 -->
+                <button type="button" class="btn _fill" id="action-button" onclick="popup.save()">
+                    검수요청
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var checkedList = [];
+
+    var popup = {
+        init: function (rows) {
+            checkedList = Array.isArray(rows) ? rows : [];
+            $("#searchText").val(""); // 검색창 초기화
+            userGrid.init();
+            console.log("전달받은 rows:", checkedList);
+        },
+
+        // 닫기
+        close: function () {
+            $("#searchText").val("");
+            if (userGrid.userGrid) {
+                userGrid.userGrid.clear();
+            }
+            checkedList = [];
+
+            $("#popup").css("display", "none");
+        },
+
+        // 검수요청
+        save: function () {
+            if (!userGrid.userGrid) return;
+
+            const allRows = userGrid.userGrid.getData();
+            let checkedUsers = [];
+
+            // 체크된 사용자만 필터
+            $('#construction-grid input[type="checkbox"].check_mark').each(function (index) {
+                if ($(this).prop('checked')) {
+                    checkedUsers.push({ ...allRows[index] });
+                }
+            });
+
+            if (checkedUsers.length === 0) {
+                gaiaCommon.customAlert("검수요청할 사용자를 선택해주세요.");
+                return;
+            }
+
+            // checkedList 항목별로 checkedUsers 배열 포함
+            const requestData = checkedList.map(item => ({
+                cntrctNo: item.cntrctNo,
+                reqfrmNo: item.reqfrmNo,
+                cnsttyCd: item.cnsttyCd,
+                cnsttyNm: item.cnsttyNm,
+                cntrctNm: item.cntrctNm,
+                supervisionList: checkedUsers  // 배열 그대로 포함
+            }));
+
+            console.log("requestData", requestData);
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+                url: '/api/construction/mainmtrlreqfrm/inspectionRequest',
+                method: 'POST',
+                processData: false,
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(requestData),
+                success: function (response) {
+                    if (response.ok) {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        gaiaCommon.customAlert("요청이 완료되었습니다.");
+
+                        $("#searchValue").val("");
+                        if (userGrid.userGrid) {
+                            userGrid.userGrid.clear();
+                        }
+                        mainmtrlreqfrmGrid.init();
+                        $("#popup").css("display", "none");
+
+                        checkedList = null;   // 전역 변수 초기화
+                        $('#searchText').val(""); // 검색 초기화
+
+                        $('#workType').val();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('요청이 실패했습니다.');
+                },
+            })
+        },
+    }
+
+    // 검수요청자 목록
+    var userGrid = {
+        init: function () {
+            let _this = this;
+
+            if (_this.userGrid) {
+                _this.userGrid.destroy();
+                _this.userGrid = null;
+            }
+            const dataSource = createDataSource({
+                readData: {
+                    url: "/api/construction/mainmtrlreqfrm/getSupervisionList",
+                    method: "GET", 
+                    initParams: {
+                        searchValue: $('#searchText').val(),
+                    },
+                }
+            });
+
+            if (!this.userGrid) {
+                this.userGrid = new tui.Grid({
+                    el: document.getElementById('construction-grid'),
+                    data: dataSource,
+                    bodyHeight: 200,
+                    rowHeight: 40,
+                    headerHeight: 40,
+                    scrollX: false,
+                    scrollY: true,
+                    columns: [
+                        {
+                            header: '',
+                            name: '',
+                            formatter: function({ row }) {
+                                const allCnsttyCds = checkedList.flatMap(item =>
+                                        item.cnsttyCd ? item.cnsttyCd.split(',').map(cd => cd.trim()) : []
+                                );
+                                const baseCnsttyCd = allCnsttyCds[0].trim();
+                                const isChecked = row.ratngCd?.trim() === baseCnsttyCd;
+                                return `
+                                    <div class="item_group" role="group" aria-label="Basic radio group" style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                                        <label class="form_check">
+                                            <input type="checkbox" name="useYn"
+                                            class="check_mark" ${isChecked ? "checked" : ""} />
+                                        </label>
+                                    </div>`;
+                            },
+                            width: 50,
+                            align: 'center',
+                        },
+                        {
+                            header: '이름', // 이름
+                            name: 'usrNm', // 사용자명
+                            width: 200,
+                            align: 'center',
+                        },
+                        {
+                            header: '직책', // 직책
+                            name: 'deptNm', // 직책명
+                            align: 'center',
+                        },
+                        {
+                            header: '공종', // 공종
+                            name: 'workNm', // 공종명
+                            align: 'center',
+                        },
+                    ],
+                });
+            }
+        },
+
+        // 검색
+        search: function (){
+            userGrid.init();
+        },
+    }
+    $(document).off('change', '.check_mark').on('change', '.check_mark', function () {
+        if ($(this).prop('checked')) {
+            $('.check_mark').prop('checked', false);
+
+            $(this).prop('checked', true);
+        }
+    });
+</script>

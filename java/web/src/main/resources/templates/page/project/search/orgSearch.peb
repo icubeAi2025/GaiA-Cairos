@@ -1,0 +1,370 @@
+<!-- 문서24 기관 검색 팝업 -->
+<div class="modal open">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit">수요기관 검색</h5>
+            <div class="btn_area">
+                <button name="btnClose" type="button" class="icon_btn pop_close">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">{{ message('item.com.038') }}</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="pop_body">
+            <div class="conts_tab">
+                <nav class="tab_nav">
+                    <!-- TAB List -->
+                    <ul class="tab_list tab_default">
+                        <li class="tab_item active" data-id="tabs01" style="flex: 1; text-align: center; ">기본검색</li>
+                        <li class="tab_item" data-id="tabs02" style="flex: 1; text-align: center; ">조직도검색</li>
+                    </ul>
+                </nav>
+
+                <!-- tabs -->
+                <div class="tab_conts_wrap active" id="tabs01">
+                    <p style="margin: 20px 0 8px;">기관명을 입력하여 검색하시기 바랍니다.</p>
+
+                    <!-- tabs01 -->
+                    <div style="border: 1px solid #ccc; padding: 16px; border-radius: 4px;">
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                            <label for="searchKeyword" style="white-space: nowrap;">기관명</label>
+                            <input type="text" id="searchOrgNm" name="searchOrgNm" placeholder="기관명을 입력하세요"
+                                   style="flex: 1; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px;" />
+                            <button type="button" class="btn _outline" id="btnOrgSearch"
+                                    style="padding: 8px 16px;">검색</button>
+                        </div>
+
+                        <span style="font-size: 13px; color: #555;">
+                            ※ 총 길이가 세 글자 이상인 여러 개의 키워드를 포함한 검색이 가능합니다. 각 키워드는 공백으로 구분됩니다.<br />
+                            예) <strong>"광역시 민원"</strong>으로 검색 시 <strong>"부산광역시 민원과", "인천광역시 민원과"</strong> 조회 가능
+                        </span>
+                    </div>
+
+                    <p style="margin: 20px 0 8px;" id="grid-result"></p>
+                    <div id="grid_table">
+                    </div>
+                </div>
+
+                <!-- tabs02 -->
+                <div class="tab_conts_wrap" id="tabs02">
+                    <p></p>
+
+                    <div style="border: 1px solid #ccc; padding: 16px; border-radius: 4px;">
+                        <!-- 조직도 검색 -->
+                        <!--<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                            <input type="text" id="searchTreeOrgNm" name="searchTreeOrgNm" placeholder="기관명을 입력하세요"
+                                   style="flex: 1; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px;" />
+                            <button type="button" class="btn _outline" id="btnSearchTree"
+                                    style="padding: 8px 16px;">검색</button>
+                        </div>-->
+
+                        <!-- tree view -->
+                        <div class="treeview_area g-group ty1" style="width: 100%;">
+                            <div class="treeview_wrap"
+                                 style="height: 500px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; background: #fff; padding: 8px;">
+                                <div class="treeview" id="jstreeWrap"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="codeCheck" value="true">
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button name="btnClose" type="button" class="btn _outline">{{ message('btn.007') }}</button> <!-- 닫기 -->
+                <button id="btnChoice" type="button" class="btn _fill" id="action-button">
+                    {{ message('item.com.005') }}
+                </button> <!-- 추가 -->
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .tab_conts_wrap {
+        display: none;
+        height: 100%;
+    }
+
+    .tab_conts_wrap.active {
+        display: block;
+    }
+
+    .tab_default .tab_item.active::before,
+    .tab_default .tab_item.active::after {
+        clip-path: none !important;
+    }
+
+    .modal.open .pop_box._md {
+        width: 700px;
+        height: 700px;
+        max-height: 700px;
+        min-height: 700px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pop_body {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 16px;
+    }
+
+    .search-result-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+    }
+
+    .search-result-table th,
+    .search-result-table td {
+        padding: 6px;
+        border-bottom: 1px solid #ccc;
+        text-align: left;
+    }
+
+    .search-result-table .col-radio {
+        width: 40px;
+        text-align: center;
+    }
+
+    .search-result-table .col-org-name {
+        width: 50%;
+    }
+
+    .search-result-table .col-chief-title {
+        width: 50%;
+    }
+
+    .search-no-result {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #777;
+    }
+</style>
+<script>
+    var viewPopup = {
+        node: null
+    }
+
+    $(function(){
+        // gaia.create({
+        //     $init: function ($params) {
+                viewPopup.init();
+                // $('.pop_box').draggable({
+                //     addClasses: false
+                //     , handle: ".pop_tit"
+                //     , distance: 0
+                //     , cursor: "crosshair"
+                //     , classes: {
+                //         "ui-draggable": "highlight"
+                //     }
+                // });
+
+            // }
+        // });
+    })
+
+    viewPopup.init = function () {
+        viewPopup.bindEvent();
+
+        var jstree = {
+            obj: null,
+            init: function () {
+                jstree.obj = $('#jstreeWrap').jstree({
+                    "animation": 0,
+                    plugins: ["types", "wholerow", "search"],
+                    core: {
+                        'data': {
+                            'url': '/webApi/resource/doc24-organization',
+                            'data': function (node) {
+                                var id = node.id === '#' ? '0000000' : node.id;
+                                return { 'parentCode': id };
+                            }
+                        },
+                        type: 'GET',
+                        check_callback: true,
+                        themes: {
+                            'theme': 'default',
+                            // "stripes" : true,
+                            'dots': false,
+                            'responsive': false,
+                            'icons': false
+                        }
+                    },
+                });
+
+                // 트리 노드 선택 이벤트
+                this.obj.on('select_node.jstree', function (e, data) {
+                    console.log('트리 노드 선택!', data.node.id);
+                    viewPopup.node = $(this).jstree("get_node", data.node.id);
+                }).on('dblclick.jstree', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    viewPopup.node = $(this).jstree("get_node", e.target.id);
+                });
+            },
+        }
+
+        jstree.init();
+    }
+
+    viewPopup.bindEvent = function () {
+
+        // 탭 전환
+        $('.tab_item').on('click', function () {
+            $('.tab_item').removeClass('active');
+            $(this).addClass('active');
+
+            $('.tab_conts_wrap').removeClass('active');
+            const targetId = $(this).data('id');
+            $('#' + targetId).addClass('active');
+
+            // 탭 전환 시 초기화 처리
+            if (targetId === 'tabs01') {
+                $('#searchKeyword').val('');
+
+            } else if (targetId === 'tabs02') {
+                $('#searchTreeOrgNm').val('');
+                viewPopup.node = null;
+
+                // 트리 초기화
+                const tree = $('#jstreeWrap').jstree(true);
+                if (tree) {
+                    tree.close_all();
+                    tree.deselect_all(true);
+                }
+            }
+        });
+
+        // 팝업 닫기
+        $('[name=btnClose]').on('click', function () {
+            $('#popup').empty();
+        });
+
+        // 기본 검색버튼
+        $('#btnOrgSearch').on('click', function () {
+            const keyword = $('#searchOrgNm').val().trim();
+
+            if (!keyword || keyword.length < 2) {
+                gaiaCommon.customAlert('검색어를 두 글자 이상 입력하세요.');
+                return;
+            }
+
+            $.ajax({
+                url: '/webApi/resource/doc24-search-organization',
+                type: 'GET',
+                data: {
+                    keyword: keyword,
+                    currentPage: 1,
+                },
+                success: function (response) {
+                    console.log("응답결과: ", response);
+                    const list = response.list;
+
+                    $('#grid-result').text(`총 ${response.totalCount || 0}건이 조회되었습니다.`);
+
+                    if (list.length === 0) {
+                        // $('#grid_table').html('<table class="search-result-table"><thead><tr><p style="margin-top: 10px;">검색 결과가 없습니다.</p></tr></thead></table>');
+                        return;
+                    }
+
+                    let html = `
+                        <table class="search-result-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-radio"></th>
+                                    <th class="col-org-name">기관명</th>
+                                    <th class="col-chief-title">대표자</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    list.forEach((item, index) => {
+                        html += `
+                            <tr>
+                                <td class="col-radio">
+                                    <input type="radio" name="orgSelect" value="${item.id}" data-name="${item.text}">
+                                </td>
+                                <td>${item.text}</td>
+                                <td>${item.ucchieftitle || ''}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    $('#grid_table').html(html);
+
+                    // 라디오 버튼 선택 시 viewPopup.node 업데이트
+                    $('input[name="orgSelect"]').on('change', function () {
+                        const orgId = $(this).val();
+                        const orgName = $(this).data('name');
+
+                        viewPopup.node = {
+                            id: orgId,
+                            text: orgName,
+                            parent: '#' // 기본 검색은 트리 구조가 아니므로 '#'
+                        };
+
+                        console.log('기본 검색에서 선택된 기관:', viewPopup.node);
+                    });
+
+                },
+                error: function (xhr) {
+                    console.error('검색 오류:', xhr);
+                }
+            });
+        });
+
+        // 조직도 검색 버튼
+        $('#btnSearchTree').on('click', function () {
+            $.ajax({
+                url: `/webApi/resource/doc24-organization?searchTreeOrgNm=${$('#searchTreeOrgNm').val()}`,
+                type: 'GET',
+                success: function (result) {
+                    if (result.ok) {
+
+                    }
+                },
+            });
+        });
+
+        // 추가 버튼
+        $('#btnChoice').on(
+            'click', function () {
+                console.log('select node', viewPopup.node);
+
+                if (!viewPopup.node) {
+                    alert('수요기관을 선택하세요.');
+                    return;
+                }
+
+                const node = viewPopup.node;
+                const tree = $('#jstreeWrap').jstree(true);
+
+                // 1. 기관 코드 → ID 직접 입력
+                $('#dminsttCd').val(node.id);
+
+                // 2. 기관 이름 (트리 구조면 부모 포함, 아니면 그대로)
+                let fullPath = node.text;
+                if (node.parent && node.parent !== '#') {
+                    // 트리에서 선택된 경우
+                    const tree = $('#jstreeWrap').jstree(true);
+                    let currentNode = node;
+                    while (currentNode.parent && currentNode.parent !== '#') {
+                        const parentNode = tree.get_node(currentNode.parent);
+                        if (!parentNode) break;
+                        fullPath = parentNode.text + ' > ' + fullPath;
+                        currentNode = parentNode;
+                    }
+                }
+
+                $('#dminsttNm').val(fullPath);
+
+                // 팝업 닫기
+                $('[name=btnClose]:eq(0)').trigger('click');
+            });
+    }
+</script>

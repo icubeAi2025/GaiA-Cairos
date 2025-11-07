@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.response">
+    <select id="selectDesignResponseByDsgnNoAndResSeq" parameterType="hashmap" resultType="dmResponse">
+        select * from dm_response where res_seq = #{resSeq} and dsgn_no = #{dsgnNo} and dlt_yn = 'N';
+    </select>
+    <update id="updateDesignResponse" parameterType="dmResponse">
+        update dm_response
+        set
+            <if test="rplyCd != null and rplyCd != ''">
+                rply_cd = #{rplyCd},
+            </if>
+            <if test="rplyCntnts != null and rplyCntnts != ''">
+                rply_cntnts = #{rplyCntnts},
+            </if>
+            <if test="atchFileNo != null and atchFileNo != ''">
+                atch_file_no = #{atchFileNo},
+            </if>
+            <if test="dwgNo != null and dwgNo != ''">
+                dwg_no = #{dwgNo},
+            </if>
+            <if test="dltYn != null and dltYn != ''">
+                dlt_yn = #{dltYn},
+            </if>
+            <if test="dltId != null and dltId != ''">
+                dlt_id = #{dltId}, dlt_dt = now(),
+            </if>
+            chg_dt = now(), chg_id = #{chgId}
+        WHERE res_seq = #{resSeq} and dsgn_no = #{dsgnNo}
+    </update>
+    <insert id="insertDesignResponse">
+        insert into dm_response (
+            res_seq
+            ,dsgn_no
+            ,cntrct_no
+            ,rply_cd
+            ,rply_cntnts
+            ,atch_file_no
+            ,dwg_no
+            ,dlt_yn
+            ,rgstr_id
+            ,rgst_dt
+        ) values(
+            #{resSeq}
+            ,#{dsgnNo}
+            ,#{cntrctNo}
+            ,#{rplyCd}
+            ,#{rplyCntnts}
+            ,#{atchFileNo}
+            ,#{dwgNo}
+            ,#{dltYn}
+            ,#{rgstrId}
+            ,now()
+        )
+    </insert>
+</mapper>

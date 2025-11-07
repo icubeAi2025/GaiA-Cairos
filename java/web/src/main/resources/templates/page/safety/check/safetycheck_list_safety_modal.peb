@@ -1,0 +1,183 @@
+{% block content %}
+<div class="modal open">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h3 class="pop_tit" id="list_cu_tit"></h3>
+            <button type="button" class="icon_btn pop_close" onclick="popupSafety.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <div class="form_box">
+                <div class="container" style="display: flex; align-items: center;">
+                    <span class="caption">
+                        <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                    </span>
+                </div>
+                <form id="dept-form">
+
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.safety.017') }}</div>
+                            <div class="form_data">
+                                <textarea id="ispLstDscrpt" name="ispLstDscrpt" class="maxlength"
+                                    maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popupSafety.close()">{{ message('btn.007')
+                    }}</button>
+                <button type="button" class="btn _fill" id="addButton" onclick="popupSafety.save()">{{
+                    message('btn.006')
+                    }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}{% block footer_script %}
+<style>
+    #ispLstDscrpt {
+        min-height: 5rem;
+    }
+</style>
+<script src="/assets/js/validation.js"></script>
+<script>
+    var popupSafety = {
+        mode: "",
+        popupWindow: null,
+        init: function () {
+            this.mode = safety.mode;
+            if (this.mode === "update") {
+                this.load();
+            }
+            console.log("cntrctNo: ", cntrctNo)
+
+            $("#list_cu_tit").text("{{ message('item.safety.022') }}");
+        },
+        close: function () {
+            $("#popupSafety").find("input[type='text'], textarea").val("");
+            $("#popupSafety").css("display", "none");
+            if (this.popupWindow) {
+                this.popupWindow.close();
+                this.popupWindow = null;
+            }
+
+            this.mode = "";
+            safety.ispLstId = null;
+        },
+        save: function () {
+            if (this.mode == "create") {
+                this.create();
+            } else if (this.mode == "update") {
+                this.update();
+            }
+        },
+        // 안전점검 리스트 추가
+        create: function () {
+            var ispLstDscrpt = $("#ispLstDscrpt").val();
+
+            let cntrctNoToUse = $("input[name='useYnGrid']:checked").val() === "Y" ? "CMIS" : cntrctNo;
+
+            if (!ispLstDscrpt) {
+                gaiaCommon.customAlert("{{ message('msg.safety.005') }}");
+                $("#ispLstDscrpt").focus()
+                return;
+            }
+
+            let param = {
+                cntrctNo: cntrctNoToUse,
+                cnsttyCd: safety.obj.id,
+                cnsttyNm: safety.obj.text,
+                cnsttyLvl: safety.obj.data.level,
+                upCnsttyCd: safety.obj.parent,
+                ispLstDscrpt: ispLstDscrpt,
+            };
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+                url: "/api/safetymgmt/check/create/list",
+                method: "POST",
+                data: JSON.stringify(param),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    gaiaCommon.customAlert("{{ message('msg.005') }}", function () {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        popupSafety.close();
+                        safety.getGridData()
+                    });
+                },
+                error: function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                },
+            });
+        },
+        // 안전점검 리스트 조회
+        load: function () {
+            let param = {
+                cntrctNo: safety.obj.data.cntrctNo,
+                ispLstId: safety.ispLstId,
+            };
+            $.ajax({
+                url: "/api/safetymgmt/check/get/list",
+                method: "POST",
+                data: JSON.stringify(param),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    const listData = result.details.list;
+                    $("#ispLstDscrpt").val(gaiaCommon.decodeSafeText(listData.ispLstDscrpt));
+                },
+                error: function (xhr, status, error) {
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                },
+            });
+        },
+        // 검측 체크 리스트 수정
+        update: function () {
+            var ispLstDscrpt = $("#ispLstDscrpt").val();
+
+            if (!ispLstDscrpt) {
+                gaiaCommon.customAlert("{{ message('msg.safety.005') }}");
+                $("#ispLstDscrpt").focus()
+                return;
+            }
+
+            let param = {
+                cntrctNo: safety.obj.data.cntrctNo,
+                ispLstId: safety.ispLstId,
+                ispLstDscrpt: ispLstDscrpt,
+            };
+
+            gaiaCommon.LoadingOverlay('body', true);
+            $.ajax({
+                url: "/api/safetymgmt/check/update/list",
+                method: "POST",
+                data: JSON.stringify(param),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    gaiaCommon.customAlert("{{ message('msg.007') }}", function () {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        popupSafety.close();
+                        safety.getGridData()
+                    });
+                },
+                error: function (xhr, status, error) {
+                    gaiaCommon.LoadingOverlay('body', false);
+                    gaiaCommon.customAlert('{{ message("msg.045") }}');	// 저장에 실패 했습니다.
+                },
+            });
+        }
+    }
+
+    window.popupSafety = popupSafety;
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.ecomaterial">
+
+    <select id="getEcoMaterialList" parameterType="ecoMaterialListInput" resultType="ecoMaterialListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.ecomaterial.getEcoMaterialList][jhkim]  */
+        SELECT
+                SEM.ECO_ID,
+                SEM.CNTRCT_NO,
+                SEM.GNRLEXPNS_CD,
+                SEM.RSCE_NM,
+                SEM.SPEC_NM,
+                SEM.UNIT,
+                SEM.ECO_TP_CD,
+                SEM.PRE_CERT,
+                SEM.FINAL_CERT,
+                SEM.MAKR_NM,
+                SEM.CERT_RSN,
+                SEM.RMRK,
+                SEM.DLT_YN,
+                SCC.CMN_CD_NM_KRN AS ECO_TP_CD_NM
+        FROM
+                SM_ECO_MATERIAL SEM
+        LEFT JOIN 
+                SM_COM_CODE SCC 
+        ON      SEM.ECO_TP_CD = SCC.CMN_CD 
+        AND     SCC.CMN_GRP_CD = 'e2a882a5-7eeb-4f53-b75f-ca803e767b17'
+        WHERE   SEM.DLT_YN ='N'
+        AND     SEM.CNTRCT_NO LIKE CONCAT( #{cntrctNo} , '%' )
+        <if test="searchTerm != null and searchTerm != '' and searchTerm != 'all'">
+            AND     SEM.ECO_TP_CD = #{searchTerm}
+        </if>
+        <if test="searchText != null and searchText != '' and searchText != 'all'">
+            AND (
+                    SEM.RSCE_NM         ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.SPEC_NM     ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.UNIT        ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.ECO_TP_CD   ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.PRE_CERT    ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.FINAL_CERT  ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.MAKR_NM     ILIKE CONCAT('%', #{searchText}, '%')
+                    OR  SEM.CERT_RSN    ILIKE CONCAT('%', #{searchText}, '%')
+                )
+        </if>
+        ORDER BY SEM.RGST_DT DESC;
+    </select>
+
+    <select id="getMaterialList" parameterType="ecoMaterialListInput" resultType="ecoMaterialListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.ecomaterial.getMaterialList][jhkim]  */
+            SELECT      DISTINCT (CCD.RSCE_CD),
+                         CCD.DTL_CNSTTY_NM,
+                         CCD.SPEC_NM,
+                         CCD.UNIT,
+                         CASE WHEN CCD.GOVSPLY_MTRL_YN = 'Y' THEN '예' ELSE '아니오' END AS GOVSPLY_MTRL_YN,
+                         CCD.CNTRCT_CHG_ID
+            FROM        CT_CBS_DETAIL CCD
+            JOIN        CN_CONTRACT_CHANGE CCC
+                        ON      CCD.CNTRCT_CHG_ID = CCC.CNTRCT_CHG_ID
+                        AND     CCC.LAST_CHG_YN = 'Y'
+                        AND     CCC.DLT_YN ='N'
+            WHERE       CCD.CNTRCT_CHG_ID LIKE CONCAT( #{cntrctNo} , '%' )
+            AND          CCD.DLT_YN = 'N'
+            <if test="searchText != null and searchText != '' and searchText != 'all'">
+                AND (
+                        CCD.DTL_CNSTTY_NM   ILIKE CONCAT('%', #{searchText}, '%')
+                        OR  CCD.SPEC_NM     ILIKE CONCAT('%', #{searchText}, '%')
+                    )
+            </if>
+        ORDER BY CCD.DTL_CNSTTY_NM;
+    </select>
+
+</mapper>

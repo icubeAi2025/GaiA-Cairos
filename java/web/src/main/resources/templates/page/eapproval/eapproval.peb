@@ -1,0 +1,876 @@
+<style>
+	.tui-grid-body-area a {
+		cursor: pointer; 
+	}
+
+	.eapproval-detail-cell {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		position: relative;
+		padding-left: 10px;
+		padding-right: 25px;
+		overflow: hidden;
+	}
+
+	.eapproval-detail-link {
+		flex-grow: 1;
+		min-width: 0; 
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		text-decoration: none;
+		color: inherit;
+		display: block;
+		max-width: 100%;
+	}
+
+	.eapproval-detail-icon {
+		opacity: 0;
+		position: absolute;
+		right: 10px; 
+		cursor: pointer;
+	}
+
+	.eapproval-detail-cell:hover .eapproval-detail-icon {
+		opacity: 1;
+	}
+
+
+	.icon_btn._clear {
+		background: var(--color-default);
+		border-radius: 50%;
+		color: white;
+		font-size: 10px;
+		position: absolute;
+		top: calc((100% - 1.7em) / 2);
+		right: 4em;
+		z-index: 1;
+	}
+
+	.search_wrap .selectbox {
+		min-width: 100px;
+	}
+
+	#search_detail input[type='date'] {
+		width: 130px;
+	}
+
+	.no_result {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .filter_list {
+        cursor: pointer;
+    }
+
+    .autoMakeList, .filter_data {
+        margin-bottom: 5px;
+    }
+
+    .autoMakeList:hover, .filter_data:hover {
+        color: var(--color-blue);
+        font-weight: 700;
+    }
+
+</style>
+
+<script>
+	var params = {
+		column: '',
+		keyword: ''
+	};
+	// 상세검색 form
+	var searchForm = {};
+	var apTypeNm;
+	var formNm;
+	var statusNm;
+
+	// //전체,일부 공유 구분 탭 클릭 함수
+	const pageBindEvent = function() {
+        // TAB
+        if (path === '/eapproval/draft/create-draft' || path === '/eapproval/draft/view-tempDraft' ) {
+            var tabItem = $(".tab_item");
+            var tabConts = $(".tab_conts");
+
+            $(tabItem).eq(0).addClass('active');
+            $(tabConts).eq(0).addClass('active');
+
+            $(tabItem).click(function(){
+                $(tabItem).removeClass('active');
+                $(tabConts).removeClass('active');
+
+                $(this).addClass('active');
+                $("#"+$(this).data('id')).addClass('active');
+            });
+        }
+
+        $('.tab_conts').removeClass('active');
+        $('.tab_item').removeClass('active');
+        $(".tab_item").off('click');
+        $('.tab_item').on('click', function(e){
+            e.preventDefault();
+            var clickedTab = $(this);
+            var selectedTabId = clickedTab.data('id');
+            const changeTab = function(){
+                $('.tab_conts').removeClass('active');
+                $('.tab_item').removeClass('active');
+                $('#' + selectedTabId).addClass('active');
+                clickedTab.addClass('active');
+            }
+
+            if(type === 'draft' || type === 'waiting') {
+                // 탭변경 시 기존 설정 목록 초기화
+                if(shareList.length > 0) {
+                    gaiaCommon.customConfirm("{{ message('item.app.010') }}", "{{ message('msg.app.028') }}", "", function(){
+                        delShareList = shareList;
+                        $('#selectShareList').children().remove();
+
+                        shareList = [];
+
+                        if(selectedTabId === 'full_share') {
+                            shareList.push({apDocNo:selectApDocNo, apDocId:selectApDocId, apCnrsDiv:'01', apCnrsRng:'01' });
+                        } else {
+                            $('#noShared').show();
+                            $('#selectShareList').removeClass('on');
+                        }
+                        changeTab();
+                    });
+                } else {
+                    changeTab();
+
+                    if(selectedTabId === 'full_share') {
+                        shareList.push({apDocNo:selectApDocNo, apDocId:selectApDocId, apCnrsDiv:'01', apCnrsRng:'01' });
+                    }
+                }
+            } else {
+                // changeTab();
+                // gaiaCommon.customAlert("{{ message('msg.app.040') }}");
+            }
+
+        })
+    }
+
+	var eapproval = {
+		init(gridConfig) {
+			pjtNo = pjtInfo.pjtNo;
+    		cntrctNo = pjtInfo.cntrctNo;
+
+			this.grid.init(gridConfig);
+			this.selectOptions("#apAppDt");
+			this.selectOptions("#apCmpltDt");
+			this.getFormList();
+			this.getSelectOptions();
+
+			gaia.loaded = true;
+		},
+		// 기안, 결재대기 페이지 -> 공유자 관련 함수
+		shared: {
+			// 공유자 검색
+			search(event){
+				let checkedApRrng = $('input[name="apCnrsRng"]:checked').val();
+				let text = $('#nameSearhInput').val().trim();
+
+				setTimeout(function() { 
+					$('#shareInputBox').addClass('on');
+				}, 0);
+
+				$('#searchedList').empty();
+
+				if (!text || text.length < 2) {
+					$('#inputTwo').show();
+					return;
+				}
+
+				$('#inputTwo').hide();
+
+				let searchData = {
+					searchText: text,
+					apCnrsRng: checkedApRrng === 'cnrsUser' ? '03' : '02',
+				};
+
+				if (checkedApRrng === 'cnrsDept') {
+					searchData.isSubDeptChecked = $("input[name='subDeptCheck']").is(":checked");
+				}
+
+                gaiaCommon.post("/api/eapproval/draft/search-approver", searchData, function(result) {
+                    var list = result.details.searchList;
+                    if (list.length > 0) {
+                        $.each(list, function(index, obj) {
+                            $('#searchedList').append(eapproval.shared.makeHtml(obj, checkedApRrng));
+                        });
+                        eapproval.shared.bindEvent(checkedApRrng, event.target);
+                    } else {
+                        $('#searchedList').append(
+                            $('<div>').text("{{ message('msg.app.036') }}")
+                        );
+                    }
+                });
+			},
+			// 검색결과 html 생성
+			makeHtml(obj, checkedApRrng){
+				if (checkedApRrng === 'cnrsUser') {
+					return `
+						<div class="filter_data" cnrs_id="${obj.usr_id}" login_id="${obj.login_id}" usr_nm="${obj.usr_nm}">
+							<div class="filter_item filter_name">${obj.usr_nm}</div>
+							<span class="filter_item">
+								${obj.dept_nm ? `(${obj.dept_nm})` : ''}
+							</span>
+						</div>`;
+				}
+
+                if (gaiaCommon.me.isAdmin() || isGAIA()) {
+                    let text = obj.cntrct_nm;
+                    let maxLength = 30;
+                    let cntrctNm = text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+
+                    return `
+                        <div class="filter_data" cnrs_id="${obj.dept_id}" dept_no="${obj.dept_no}">
+                            <div class="filter_item filter_name" title="${obj.cntrct_nm}">${obj.dept_nm} [${cntrctNm}]</div>
+                        </div>`;
+                } else {
+                    return `
+                        <div class="filter_data" cnrs_id="${obj.dept_id}" dept_no="${obj.dept_no}">
+                            <div class="filter_item filter_name">${obj.dept_nm}</div>
+                        </div>`;
+                }
+			},
+			// 검색결과 클릭이벤트 연결
+			bindEvent(checkedApRrng, inputTarget){
+				$('#searchedList .filter_data').click(function(){
+					$('#selectShareList').addClass('on');
+					let cnrsId = $(this).attr('cnrs_id');
+					let duplYn = checkedApRrng === 'cnrsUser' ? $(`#selectShareList span[cnrs_id='${cnrsId}']`).length > 0
+															: $(`#selectShareList span[dept_no='${$(this).attr('dept_no')}']`).length > 0;
+
+					if(duplYn) {
+						gaiaCommon.customAlert("{{ message('msg.app.026') }}");
+						$('#nameSearhInput').val('');
+						return;
+					}                        
+					
+					$('#noShared').hide();
+					$('#shareInputBox').removeClass('on');
+
+					inputTarget.value = $(this).find('.filter_name').text();
+
+					let data = {
+						apCnrsDiv: '02',
+						apCnrsRng: checkedApRrng === 'cnrsUser' ? '03' : '02',
+						apCnrsId: cnrsId,
+					};
+
+					if(selectApDocId && selectApDocNo) {
+						data.apDocId = selectApDocId;
+						data.apDocNo = selectApDocNo;
+					}
+
+					if(checkedApRrng === 'cnrsUser'){
+						data.loginId = $(this).attr('login_id');
+					} else if (checkedApRrng === 'cnrsDept' && $("input[name='subDeptCheck']").is(":checked")) {
+						data.apSubYn = 'Y';
+					}
+
+					// 공유자 추가
+					shareList.push(data);
+					let appendHtml = `<span class="selected_item" cnrs_id="${cnrsId}" ${checkedApRrng === 'cnrsUser' ? `login_id="${$(this).attr('login_id')}"` : `dept_no="${$(this).attr('dept_no')}"`} type="NEW">
+										<span class="item">${inputTarget.value} ${data.apSubYn ? "({{ message('item.app.013') }})" : ''}</span>
+										<button type="button" class="icon_btn" onclick="eapproval.shared.remove(this)">
+											<i class="ic ic-close"></i>
+											<span class="blind">삭제</span>
+										</button>
+									</span>`
+					$('#selectShareList').addClass('on').append(appendHtml);
+					$('#nameSearhInput').val('');
+						
+				});	
+			},
+			// 공유자 input 아이콘 변경
+			updateIcon(){
+				var selectedValue = $('input[name="apCnrsRng"]:checked').val();
+				// 버튼 텍스트, placeholder 업데이트
+				let setValue = selectedValue === "cnrsUser" ? "{{ message('item.app.011') }}" : "{{ message('item.app.012') }}";
+				let setMessage = "{{ message('msg.app.027') }}".replace("{text}", setValue);
+				$("#apCnrsRngBtn").text(setValue);
+				$("#nameSearhInput").attr('placeholder', setMessage);
+
+				// 아이콘 업데이트
+				var searchButtonIcon = $("#sharedBox").find('i');
+				if (selectedValue === 'cnrsUser') {
+					searchButtonIcon.removeClass('ic-broadcast-one').addClass('ic-search');
+				} else if (selectedValue === 'cnrsDept') {
+					searchButtonIcon.removeClass('ic-search').addClass('ic-broadcast-one');
+				}
+
+				$('#searchBtn').off('click'); // 이전 클릭 이벤트 제거
+				if(type === 'waiting' || type === 'draft') {
+					$('#searchBtn').on('click', function(event) {
+						if (selectedValue === 'cnrsUser') {
+							eapproval.shared.search(event);
+						} else if (selectedValue === 'cnrsDept') {
+							methods.openDeptTree('dept');
+						}
+					});
+				}
+			},
+			// 공유자 제거 함수
+			remove(usrIdBtn){
+				let cnrsId = $(usrIdBtn).closest('.selected_item').attr('cnrs_id');
+				let type = $(usrIdBtn).closest('.selected_item').attr('type');
+
+				shareList = shareList.filter(
+					item => item.apCnrsId !== cnrsId
+				);
+
+				$(usrIdBtn).closest('.selected_item').remove();
+				
+				if (shareList.length === 0 || !shareList) {
+					$('#selectShareList').removeClass('on');
+					$('#noShared').show();
+				}
+
+				if(type === "OLD") {
+					delShareList.push({apDocId:selectApDocId, apDocNo:selectApDocNo, apCnrsId:cnrsId});
+				}
+			},
+			tabActive(){
+				$('.tab_item').removeClass('active');
+				$('.tab_conts').removeClass('active');
+				$('.tab_item[data-id="partial_share"]').addClass('active');
+				$('#partial_share').addClass('active');
+			}
+		},
+		// 단건 검색
+		searchKeyword() {
+			searchForm = {
+				keyword: '',
+				apDocTitle: '',
+				apDocTxt: '',
+				startAppDt: '',
+				endAppDt: '',
+				startCmpltDt: '',
+				endCmpltDt: '',
+				selectedApType: [],
+				selectedStatus: '',
+				selectedForm: ''
+			};
+
+			let searchOption = $('#searchOption').val();
+			let keyword = $('input[name="keyword"]').val();
+
+			if ($('.selected_list').hasClass('on')) {
+				$('.selected_list').removeClass('on');
+				$('.selected_list').children().remove();
+			}
+
+			if (searchOption && keyword) {
+				searchForm[searchOption] = keyword;
+			} else if (!searchOption && keyword) {
+				searchForm['keyword'] = keyword;
+			}
+
+			eapproval.grid.obj.methods.readData(searchForm);
+		},
+		// 상세 검색
+		searchDetail() {
+			event.preventDefault();
+			searchForm = {
+				keyword: '',
+				apDocTitle: '',
+				apDocTxt: '',
+				startAppDt: '',
+				endAppDt: '',
+				startCmpltDt: '',
+				endCmpltDt: '',
+				selectedApType: [],
+				selectedStatus: '',
+				selectedForm: ''
+			};
+
+			if (!eapproval.validateForm()) {
+				return;
+			}
+
+			$('.lay_pop').removeClass('on');
+			var searchFormArray = $('#searchForm').serializeArray();
+			$.each(searchFormArray, function () {
+				if (this.name !== 'check') {
+					searchForm[this.name] = this.value;
+				}
+			});
+			$("input[name='check']:checked").each(function () {
+				const value = $(this).val();
+				if (!searchForm.selectedApType.includes(value)) {
+					searchForm.selectedApType.push(value);
+					apTypeNm = $('#dropdownText').text();
+				}
+			});
+
+			statusNm = searchForm.selectedStatus ? $('#selectedStatus option:selected').text() : '';
+			formNm = searchForm.selectedForm ? $('#selectedForm option:selected').text() : '';
+
+			eapproval.searchInputReset();
+			eapproval.getDetailSearch(searchForm);
+			eapproval.setSeachKeyword(searchForm);
+			$("#aptype_dropdown .check_mark").prop("checked", false);
+		},
+		// 상세 검색 data 로드
+		getDetailSearch(searchForm) {
+			searchForm = searchForm;
+			eapproval.grid.obj.methods.readData(searchForm);
+		},
+
+		// 검색 keyword 블록 세팅
+		setSeachKeyword(searchForm) {
+			$('.selected_list').addClass('on');
+			$('.selected_list').children().remove();
+			let startAppDt = searchForm.startAppDt || '';
+			let endAppDt = searchForm.endAppDt || '';
+			let startCmpltDt = searchForm.startCmpltDt || '';
+			let endCmpltDt = searchForm.endCmpltDt || '';
+
+			//기안요청일
+			if (startAppDt && endAppDt) {
+				let combinedValue = `${startAppDt} ~ ${endAppDt}`;
+				let keywordHtml = `
+				<span class="selected_item">
+					<span class="item apAppDt">${combinedValue}</span>
+					<input type="hidden" name="startAppDt" value="${startAppDt}">
+					<input type="hidden" name="endAppDt" value="${endAppDt}">
+					<button type="button" class="icon_btn" onclick="eapproval.deleteKeyword(this)">
+						<i class="ic ic-close"></i>
+						<span class="blind">삭제</span>
+					</button>
+				</span>
+			`;
+				$('.selected_list').append(keywordHtml);
+				delete searchForm.startAppDt;
+				delete searchForm.endAppDt;
+			}
+			//결재완료일
+			if (startCmpltDt && endCmpltDt) {
+				let combinedValue = `${startCmpltDt} ~ ${endCmpltDt}`;
+				let keywordHtml = `
+					<span class="selected_item">
+						<span class="item apCmpltDt">${combinedValue}</span>
+						<input type="hidden" name="startCmpltDt" value="${startCmpltDt}">
+						<input type="hidden" name="endCmpltDt" value="${endCmpltDt}">
+						<button type="button" class="icon_btn" onclick="eapproval.deleteKeyword(this)">
+							<i class="ic ic-close"></i>
+							<span class="blind">삭제</span>
+						</button>
+					</span>
+				`;
+				$('.selected_list').append(keywordHtml);
+				delete searchForm.startCmpltDt;
+				delete searchForm.endCmpltDt;
+			}
+			$.each(searchForm, function (key, value) {
+				let setValue = '';
+
+				if (value !== null && value !== undefined && value !== '' && value.length !== 0) {
+					if(key === 'startAppDt') {
+						// key = 'apAppDt';
+						setValue = value + ' ~ ';
+					}
+					if(key === 'endAppDt') {
+						// key = 'apAppDt';
+						setValue = ' ~ ' + value;
+					}
+					if(key === 'startCmpltDt') {
+						// key = 'apCmpltDt';
+						setValue = value + ' ~ ';
+					}
+					if(key === 'endCmpltDt') {
+						// key = 'apCmpltDt';
+						setValue = ' ~ ' + value;
+					}
+					if(key === 'selectedApType') {
+						setValue = apTypeNm;
+					}
+					if(key === 'selectedForm') {
+						setValue = formNm;
+					}
+					if(key === 'selectedStatus') {
+						setValue = statusNm;
+					}
+					if(key === 'checkall') {
+						return;
+					}
+
+					let keywordHtml = `
+								<span class="selected_item">
+									<span class="item ${key}">${setValue === '' ? value : setValue}</span>
+									<input type="hidden" name="${key}" value="${value}">
+									<button type="button" class="icon_btn" onclick="eapproval.deleteKeyword(this)">
+										<i class="ic ic-close"></i>
+										<span class="blind">삭제</span>
+									</button>
+								</span>
+								`;
+					$('.selected_list').append(keywordHtml);
+				}
+			})
+		},
+		// keyword 삭제
+		deleteKeyword(button) {
+			let selectedItem = $(button).closest('.selected_item');
+			let hiddenInputs = selectedItem.find('input[type="hidden"]');
+			hiddenInputs.each((index, input) => {
+				let key = $(input).attr('name');
+				searchForm[key] = '';
+			});
+			selectedItem.remove();
+
+			if ($('.selected_list').children().length === 0) {
+				$('.selected_list').removeClass('on');
+			}
+			eapproval.grid.obj.methods.readData(searchForm);
+		},
+		// 상세검색 문서 타입 조회
+		getSelectOptions() {
+			const params = new URLSearchParams(window.location.search);
+			var auditType = params.get("auditType");
+			$('#selectedApType').val('');
+            gaiaCommon.get("/api/eapproval/approval/optionsList", "", function(result) {
+                var tList = result.details.apTypeList;
+                $.each(tList, function (index, obj) {
+                    // 'T'는 제외
+                    if (obj.cmnCd !== 'T') {
+                        // auditType이 'etc'인 경우 01, 02를 제외한 모든 체크박스에 checked 추가
+                        let isChecked = '';
+                        if (auditType == obj.cmnCd) {
+                            isChecked = 'checked';
+                        } else if (auditType == 'etc' && obj.cmnCd !== '01' && obj.cmnCd !== '02') {
+                            isChecked = 'checked';
+                        }
+
+                        let listHTML = `<li class="list_item">
+                                            <label class="form_check">
+                                                <input class="check_mark" type="checkbox" name="check" value="${obj.cmnCd}" ${isChecked}></input>
+                                                <span class="check_label">${obj.cmnCdNmKrn}</span>
+                                            </label>
+                                        </li>`;
+                        $('#aptype_dropdown').append(listHTML);
+                        eapproval.setDropdownText()
+                    }
+                })
+                if (auditType) {
+                    eapproval.searchDetail()
+                }
+            });
+		},
+		// 문서타입 드롭다운 세팅
+		setDropdownText() {
+			let checkedItems = $("#aptype_dropdown .check_mark:checked");
+			let checkboxItemSize = $("#aptype_dropdown .check_mark").length;
+			let isCheckAllChecked = $("input[name='checkall']").prop("checked");
+
+			if (checkedItems.length > 0) {
+				$("#clear").show();
+			} else {
+				$("#clear").hide();
+			}
+
+			if (isCheckAllChecked && checkedItems.length === checkboxItemSize) {
+				// 모든 항목이 체크된 경우
+				$("#dropdownText").text("{{ message('btn.038') }}");
+			} else if (checkedItems.length > 1) {
+				// 체크된 항목이 여러 개일 때
+				let firstText = checkedItems.first().next(".check_label").text();
+				$("#dropdownText").text(`${firstText} 외 ${checkedItems.length - 1}건`);
+			} else if (checkedItems.length === 1) {
+				// 체크된 항목이 하나만 있을 때
+				let firstText = checkedItems.first().next(".check_label").text();
+				$("#dropdownText").text(firstText);
+			} else {
+				// 체크된 항목이 없을 때
+				$("#dropdownText").text("{{ message('msg.app.031') }}");
+			}
+
+			if (isCheckAllChecked) {
+				$("input[name='checkall']").prop("checked", true);
+			} else {
+				$("input[name='checkall']").prop("checked", false);
+			}
+		},
+		dropdownClear() {
+			$("#aptype_dropdown .check_mark").prop("checked", false);
+			eapproval.setDropdownText();
+		},
+		// 상세검색 서식 리스트 조회
+		getFormList() {
+			$('#selectedForm').val('');
+            gaiaCommon.get("/api/eapproval/approval/formList", "", function(result) {
+                var fList = result.details.formList;
+                $.each(fList, function (index, obj) {
+                    $('#selectedForm').append(`<option value="${obj.frmNo}" frm-name="${obj.frmNmKrn}">${obj.frmNmKrn}</option>`)
+                })
+            })
+		},
+		// 상세검색 셀렉트 박스 change이벤트(기안요청일, 결재완료일)
+		changeHandler(selectboxId, selectedDt) {
+			if (selectboxId === '#apAppDt') {
+				eapproval.dateRange(selectboxId, selectedDt, "#startAppDt", "#endAppDt");
+			} else if (selectboxId === '#apCmpltDt') {
+				eapproval.dateRange(selectboxId, selectedDt, "#startCmpltDt", "#endCmpltDt");
+			}
+		},
+		// 상세검색 기간 셀렉트 옵션 세팅
+		selectOptions(selectId) {
+			var options = [
+				{ value: '', text: "{{ message('item.com.013') }}" },
+				{ value: "1w", text: "{{ message('item.com.019') }}" },
+				{ value: "1", text: "{{ message('item.com.009') }}" },
+				{ value: "3", text: "{{ message('item.com.010') }}" },
+				{ value: "6", text: "{{ message('item.com.011') }}" },
+				{ value: "1y", text: "{{ message('item.com.012') }}" },
+			];
+
+			$.each(options, function (index, option) {
+				$(selectId).append($('<option>', {
+					value: option.value,
+					text: option.text
+				}));
+			});
+		},
+		// 상세검색 기간 범위 설정 이벤트
+		dateRange(selectboxId, selectedDt, startInput, endInput) {
+			var startDate = new Date();
+			var endDate = new Date();
+
+			if (selectedDt === '1w') {
+				startDate.setDate(startDate.getDate() - 7);
+			} else if (selectedDt === '1y') {
+				startDate.setFullYear(startDate.getFullYear() - 1);
+			} else if (selectedDt === '') {
+				startDate = null;
+				endDate = null;
+			} else {
+				startDate.setMonth(startDate.getMonth() - selectedDt);
+			}
+
+			if (startDate && endDate) {
+				var formattedStartDate = startDate.toISOString().split('T')[0];
+				var formattedEndDate = endDate.toISOString().split('T')[0];
+				$(startInput).val(formattedStartDate);
+				$(endInput).val(formattedEndDate);
+			} else {
+				$(startInput).val('');
+				$(endInput).val('');
+			}
+		},
+		// 상세검색 유효성 검사
+		validateForm() {
+			var checkedItems = $("#aptype_dropdown .check_mark:checked");
+			var docStatus = $('#selectedStatus').val();
+			var formNo = $('#selectedForm').val();
+			var title = $('input[name="apDocTitle"]').val();
+			var doctxt = $('input[name="apDocTxt"]').val();
+			var strdt = $('input[name="startAppDt"]').val();
+			var enddt = $('input[name="endAppDt"]').val();
+			var strcdt = $('input[name="startCmpltDt"]').val();
+			var endcdt = $('input[name="endCmpltDt"]').val();
+			if (checkedItems.length === 0 && !docStatus && !formNo && !title && !doctxt && !strdt && !enddt && !strcdt && !endcdt) {
+				gaiaCommon.customAlert("{{ message('msg.004') }}");
+				return false;
+			}
+			return true;
+		},
+		// 상세검색 최소 날짜 지정
+		setMinDate(startDtId, endDtId) {
+			var startDate = new Date($(`#${startDtId}`).val());
+			startDate.setDate(startDate.getDate() + 1);
+			var minEndDate = startDate.toISOString().split('T')[0];
+			$(`#${endDtId}`).attr('min', minEndDate);
+		},
+		// 상세검색 초기화
+		searchInputReset() {
+			$('.selected_list on').empty();
+			$("#searchForm")[0].reset();
+			$('#clear').hide();
+			$("#dropdownText").text("{{ message('msg.app.031') }}");
+			$("#aptype_dropdown .check_mark").prop("checked", false);
+		},
+
+		// 그리드
+		grid: {
+			obj: null,
+			init(gridConfig) {
+				if (this.obj) {
+					return;
+				}
+				this.obj = $('#list_grid').setGrid(gridConfig);
+			},
+		},
+		changePerPage() {
+			const size = $('select[id="items-per-page"]').val();
+			const param = {
+				size: size,
+				data: docStatus
+			}
+			eapproval.grid.obj.methods.itemPerPageChange(param);
+		},
+	};
+
+	$('#search_detail').on('click', function (e) {
+		if (!$(event.target).closest('.dropdown').length) {
+			$('.dropdown').removeClass('on');
+		}
+		e.stopPropagation();
+	});
+
+	$(document).on('click', function (e) {
+		var $target = $(e.target);
+
+		if (!$target.closest('#shareInputBox').length && !$target.closest('#nameSearhInput').length) {
+			$('#shareInputBox').removeClass('on');
+		}
+
+		if (!$($target).closest('#shareSelectbox').length) { 
+			$('#radioMenu').removeClass('on');
+		}
+
+		if(!$(e.target).closest('#tempPop').length) {
+			$('#search_detail').removeClass('on');
+		}
+		
+	});
+
+	$('#openDetail').on('click', function (e) {
+		e.stopPropagation();
+		$('#search_detail').addClass('on');
+		$('#clear').hide();
+	});
+
+	$('#closeDetail').on('click', function () {
+		$('#search_detail').removeClass('on');
+	});
+
+	// 문서구분 셀렉트박스
+	$('.selectbox.has_clear').on('click', function (e) {
+		e.stopPropagation();
+		$('.dropdown').addClass("on");
+	})
+	// "전체" 체크박스에 change 이벤트 바인딩
+	$("input[name='checkall']").on("change", function () {
+		const isChecked = $(this).prop("checked");
+		$("#aptype_dropdown .check_mark").prop("checked", isChecked);
+	});
+
+	$("input[name='checkall']").on("change", function () {
+		const isChecked = $(this).prop("checked");
+		$("#aptype_dropdown .check_mark").prop("checked", isChecked);
+	});
+
+	$("#aptype_dropdown").on("change", ".check_mark", function () {
+		let checkedItems = $("#aptype_dropdown .check_mark:checked");
+		let checkboxItemSize = $("#aptype_dropdown .check_mark");
+
+		let allChecked = checkedItems.length === checkboxItemSize.length;
+		$("input[name='checkall']").prop("checked", allChecked);
+		eapproval.setDropdownText();
+	});
+
+	// 라디오 버튼 선택 이벤트
+	$("input[name='apCnrsRng']").change(function() {
+		eapproval.shared.updateIcon();
+	});
+
+	// 사원 선택 시 하위조직 체크해제
+	$('input[name="apCnrsRng"][value="cnrsUser"]').on('change', function() {
+		if ($(this).is(':checked')) {
+			$('input[name="subDeptCheck"]').prop('checked', false);
+		}
+	});
+	// 하위조직 선택 시 부서 자동 선택
+	$('input[name="subDeptCheck"]').on('change', function() {
+		if ($(this).is(':checked')) {
+			$('input[name="apCnrsRng"][value="cnrsDept"]').prop('checked', true);
+			eapproval.shared.updateIcon();
+		}
+	});
+
+
+	// 셀렉트 박스 on 클래스 토글
+	$('#shareSelectbox').on('click', function(event) {
+		if(type === 'waiting' || type === 'draft') {
+			$('#radioMenu').toggleClass('on');
+		}
+	});
+
+    function createLinkOfDraft(rowData, link, type){
+        const apDocId = rowData.apDocId;
+        const apDocNo = rowData.apDocNo;
+        const frmUrl = rowData.frmUrl;
+        const frmId = rowData.frmId;
+        const frmNo = rowData.frmNo;
+
+        const params = `&apDocId=${apDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d`;
+
+        let url = "";
+        if (type === 'temporary') {
+            url = link + `?url=${frmUrl}&frmNo=${frmNo}&frmId=${frmId}&apDocNo=${apDocNo}` + params;
+        } else {
+            url = link + `?type=${type}&frmId=${frmId}` + params;
+        }
+
+        return url;
+    }
+	// 전자결재 그리드 제목->상세보기 아이콘 렌더러
+	/*class DetailViewRenderer {
+		constructor(props) {
+			const el = document.createElement("div");
+			this.el = el;
+
+			const apDocId = props.grid.getRow(props.rowKey).apDocId;
+			const apDocNo = props.grid.getRow(props.rowKey).apDocNo;
+			const frmUrl = props.grid.getRow(props.rowKey).frmUrl;
+			const frmId = props.grid.getRow(props.rowKey).frmId;
+			const frmNo = props.grid.getRow(props.rowKey).frmNo;
+
+			const link = props.columnInfo.renderer.options.link;
+			const type = props.columnInfo.renderer.options.type;
+
+			const params = `&apDocId=${apDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d`;
+
+			if (type === 'temporary') {
+				this.url = link + `?url=${frmUrl}&frmNo=${frmNo}&frmId=${frmId}&apDocNo=${apDocNo}` + params;
+			} else {
+				this.url = link + `?type=${type}&frmId=${frmId}` + params;
+			}
+
+			this.render(props);
+			this.addEventListeners(props);
+		}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.innerHTML = `<div class="eapproval-detail-cell">
+									<a href="${this.url}" class="eapproval-detail-link" title="${props.value}">${props.value}</a>
+									<i class='ic ic-note eapproval-detail-icon'></i>
+								</div>`;
+		}
+
+		addEventListeners(props) {
+			const icon = this.el.querySelector(".ic-note");
+			this.el.addEventListener("mouseenter", () => {
+				icon.style.opacity = 1;
+				icon.style.cursor = 'pointer';
+			});
+			this.el.addEventListener("mouseleave", () => {
+				icon.style.opacity = 0;
+			});
+
+			icon.addEventListener("click", () => {
+				window.location.href = this.url;
+			});
+		}
+	}*/
+
+</script>

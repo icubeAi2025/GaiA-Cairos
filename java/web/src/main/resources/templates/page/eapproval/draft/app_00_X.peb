@@ -1,0 +1,395 @@
+{% extends 'layout/base_content' %} {% block head %}
+
+<style>
+    .slick_wrap {
+        min-height: 240px;
+    }
+    .tooltip_hover:hover .tooltip {
+        display: flex;
+    }
+</style>
+
+{% endblock %} {% block content %}
+
+<section class="contents_wrap">
+    <article class="conts">
+        <div class="dl_box_wrap">
+            <dl class="box dl_box">
+                <dt class="conts_tit">
+                    <div class="tooltip_hover">
+                        <strong>{{ message('item.app.025') }}</strong>
+                        <span class="tooltip">{{ message('msg.app.041') }}</span>
+                    </div>
+                    <span class="badge" id="pendingCnt"></span>
+                    <div class="slick_nav ep1" data-type="pending">
+                        <div class="slick_paging"></div>
+                        <div class="btn_area slick_indigator">
+                            <div class="btn_group _outline">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="tooltip">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="tooltip">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </dt>
+                <dd>
+                    <div class="slick_wrap">
+                        <div class="ep_list1">
+                        </div>
+                    </div>
+                </dd>
+            </dl>
+
+            <dl class="box dl_box">
+                <dt class="conts_tit">
+                    <div class="tooltip_hover">
+                        <strong>{{ message('item.app.026') }}</strong>
+                        <span class="tooltip">{{ message('msg.app.042') }}</span>
+                    </div>
+                    <span class="badge" id="waitingCnt"></span>
+                    <div class="slick_nav ep2" data-type="waiting">
+                        <div class="slick_paging"></div>
+                        <div class="btn_area slick_indigator">
+                            <div class="btn_group _outline">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="tooltip">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="tooltip">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </dt>
+                <dd>
+                    <div class="slick_wrap">
+                        <div class="ep_list2" id="list_waiting">
+                        </div>
+                    </div>
+                </dd>
+            </dl>
+            <dl class="box dl_box">
+                <dt class="conts_tit">
+                    <div class="tooltip_hover">
+                        <strong>{{ message('item.app.027') }}</strong>
+                        <span class="tooltip">{{ message('msg.app.043') }}</span>
+                    </div>
+                    <span class="badge" id="progressCnt"></span>
+                    <div class="slick_nav ep3" data-type="progress">
+                        <div class="slick_paging"></div>
+                        <div class="btn_area slick_indigator">
+                            <div class="btn_group _outline">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="tooltip">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="tooltip">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </dt>
+                <dd>
+                    <div class="slick_wrap">
+                        <div class="ep_list3">
+                        </div>
+                    </div>
+
+                </dd>
+            </dl>
+            <dl class="box dl_box">
+                <dt class="conts_tit">
+                    <div class="tooltip_hover">
+                        <strong>{{ message('item.app.028') }}</strong>
+                        <span class="tooltip">{{ message('msg.app.044') }}</span>
+                    </div>
+                    <span class="badge" id="sharedCnt"></span>
+                    <div class="slick_nav ep4" data-type="shared">
+                        <div class="slick_paging"></div>
+                        <div class="btn_area slick_indigator">
+                            <div class="btn_group _outline">
+                                <button type="button" class="btn icon_btn prev">
+                                    <span class="tooltip">{{ message('btn.016') }}</span>
+                                </button>
+                                <button type="button" class="btn icon_btn next">
+                                    <span class="tooltip">{{ message('btn.017') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </dt>
+                <dd>
+                    <div class="slick_wrap">
+                        <div class="ep_list4">
+                        </div>
+                    </div>
+                </dd>
+
+            </dl>
+        </div>
+    </article>
+</section>
+
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    var currentPage = {
+        pending: 1,
+        waiting: 1,
+        progress: 1,
+        shared: 1
+    };
+    var itemsPerPage = 5;
+
+    var dashBoard = {
+        init(){
+            let dashboardParams = {
+                page: 1,
+                size: itemsPerPage,
+            }
+
+            gaiaCommon.post("/api/eapproval/main/dashBoard", dashboardParams, function(result) {
+                let returnMap = result.details.returnMap;
+                for(const group in returnMap) {
+                    const data = returnMap[group];
+
+                    let list = data.list;
+                    let totalCount = data.totalCount;
+                    let totalPages = Math.ceil(totalCount / itemsPerPage);
+
+                    let slickClass = '';
+                    let slickCnt = '';
+                    let slickPagination = '';
+                    let pageType = '';
+
+                    switch (group) {
+                        case "pending":
+                            slickClass = '.ep_list1';
+                            slickCnt = '#pendingCnt';
+                            slickPagination = '.ep1';
+                            pageType = 'request';
+                            break;
+                        case "waiting":
+                            slickClass = '.ep_list2';
+                            slickCnt = '#waitingCnt';
+                            slickPagination = '.ep2';
+                            pageType = 'waiting';
+                            break;
+                        case "progress":
+                            slickClass = '.ep_list3';
+                            slickCnt = '#progressCnt';
+                            slickPagination = '.ep3';
+                            pageType = 'progress';
+                            break;
+                        case "shared":
+                            slickClass = '.ep_list4';
+                            slickCnt = '#sharedCnt';
+                            slickPagination = '.ep4';
+                            pageType = 'shared';
+                            break;
+
+                    }
+                    $(slickCnt).text(totalCount);
+                    $(slickClass).empty(); // 기존 슬라이드 비우기
+
+                    let slideHtml = `<div class="slick_item">
+                                        <table class="table ty_list ta_c">
+                                            <colgroup>
+                                                <col width="50px">
+                                                <col>
+                                                <col width="100px">
+                                                <col width="100px">
+                                            </colgroup>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>`;
+                    $(slickClass).append(slideHtml);
+
+                    var tableBody = $(slickClass+' .slick_item tbody');
+
+                    $.each(list, function(index, obj) {
+                        let formatDate = obj.apAppDt.substring(0, 10);
+                        let apDiv;
+                        let apDivClass;
+                        if(group === 'shared') {
+                            apDiv = obj.apDiv === null ? "{{ message('item.app.029') }}" : "{{ message('item.app.009') }}";
+                            apDivClass = apDiv === "{{ message('item.app.029') }}" ? '_request' : '_secondary';
+                        }
+
+                        let html = `
+                                    <tr>
+                                        <td>${obj.rnum}</td>
+                                        <td class="ta_l">
+                                            <a href="/eapproval/approval/detail?type=${pageType}&frmId=${obj.frmId}&apDocId=${obj.apDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d">${obj.apDocTitle}</a>
+                                        </td>
+                                        ${group === 'shared' ? `{ <td><span class="label ${apDivClass}">${apDiv}</span></td>` : ''}
+                                        <td>${obj.usrNm}</td>
+                                        <td>${formatDate}</td>
+                                    </tr>
+                                    `
+                        tableBody.append(html);
+                    });
+
+                    // 페이지네이션 업데이트
+                    updatePaginationStatus(1, totalPages, slickPagination);
+                }
+            })
+            
+            gaia.loaded = true;
+        }
+    }
+
+    function loadPageData(page, data) {
+        let dashboardParams = {
+            page: page,
+            size: itemsPerPage,
+            data: data,
+        }
+
+        gaiaCommon.post("/api/eapproval/main/dashBoard-paging", dashboardParams, function(result) {
+            let list = result.details.list;
+            let totalCount = result.details.totalCount;
+            let totalPages = Math.ceil(totalCount / itemsPerPage);
+
+            let slickClass = '';
+            let slickCnt = '';
+            let slickPagination = '';
+            let pageType = '';
+            switch (data) {
+                case "pending":
+                    slickClass = '.ep_list1';
+                    slickCnt = '#pendingCnt';
+                    slickPagination = '.ep1';
+                    pageType = 'request';
+                    break;
+                case "waiting":
+                    slickClass = '.ep_list2';
+                    slickCnt = '#waitingCnt';
+                    slickPagination = '.ep2';
+                    pageType = 'waiting';
+                    break;
+                case "progress":
+                    slickClass = '.ep_list3';
+                    slickCnt = '#progressCnt';
+                    slickPagination = '.ep3';
+                    pageType = 'progress';
+                    break;
+                case "shared":
+                    slickClass = '.ep_list4';
+                    slickCnt = '#sharedCnt';
+                    slickPagination = '.ep4';
+                    pageType = 'shared';
+                    break;
+
+            }
+            $(slickCnt).text(totalCount);
+            $(slickClass).empty(); // 기존 슬라이드 비우기
+
+            let slideHtml = `<div class="slick_item">
+                                <table class="table ty_list ta_c">
+                                    <colgroup>
+                                        <col width="50px">
+                                        <col>
+                                        <col width="100px">
+                                        <col width="100px">
+                                    </colgroup>
+                                    <tbody></tbody>
+                                </table>
+                            </div>`;
+            $(slickClass).append(slideHtml);
+
+            var tableBody = $(slickClass+' .slick_item tbody');
+
+            $.each(list, function(index, obj) {
+                let formatDate = obj.apAppDt.substring(0, 10);
+                let apDiv;
+                let apDivClass;
+                if(data === 'shared') {
+                    apDiv = obj.apDiv === null ? "{{ message('item.app.029') }}" : "{{ message('item.app.009') }}";
+                    apDivClass = apDiv === "{{ message('item.app.029') }}" ? '_request' : '_secondary';
+                }
+                console.log('data', data);
+                let html = `
+                            <tr>
+                                <td>${obj.rnum}</td>
+                                <td class="ta_l">
+                                    <a href="/eapproval/approval/detail?type=${pageType}&frmId=${obj.frmId}&apDocId=${obj.apDocId}&pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&page=d">${obj.apDocTitle}</a>
+                                </td>
+                                ${data === 'shared' ? `{ <td><span class="label ${apDivClass}">${apDiv}</span></td>` : ''}
+                                <td>${obj.usrNm}</td>
+                                <td>${formatDate}</td>
+                            </tr>
+                            `
+                tableBody.append(html);
+            });
+
+            // 페이지네이션 업데이트
+            updatePaginationStatus(page, totalPages, slickPagination);
+        }, function (error) {
+            gaiaCommon.customAlert("{{ message('msg.060') }}");
+        })
+
+    }
+
+    function updatePaginationStatus(currentPage, totalPages, slickPagination) {
+
+        $(slickPagination + '.slick_paging').empty();
+        if(totalPages > 0) {
+            // 페이지 번호 업데이트
+            $(slickPagination + " .slick_paging").html('<b class="page">' + currentPage + '</b> / ' + totalPages);
+        }
+
+        // "이전" 버튼 비활성화 여부
+        if (currentPage === 1) {
+            $(slickPagination + ' .btn.prev').prop('disabled', true);
+        } else {
+            $(slickPagination + ' .btn.prev').prop('disabled', false);
+        }
+
+        // "다음" 버튼 비활성화 여부
+        if (currentPage === totalPages || totalPages === 0) {
+            $(slickPagination + ' .btn.next').prop('disabled', true);
+        } else {
+            $(slickPagination + ' .btn.next').prop('disabled', false);
+        }
+    };
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                pjtNo = pjtInfo.pjtNo;
+                cntrctNo = pjtInfo.cntrctNo;
+
+                gaiaPortal.navMenuInit("M0603", "{{ message('item.app.053') }}");                
+
+                dashBoard.init();
+
+                // "이전" 버튼 클릭 이벤트
+                $('.btn.prev').on('click', function () {
+                    var dataType = $(this).closest('.slick_nav').data('type');
+                    if (currentPage[dataType] > 1) {
+                        currentPage[dataType]--;
+                        loadPageData(currentPage[dataType], dataType);
+                    }
+                });
+
+                // "다음" 버튼 클릭 이벤트
+                $('.btn.next').on('click', function () {
+                    var dataType = $(this).closest('.slick_nav').data('type'); 
+                    currentPage[dataType]++;
+                    loadPageData(currentPage[dataType], dataType);
+                });
+
+            }
+        });
+    })
+
+</script>
+
+{% endblock footer_script %}

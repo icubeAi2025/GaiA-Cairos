@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project">
+
+    <select id="getProjectInstallList" parameterType="projectInstallInput" resultType="projectInstallOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.getProjectInstallList][jhkim]*/
+        SELECT
+            CPI.PLC_REQ_NO,
+            CPI.PLC_NM,
+            CPI.OPEN_PSTATS,
+            SCC.CMN_CD_NM_KRN AS OPEN_PSTATS_NM
+        FROM
+            CN_PROJECT_INSTALL CPI
+        LEFT JOIN SM_COM_CODE SCC
+            ON SCC.CMN_GRP_CD = #{openPstatsGroupCode}
+            AND SCC.CMN_CD = CPI.OPEN_PSTATS
+        WHERE
+            CPI.DLT_YN = 'N'
+        <if test='platformType != "C"'>
+        	AND CPI.PLT_REQ_TYPE = #{platformType}
+        </if>
+        ORDER BY
+            CASE CPI.OPEN_PSTATS
+                WHEN '0704' THEN 2
+                ELSE 1
+            END,
+            CPI.RGST_DT DESC;
+    </select>
+
+    <update id="updateDeleteProjectInstall" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.updateDeleteProjectInstall][jhkim] */
+        UPDATE
+            CN_PROJECT_INSTALL
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            PLC_REQ_NO = #{plcReqNo}
+    </update>
+
+    <update id="updateDeleteCnAttachments" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.updateDeleteCnAttachments][jhkim] */
+        UPDATE
+            CN_ATTACHMENTS
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            FILE_NO = #{fileNo}
+        AND
+            SNO = #{sno}
+    </update>
+
+    <update id="updateDeleteAllCnAttachments" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.updateDeleteAllCnAttachments][jhkim] */
+        UPDATE
+            CN_ATTACHMENTS
+        SET
+            DLT_ID = #{usrId} ,
+                    DLT_YN = 'Y',
+                    DLT_DT = NOW()
+        WHERE
+            FILE_NO = #{fileNo}
+    </update>
+
+    <select id="getProjectList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.getProjectList][leejw]*/
+            SELECT 
+                C.PJT_NO AS PJT_NO,
+                C.PJT_NM AS PJT_NM,
+                C.PJT_DIV AS PJT_DIV
+            FROM 
+                CN_PROJECT C
+            WHERE 
+                C.DLT_YN = 'N'
+                AND C.USE_YN = 'Y'
+                AND C.CON_PSTATS IN ('0602', '0603', '0604')
+                AND C.PJT_DIV != 'CNTRCT'
+                AND C.PJT_NO NOT IN (
+                    SELECT
+                        DISTINCT(C.PJT_NO) AS PJT_NO
+                    FROM
+                        SM_DEPARTMENT A,
+                        SM_ORGANIZATION B,
+                        CN_PROJECT C
+                    WHERE
+                        A.DEPT_NO = B.DEPT_NO
+                        AND A.PJT_NO = C.PJT_NO
+                        AND B.USR_ID = #{userId}
+                        AND A.PJT_TYPE = #{pjtType}
+                        AND A.DLT_YN = 'N'
+                        AND A.USE_YN = 'Y'
+                        AND B.DLT_YN = 'N'
+                        AND C.DLT_YN = 'N'
+                        AND C.USE_YN = 'Y'
+                        AND C.CON_PSTATS IN ('0602', '0603', '0604')
+                )
+            ORDER BY C.RGST_DT ASC;
+    </select>
+
+    <select id="getContractList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project.getContractList][leejw]*/
+            SELECT 
+                CT.PJT_NO       AS PJT_NO,
+                PJT.PJT_NM      AS PJT_NM,
+                CT.CNTRCT_NO    AS CNTRCT_NO,
+                CT.CNTRCT_NM    AS CNTRCT_NM
+            FROM 
+                CN_CONTRACT CT
+            JOIN 
+                CN_PROJECT PJT ON CT.PJT_NO = PJT.PJT_NO
+            WHERE 
+                CT.DLT_YN = 'N'                       
+                AND PJT.DLT_YN = 'N'
+                AND PJT.USE_YN = 'Y'
+                AND PJT.CON_PSTATS IN ('0602', '0603', '0604')
+                AND PJT.PJT_DIV != 'CNTRCT'
+                AND CT.CNTRCT_NO NOT IN (
+                    SELECT
+                        DISTINCT(D.CNTRCT_NO) AS CNTRCT_NO
+                    FROM
+                        SM_DEPARTMENT A,
+                        SM_ORGANIZATION B,
+                        CN_PROJECT C,
+                        CN_CONTRACT D
+                    WHERE
+                        A.DEPT_NO = B.DEPT_NO
+                        AND A.PJT_NO = C.PJT_NO
+                        AND A.CNTRCT_NO = D.CNTRCT_NO
+                        AND B.USR_ID = #{userId}
+                        AND A.PJT_TYPE = #{pjtType}
+                        AND A.DLT_YN = 'N'
+                        AND A.USE_YN = 'Y'
+                        AND B.DLT_YN = 'N'
+                        AND C.DLT_YN = 'N'
+                        AND C.USE_YN = 'Y'
+                        AND B.DLT_YN = 'N'
+                        AND C.CON_PSTATS IN ('0602', '0603', '0604')
+                )
+            ORDER BY PJT.RGST_DT ASC;
+    </select>
+</mapper>

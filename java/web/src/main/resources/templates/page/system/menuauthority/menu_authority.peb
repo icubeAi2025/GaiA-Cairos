@@ -1,0 +1,1130 @@
+{% extends 'layout/base_content' %} 
+{% block head %}
+<style>
+    .disabled-node > .jstree-anchor {
+        color: red !important; /* 예시 색상 */
+        font-style: italic;
+    }
+	#list-grid .tui-grid-cell-current-row {
+		background-color: var(--select-list-bg);
+	}
+</style>
+
+{% endblock head %}
+{% block content %}
+
+<section class="contents_wrap g-col2 ty1">
+  <!-- S: TREE View ------------------------------------------------------------------------ -->
+  <article class="treeview_area g-row2 ty1" style="height: calc(100dvh - 115px); overflow: auto;">
+    <div class="treeview_search">
+      <!-- searchbox -->
+      <div class="searchbox_wrap">
+        <input type="text" name = "treeKeyword" placeholder="{{ message('msg.004') }}">
+          <button type="submit" class="icon_btn search" onclick="page.tree.search()">
+              <i class="ic ic-search"></i>
+              <span class="blind">{{ message('item.com.014') }}</span>
+          </button>
+      </div>      
+      </div>
+      <div class="treeview_area">
+        <div class="treeview ty_pd0" id="jstree">
+      </div>
+    </div>
+  </article>
+  <!-- // E: TREE View ------------------------------------------------------------------------ -->
+  <article class="conts g-row" id="container" style="">
+    <div class="group">
+      <h3 class="conts_tit">{{ message('item.authority.001') }}</h3>
+      <div class="conts_grid">
+        <!-- S: search wrap ---------------------------------------------- -->
+        <div class="search_wrap">
+			<div class="search_wrap" id = "addSelect">
+				<span class="selectbox" id="group_type_select"> 
+					<select id="grp_search_type" name="grp_search_type">
+						<option selected value="">{{ message('item.com.083') }}</option> 
+						<option value="rght_grp_nm">{{ message('item.authority.016') }}</option>
+						<option value="rght_grp_dscrpt">{{ message('item.authority.005') }}</option>
+						<option value="rght_grp_ty_nm">{{ message('item.authority.006') }}</option>
+						<option value="rght_grp_role_nm">{{ message('item.authority.007') }}</option>
+					</select>
+				</span>
+				<div class="searchbox_wrap">
+					<input type="text" name="groupKeyword" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){page.authorityGroup.search();}">
+					<button type="button" class="icon_btn search" onclick="page.authorityGroup.search()" style="width: auto;">
+						<i class="ic ic-search"></i>
+						<span class="blind">{{ message('item.com.014') }}</span>
+					</button>
+				</div>
+			</div>
+        </div>
+        <!-- S: Button ---------------------------------------------- -->
+        <div class="toolbar">
+			<div class="btn_area s_default _outline">
+				{{ grpBtnHtml | raw }}
+				<!-- <button type="button" class="btn" onclick="page.authorityGroup.delete()">{{ message('btn.002') }}</button>
+				<button type="button" class="btn" onclick="page.authorityGroup.update()">{{ message('btn.003') }}</button>
+				<button type="button" class="btn _fill" onclick="page.authorityGroup.create()">{{ message('btn.001') }}</button> -->
+			</div>
+			<div class="selectbox sort">
+				<select name="grp_per_page" id="grp_per_page" class="">
+					<option selected disabled value="">{{ message('item.com.004') }}</option>
+					<option value=10>10</option>
+					<option value=30>30</option>
+					<option value=50>50</option>
+				</select>
+			</div>
+        </div>
+        <!-- S: Auth group Grid ---------------------------------------------- -->
+        <div class="grid" id="list-grid"></div>
+      </div>
+    </div>
+    <div class ="group">
+		<h3 class="conts_tit">{{ message('item.authority.002') }}</h3>
+		<div class="conts_grid">
+			<!-- S: search wrap ---------------------------------------------- -->
+			<div class="search_wrap">
+				<div class="search_wrap" id = "addSelect">
+					<span class="selectbox" id="group_type_select">
+						<select id="user_search_type" name="user_search_type">
+							<option selected disabled value="">{{ message('item.com.083') }}</option>
+							<option value="dept_nm">{{ message('item.dept.009') }}</option>
+							<option value="login_id">{{ message('item.com.025') }}</option>
+							<option value="usr_nm">{{ message('item.com.024') }}</option>
+							<option value="ratng_nm">{{ message('item.com.027') }}</option>
+							<option value="pstn_nm">{{ message('item.com.026') }}</option>
+							<option value="flag_nm">{{ message('item.com.028') }}</option>
+						</select>
+					</span>
+					<div class="searchbox_wrap">
+						<input type="text" name="userKeyword" placeholder="{{ message('msg.004') }}" onkeypress="if(event.keyCode == 13){page.authorityGroupUser.search();}">
+						<button type="button" class="icon_btn search" onclick="page.authorityGroupUser.search()" style="width: auto;">
+							<i class="ic ic-search"></i>
+							<span class="blind">{{ message('item.com.014') }}</span>
+						</button>
+					</div>
+				</div>
+				<div class="selectbox sort">
+					<select name="user_per_page" id="user_per_page" class="">
+						<option selected disabled value="">{{ message('item.com.004') }}</option>
+						<option value=10>10</option>
+						<option value=30>30</option>
+						<option value=50>50</option>
+					</select>
+				</div>
+			</div>
+          	<div class="grid" id="user-grid"></div>
+      </div>
+    </div>
+  </article>
+
+</section>
+<div id="popup" class="popup_overlay" style="display: none;">
+    <!-- 팝업 내용 -->
+</div>
+
+{% endblock content %} {% block footer_script %}
+<script>
+	var pjtType = null;
+	var pjtNo = null;
+	var cntrctNo = null;
+
+	$(document).ready(function () {
+		gaia.create({
+            $init: function ($params) {
+				gaiaPortal.navMenuInit('M070303', "{{ message('item.mauth.001') }}");
+				page.init();
+            }
+        });
+	});
+
+	var page = {
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+		data:{
+			pjtData: {}, // 프로젝트(계약) 정보
+		},
+
+		init() {
+			console.log("메뉴권한화면 초기화!!!");
+			const pjtData = pjtInfo;
+
+			if(pjtData.pjtNo === pjtData.cntrctNo){
+				pjtType = PLATFORM.GAIA;
+				// pjtType = "P"+PLATFORM.GAIA;
+			}else{
+				pjtType = PLATFORM.CAIROS;
+			}
+
+			this.data.pjtData = pjtData;
+
+			if (gaiaCommon.me.info.admin) {
+				$("#cntrct_no_select").show();
+				// 상위 콤보에서 선택된 프로젝트
+				pjtNo = pjtData.pjtNo;
+				cntrctNo = pjtData.cntrctNo;
+
+			}else { //관리자가 아닌 경우,
+				if (pjtData.pjtNo === pjtData.cntrctNo) { 	// GAIA 사용자
+					pjtNo = pjtData.pjtNo;
+					cntrctNo = pjtNo;
+					pjtType = PLATFORM.GAIA;
+					// pjtType = "P"+PLATFORM.GAIA;
+				}
+				else {										// CMIS 사용자
+					pjtNo = pjtData.pjtNo;
+					cntrctNo = pjtData.cntrctNo;
+				}
+
+			}
+			page.initContract(pjtData);
+
+			// URL에서 menuCd와 cntrctNo를 가져오기 (메뉴 권한을 추가한 후 가져오는 값)
+			const urlParams = new URLSearchParams(window.location.search);
+			let menuCd;
+			if(urlParams.get('menuId') && urlParams.get('cntrctNo')){
+				const menuId = urlParams.get('menuId');
+				const cntrctNo = urlParams.get('cntrctNo');
+
+				// 계약 코드가 URL에 있을 경우 콤보박스 초기 선택 설정
+				if (cntrctNo) {
+					$("#cntrctNo").val(cntrctNo);
+					this.data.pjtData.cntrctNo = cntrctNo;
+
+					if(this.data.pjtData.pjtNo == cntrctNo){
+						pjtType = PLATFORM.GAIA;
+						// pjtType = "P"+PLATFORM.GAIA;
+					}else{
+						pjtType = PLATFORM.CAIROS;
+					}
+
+				}
+
+				// 트리 초기 선택 노드 설정
+				if (menuId) {
+					menuCd = menuId;
+				}
+			}
+
+			// 쿼리스트링 제거하고 새로고침
+            // if (urlParams.toString()) {
+				//     // 쿼리스트링이 있으면 제거하고 새로고침
+				//     const newUrl = window.location.origin + window.location.pathname;
+				//     window.history.replaceState({}, document.title, newUrl);
+				// }
+
+			this.authorityGroup.gridInit();
+			this.authorityGroupUser.gridInit();
+			this.tree.init(menuCd);
+
+			// 'grp_per_page' 셀렉트박스 변경 이벤트 리스너 추가
+			$('#grp_per_page').on('change', (event) => {
+				const newPerPage = parseInt(event.target.value, 10);
+				if (this.authorityGroup.grid) {
+					this.authorityGroup.grid.setPerPage(newPerPage); // 그리드의 perPage 설정 업데이트
+
+					this.refresh(false, true, false); // 그룹 사용자 그리드 초기화
+					this.perPageClear(false, true); // 그룹 사용자 perpage 초기화
+				}
+			});
+
+			// 'user_per_page' 셀렉트박스 변경 이벤트 리스너 추가
+			$('#user_per_page').on('change', (event) => {
+				const newPerPage = parseInt(event.target.value, 10);
+				if (this.authorityGroupUser.grid) {
+					this.authorityGroupUser.grid.setPerPage(newPerPage); // 그리드의 perPage 설정 업데이트
+				}
+			});
+
+			$("#cntrctNo").val(this.data.pjtData.cntrctNo);
+
+
+			gaia.loaded = true;
+		},
+
+		initContract: function (pjtData) {
+			const requestParam = {
+				pjtNo: pjtNo,
+			};
+
+			// ADMIN이 CMIS 접속 시 계약코드 콤보박스 생성
+            if (isCAIROS() && gaiaCommon.me.info.admin) {
+                gaiaCommon.post('/api/portal/select-cntrctList', requestParam,
+                    function (result) {
+                        if(!result.ok){
+                            gaiaCommon.customAlert("{{ message('msg.060') }}"); // 서버와의 통신 중 오류가 발생했습니다. 다시 시도해주세요.
+                        }
+
+                        var list = result.details.contractList;
+
+                        if(list.length > 0) {
+                            $("#container").prepend(
+                                    "<div class='group'><h3 class='conts_tit'>{{ message('item.com.018') }}</h3>" +
+                                    "<div class='conts_form'><span class='selectbox'>" +
+                                    "<select name='cntrctNo' id='cntrctNo' class=''>" +
+                                    "</select></span></div></div>"
+                            );
+
+                            // 기존 옵션 제거
+                            $("#cntrctNo").empty();
+
+                            for (let i = 0; i < list.length; i++) {
+                                var option = $("<option value=" + list[i].cntrct_no + ">" + list[i].cntrct_nm + "</option>");
+                                $('#cntrctNo').append(option);
+                            }
+
+                            // 첫 번째 계약을 선택 상태로
+                            console.log("계약변경 전: ", page.data.pjtData.cntrctNo);
+                            page.data.pjtData.cntrctNo = list[0].cntrct_no;
+                            console.log("계약변경 후: ", page.data.pjtData.cntrctNo);
+                            pjtType = PLATFORM.CAIROS;
+
+                            // 계약 선택 이벤트 리스너 추가
+                            $("#cntrctNo").change(function (e) {
+                                if (page.authorityGroupUser.data.selectedAuthorityGroup) {
+                                    page.authorityGroupUser.data.selectedAuthorityGroup = null; // 선택된 권한그룹 초기화
+                                    page.authorityGroupUser.data.rghtGrpTy = null;				// 선택된 권한그룹의 그룹 구분 초기화
+                                }
+                                const cntrctNo = e.target.value;
+                                const cntrctNm = e.target.options[e.target.selectedIndex].text;
+
+                                page.data.pjtData.cntrctNo = cntrctNo;
+                                page.data.pjtData.cntrctNm = cntrctNm;
+
+                                if (page.data.pjtData.pjtNo === page.data.pjtData.cntrctNo) {
+                                    pjtType = PLATFORM.GAIA;
+                                    // pjtType = "P"+PLATFORM.GAIA;
+                                } else {
+                                    pjtType = PLATFORM.CAIROS;
+                                }
+
+
+                                page.searchClear(true, true); 	// 검색 데이터 초기화
+                                page.perPageClear(true, true); 	// perPage 초기화
+                                page.refresh(true, true, true);	// 트리, 그리드 초기화
+
+                            });
+                        }
+                        else{
+                            gaiaCommon.customAlert("계약 정보가 존재하지 않습니다.", function (){location.replace('/')});
+                        }
+                    },
+                    function (error) {
+                        console.error(error);
+                        gaiaCommon.customAlert(error.responseJSON?.message);
+                    }
+                );
+
+            }else{ //gaia 또는 cairos 사용자의 경우
+                //그리드 영역만 CSS 세팅
+                $("#container").css("grid-template-rows", "1fr 1fr");
+            }
+
+		},
+
+		refresh: function(grpGrid, userGrid, tree){
+
+			if(grpGrid){
+				this.authorityGroup.setList();
+			}
+
+			if(userGrid){
+				this.authorityGroupUser.gridInit();
+			}
+
+			if(tree){
+				this.tree.refresh();
+			}
+
+		},
+
+		searchClear: function(grp, user){
+			if(grp){
+				// 그룹 검색 초기화
+				$('#grp_search_type').val(''); 					// 검색 콤보박스 초기화
+				$('input[name="groupKeyword"]').val(''); 		// 검색어 입력창 초기화
+				this.authorityGroup.isSearch = false;			// 검색 상태 초기화
+				// this.authorityGroup.data.searchData = {}; 		// 검색 데이터 초기화
+
+				// searchData가 존재하고 값이 있으면 초기화
+				if (this.authorityGroup.data.searchData) {
+					if (this.authorityGroup.data.searchData.columnNm || this.authorityGroup.data.searchData.searchText) {
+						this.authorityGroup.data.searchData.columnNm = null;
+						this.authorityGroup.data.searchData.searchText = null;
+					}
+				}
+
+				// requestData가 존재하고 값이 있으면 초기화
+				if (this.authorityGroup.requestData) {
+					if (this.authorityGroup.requestData.columnNm || this.authorityGroup.requestData.searchText) {
+						delete this.authorityGroup.requestData.columnNm;
+						delete this.authorityGroup.requestData.searchText;
+					}
+				}
+			}
+
+			if(user){
+				// 사용자 검색 초기화
+				$('#user_search_type').val(''); 				// 검색 콤보박스 초기화
+				$('input[name="userKeyword"]').val(''); 		// 검색어 입력창 초기화
+				this.authorityGroupUser.isSearch = false; 		// 검색 상태 초기화
+				this.authorityGroupUser.data.searchData = {}; 	// 검색 데이터 초기화
+			}
+		},
+
+		perPageClear: function(grp, user){
+			if(grp){
+				// 그룹 perpage 초기화
+				$('#grp_per_page').val(''); 	// 개수 콤보박스 초기화
+			}
+
+			if(user){
+				// 사용자 perpage 초기화
+				$('#user_per_page').val(''); 	// 개수 콤보박스 초기화
+			}
+		},
+
+		// 메뉴 권한 그룹
+		authorityGroup: {
+			grid: null,
+			currentNode: null,
+			requestData: null,
+			isSearch: false,
+			data: {
+				searchData: {},
+				sortData: null,
+				updateRghtGrpInfo:{}
+			},
+
+			gridInit: function() {
+				const dataSource = createDataSource({
+					readData: {
+						url: '/api/system/menu-authority-group/grid-list', // 데이터를 요청할 API URL
+						method: 'GET',
+					}
+				})
+				dataSource.initialRequest = false;
+
+				if (this.grid) { // 이미 그리드가 있으면 제거하고 새로 생성.
+                    this.grid.destroy();
+                    this.grid = null;
+                }
+
+				if (!this.grid) {
+					this.grid = new tui.Grid({
+						el: document.getElementById('list-grid'),
+						data: dataSource,
+						pageOptions: {
+							useClient: false,
+							perPage: 10, // 페이지당 항목 수
+						},
+						useClientSort: false,
+						scrollX: false,
+						scrollY: true,
+						useClientSort: false,
+						// bodyHeight: 200,
+						minBodyHeight: 200,
+						contextMenu: null,
+						rowHeaders: [
+							{
+								type: 'checkbox',
+								width: 100,
+								renderer: {
+									type: window.IconRenderer,
+									options:[
+										{
+											type:'checkBox',
+										},
+										{
+											type:'trash',
+											//휴지통 클릭 삭제 시 필요한 값 설정
+											url: '/api/system/menu-authority-group/Delete',
+											idField: 'delKey',
+											keyName: 'menuAuthorityGroupDelete',
+											auth: page.isDelAuth == "true" ? true : false,
+											msgList: {
+												confirmTit: "{{ message('item.mauth.002') }}", //메뉴 권한 삭제
+												confirmMsg: "{{ message('msg.009') }}", //정말 삭제하시겠습니까?
+												completeMsg: "{{ message('msg.006') }}" //삭제되었습니다.
+											},
+											success: function() { page.refresh(true, true, false); }
+										}
+									]
+								}
+							}
+						],
+						columns:
+						[
+							{
+								header: "delKey",
+								name: 'delKey',
+								hidden: true,
+							},
+							{
+								header: "rghtGrpCd",
+								name: 'rghtGrpCd',
+								hidden: true,
+							},
+							{
+								header: "{{ message('item.authority.016') }}", //그룹 명
+								name: 'rghtGrpNm',
+								align: 'left',
+								width: 200,
+								sortable: true,
+							},
+							{
+								header: "{{ message('item.authority.005') }}", //그룹 설명
+								name: 'rghtGrpDscrpt',
+								align: 'left',
+							},
+							{
+								header: "{{ message('item.authority.006') }}", //그룹 구분
+								name: 'rghtGrpTyNm',
+								align: 'center',
+								width: 120,
+							},
+							{
+								header: "{{ message('item.authority.007') }}", //역할 구분
+								name: 'rghtGrpRoleNm',
+								align: 'center',
+								width: 120,
+							},
+							{
+								header: "{{ message('item.mauth.003') }}", //권한 종류
+								name: 'rghtKindNm',
+								align: 'center',
+								width: 400,
+							},
+							{
+								header: "{{ message('item.com.002') }}", //수정일
+								name: 'chgDt',
+								align: 'center',
+								width: 150,
+							},
+						]
+					});
+
+					refreshGrid(this.grid); // 그리드 리사이즈 문제 해결
+				}
+
+				// 'beforeSort' 이벤트 핸들러 설정(정렬 ui 멀티 컬럼 정렬로 나타나는 문제 해결)
+                this.grid.on("beforeSort", (ev) => {
+                    // 'columns' 데이터 가져오기 및 멀티 컬럼 정렬 방지 처리
+					const { columns } = ev.instance.store.data.sortState;
+					if (columns.length > 1) {
+						columns.shift();
+					}
+
+					// 추가 파라미터 설정
+					let additionalParams = this.requestData;
+
+					// 검색 조건이 활성화된 경우(search 관련 데이터 추가)
+					if (this.isSearch) {
+						additionalParams.searchText = this.data.searchData.searchText;
+						additionalParams.columnNm = this.data.searchData.columnNm;
+					}
+
+					// 추가 파라미터를 요청 옵션에 병합
+					ev.instance.dataProvider.setRequestParams(additionalParams);
+
+				});
+
+				this.grid.on("afterSort", (ev) => {
+                    // 정렬된 상태에서 다른 컬럼을 정렬하려고 할 때 정렬 초기화 진행.
+					if(page.authorityGroup.grid.getSortState().columns.length > 1){
+						page.authorityGroup.grid.unsort(page.authorityGroup.grid.getSortState().columns[0].columnName);
+					}
+
+				});
+
+				// 'click' 이벤트 핸들러 설정
+				this.grid.on("click", function (e) {
+					const rowKey = e.rowKey; // 클릭된 행의 키를 가져옴
+
+					if (e.columnName == "_checked") {
+						if(e.nativeEvent.target.className == "checkGroup"){
+							let temp = page.authorityGroup.grid.getRow(rowKey);
+							temp._attributes.checked = page.authorityGroup.grid.getRow(rowKey)._attributes.checked ? false : true;
+							page.authorityGroup.grid.setRow(rowKey, temp);
+						}
+						return;
+					}
+
+					if (rowKey !== undefined) {
+						const subRowData = page.authorityGroup.grid.getRow(rowKey); // 그리드에서 해당 행 데이터 가져오기
+
+						if(!subRowData){
+                            gaiaCommon.customAlert("{{ message('msg.mauth.011') }}"); // 권한 그룹의 정보가 존재하지 않습니다. 다시 시도해주세요.
+							return;
+						}
+
+						const cntrctNo = page.data.pjtData.cntrctNo; 	// 권한 그룹의 계약번호
+						const rghtGrpNo = subRowData.rghtGrpNo; 		// 권한 그룹 번호
+						const rghtGrpTy = subRowData.rghtGrpTy; 		// 권한 그룹 사용자 타입
+						const pjtType = subRowData.pjtType; 			// 권한 그룹 프로젝트 구분
+
+						let authorityGroupUserGet = {};
+
+						if(rghtGrpNo && cntrctNo && rghtGrpTy){
+							authorityGroupUserGet = {
+								rghtGrpNo: rghtGrpNo,
+								cntrctNo: cntrctNo,
+								rghtGrpTy: rghtGrpTy
+							}
+						}
+
+						page.authorityGroupUser.data.selectedAuthorityGroup = {
+							rghtGrpNo: rghtGrpNo,
+							rghtGrpTy: rghtGrpTy,
+							cntrctNo: cntrctNo,
+							pjtNo: pjtNo,
+							pjtType: pjtType
+						};
+
+						// page.authorityGroupUser.grid.readData(1, authorityGroupUserGet);
+						page.authorityGroupUser.gridInit(rghtGrpNo, cntrctNo, rghtGrpTy);
+
+						//그룹 구분이 부서인 경우, 그룹 사용자 검색 콤보 값 변경
+						page.authorityGroup.changeGrpUserOptionData(rghtGrpTy);
+
+						page.perPageClear(false, true); 	// PerPage 개수 초기화
+						page.searchClear(true, true); 		// 검색 상태 초기화
+					}
+				});
+
+				// 데이터를 읽은 후 높이를 동적으로 설정
+                this.grid.on('onGridUpdated', () => {
+                    const rowCount = this.grid.getRowCount(); // 그리드의 행 개수를 가져옴
+                    const rowHeight = 40; // 각 행의 높이
+                    const maxHeight = 160; // 그리드의 최대 높이
+                    const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행 개수에 맞춘 그리드 높이 설정
+
+                    this.grid.setBodyHeight(newHeight); // 그리드 높이 설정
+                });
+
+				// errorResponse 이벤트 핸들러 추가
+                this.grid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert("로그인이 필요합니다. 로그인 페이지로 이동합니다.", function(){
+							location.reload();
+						});
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+
+			},
+
+			// 그룹 사용자 구분 콤보박스 생성
+			changeGrpUserOptionData: function(rghtGrpTy){
+                const userSearchType = document.getElementById("user_search_type");
+
+                // 기존 옵션들을 제거
+                while (userSearchType.options.length > 0) {
+                    userSearchType.remove(0);
+                }
+
+				//그룹 구분이 D인 경우
+                if(rghtGrpTy === "D"){
+                    userSearchType.innerHTML =
+                        `   <option selected value="">{{ message('item.com.083') }}</option>
+                            <option value="dept_nm">{{ message('item.dept.009') }}</option> `
+
+				//그룹 구분이 U, R인 경우
+                }else if(rghtGrpTy === "U" || rghtGrpTy === "R"){
+                    userSearchType.innerHTML =
+                        `	<option selected value="">{{ message('item.com.083') }}</option>
+							<option value="dept_nm">{{ message('item.dept.009') }}</option>
+							<option value="login_id">{{ message('item.com.025') }}</option>
+							<option value="usr_nm">{{ message('item.com.024') }}</option>
+							<option value="ratng_nm">{{ message('item.com.027') }}</option>
+							<option value="pstn_nm">{{ message('item.com.026') }}</option>
+							<option value="flag_nm">{{ message('item.com.028') }}</option> `
+                }else{
+					console.warn("Invaild Authority Group Type.");
+				}
+            },
+
+			// 메뉴 권한 리스트 조회
+			setList: function(node) {
+				// pjtData가 초기화되지 않았다면 초기화하지 않음
+				if (!page.data.pjtData) {
+					console.error("pjtData가 정의되지 않았습니다.");
+					return;
+				}
+
+				if (node) { // 트리에서 새로 선택된 경우
+					this.currentNode = node;
+				}
+
+
+				if (!this.currentNode) {
+					console.error("메뉴를 선택해주세요.");
+					return;
+				}
+
+				if(this.requestData){
+					this.requestData = null; // 요청 데이터 초기화
+				}
+
+				// 현재 선택된 perPage 값 가져오기
+				const perPage = parseInt($('#grp_per_page').val(), 10) || 5;
+
+				// 페이지 번호와 페이지 크기를 파라미터로 추가
+				const params = {
+					menuCd: this.currentNode.id,
+					cntrctNo: page.data.pjtData.cntrctNo,
+					pjtNo: page.data.pjtData.pjtNo,	// 프로젝트 번호가 없으면 Authfilter에서 걸림.
+					systemType: pjtType,
+					// page: 1,  				// 서버에서 -1 처리함
+					// perPage: perPage    	// 한 페이지당 항목 수
+				};
+
+				this.requestData = params;
+
+				// readData 요청 시 파라미터 전달
+				this.grid.readData(1, params, true);
+
+			},
+
+			// 메뉴 권한 그룹 검색
+			search: function(){
+				let columnNm = $('select[name="grp_search_type"]').val();
+                let text = $('input[name="groupKeyword"]').val().trim();
+
+				// 구분 선택 안한 경우
+				if (!columnNm || columnNm === "") {
+                    gaiaCommon.customAlert("{{ message('msg.003') }}"); //구분을 선택해주세요.
+					$('input[name="groupKeyword"]').val('');
+					this.isSearch = false;
+                    // return;
+                }
+
+				// 검색어가 없는 경우 searchData를 초기화하고 전체 리스트를 조회
+				if (!text || text === "") {
+					page.searchClear(true, false);
+				}else{
+					this.data.searchData = {
+						searchText: text,
+						columnNm: columnNm
+					};
+
+					this.isSearch = true;
+
+					this.requestData.searchText = text;
+					this.requestData.columnNm = columnNm;
+				}
+
+				this.grid.readData(1, this.requestData, true);
+
+				page.searchClear(false, true); 				// 사용자 검색 데이터 초기화
+				page.perPageClear(true, true); 				// perPage 초기화
+				page.authorityGroupUser.grid.resetData([]); // 그룹 사용자 그리드 초기화
+			},
+
+			// 메뉴 권한 추가 페이지 이동
+			create: function(){
+				if(!this.currentNode){
+                    gaiaCommon.customAlert("{{ message('msg.mauth.002') }}"); //메뉴를 선택해주세요.
+					return;
+				}
+				// 프로젝트 번호, 계약번호, 메뉴번호(id) 보내기
+				let cntrctNo = page.data.pjtData.cntrctNo;
+				let pjtNo = page.data.pjtData.pjtNo;
+				let menuCd = this.currentNode.id;
+				let menuLkYn = this.currentNode.data.lkYn; //링크가 없으면 권한 추가 X
+
+				if(menuLkYn == 'N'){
+                    gaiaCommon.customAlert("{{ message('msg.mauth.003') }}"); //최하위 메뉴를 선택해주세요.
+					return;
+				}
+
+				location.href = `/system/menu-authority-popup?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&menuCd=${menuCd}&pjtType=${pjtType}`;
+			},
+
+			// 메뉴 권한 수정 화면 이동
+			update: function(){
+				if(!this.currentNode){
+                    gaiaCommon.customAlert("{{ message('msg.mauth.002') }}"); //메뉴를 선택해주세요.
+					return;
+				}
+
+				// 프로젝트 번호, 계약번호
+				let cntrctNo = page.data.pjtData.cntrctNo;
+				let pjtNo = page.data.pjtData.pjtNo;
+
+
+				// 선택된 행의 사이즈를 체크 (길이는 1이어야 함.)
+				let checkedRowLength = this.grid.getCheckedRows().length;
+				let checkedRowData = this.grid.getCheckedRows()[0];
+
+				if(checkedRowLength === 1){
+                    this.data.updateRghtGrpInfo = checkedRowData;
+
+                    gaiaCommon.checkAuth("MENU_AUTHORITY_U_01", () => {
+                        $("#popup").load(`/system/menu-authority-popup/update?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}`);
+                        $("#popup").css({"display":"flex"});
+                    });
+
+				}else if(checkedRowLength > 1){
+                    gaiaCommon.customAlert("{{ message('msg.mauth.009') }}"); // 하나의 그룹을 선택해주세요.
+					return;
+				}else{
+                    gaiaCommon.customAlert("{{ message('msg.mauth.010') }}"); // 수정할 그룹을 선택해주세요.
+					return;
+				}
+
+			},
+
+			// 메뉴 권한 삭제
+			delete: function(){
+				var rghtGrpCdList = [];
+				var menuCd = this.currentNode.id;
+
+                this.grid.getData().forEach(function(v){
+					if(v._attributes.checked){
+						rghtGrpCdList.push(v.rghtGrpCd);
+					}
+				});
+
+                if (rghtGrpCdList.length > 0) {
+                    //선택한 메뉴 권한 그룹을 삭제하시겠습니까?
+                    gaiaCommon.customConfirm("{{ message('item.mauth.002') }}", "{{ message('item.mauth.002') }}", "{{ message('msg.mauth.004') }}", function(){
+
+						gaiaCommon.post("/api/system/menu-authority-group/listDelete", {menuCd : menuCd, rghtGrpCdList : rghtGrpCdList}, function (result) {
+                            gaiaCommon.customAlert("{{ message('msg.006') }}"); // 삭제되었습니다.
+                            page.refresh(true, true, false);
+                        });
+                    });
+
+                } else {
+                    gaiaCommon.customAlert("{{ message('msg.mauth.005') }}"); // 삭제할 메뉴 권한 그룹을 선택해주세요.
+                }
+			}
+
+		},
+
+		// 메뉴 권한 사용자
+		authorityGroupUser: {
+			isSearch: false,
+			data: {
+				rghtGrp: {}, // 권한그룹
+				list: [],
+				selectedAuthorityGroup: null,
+				searchData: null,
+			},
+			grid: null,
+
+			gridInit: function(rghtGrpNo, cntrctNo, rghtGrpTy) {
+
+				// const bodyHeight = window.innerHeight - 755;
+                let initRequest = false; //서버로 데이터 요청 여부
+				let authorityGroupUserGet = {};
+                if(rghtGrpNo && cntrctNo && rghtGrpTy){
+                    authorityGroupUserGet = {
+                        rghtGrpNo: rghtGrpNo,
+                        cntrctNo: cntrctNo,
+                        rghtGrpTy: rghtGrpTy
+                    }
+                }
+
+                if(authorityGroupUserGet.rghtGrpTy){
+                    initRequest = true;
+                }
+
+				if (this.grid) { // 이미 그리드가 있으면 제거하고 새로 생성.
+                    this.grid.destroy();
+                    this.grid = null;
+                }
+
+				const dataSource = {
+                    api: {
+                        readData: {
+                            url: "/api/system/authority-group/users/grid-list",
+                            method: "GET",
+                            initParams: authorityGroupUserGet,
+                        },
+                    },
+                    initialRequest: initRequest, //초기 그리드 생성 시에는 api 호출 X
+                    contentType: "application/json",
+                };
+
+				// 동적으로 그리드 컬럼 세팅
+				let columns = [
+                            {
+                                header: "{{ message('item.dept.002') }}", //부서 코드
+                                name: 'deptId',
+                                align: 'center',
+                            },
+                            {
+                                header: "{{ message('item.dept.009') }}", //부서
+                                name: 'deptNm',
+                                align: 'center'
+                            },
+                            {
+                                header: "{{ message('item.com.025') }}", //계정
+                                name: 'loginId',
+                                align: 'center',
+                            },
+                            {
+                                header: "{{ message('item.com.024') }}", //이름
+                                name: 'usrNm',
+                                align: 'center',
+                            },
+                            {
+                                header: "{{ message('item.com.027') }}", //직급
+                                name: 'ratngNm',
+                                align: 'center',
+                            },
+                            {
+                                header: "{{ message('item.com.026') }}", //직책
+                                name: 'pstnNm',
+                                align: 'center',
+                            },
+                            {
+                                header: "{{ message('item.com.028') }}", //근무상태
+                                name: 'flagNm',
+                                align: 'center',
+                            }
+                        ];
+
+                // rghtGrpTy가 'D'인 경우, 부서 컬럼에 커스텀 렌더러 추가
+                if (authorityGroupUserGet.rghtGrpTy === 'D') {
+                    columns = [
+                        {
+                            header: "{{ message('item.dept.002') }}", //부서 코드
+                            name: 'deptId',
+                            align: 'center',
+                        },
+                        {
+                            header: "{{ message('item.dept.009') }}", //부서
+                            name: 'deptNm',
+                            align: 'center'
+						},
+						{
+							header: "사용자", //사용자
+							name: 'deptUsers',
+							align: 'center',
+						},
+                    ]
+                }
+
+				if (!this.grid) {
+					this.grid = new tui.Grid({
+						el: document.getElementById('user-grid'),
+						data: dataSource,
+						scrollX: false,
+						scrollY: true,
+						useClientSort: false,
+						// bodyHeight: 200,
+						minBodyHeight: 400,
+						contextMenu: null,
+						pageOptions: {
+							useClient: false,
+							perPage: 10, // 페이지당 항목 수
+						},
+						useClientSort: false,
+						columns: columns
+					});
+
+					refreshGrid(this.grid); // 그리드 리사이즈 문제 해결
+				};
+
+				this.grid.on("click", (ev) => { //체크박스 상태 설정
+					if(ev.columnName == "_checked"){
+						if(ev.nativeEvent.target.className == "checkGroup"){
+							let temp = this.grid.getRow(ev.rowKey);
+							temp._attributes.checked = this.grid.getRow(ev.rowKey)._attributes.checked ? false : true;
+							this.grid.setRow(ev.rowKey, temp);
+						}
+					}
+				});
+
+				// 데이터를 읽은 후 높이를 동적으로 설정
+                this.grid.on('onGridUpdated', (e) => {
+                    const rowCount = this.grid.getRowCount(); // 그리드의 행 개수를 가져옴
+                    const rowHeight = 40; // 각 행의 높이
+                    const maxHeight = 160; // 그리드의 최대 높이
+                    const newHeight = Math.min(rowCount * rowHeight, maxHeight); // 행 개수에 맞춘 그리드 높이 설정
+
+                    this.grid.setBodyHeight(newHeight); // 그리드 높이 설정
+
+                });
+
+				// errorResponse 이벤트 핸들러 추가
+                this.grid.on("errorResponse", function (ev) {
+                    // ev.xhr: XMLHttpRequest 객체를 참조
+                    const statusCode = ev.xhr.status;
+
+                    if (statusCode === 403) {
+                        gaiaCommon.customAlert("로그인이 필요합니다. 로그인 페이지로 이동합니다.", function(){
+							location.reload();
+						
+						});
+                    } else {
+                        console.error("데이터 요청 중 오류 발생:", ev.xhr.status, ev.xhr.statusText);
+                    }
+                });
+			},
+			
+			// 메뉴 권한 그룹 사용자 검색
+			search: function(){
+				let columnNm = $('select[name="user_search_type"]').val();
+                let text = $('input[name="userKeyword"]').val().trim();
+
+				// 선택된 권한 그룹이 없을 경우
+				if(!this.data.selectedAuthorityGroup){
+                    gaiaCommon.customAlert("{{ message('msg.rght.014') }}"); //권한그룹을 선택해주세요.
+                    return;
+				}
+
+				// 구분 선택 안한 경우
+				if (!columnNm || columnNm == "") {
+                    gaiaCommon.customAlert("{{ message('msg.003') }}"); //구분을 선택해주세요.
+					$('input[name="userKeyword"]').val('');
+                    // return;
+                }
+
+				// 검색어가 없는 경우 searchData를 초기화하고 전체 리스트를 조회
+				if (!text) {
+					columnNm = $('select[name="user_search_type"]').val(""); // 검색 구분 초기화
+					// this.gridInit();
+					this.isSearch = false;
+				}else{
+					// 검색어가 있으면 searchData에 저장 후 리스트 조회
+					this.data.searchData = {
+						text: text,
+						columnNm: columnNm
+					};
+
+					this.isSearch = true;
+				}
+
+
+				//기본으로 그룹 사용자 리스트 조회에 필요한 파라미터 + 검색 파라미터
+				let params = {
+					rghtGrpNo: this.data.selectedAuthorityGroup.rghtGrpNo,
+					cntrctNo: this.data.selectedAuthorityGroup.cntrctNo,
+					rghtGrpTy: this.data.selectedAuthorityGroup.rghtGrpTy,
+				}
+
+				if(this.isSearch){
+					params.columnNm = this.data.searchData.columnNm,
+					params.text = this.data.searchData.text
+				}
+
+				this.grid.readData(1, params, true);
+			},
+		},
+
+		popup: {
+			mode: null,
+			close() {
+				this.mode = null;
+				$("#popup").html("");
+			},
+		},
+
+		// 메뉴 Tree
+		tree: {
+			obj: null,
+			refresh() {
+				this.obj.jstree(true).refresh();
+			},
+
+			getNode(id) {
+				return this.obj.jstree("get_node", id);
+			},
+
+			search() {
+				const keyword = $('input[name="treeKeyword"]').val();
+				$("#jstree").jstree("search", keyword);  
+			},
+
+			init(menuCd) {
+				var url = "/api/system/menu/all-list";
+				// if (gaiaCommon.me.isAdmin()) {
+				// 	url = "/api/system/menu/all-list";
+				// }
+				// else {
+				// 	url = "/api/system/menu/list";
+				// }
+
+				this.obj = $("#jstree").jstree({
+					plugins: ["search"],
+					search: {
+						"show_only_matches" : true,
+						"show_only_matches_children" : true,
+					},
+					core: {
+						data(obj, cb) {
+						gaiaCommon.get(url, {}, function (result) {
+							var data = [];
+							if (result.details?.menuList) {
+							result.details?.menuList.forEach((item, index) => {
+								data.push({ 
+									id: item.menuCd, 
+									parent: item.upMenuCd, 
+									text: item.menuNm, 
+									state: { opened: false }, 
+									data: item,
+									li_attr: { 
+										class: item.menuUseYn === 'N' ? 'disabled-node' : '' // 사용하지 않는 메뉴의 경우, 다른 색 처리
+									}  
+								});
+							});
+							cb.call(obj, data);
+							}
+						});
+						},
+						check_callback: true, // 요거이 없으면, create_node 안먹음
+						themes : {
+							"theme" : "default",
+							"dots": false,
+							"responsive": false,
+							"icons" : false
+						}
+					},
+				});
+
+				this.obj.on("ready.jstree", function(e, data){
+					page.tree.openFirstChild('#', data); // 루트 노드에서 시작하여 첫 번째 자식만 열기
+
+					if (menuCd) {
+						page.tree.selectNode(menuCd); // 트리가 준비된 후 menuCd를 기준으로 노드 선택
+					}
+				});
+
+				this.obj.on("select_node.jstree", function (e, data) {
+					page.searchClear(true, true); 								// 검색 데이터 초기화
+					page.perPageClear(true, true); 								// perPage 초기화
+
+					page.authorityGroup.setList(data.node);
+					page.authorityGroupUser.grid.resetData([]); 				//그룹 사용자 그리드 초기화
+					page.authorityGroupUser.data.selectedAuthorityGroup = null; //선택된 권한 그룹 초기화
+				});
+
+			},
+
+			// 특정 노드를 선택 상태로 만드는 함수
+			selectNode(menuCd) {
+				this.obj.jstree(true).deselect_all();
+				this.obj.jstree("select_node", menuCd);
+			},
+
+			//첫번째 노드만 열린 상태로 하는 함수
+			openFirstChild(nodeId, data){
+				var node = data.instance.get_node(nodeId);
+						
+				if (node.children.length > 0) {
+					data.instance.open_node(node.children[0]); // 첫 번째 자식 노드만 열기
+				}
+			}
+		},
+	};
+</script>
+
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

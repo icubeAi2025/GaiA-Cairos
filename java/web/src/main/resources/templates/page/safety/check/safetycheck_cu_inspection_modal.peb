@@ -1,0 +1,124 @@
+{% block content %}
+<div class="modal open">
+    <div class="pop_box _sm">
+        <div class="pop_header">
+            <h3 class="pop_tit" id="action_cu_tit"></h3>
+            <button type="button" class="icon_btn pop_close" onclick="popup.close()">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+
+        <div class="pop_body">
+            <div class="form_box" id="work-form">
+                <div class="container" style="display: flex; align-items: center;">
+                    <span class="caption">
+                        <span><b class="c_red">*</b> {{ message('item.com.023') }}</span>
+                    </span>
+                </div>
+                <form id="dept-form">
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label required">{{ message('item.safety.017') }}</div>
+                            <div class="form_data">
+                                <textarea id="ispLstDscrpt" name="ispLstDscrpt" class="maxlength"
+                                    maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col merge3">
+                            <div class="form_label required">{{ message('item.safety.003') }}</div>
+                            <div class="form_data" style="justify-content: space-between;">
+                                <span class="selectbox w-md">
+                                    <select name="cnsttyCdSelect" id="chklstTypeSelect">
+                                    </select>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" onclick="popup.close()">{{ message('btn.007') }}</button>
+                <button type="button" class="btn _fill" id="addButton" onclick="popup.save()">{{ message('btn.006')
+                    }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}{% block footer_script %}
+<script src="/assets/js/validation.js"></script>
+<script>
+    var ispLstId = '';
+
+    $(function () {
+        popup.init();
+    });
+
+    var popup = {
+        popupWindow: null,
+        init: function () {
+            $("#action_cu_tit").text("{{ message('item.safety.011') }}");
+
+            // 공종 셀렉트 박스 만들기
+            const cnsttySelect = $("#chklstTypeSelect");
+
+            cnsttySelect.empty();
+            cnsttySelect.append($("<option>").val("").text("=선택="));
+
+            Object.values(checkedCnstty).forEach(item => {
+                const option = $("<option>").val(item.id).text(item.text);
+                cnsttySelect.append(option);
+            });
+            if (!ispLstId) {
+                $.ajax({
+                    url: '/api/safetymgmt/check/get/maxIspLstId',
+                    method: "GET",
+                    dataType: "json",
+                    success: function (response) {
+                        ispLstId = response.details.maxIspLstId;
+                        console.log("MaxIspLstId after:", ispLstId)
+                    },
+                });
+            }
+        },
+        close: function () {
+            $("#actnDscrpt").val('');
+            $("#popup").css("display", "none");
+        },
+        save: function () {
+            const ispLstDscrpt = $("#ispLstDscrpt").val();
+            const cnsttyCd = $("#chklstTypeSelect").val();
+
+            if (!ispLstDscrpt) {
+                gaiaCommon.customAlert("{{ message('msg.safety.003') }}");
+                return;
+            }
+            if (!cnsttyCd) {
+                gaiaCommon.customAlert("{{ message('msg.contract.014') }}");
+                return;
+            }
+
+            const RowNum = window.inspectionList.inspectionListData.length + 1
+
+            const newInspection = {
+                ispLstId: ispLstId,
+                ispLstNo: RowNum,
+                cnsttyNm: checkedCnstty[cnsttyCd] ? checkedCnstty[cnsttyCd].text : '',
+                ispLstDscrpt: ispLstDscrpt,
+                cnsttyCd: cnsttyCd,
+            };
+
+            window.inspectionList.inspectionListData.push(newInspection);
+            window.inspectionList.addInspectionList();
+
+            $("#popup").css({ "display": "none" });
+        }
+    };
+</script>
+{% endblock %}

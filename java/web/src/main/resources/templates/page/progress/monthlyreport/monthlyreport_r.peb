@@ -1,0 +1,741 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+<style>
+    .selectbox select {
+        -webkit-appearance: menulist; /* Safari, Chrome */
+        -moz-appearance: menulist;    /* Firefox */
+        appearance: menulist;         /* Standard */
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+
+    .check_box_style {
+        display: flex;
+        justify-content: center;
+    }
+
+    .align_center {
+        text-align: center;
+    }
+    .align_right {
+        text-align: right;
+    }
+
+    .sticky_box tr{
+        border-bottom: 1px solid var(--tb-bd);
+    }
+
+    .blue_css {
+        color: blue;
+        font-family: unset !important;
+        font-size: unset !important;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section class="contents_wrap">
+    <article class="conts_area">
+        <div class="conts">
+            <div class="conts_form">
+                <div class="btn_area s_default">
+                    {{ btnHtml | raw }}
+                    <button type="button" class="btn _outline" onclick="reportDetail.close()">{{ message("btn.007") }}</button>
+                </div>
+
+                <!--개요 S-->
+                <div class="group">
+                    <div class="s_conts">
+                        <span class="tree_route">{{ message("item.construction.012") }}</span>
+                        <div class="form_box">
+                            <div class="group">
+                                <!-- row 1 -->
+                                <div class="row cols2">
+                                    <div class="col">
+                                        <div class="form_label">{{ message("item.monthlyreport.004") }}</div>
+                                        <div class="form_data">
+                                            <input type="month" class="w-md" id="reportYm" name="" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="form_label">{{ message("item.construction.002") }}</div>
+                                        <div class="form_data">
+                                            <input type="date" class="date w-md" id="monthlyReportDate" name="" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 2 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 제목 -->
+                                        <div class="form_label">{{ message("item.doc.003") }}</div>
+                                        <div class="form_data">
+                                            <input type="text" id="title" name="title" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- row 4 -->
+                                <div class="row">
+                                    <div class="col">
+                                        <!-- 주요안건 -->
+                                        <div class="form_label">{{ message("item.construction.023") }}</div>
+                                        <div class="form_data">
+                                            <textarea id="rmrkCntnts" maxlength="2000" readonly></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--개요 E-->
+
+                <!--주요공사 현황 S-->
+                <div class="group">
+                    <div class="s_conts">
+                        <span class="tree_route">주요공사 현황</span>
+                        <div>
+                            <table class="table ta_c" style="width:100%;">
+                                <colgroup>
+                                    <col style="width:10%">
+                                    <col style="width:35%">
+                                    <col style="width:35%">
+                                    <col style="width:20%">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">구분</th>
+                                        <th scope="col">금월 추진사항</th>
+                                        <th scope="col">차월 추진사항</th>
+                                        <th scope="col">비고</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="majorCnstTbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!--주요공사 현황 E-->
+                <!--현안사항 S-->
+                <div class="group">
+                    <div class="s_conts">
+                        <span class="tree_route">현안사항</span>
+                        <div>
+                            <table class="table ta_c" style="width:100%;">
+                                <colgroup>
+                                    <col style="width:10%">
+                                    <col style="width:35%">
+                                    <col style="width:35%">
+                                    <col style="width:20%">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">구분</th>
+                                        <th scope="col">문제점</th>
+                                        <th scope="col">추진방안</th>
+                                        <th scope="col">비고</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="issueTbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!--현안사항 E-->
+
+                <!--공정현황 S-->
+                <div class="group">
+                    <div class="s_conts" id="">
+                        <span class="tree_route">{{ message("item.construction.017") }}</span>
+                        <div class="conts_grid" id="">
+                            <div id="progress_grid" class="grid"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--공정현황 E-->
+
+                <!--금월 주요작업 Activity S-->
+                <div class="group">
+                    <div class="s_conts" id="">
+                        <span class="tree_route">{{ message("item.monthlyreport.006") }}</span>
+                        <div class="conts_grid" id="">
+                            <div id="major_activity_grid" class="grid"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--금월 주요작업 Activity E-->
+
+                <!--금월 지연 Activity S-->
+
+                <div class="group">
+                    <div class="s_conts" id="">
+                        <span class="tree_route">{{ message("item.monthlyreport.008") }}</span>
+                        <div class="conts_grid" id="">
+                            <div id="delay_activity_grid" class="grid"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--금월 지연 Activity E-->
+
+                <!--익월 주요 예정 Activity S-->
+                <div class="group" style="margin-bottom: 20px;">
+                    <div class="s_conts" id="">
+                        <span class="tree_route">{{ message("item.monthlyreport.010") }}</span>
+                        <div class="conts_grid" id="">
+                            <div id="next_activity_grid" class="grid"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--익월 주요 예정 Activity E-->
+
+                <!--공정 사진 S-->
+                <div class="s_conts" id="photoDiv">
+                    <span class="tree_route">사진대지</span>
+
+                    <!-- S: Slick Slider -->
+                    <div class="process_photo">
+                        <div class="process_photo_list" style="display: none;">
+                        </div>
+
+                        <div class="slick_nav">
+                            <div class="btn_area">
+                                <div class="btn_group _outline">
+                                    <button type="button" class="btn icon_btn" id="addPhotoData" style="display:none">
+                                        <i class="ic ic-picture-one"></i>
+                                        <span class="blind">추가</span>
+                                    </button>
+                                    <button type="button" class="btn icon_btn" onclick="delPhoto()" id="delPhotoData" style="display:none">
+                                        <i class="ic ic-delete"></i>
+                                        <span class="blind">삭제</span>
+                                    </button>
+                                </div>
+
+                                <div class="btn_group _outline slick_indigator">
+                                    <button type="button" class="btn icon_btn prev">
+                                        <span class="blind">이전</span>
+                                    </button>
+                                    <button type="button" class="btn icon_btn next">
+                                        <span class="blind">다음</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--공정 사진 E-->
+
+            </div>
+        </div>
+    </article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+<script>
+    var urlParams = new URLSearchParams(location.search);
+    var urlCntrctNo = urlParams.get('cntrctNo');
+    var cntrctChgId = urlParams.get('cntrctChgId');
+    var monthlyReportId = urlParams.get('monthlyReportId');
+    var mReport = {};
+
+    // 상세 페이지
+    var reportDetail = {
+        init() {
+            pjtNo = pjtInfo.pjtNo;
+    	    cntrctNo = pjtInfo.cntrctNo;
+
+            progressStatus.init();
+            majorActivity.init();
+            delayActivity.init();
+            nextActivity.init();
+
+            reportDetail.getReport();
+
+            gaia.loaded = true;
+        },
+        getReport(){
+            const url = '/api/progress/monthlyreport/monthlyreport-details';
+            let params = {
+                cntrctNo: urlCntrctNo,
+                cntrctChgId: cntrctChgId,
+                monthlyReportId: monthlyReportId
+            }
+            let callbackFn = function (data){
+                mReport = data.details.monthlyReport;
+                $('#reportYm').val(gaiaCommon.decodeSafeText(mReport.reportYm));
+                $('#monthlyReportDate').val(gaiaCommon.decodeSafeText(mReport.monthlyReportDate));
+                $('#rmrkCntnts').val(gaiaCommon.decodeSafeText(mReport.rmrkCntnts));
+                $('#title').val(gaiaCommon.decodeSafeText(mReport.title));
+                $('#thisMonthPromotion').val(gaiaCommon.decodeSafeText(mReport.thisMonthPromotion));
+                $('#nextMonthPlan').val(gaiaCommon.decodeSafeText(mReport.nextMonthPlan));
+                progressStatus.setData(data.details.progress);
+                majorActivity.setData(data.details.major);
+                delayActivity.setData(data.details.delay);
+                nextActivity.setData(data.details.next);
+                monthlyStatus.setData(data.details.status);
+                monthlyPhoto.setPhoto(data.details.photo);
+            };
+            let errorCallbackFn = function (error) {
+                console.error(error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+            };
+            let completeCallbackFn = function(){
+                gaiaCommon.LoadingOverlay('body', false);
+            };
+
+            gaiaCommon.LoadingOverlay('body', true);
+            gaiaCommon.post(url, params, callbackFn, errorCallbackFn, completeCallbackFn);
+        },
+        modify(){
+            if(mReport) {
+                let apprvlStats = mReport.apprvlStats;
+                if(apprvlStats === 'A' || apprvlStats === 'R'){
+                    gaiaCommon.customAlert("{{ message('msg.monthlyreport.001') }}".replace("{text}", "{{ message('btn.003') }}"));
+                    return
+                } else if(apprvlStats === 'E') {
+                    gaiaCommon.customAlert("{{ message('msg.monthlyreport.018') }}".replace("{text}", "{{ message('btn.003') }}"));
+                    return
+                }
+                window.location.href = `/progress/monthlyreport/edit?pjtNo=${pjtNo}&cntrctNo=${urlCntrctNo}&cntrctChgId=${cntrctChgId}&monthlyReportId=${monthlyReportId}`;
+            }
+        },
+        close(){
+            window.location.href = `/progress/monthlyreport?pjtNo=${pjtNo}&cntrctNo=${cntrctNo}&_condition=init`;
+            sessionStorage.setItem('cntrctNo', urlCntrctNo);
+        }
+    }
+
+    // 공정현황
+    var progressStatus = {
+        init(){
+            if(!this.progressGrid){
+                this.progressGrid = new tui.Grid({
+                    el: progress_grid,
+                    scrollX: true,
+                    scrollY: false,
+                    contextMenu: null,
+                    minBodyHeight: 300,
+                    width: 'auto',
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.app.040") }}',
+                                name: "plan",
+                                childNames: [
+                                    "cnstty_nm",
+                                    "cntrct_am",
+                                    "cntrct_bohal_rate",
+                                ],
+                            },
+                            {
+                                header: '{{ message("item.com.055") }}',
+                                name: "arslt",
+                                childNames: [
+                                    "lsmth_plan_bohal_rate",
+                                    "thismth_plan_bohal_rate",
+                                    "acmlt_plan_bohal_rate",
+                                ],
+                            },
+                            {
+                                header: '{{ message("item.com.056") }}',
+                                name: "plan",
+                                childNames: [
+                                    "lsmth_arslt_bohal_rate",
+                                    "thismth_arslt_bohal_rate",
+                                    "acmlt_arslt_bohal_rate",
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {
+                            name: 'cnstty_nm',
+                            header: '{{ message("item.progressstatus.010") }}',
+                            align: 'center',
+                            resizable: true,
+                            width: 250,
+                            ellipsis: true
+                        },
+                        {
+                            name: 'cntrct_am',
+                            header: '{{ message("item.projectcost.029") }}',
+                            align: 'right',
+                            resizable: true,
+                            width: 200,
+                            ellipsis: true,
+                            formatter: function(e) {
+                                if(e.value) return e.value.toLocaleString();
+                            }
+                        },
+                        {
+                            name: 'cntrct_bohal_rate',
+                            header: '{{ message("item.progressstatus.009") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'lsmth_plan_bohal_rate',
+                            header: '{{ message("item.construction.204") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'thismth_plan_bohal_rate',
+                            header: '{{ message("item.com.047") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'acmlt_plan_bohal_rate',
+                            header: '{{ message("item.construction.043") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'lsmth_arslt_bohal_rate',
+                            header: '{{ message("item.construction.204") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'thismth_arslt_bohal_rate',
+                            header: '{{ message("item.com.047") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'acmlt_arslt_bohal_rate',
+                            header: '{{ message("item.construction.043") }}',
+                            align: 'center',
+                            formatter: function(e) {
+                                let val = parseFloat(e.value) || 0;
+                                return val.toFixed(2) + '%';
+                            }
+                        },
+                        {
+                            name: 'rmk',
+                            header: '{{ message("item.construction.023") }}',
+                            align: 'center',
+                            resizable: true,
+                            ellipsis: true
+                        },
+                    ],
+                })
+
+            } else {
+                this.progressGrid.resetData([]);
+            }
+            refreshGrid(this.progressGrid);
+        },
+        setData(data) {
+            if(data[0].cnstty_cd) {
+                this.progressGrid.resetData(data);
+            }
+        }
+    }
+
+    // 금월 주요작업
+    var majorActivity = {
+        init() {
+            if(!this.maGrid){
+                this.maGrid = new tui.Grid({
+                    el: major_activity_grid,
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    minBodyHeight: 40,
+                    width: 'auto',
+                    bodyHeight: 300,
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.com.055") }}',
+                                name: "plan",
+                                childNames: [
+                                    "plan_bgn_date",
+                                    "plan_end_date",
+                                ],
+                            },
+                            {
+                                header: '{{ message("item.com.056") }}',
+                                name: "arslt",
+                                childNames: [
+                                    "actual_bgn_date",
+                                    "actual_end_date",
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {name: 'path_nm', 	        header: "WBS",                                      align: 'center', resizable: true, width: 250, ellipsis: true},
+                        {name: 'activity_id', 	    header: "Activity ID",                              align: 'center', resizable: true, width: 200, ellipsis: true},
+                        {name: 'activity_nm', 	    header: "Activity",                                 align: 'left',   resizable: true, width: 350, ellipsis: true},
+                        {name: 'plan_bgn_date', 	header: '{{ message("item.com.029") }}',            align: 'center', resizable: true, },
+                        {name: 'plan_end_date',     header: '{{ message("item.construction.030") }}',   align: 'center', resizable: true, },
+                        {name: 'actual_bgn_date', 	header: '{{ message("item.com.029") }}',            align: 'center', resizable: true, },
+                        {name: 'actual_end_date',   header: '{{ message("item.com.030") }}',            align: 'center', resizable: true,
+                            formatter: function(e) {
+                                let thisEnd = e.row.this_end
+                                let actualEndDate = e.row.actual_end_date;
+                                return thisEnd < actualEndDate ? '<p class="blue_css">('+actualEndDate+')</p>' : actualEndDate;
+                            }
+                        },
+                        {name: 'dly_rsn',           header: '{{ message("item.weeklyreport.012") }}',   align: 'center',    resizable: true, ellipsis: true},
+                    ],
+                })
+
+            } else {
+                this.maGrid.resetData([]);
+            }
+            refreshGrid(this.maGrid);
+        },
+        setData(data) {
+            this.maGrid.resetData(data);
+        }
+    }
+
+    // 금월 지연 액티비티
+    var delayActivity = {
+        init() {
+            if(!this.daGrid){
+                this.daGrid = new tui.Grid({
+                    el: delay_activity_grid,
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    minBodyHeight: 40,
+                    width: 'auto',
+                    bodyHeight: 300,
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.com.055") }}',
+                                name: "plan",
+                                childNames: [
+                                    "plan_bgn_date",
+                                    "plan_end_date",
+                                ],
+                            },
+                            {
+                                header: '{{ message("item.com.056") }}',
+                                name: "arslt",
+                                childNames: [
+                                    "actual_bgn_date",
+                                    "actual_end_date",
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {name: 'path_nm', 	        header: "WBS",                                      align: 'center', resizable: true, width: 250, ellipsis: true},
+                        {name: 'activity_id', 	    header: "Activity ID",                              align: 'center', resizable: true, width: 200, ellipsis: true},
+                        {name: 'activity_nm', 	    header: "Activity",                                 align: 'left',   resizable: true, width: 350, ellipsis: true},
+                        {name: 'plan_bgn_date', 	header: '{{ message("item.com.029") }}',            align: 'center', resizable: true, },
+                        {name: 'plan_end_date',     header: '{{ message("item.construction.030") }}',   align: 'center', resizable: true, },
+                        {name: 'actual_bgn_date', 	header: '{{ message("item.com.029") }}',            align: 'center', resizable: true, },
+                        {name: 'actual_end_date',   header: '{{ message("item.com.030") }}',            align: 'center', resizable: true,
+                            formatter: function(e) {
+                                let thisEnd = e.row.this_end
+                                let actualEndDate = e.row.actual_end_date;
+                                return thisEnd < actualEndDate ? '<p class="blue_css">('+actualEndDate+')</p>' : actualEndDate;
+                            }
+                        },
+                        {name: 'dly_div',           header: '{{ message("item.monthlyreport.013") }}',  align: 'center', resizable: true,
+                            formatter: function(e) {
+                                let dlyDiv = e.row.dly_div;
+                                let dlyDivNm;
+                                if(dlyDiv === 'ST') {
+                                    dlyDivNm = '{{ message("item.monthlyreport.016") }}';
+                                } else if (dlyDiv === 'FN') {
+                                    dlyDivNm = '{{ message("item.monthlyreport.017") }}';
+                                } else {
+                                    dlyDivNm = '';
+                                }
+                                return dlyDivNm;
+                            }
+                        },
+                        {name: 'major_prcs_yn',     header: '{{ message("item.monthlyreport.014") }}',   align: 'center',     resizable: true,
+                            formatter: function(e) {
+                                return e.row.major_prcs_yn === 'Y' ? 'O' : '';
+                            }
+                        },
+                        {name: 'dly_rsn',           header: '{{ message("item.monthlyreport.015") }}',   align: 'center',     resizable: true, ellipsis: true },
+                    ],
+                })
+
+            } else {
+                this.daGrid.resetData([]);
+            }
+            refreshGrid(this.daGrid);
+        },
+        setData(data) {
+            this.daGrid.resetData(data);
+        }
+    }
+
+    // 익월 예정 액티비티
+    var nextActivity = {
+        init() {
+            if(!this.naGrid){
+                this.naGrid = new tui.Grid({
+                    el: next_activity_grid,
+                    scrollX: true,
+                    scrollY: true,
+                    contextMenu: null,
+                    minBodyHeight: 40,
+                    width: 'auto',
+                    bodyHeight: 300,
+                    header: {
+                        height: 100,
+                        complexColumns: [
+                            {
+                                header: '{{ message("item.com.055") }}',
+                                name: "plan",
+                                childNames: [
+                                    "plan_start",
+                                    "plan_finish",
+                                ],
+                            },
+                        ],
+                    },
+                    columns: [
+                        {name: 'path_nm', 	        header: "WBS",                                      align: 'center', resizable: true, width: 350, ellipsis: true},
+                        {name: 'activity_id', 	    header: "Activity ID",                              align: 'center', resizable: true, width: 200, ellipsis: true},
+                        {name: 'activity_nm', 	    header: "Activity",                                 align: 'left',   resizable: true, width: 350, ellipsis: true},
+                        {name: 'plan_bgn_date', 	header: '{{ message("item.com.029") }}',            align: 'center', resizable: true, },
+                        {name: 'plan_end_date',     header: '{{ message("item.construction.030") }}',   align: 'center', resizable: true, },
+                        {name: 'dly_rsn',           header: '{{ message("item.construction.023") }}',            align: 'right',  resizable: true, ellipsis: true},
+                    ],
+                })
+
+            } else {
+                this.naGrid.resetData([]);
+            }
+            refreshGrid(this.naGrid);
+        },
+        setData(data) {
+            this.naGrid.resetData(data);
+        }
+    }
+
+    var monthlyStatus = {
+        setData(data) {
+            if(data.length < 1) {
+                let html = `<tr id="noAddData">
+                                <td colspan="4">
+                                    <div style="display: flex;justify-content: center;">
+                                        <p class="data_info">
+                                            {{message('msg.091')}}
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>`;
+                $('#majorCnstTbody').append(html);
+                $('#issueTbody').append(html);
+            } else  {
+                data.map(obj => {
+                    let cnstrctHtml = `<tr data-cnst="${obj.cnstrctCd}">
+                                            <th scope="row">${obj.cnstrctNm}</th>
+                                            <td><textarea maxlength="2000" class="issue" readonly>${obj.cnstrctPerf}</textarea></td>
+                                            <td><textarea maxlength="2000" class="plan" readonly>${obj.cnstrctPlan}</textarea></td>
+                                            <td><textarea maxlength="500" class="note" readonly>${obj.cnstrctNote}</textarea></td>
+                                        </tr>`;
+                    $('#majorCnstTbody').append(cnstrctHtml);
+                    let issueHtml = `<tr data-cnst="${obj.cnstrctCd}">
+                                        <th scope="row">${obj.cnstrctNm}</th>
+                                        <td><textarea maxlength="2000" class="issue" readonly>${obj.currentIssues}</textarea></td>
+                                        <td><textarea maxlength="2000" class="plan" readonly>${obj.currentActionPlan}</textarea></td>
+                                        <td><textarea maxlength="500" class="note" readonly>${obj.currentNote}</textarea></td>
+                                    </tr>`;
+                    $('#issueTbody').append(issueHtml);
+                })
+            }
+        }
+    }
+
+    var monthlyPhoto = {
+        setPhoto(data) {
+            $(".process_photo_list").show();
+            data.forEach((row, seq) => {
+                let webPath = row.file_disk_path;
+                // 백슬래시 경로 처리 (윈도우)
+                if (webPath.includes('\\')) {
+                    webPath = webPath.replace(/^.*\\upload/, '/upload').replace(/\\/g, '/');
+                } else {
+                    // 슬래시 경로 처리 (리눅스)
+                    webPath = webPath.replace(/^.*\/upload/, '/upload');
+                }
+
+                const imgSrc = `${webPath}/${row.file_disk_nm}`;
+                 $(".process_photo_list").slick('slickAdd',
+                    `<div class="custom-slide">` +
+                        `<dl class="dl_box p_photo">` +
+                            `<dt class="item_dt">` +
+                                `<span class="check_label">` + row.titl_nm + `</span>` +
+                            `</dt>` +
+                            `<dd class="item_dd">` +
+                                `<figure class="p_photo_info">` +
+                                    `<img src="${imgSrc}" style="height:200px;">` +
+                                    `<figcaption>` +
+                                        `<p class="tit">` + row.titl_nm + `</p>` +
+                                        `<p class="desc">` + row.dscrpt + `</p>` +
+                                        `<p class="date">` + row.shot_date + `</p>` +
+                                    `</figcaption>` +
+                                `</figure>` +
+                            `</dd>` +
+                        `</dl>` +
+                    `</div>`
+                );
+
+            });
+        }
+    }
+
+    $(function(){
+        gaia.create({
+            $init: function ($params) {
+
+                gaiaPortal.navMenuInit("M02M0205", '{{ message("item.monthlyreport.001") }} {{ message("btn.030") }}');
+                $('#menuDepth').append(`<li class="breadcrumb_item">{{ message("item.monthlyreport.001") }} {{ message("btn.030") }}</li>`);
+                reportDetail.init();
+
+                $('.process_photo_list').not('.slick-initialized').slick({
+					arrows: true,
+					prevArrow: $('.process_photo .prev'),
+					nextArrow: $('.process_photo .next'),
+					dots: true,
+					infinite: false,
+					slidesToShow: 4,
+					slidesToScroll: 4,
+					autoplay: false,
+					speed: 1000,
+					draggable: true
+				});
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

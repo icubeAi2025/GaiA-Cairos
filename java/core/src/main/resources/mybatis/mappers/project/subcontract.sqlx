@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract">
+   <select id="getSubcontractList" parameterType="subcontractListInput" resultType="subcontractListOutput">
+      /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.getSubcontractList][jhkim]  */
+        SELECT
+            CS.CNTRCT_NO,
+            CS.SCONTRCT_CORP_ID,
+            CS.SCONTRCT_CNTRCT_NO,
+            CS.SCONTRCT_CNTRCT_NM,
+            CS.GCONTRCT_CORP_NO,
+            CS.SCONTRCT_CORP_NO,
+            CS.SCONTRCT_CORP_BSNSMN_NO,
+            CS.SCONTRCT_CORP_NM,
+            CS.SCONTRCT_CCNSTTY_CD,
+            CS.SCONTRCT_INDSTRYTY_CD,
+            CS.CNTRCT_DATE,
+            CS.CNTRCT_BGN_DATE,
+            CS.CNTRCT_END_DATE,
+            CS.SCONTRCT_CNTRCT_AMT,
+            CS.RMRK,
+            -- 하도급공종
+            SCC1.CMN_CD_NM_KRN AS SCONTRCT_CNSTTY_CD_KRN,
+            -- 하도급업종
+            SCC2.CMN_CD_NM_KRN AS SCONTRCT_INDSTRYTY_CD_KRN,
+            CCC.BSNSMN_NO,
+            CCC.CORP_NM,
+            CSC.CNTRCT_CHG_NO
+        FROM
+            CN_SUBCONTRACT CS
+        LEFT JOIN SM_COM_CODE SCC1
+            ON
+                CS.SCONTRCT_CCNSTTY_CD = SCC1.CMN_CD
+                 AND SCC1.CMN_GRP_CD = #{cmnGrpCdWorkType}
+        LEFT JOIN CN_CONTRACT_COMPANY CCC
+            ON
+                CS.CNTRCT_NO = CCC.CNTRCT_NO
+                AND CS.GCONTRCT_CORP_NO = CCC.CORP_NO
+                AND CCC.DLT_YN = 'N'
+        LEFT JOIN SM_COM_CODE SCC2
+            ON
+                CS.SCONTRCT_INDSTRYTY_CD = SCC2.CMN_CD
+                AND SCC2.CMN_GRP_CD = #{cmnGrpCdIndstryty}
+        LEFT JOIN (
+                SELECT      MAX(CNTRCT_CHG_NO::INT) AS CNTRCT_CHG_NO ,SCONTRCT_CORP_ID
+                FROM        CN_SUBCONTRACT_CHANGE
+                WHERE       DLT_YN = 'N'
+                AND         CNTRCT_NO = #{cntrctNo}
+                GROUP BY    SCONTRCT_CORP_ID
+            ) CSC ON
+            CS.SCONTRCT_CORP_ID = CSC.SCONTRCT_CORP_ID
+        WHERE
+            CS.CNTRCT_NO = #{cntrctNo}
+            AND CS.DLT_YN = 'N'
+        ORDER BY
+            CS.RGST_DT DESC;
+  </select>
+  
+    
+    <select id="getSubcontract" parameterType="subcontractInput" resultType="subcontractOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.getSubcontract][jhkim]  */
+            SELECT
+                CC.CNTRCT_NM,
+                CS.CNTRCT_NO,
+                CS.SCONTRCT_CORP_ID,
+                CS.SCONTRCT_CNTRCT_NO,
+                CS.SCONTRCT_CNTRCT_NM ,
+                CS.GCONTRCT_CORP_NO ,
+                CS.SCONTRCT_CORP_NO,
+                CS.SCONTRCT_CORP_BSNSMN_NO,
+                CS.SCONTRCT_CORP_ADRS,
+                CS.SCONTRCT_TEL_NO,
+                CS.SCONTRCT_FAX_NO,
+                CS.SCONTRCT_CORP_CEO,
+                CS.SCONTRCT_CORP_NM,
+                CS.SCONTRCT_CCNSTTY_CD,
+                CS.SCONTRCT_INDSTRYTY_CD,
+                SCC2.CMN_CD_NM_KRN AS SCONTRCT_INDSTRYTY_NM,
+                CS.CNTRCT_DATE,
+                CS.CNTRCT_BGN_DATE,
+                CS.CNTRCT_END_DATE,
+                CS.SCONTRCT_CNTRCT_AMT ,
+                CS.RMRK,
+                SCC1.CMN_CD_NM_KRN AS SCONTRCT_CCNSTTY_CD_NM,
+                P.CNTRCT_AMT AS PRE_CNTRCT_AMT,
+                Y.CORP_NM
+            FROM
+                CN_SUBCONTRACT CS
+            LEFT JOIN SM_COM_CODE SCC1
+                ON
+                CS.SCONTRCT_CCNSTTY_CD = SCC1.CMN_CD
+                AND SCC1.CMN_GRP_CD =  #{cmnGrpCdWorkType}
+            LEFT JOIN SM_COM_CODE SCC2
+                ON
+                CS.SCONTRCT_INDSTRYTY_CD = SCC2.CMN_CD
+                AND SCC2.CMN_GRP_CD =  #{cmnGrpCdIndstryty}
+            LEFT JOIN CN_CONTRACT CC
+                ON
+                CC.CNTRCT_NO = CS.CNTRCT_NO AND CC.DLT_YN ='N'
+            LEFT JOIN (
+                SELECT
+                        CNTRCT_NO,
+                        SCONTRCT_CORP_ID,
+                        MAX(CNTRCT_CHG_NO) AS MAX_CNTRCT_CHG_NO
+                    FROM
+                        CN_SUBCONTRACT_CHANGE
+                    GROUP BY
+                        CNTRCT_NO,
+                        SCONTRCT_CORP_ID
+            ) MAX_CHANGE
+                ON MAX_CHANGE.CNTRCT_NO = CS.CNTRCT_NO
+                AND MAX_CHANGE.SCONTRCT_CORP_ID = CS.SCONTRCT_CORP_ID
+            LEFT JOIN CN_SUBCONTRACT_CHANGE P
+                ON P.CNTRCT_NO = MAX_CHANGE.CNTRCT_NO
+                AND P.SCONTRCT_CORP_ID = MAX_CHANGE.SCONTRCT_CORP_ID
+                AND P.CNTRCT_CHG_NO = MAX_CHANGE.MAX_CNTRCT_CHG_NO
+            LEFT JOIN CN_CONTRACT_COMPANY Y
+                ON
+                Y.CNTRCT_NO = CS.CNTRCT_NO
+                AND CS.GCONTRCT_CORP_NO = Y.CORP_NO 
+            WHERE
+                CS.CNTRCT_NO = #{cntrctNo}
+                AND CS.SCONTRCT_CORP_ID = #{scontrctCorpId}
+                AND CS.DLT_YN = 'N'
+            ORDER BY
+                CS.RGST_DT DESC
+            LIMIT 1;
+    </select>
+
+
+  <select id="getSubcontractChangeList" parameterType="subcontractChangeListInput" resultType="subcontractChangeListOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.getSubcontractChangeList][jhkim]  */
+        SELECT
+            c.cntrct_no,
+            c.scontrct_corp_id, 
+            c.cntrct_chg_id,
+            c.cntrct_chg_no,  
+            c.cntrct_chg_type ,  
+            c.chg_appr_date,     
+            c.cntrct_chg_date ,
+            c.chg_cbgn_date,  
+            c.chg_con_prd ,
+            c.cntrct_amt,  
+            c.dfrcmpnst_rate,  
+            c.vat_rate,  
+            c.rmrk,
+            s.cntrct_bgn_date,
+            d.cmn_cd_nm_krn AS cntrct_chg_type_krn
+        FROM cn_subcontract_change c
+        LEFT JOIN sm_com_code d
+            ON
+                c.cntrct_chg_type = d.cmn_cd   
+                AND d.cmn_grp_cd = #{cmnGrpCdCntrctChgType}
+        LEFT JOIN cn_subcontract s
+            ON 
+                c.cntrct_no = s.cntrct_no 
+                AND  c.scontrct_corp_id = s.scontrct_corp_id
+        <where>
+            <if test="cntrctNo != null and scontrctCorpId != null">
+                c.cntrct_no = #{cntrctNo}
+                AND c.scontrct_corp_id = #{scontrctCorpId}
+            </if>
+            <if test="cntrctNo == null or scontrctCorpId == null">
+                1 = 0
+            </if>
+            AND c.dlt_yn = 'N'
+        </where>
+            ORDER BY c.rgst_dt
+</select>
+
+<select id="getSubcontractChange" parameterType="subcontractChangeInput" resultType="subcontractChangeOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.getSubcontractChange][jhkim]  */
+        SELECT
+            c.cntrct_no,
+            c.scontrct_corp_id,
+            c.cntrct_chg_id,
+            c.cntrct_chg_no,
+            c.cntrct_chg_type,
+            c.chg_appr_date,
+            c.cntrct_chg_date,
+            c.chg_cbgn_date,
+            c.chg_con_prd,
+            c.cntrct_amt,
+            c.dfrcmpnst_rate,
+            c.vat_rate,
+            c.rmrk,
+            s.scontrct_cntrct_no,
+            s.gcontrct_corp_no,
+            s.scontrct_corp_nm,
+            s.cntrct_bgn_date,
+            s.scontrct_indstryty_cd,
+            s.scontrct_corp_bsnsmn_no,
+            s.scontrct_ccnstty_cd,
+            d.cmn_cd_nm_krn as scontrct_ccnstty_cd_Nm,
+            i.cmn_cd_nm_krn as scontrct_indstryty_cd_Nm,
+            t.cmn_cd_nm_krn as cntrct_chg_type_Nm,
+            CASE
+                WHEN c.cntrct_chg_no = '1' THEN s.scontrct_cntrct_amt
+                ELSE a.cntrct_amt
+            END AS pre_cntrct_amt,
+            s.scontrct_cntrct_amt as fst_cntrct_amt,
+            n.cntrct_nm,
+            y.corp_nm
+        FROM
+            cn_subcontract_change c
+        LEFT JOIN cn_subcontract s
+            ON
+                c.cntrct_no = s.cntrct_no
+                AND c.scontrct_corp_id = s.scontrct_corp_id
+        LEFT JOIN sm_com_code d
+            ON
+                s.scontrct_ccnstty_cd = d.cmn_cd
+                AND d.cmn_grp_cd = #{cmnGrpCdWorkType}
+        LEFT JOIN sm_com_code i
+            ON
+                s.scontrct_indstryty_cd = i.cmn_cd
+                AND i.cmn_grp_cd = #{cmnGrpCdIndstryty}
+        LEFT JOIN sm_com_code t
+            ON
+                c.cntrct_chg_type = t.cmn_cd
+                AND t.cmn_grp_cd = #{cmnGrpCdCntrctChgType}
+        LEFT JOIN(
+            SELECT
+                cntrct_no,
+                scontrct_corp_id,
+                cntrct_chg_id,
+                cntrct_amt
+            FROM
+                cn_subcontract_change
+        ) a
+            ON
+                a.cntrct_no = c.cntrct_no
+                AND a.scontrct_corp_id = c.scontrct_corp_id
+                AND a.cntrct_chg_id = c.cntrct_chg_id - 1
+        LEFT JOIN cn_contract n
+            ON
+                n.cntrct_no = c.cntrct_no
+        LEFT JOIN cn_contract_company y
+            ON
+                y.cntrct_no = c.cntrct_no
+                AND s.gcontrct_corp_no = y.corp_no 
+        WHERE
+            c.cntrct_no = #{cntrctNo}
+            AND c.scontrct_corp_id = #{scontrctCorpId}
+            AND c.cntrct_chg_id = #{cntrctChgId}
+            AND c.dlt_yn = 'N'
+        ORDER BY 
+            c.rgst_dt desc
+        LIMIT 1;
+</select>
+
+
+<!-- 계약변경 수정 시 계약금액 업데이트 -->
+<update id="updateCntrctAmt" parameterType="subcontractInput"> 
+/*[kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.updateCntrctAmt][jhkim]*/
+    UPDATE  CN_SUBCONTRACT 
+    SET     SCONTRCT_CNTRCT_AMT =  
+                                    <if test="updateType == 'create'">
+                                    #{scontrctCntrctAmt}
+                                    </if>
+                                    <if test="updateType == 'update'">
+                                    CASE
+                                        WHEN (  SELECT  MAX(CNTRCT_CHG_ID)
+                                                FROM    CN_SUBCONTRACT_CHANGE 
+                                                WHERE   CNTRCT_NO = #{cntrctNo}
+                                                AND     SCONTRCT_CORP_ID = #{scontrctCorpId}
+                                                AND     DLT_YN = 'N' ) = #{cntrctChgId}
+                                        THEN #{scontrctCntrctAmt}
+                                        ELSE SCONTRCT_CNTRCT_AMT
+                                    END
+                                    </if>
+    WHERE   CNTRCT_NO = #{cntrctNo} AND SCONTRCT_CORP_ID = #{scontrctCorpId};
+</update>
+
+
+      <update id="deleteAllSubContract" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.deleteAllSubContract][jhkim]  */
+        UPDATE
+            CN_SUBCONTRACT
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+    </update>
+
+    <update id="deleteAllSubChange" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.subcontract.deleteAllSubChange][jhkim]  */
+        UPDATE
+            CN_SUBCONTRACT_CHANGE
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+    </update>
+
+</mapper>

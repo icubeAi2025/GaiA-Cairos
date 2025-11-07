@@ -1,0 +1,1620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus">
+
+    <select id="getDminstt" parameterType="map" resultType="dminstt">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getDminstt][leejw]  */
+        SELECT
+            CP.DMINSTT_CD ,
+            CP.DMINSTT_NM ,
+            SCC.ATTRBT_CD3 AS ATTRBT
+        FROM
+            CN_PROJECT CP
+        LEFT JOIN
+        	SM_COM_CODE SCC 
+        ON
+        	CP.DMINSTT_CD = SCC.CMN_CD
+        AND 
+            SCC.CMN_GRP_NO  = 179
+        WHERE 
+            CP.PJT_NO = #{cntrctNo};
+    </select>
+
+    <select id="getContract" parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContract][leejw]  */
+        SELECT
+                C.CNTRCT_NO,            
+                C.PJT_NO,          
+                C.CNTRCT_NM, 
+                C.MNG_CNTRCT_NO,   
+                C.CNTRCT_DIV_CD,
+                C.MAJOR_CNSTTY_CD,
+                SC1.CMN_CD_NM_KRN AS WORK_TYPE_NM_KRN,
+                C.CNTRCT_DIV_CD,
+                SC2.CMN_CD_NM_KRN AS CNTRCT_TYPE_NM_KRN,
+                C.CNTRCT_TYPE,
+                SC3.CMN_CD_NM_KRN AS CONTRACT_TYPE_NM_KRN,
+                C.CNTRCT_DATE,
+                C.GRNTY_DATE,
+                C.CBGN_DATE,
+                C.CCMPLT_DATE,
+                C.CON_PRD,
+                C.THIS_CCMPLT_DATE,
+                C.THIS_CON_PRD,
+                C.CNTRCT_COST,
+                C.THIS_CNTRCT_COST,
+                C.GRNTY_COST,
+                C.VAT_RATE,
+                C.DFRCMPNST_RATE,
+                C.CORP_NO,
+                C.BSNSMN_NO,
+                C.CORP_NM,
+                C.CORP_ADRS,
+                C.TEL_NO,
+                C.FAX_NO,
+                C.CORP_CEO,
+                C.OFCL_ID,
+                C.OFCL_NM
+            FROM
+                CN_CONTRACT C
+            LEFT JOIN SM_COM_CODE SC1
+                ON   C.MAJOR_CNSTTY_CD = SC1.CMN_CD
+            AND  
+                SC1.CMN_GRP_CD = #{workcode}
+            LEFT JOIN SM_COM_CODE SC2
+                ON   C.CNTRCT_DIV_CD = SC2.CMN_CD
+            AND  
+                SC2.CMN_GRP_CD = #{cntrctcode}
+            LEFT JOIN SM_COM_CODE SC3
+                ON   C.CNTRCT_TYPE = SC3.CMN_CD
+            AND  
+                SC3.CMN_GRP_CD = #{contractcode}
+            WHERE
+            C.CNTRCT_NO = #{cntrctNo}
+    </select>
+
+
+    <select id="getContractStatusList" parameterType="contractstatusListInput" resultType="contractstatusOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractStatusList][leejw]  */
+        SELECT
+            C.CNTRCT_NO,            
+            C.PJT_NO,               
+            C.MNG_CNTRCT_NO,        
+            C.CNTRCT_NM,            
+            SC.CMN_CD_NM_KRN AS MAJOR_CNSTTY_NM_KRN, 
+            C.BSNSMN_NO,            
+            C.CORP_NM,              
+            C.CNTRCT_DATE,
+            C.CNTRCT_COST,          
+            CC.CNTRCT_CHG_DATE AS LATEST_CNTRCT_CHG_DATE
+        FROM
+		    CN_CONTRACT C
+		        LEFT JOIN SM_COM_CODE SC
+		        ON   C.MAJOR_CNSTTY_CD = SC.CMN_CD
+		        AND  SC.CMN_GRP_CD = #{code}
+		        LEFT JOIN (
+		            SELECT 
+		                CNTRCT_NO,
+		                CNTRCT_CHG_DATE 
+		            FROM 
+		                CN_CONTRACT_CHANGE
+		            WHERE 
+		                DLT_YN = 'N' 
+		                AND last_chg_yn = 'Y'
+		        ) CC
+		        ON C.CNTRCT_NO = CC.CNTRCT_NO
+		WHERE
+            C.CNTRCT_NO ILIKE CONCAT (#{cntrctNo},'%')
+            AND C.DLT_YN = 'N'
+        ORDER BY C.RGST_DT;
+    </select>
+
+    <select id="getCntrctNoList" parameterType="String" resultType="String">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCntrctNoList][jhkim]  */
+        SELECT  CC.CNTRCT_NO
+        FROM    CN_CONTRACT CC
+        WHERE   CC.PJT_NO = #{pjtNo}
+        AND     CC.DLT_YN = 'N';
+    </select>
+
+    <select id="getContractCompanyList" parameterType="contractcompanyListInput" resultType="contractcompanyOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractCompanyList][leejw]  */
+        <![CDATA[
+        SELECT
+            C.CNTRCT_NO,
+            C.CNTRCT_ID,
+            C.BSNSMN_NO,
+            C.CORP_NM,
+            C.CORP_NO,
+            STRING_AGG(SC.CMN_CD_NM_KRN, ', ' ORDER BY SC.CMN_CD) AS CNSTTY_CD_NM_KRN,
+            C.TEL_NO,
+            C.CORP_CEO,
+            C.SHRE_RATE,
+            C.RPRS_YN,
+            C.OFCL_NM,
+            CC.PJT_NO
+        FROM
+            CN_CONTRACT_COMPANY C
+            JOIN CN_CONTRACT CC ON C.CNTRCT_NO = CC.CNTRCT_NO
+            LEFT JOIN LATERAL (
+                SELECT SC.CMN_CD_NM_KRN, SC.CMN_CD
+                FROM unnest(string_to_array(C.CNSTTY_CD, ',')) AS code
+                JOIN SM_COM_CODE SC
+                    ON SC.CMN_CD = TRIM(code)
+                AND SC.CMN_GRP_CD = #{code}
+            ) SC ON TRUE
+        WHERE
+            C.CNTRCT_NO = #{cntrctNo}
+            AND C.DLT_YN = 'N'
+        GROUP BY
+            C.CNTRCT_NO, C.CNTRCT_ID, C.BSNSMN_NO, C.CORP_NM, C.CORP_NO, 
+            C.TEL_NO, C.CORP_CEO, C.SHRE_RATE, C.RPRS_YN, C.OFCL_NM, CC.PJT_NO
+        ORDER BY
+            CASE WHEN C.RPRS_YN = 'Y' THEN 0 ELSE 1 END,
+            C.RGST_DT DESC;
+        ]]>
+    </select>
+
+    <select id="getContractCompany" parameterType="map" resultType="contractcompanyOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractCompany][leejw]  */
+        SELECT
+            C.CNTRCT_NO,
+            CC.CNTRCT_NM,
+            C.CNTRCT_ID,
+            C.CNSTTY_CD,
+            (
+                SELECT STRING_AGG(SCC.CMN_CD_NM_KRN, ', ')
+                FROM UNNEST(STRING_TO_ARRAY(C.CNSTTY_CD, ',')) AS CD(CMN_CD)
+                JOIN SM_COM_CODE SCC ON SCC.CMN_CD = CD.CMN_CD
+                WHERE SCC.CMN_GRP_CD = #{code}
+            ) AS WORK_TYPE_NM_KRN,
+            C.BSNSMN_NO,
+            C.CORP_NM,
+            C.CORP_NO,
+            C.TEL_NO,
+            C.FAX_NO,
+            C.CORP_ADRS,
+            C.CORP_CEO,
+            C.SHRE_RATE,
+            C.RPRS_YN,
+            C.OFCL_NM,
+            C.OFCL_ID
+        FROM
+            CN_CONTRACT_COMPANY C
+        JOIN CN_CONTRACT CC ON C.CNTRCT_NO = CC.CNTRCT_NO
+        WHERE
+            C.CNTRCT_ID = #{cntrctId}
+        AND C.CNTRCT_NO = #{cntrctNo};
+    </select>
+
+    <select id="getContractChangeList" parameterType="contractcompanyListInput" resultType="contractchangeOutputList">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractChangeList][leejw]  */
+        SELECT
+            CC.CNTRCT_CHG_ID,
+            CC.CNTRCT_NO,
+            CC.CNTRCT_PHASE,
+            CONCAT(CC.CNTRCT_CHG_NO, '회') AS CNTRCT_CHG_NO,
+            CC.CNTRCT_CHG_DATE,
+            CC.CHG_CBGN_DATE,
+            CC.CHG_THIS_CBGN_DATE,
+            CC.CNTRCT_AMT,
+            CONCAT(CONTRACT_START.CBGN_DATE, ' ~ ', CC.CHG_CBGN_DATE) AS CBGN_DATE_RANGE,
+            CC.CHG_CBGN_DATE,
+            SC.CMN_CD_NM_KRN AS CNTRCT_CHG_TYPE_NM_KRN,
+            CC.LAST_CHG_YN,
+            CC.RMRK,
+            TO_CHAR(CC.RGST_DT, 'FMYYYY-MM-DD') AS RGST_DT,
+            CNTRCT_DIV_CD,
+            C.PJT_NO
+        FROM
+            CN_CONTRACT_CHANGE CC
+        JOIN CN_CONTRACT C 
+            ON C.CNTRCT_NO = CC.CNTRCT_NO
+        LEFT JOIN SM_COM_CODE SC 
+            ON CC.CNTRCT_CHG_TYPE = SC.CMN_CD
+            AND SC.CMN_GRP_CD = #{code}
+        LEFT JOIN (
+            SELECT 
+                CNTRCT_NO, 
+                CBGN_DATE 
+            FROM 
+                CN_CONTRACT
+        ) AS CONTRACT_START
+            ON C.CNTRCT_NO = CONTRACT_START.CNTRCT_NO
+        WHERE
+            C.CNTRCT_NO = #{cntrctNo}
+            AND CC.DLT_YN = 'N'
+        ORDER BY
+            CC.CNTRCT_PHASE, 
+            CC.CNTRCT_CHG_NO ASC;
+    </select>
+
+    <select id="getContractChange" parameterType="map" resultType="ContractchangeOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractChange][leejw]  */
+        <![CDATA[
+            SELECT
+                A.CNTRCT_NO AS CNTRCT_NO,
+                A.CNTRCT_NM AS CNTRCT_NM,
+                A.CBGN_DATE AS CBGN_DATE,
+                A.MAJOR_CNSTTY_CD AS MAJOR_CNSTTY_CD,
+                TRIM(TRAILING '공사' FROM (
+                    SELECT CC.CMN_CD_NM_KRN
+                    FROM SM_COM_CODE CC
+                    WHERE CC.CMN_GRP_CD = #{majorcode}
+                    AND CC.CMN_CD = A.MAJOR_CNSTTY_CD
+                )) AS MAJOR_CNSTTY_NM,
+                A.CORP_NM AS CORP_NM,
+                A.MNG_CNTRCT_NO AS MNG_CNTRCT_NO,
+                A.CNTRCT_COST AS CNTRCT_COST,
+                A.THIS_CNTRCT_COST AS THIS_CNTRCT_COST,
+                A.CNTRCT_DIV_CD AS CNTRCT_DIV_CD,
+                COALESCE(CONCAT(B.CNTRCT_CHG_NO, '회'), '1회') AS CNTRCT_CHG_NO,
+                B.CNTRCT_PHASE AS CNTRCT_PHASE,
+                B.CNTRCT_CHG_TYPE AS CNTRCT_CHG_TYPE,
+                (SELECT CC.CMN_CD_NM_KRN
+                    FROM SM_COM_CODE CC
+                    WHERE CC.CMN_GRP_CD = #{chgcode}
+                    AND CC.CMN_CD = B.CNTRCT_CHG_TYPE) 
+                AS CNTRCT_CHG_TYPE_NM,
+                B.CHG_APPR_DATE AS CHG_APPR_DATE,
+                B.CNTRCT_CHG_DATE AS CNTRCT_CHG_DATE,
+                B.CHG_CBGN_DATE AS CHG_CBGN_DATE,
+                B.CHG_THIS_CBGN_DATE AS CHG_THIS_CBGN_DATE,
+                B.CNTRCT_AMT AS CNTRCT_AMT,
+                B.THIS_CNTRCT_AMT AS THIS_CNTRCT_AMT,
+                B.CHG_CON_PRD AS CHG_CON_PRD,
+                B.CHG_THIS_CON_PRD AS CHG_THIS_CON_PRD,
+                B.LAST_CHG_YN AS LAST_CHG_YN,
+                B.RMRK AS RMRK,
+                COALESCE((
+                    SELECT AA.CNTRCT_AMT
+                    FROM CN_CONTRACT_CHANGE AA
+                    WHERE AA.CNTRCT_NO = B.CNTRCT_NO
+                    AND AA.DLT_YN = 'N'
+                    AND AA.CNTRCT_PHASE = (
+                        SELECT CNTRCT_PHASE
+                        FROM CN_CONTRACT_CHANGE
+                        WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+                    )
+                    AND CAST(AA.CNTRCT_CHG_NO AS INTEGER) = (
+                        SELECT MAX(CAST(AAA.CNTRCT_CHG_NO AS INTEGER))
+                        FROM CN_CONTRACT_CHANGE AAA
+                        WHERE AAA.CNTRCT_NO = AA.CNTRCT_NO
+                            AND AAA.CNTRCT_PHASE = AA.CNTRCT_PHASE
+                            AND CAST(AAA.CNTRCT_CHG_NO AS INTEGER) < CAST(B.CNTRCT_CHG_NO AS INTEGER)
+                            AND AAA.DLT_YN = 'N'
+                    )
+                ), 0) AS CNTRCT_AMT_BEFORE,
+                COALESCE((
+                    SELECT AA.THIS_CNTRCT_AMT
+                    FROM CN_CONTRACT_CHANGE AA
+                    WHERE AA.CNTRCT_NO = B.CNTRCT_NO
+                    AND AA.DLT_YN = 'N'
+                    AND AA.CNTRCT_PHASE = (
+                        SELECT CNTRCT_PHASE
+                        FROM CN_CONTRACT_CHANGE
+                        WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+                    )
+                    AND CAST(AA.CNTRCT_CHG_NO AS INTEGER) = (
+                        SELECT MAX(CAST(AAA.CNTRCT_CHG_NO AS INTEGER))
+                        FROM CN_CONTRACT_CHANGE AAA
+                        WHERE AAA.CNTRCT_NO = AA.CNTRCT_NO
+                            AND AAA.CNTRCT_PHASE = AA.CNTRCT_PHASE
+                            AND CAST(AAA.CNTRCT_CHG_NO AS INTEGER) < CAST(B.CNTRCT_CHG_NO AS INTEGER)
+                            AND AAA.DLT_YN = 'N'
+                    )
+                ), 0) AS THIS_CNTRCT_AMT_BEFORE
+            FROM CN_CONTRACT A
+            LEFT JOIN (
+                SELECT
+                    A.CNTRCT_CHG_NO,
+                    A.CNTRCT_NO,
+                    A.CNTRCT_PHASE,
+                    A.CNTRCT_CHG_TYPE,
+                    A.CHG_APPR_DATE,
+                    A.CNTRCT_CHG_DATE,
+                    A.CHG_CBGN_DATE,
+                    A.CHG_THIS_CBGN_DATE,
+                    A.CNTRCT_AMT,
+                    A.THIS_CNTRCT_AMT,
+                    A.CHG_CON_PRD,
+                    A.CHG_THIS_CON_PRD,
+                    A.LAST_CHG_YN,
+                    A.RMRK
+                FROM CN_CONTRACT_CHANGE A
+                WHERE A.CNTRCT_NO = #{cntrctNo}
+                AND A.CNTRCT_CHG_ID = #{cntrctChgId}
+                AND A.DLT_YN = 'N'
+            ) B ON A.CNTRCT_NO = B.CNTRCT_NO
+            WHERE A.CNTRCT_NO = #{cntrctNo};
+        ]]>
+    </select>
+
+    <select id="getContractChangeAdd" parameterType="map" resultType="contractchangeAddOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractChangeAdd][leejw]  */
+         WITH LAST_CHANGE_NO AS (
+                SELECT  CNTRCT_NO,
+                        COALESCE(MAX(CAST(CNTRCT_CHG_NO AS INTEGER)), 0) + 1 AS NEXT_CHG_NO
+                FROM    CN_CONTRACT_CHANGE
+                WHERE   DLT_YN = 'N'
+                <if test="cntrctPhase != 0">
+                AND     CNTRCT_PHASE = #{cntrctPhase}
+                </if>
+                GROUP BY CNTRCT_NO
+        ),
+        PREV_CHANGE AS (
+                SELECT  A.CNTRCT_NO,
+                        COALESCE(AA.CNTRCT_AMT, 0) AS CNTRCT_AMT_BEFORE,
+                        COALESCE(AA.THIS_CNTRCT_AMT, 0) AS THIS_CNTRCT_AMT_BEFORE,
+                        TO_CHAR((CAST(AA.CHG_THIS_CBGN_DATE AS DATE) + INTERVAL '1 DAY'), 'YYYY-MM-DD') AS CHG_THIS_CBGN_DATE
+                FROM CN_CONTRACT_CHANGE A
+                       LEFT JOIN LATERAL (
+                           SELECT *
+                           FROM (
+                               SELECT
+                                       C.CNTRCT_NO,
+                                       C.CNTRCT_CHG_NO,
+                                       C.CNTRCT_PHASE,
+                                       C.CNTRCT_AMT,
+                                       C.THIS_CNTRCT_AMT,
+                                       C.CHG_THIS_CBGN_DATE
+                               FROM     CN_CONTRACT_CHANGE C
+                               WHERE    C.CNTRCT_NO = #{cntrctNo}
+                               AND      C.DLT_YN = 'N'
+                           <if test="cntrctPhase != 0">
+                               AND      C.CNTRCT_PHASE = #{cntrctPhase}
+                           </if>
+                           UNION ALL
+                               SELECT
+                                       C.CNTRCT_NO,
+                                       C.CNTRCT_CHG_NO,
+                                       C.CNTRCT_PHASE,
+                                       C.CNTRCT_AMT,
+                                       C.THIS_CNTRCT_AMT,
+                                       C.CHG_THIS_CBGN_DATE
+                               FROM    CN_CONTRACT_CHANGE C
+                               WHERE   C.CNTRCT_NO = #{cntrctNo}
+                               AND     C.DLT_YN = 'N'
+                           <if test="cntrctPhase != 0">
+                               AND     C.CNTRCT_PHASE = #{cntrctPhase} - 1
+                           </if>
+                           ) merged
+                           ORDER BY CNTRCT_PHASE DESC, CAST(CNTRCT_CHG_NO AS INTEGER) DESC
+                           LIMIT 1
+                       ) AA ON TRUE
+                WHERE   A.DLT_YN = 'N'
+                AND     A.CNTRCT_NO = #{cntrctNo}
+                <if test="cntrctPhase != 0">
+                AND     A.CNTRCT_PHASE = #{cntrctPhase} - 1
+                </if>
+                GROUP BY 
+                        A.CNTRCT_NO, AA.CNTRCT_AMT, AA.THIS_CNTRCT_AMT, AA.CHG_THIS_CBGN_DATE
+        )
+        SELECT
+            A.CNTRCT_NO,
+            A.CNTRCT_NM,
+            TO_CHAR(A.CBGN_DATE::TIMESTAMP, 'YYYY-MM-DD') AS CBGN_DATE,
+            A.MAJOR_CNSTTY_CD,
+            TRIM(TRAILING '공사' FROM CC.CMN_CD_NM_KRN) AS MAJOR_CNSTTY_NM,
+            A.CORP_NM,
+            A.MNG_CNTRCT_NO,
+            A.CNTRCT_COST,
+            A.THIS_CNTRCT_COST,
+            A.CNTRCT_DIV_CD,
+            COALESCE(LC.NEXT_CHG_NO,1) || '회' AS CNTRCT_CHG_NO,
+            #{cntrctPhase} AS CNTRCT_PHASE,
+            COALESCE(PC.CNTRCT_AMT_BEFORE, 0) AS CNTRCT_AMT_BEFORE,
+            COALESCE(PC.THIS_CNTRCT_AMT_BEFORE, 0) AS THIS_CNTRCT_AMT_BEFORE,
+            COALESCE(PC.CHG_THIS_CBGN_DATE, TO_CHAR(A.CBGN_DATE::TIMESTAMP, 'YYYY-MM-DD')) AS THIS_CBGN_DATE
+        FROM CN_CONTRACT A
+        LEFT JOIN PREV_CHANGE PC ON A.CNTRCT_NO = PC.CNTRCT_NO
+        LEFT JOIN LAST_CHANGE_NO LC ON A.CNTRCT_NO = LC.CNTRCT_NO
+        LEFT JOIN SM_COM_CODE CC
+            ON CC.CMN_GRP_CD = '19a8bb53-74b4-405a-8d91-2b38555fc7d9'
+            AND CC.CMN_CD = A.MAJOR_CNSTTY_CD
+        WHERE A.CNTRCT_NO = #{cntrctNo};
+    </select>
+
+    <update id="deleteAllCompany" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deleteAllCompany][jhkim]  */
+        UPDATE
+            CN_CONTRACT_COMPANY
+        SET
+            DLT_ID = #{usrId} ,
+                    DLT_YN = 'Y',
+                    DLT_DT = NOW()
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+    </update>
+
+    <update id="deleteAllChange" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deleteAllChange][jhkim]  */
+        UPDATE
+            CN_CONTRACT_CHANGE
+        SET
+            DLT_ID = #{usrId} ,
+            DLT_YN = 'Y',
+            DLT_DT = NOW()
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+    </update>
+
+    <select id="getContractBidList" parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractBidList][leejw]  */
+        WITH RECURSIVE CODE_LIST(CNTRCT_DCNSTTY_SNO, PRDNM, UP_CNTRCT_DCNSTTY_SNO, CST_CALC_MTHD_NM, DEPTH, PATH, CYCLE, CBS_SNO, SPEC, UNIT, QTY, MTRLCST_UPRC, MTRLCST_AMT, LBRCST_UPRC, LBRCST_AMT, GNRLEXPNS_UPRC, GNRLEXPNS_AMT, SUM_UPRC, SUM_AMT, RMRK) AS (
+            SELECT (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CASE WHEN UP_CNTRCT_DCNSTTY_SNO = 0 THEN '' ELSE CAST(UP_CNTRCT_DCNSTTY_SNO AS TEXT) END)
+                , A.PRDNM
+                , 1
+                , ARRAY[(CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))]
+                , FALSE
+                , A.CBS_SNO
+                , A.SPEC
+                , A.UNIT
+                , A.QTY
+                , A.MTRLCST_UPRC
+                , A.MTRLCST_AMT
+                , A.LBRCST_UPRC
+                , A.LBRCST_AMT
+                , A.GNRLEXPNS_UPRC
+                , GNRLEXPNS_AMT
+                , A.SUM_UPRC
+                , A.SUM_AMT
+                , A.RMRK
+            <if test="type == 'bid'"> FROM CN_CONTRACT_BID A </if>
+            <if test="type == 'history'"> FROM CN_CONTRACT_BID_HISTORY A </if>
+            WHERE CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT) = '0'
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND A.EXPNSS_YN = 'N' 
+            UNION ALL
+            SELECT (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , B.DEPTH + 1
+                , ARRAY_APPEND(B.PATH, (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT)))
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT)) = ANY(B.PATH)
+                , A.CBS_SNO
+                , A.SPEC
+                , A.UNIT
+                , A.QTY
+                , A.MTRLCST_UPRC
+                , A.MTRLCST_AMT
+                , A.LBRCST_UPRC
+                , A.LBRCST_AMT
+                , A.GNRLEXPNS_UPRC
+                , A.GNRLEXPNS_AMT
+                , A.SUM_UPRC
+                , A.SUM_AMT
+                , A.RMRK
+
+            <if test="type == 'bid'">
+            FROM CN_CONTRACT_BID A, CODE_LIST B
+            </if>
+            <if test="type == 'history'">
+            FROM CN_CONTRACT_BID_HISTORY A, CODE_LIST B
+            </if>
+
+            WHERE (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT)) = B.CNTRCT_DCNSTTY_SNO
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND NOT CYCLE
+            AND A.EXPNSS_YN = 'N' 
+        )
+        SELECT CNTRCT_DCNSTTY_SNO
+            , LPAD('', DEPTH) || PRDNM AS PRDNM
+            , UP_CNTRCT_DCNSTTY_SNO
+            , DEPTH AS A_MENU_LEVEL
+            , PATH
+            , CBS_SNO
+            , SPEC
+            , UNIT
+            , QTY
+            , MTRLCST_UPRC
+            , MTRLCST_AMT
+            , LBRCST_UPRC
+            , LBRCST_AMT
+            , GNRLEXPNS_UPRC
+            , GNRLEXPNS_AMT
+            , SUM_UPRC
+            , SUM_AMT
+            , RMRK
+        FROM CODE_LIST
+        ORDER BY CBS_SNO, a_menu_level;
+    </select>
+
+    <select id="getContractBidCost" parameterType="map" resultType="map">
+	    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractBidCost][leejw]  */
+        SELECT
+            TO_CHAR(SUM(SUM_AMT), 'FM999,999,999,999') AS SUM
+        FROM
+            CN_CONTRACT_BID CCB
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+            AND EXPNSS_YN = 'N'
+            AND UP_CNTRCT_DCNSTTY_SNO = 0;
+    </select>
+
+    <select id="getCalculatorList" parameterType="String" resultType="map">
+	    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCalculatorList][leejw]  */
+        WITH RECURSIVE CODE_LIST(CST_CALC_IT_CD, CST_CALC_IT_NM, UP_CST_CALC_IT_CD, CST_CALC_MTHD_NM, DEPTH, PATH, CYCLE) AS (
+            SELECT A.CST_CALC_IT_CD,
+                A.CST_CALC_IT_NM,
+                A.UP_CST_CALC_IT_CD,
+                A.CST_CALC_MTHD_NM,
+                1,
+                ARRAY[A.CST_CALC_IT_CD::TEXT],
+                FALSE,
+                A.DSPLY_ORDR,
+                A.OVRHDCST_PT,
+                A.DRCNSTCOST_CMPR_PT,
+                A.COST_AM
+            FROM CN_CONTRACT_CALCULATOR A
+            WHERE A.UP_CST_CALC_IT_CD = '' AND A.CNTRCT_NO = #{cntrctNo}
+            UNION ALL
+            SELECT A.CST_CALC_IT_CD,
+                A.CST_CALC_IT_NM,
+                A.UP_CST_CALC_IT_CD,
+                A.CST_CALC_MTHD_NM,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, A.CST_CALC_IT_CD::TEXT),
+                A.CST_CALC_IT_CD = ANY(B.PATH),
+                A.DSPLY_ORDR,
+                A.OVRHDCST_PT,
+                A.DRCNSTCOST_CMPR_PT,
+                A.COST_AM
+            FROM CN_CONTRACT_CALCULATOR A, CODE_LIST B 
+            WHERE A.UP_CST_CALC_IT_CD = B.CST_CALC_IT_CD
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND NOT CYCLE
+        )
+        SELECT CST_CALC_IT_CD,
+            LPAD('', DEPTH) || CST_CALC_IT_NM AS CST_CALC_IT_NM,
+            UP_CST_CALC_IT_CD,
+            LPAD('', DEPTH) || CST_CALC_MTHD_NM AS CST_CALC_MTHD_NM,
+            DEPTH AS A_MENU_LEVEL,
+            PATH,
+            DSPLY_ORDR,
+            COALESCE(OVRHDCST_PT, 0) AS OVRHDCST_PT,
+            COALESCE(DRCNSTCOST_CMPR_PT, 0) AS DRCNSTCOST_CMPR_PT,
+            COALESCE(COST_AM, 0) AS COST_AM
+        FROM CODE_LIST
+        ORDER BY DSPLY_ORDR, PATH;
+    </select>
+
+    <select id="getContractBidSearch" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractBidSearch][leejw]  */
+        SELECT C.MTRLCST_UPRC, C.MTRLCST_AMT, C.LBRCST_UPRC, C.LBRCST_AMT, 
+               C.GNRLEXPNS_UPRC, C.GNRLEXPNS_AMT, C.SUM_UPRC, C.SUM_AMT, 
+               C.CBS_SNO, C.PRDNM, C.SPEC, C.UNIT, C.QTY, C.RMRK 
+        <choose>
+            <when test="type == 'history'">FROM CN_CONTRACT_BID_HISTORY C</when>
+            <otherwise>FROM CN_CONTRACT_BID C</otherwise>
+        </choose>
+
+        WHERE C.CNTRCT_NO = #{cntrctNo} 
+            AND (C.PRDNM LIKE '%' || #{searchValue} || '%' OR C.SPEC LIKE '%' || #{searchValue} || '%') 
+            AND C.EXPNSS_YN = 'N'
+        ORDER BY C.CBS_SNO;
+    </select>
+
+    <select id="getContractList" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractList][leejw]  */
+        SELECT CC.* , SCC.CMN_CD_NM_KRN AS CMN_CD_NM_KRN
+	    FROM CN_CONTRACT CC
+	    LEFT JOIN SM_COM_CODE SCC ON CC.MAJOR_CNSTTY_CD = SCC.CMN_CD
+	    WHERE 1 = 1
+		  AND CC.PJT_NO = #{pjtNo}
+	      AND CC.DLT_YN = 'N'
+	      AND SCC.CMN_GRP_CD = #{code}
+        ORDER BY SCC.CMN_CD_NM_KRN;
+    </select>
+
+    <select id="getCnsttyCdList" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCnsttyCdList][leejw]  */
+        SELECT SC.CMN_CD , 
+               SC.CMN_CD_NM_KRN 
+        FROM   SM_COM_CODE SC 
+        WHERE  CMN_GRP_CD = #{code}
+        ORDER BY SC.CMN_CD_DSPLY_ORDER;
+    </select>
+
+    <update id="updateDeleteAllContract" parameterType="input">
+            /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.updateDeleteAllContract][jhkim] */
+            UPDATE
+            	CN_CONTRACT
+            SET
+            	DLT_ID = #{usrId} ,
+            	DLT_YN = 'Y',
+            	DLT_DT = NOW()
+            WHERE
+            	PJT_NO = #{pjtNo}
+    </update>
+
+    <update id="contractProcedure" parameterType="contractInput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.contractProcedure]  */
+        CALL sm_department_dc_navigation_set
+        (
+            #{pInserttype},
+            #{pPjttype},
+            #{pPjtno},
+            #{pCntrctno},
+            #{pItemname},
+            #{pItemdesc},
+            #{pCorpno}
+        )
+    </update>
+
+    <!-- 계약세부공종코드 조회 -->
+    <select id="getCntrctCnstType" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCntrctCnstType][choisr]  */
+        SELECT CMN_CD, CMN_CD_NM_KRN FROM SM_COM_CODE
+        WHERE CMN_GRP_CD = (SELECT CMN_GRP_CD FROM SM_COM_CODE_GROUP where CMN_CD = 'CONS')
+        AND USE_YN = 'Y'
+        AND DLT_YN = 'N'
+    </select>
+
+    <!-- delete / deleteCtrDtlsttOld -->
+    <delete id="deleteContractBidHistory" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deleteContractBidHistory][choisr]  */
+        DELETE FROM CN_CONTRACT_BID_HISTORY WHERE CNTRCT_NO = #{CNTRCT_NO}
+    </delete>
+
+    <delete id="deleteContractBid" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deleteContractBid][choisr]  */
+        DELETE FROM CN_CONTRACT_BID WHERE CNTRCT_NO = #{CNTRCT_NO}
+    </delete>
+
+    <!-- delete / deletePlandtlstt / 설계내역서 삭제 (C3R 관련 테이블) 확인 -->
+    <delete id="deletePlandtlstt" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deletePlandtlstt][choisr]  */
+
+        /* [추가] 공정_QDB 자원 삭제 */
+        DELETE FROM PR_QDB_RESOURCE WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* [추가] 공정_QDB 삭제 */
+        DELETE FROM PR_QDB WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* [추가] 원가_공종자원 삭제 */
+        DELETE FROM CT_CBS_RESOURCE WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_세부공종 삭제 */
+        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_공종 삭제 */
+        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+
+        /* 원가_자재 삭제 */
+        /* 원가_노무 삭제 */
+        /* 원가_경비 삭제 */
+        DELETE FROM CT_RESOURCE WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_일위대가상세 삭제 */
+        DELETE FROM CT_UNIT_COST_DETAIL WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_일위대가 삭제 */
+        DELETE FROM CT_UNIT_COST WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_QDB 삭제*/
+        DELETE FROM CT_QDB WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_WBS 삭제 */
+        DELETE FROM CT_WBS WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+        /* 원가_WBS작업분류 삭제 */
+        DELETE FROM CT_WBS_OPER_CLSS WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+        /* 원가_WBS정보 삭제 */
+        DELETE FROM CT_WBS_INFO WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+
+        /* 원가_임시공사자료 오류 */
+        DELETE FROM CT_CNSTWK_TMP_DTA_ERR WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+        /* 원가_임시공사자료 */
+        DELETE FROM CT_CNSTWK_TMP_DTA WHERE CNTRCT_CHG_ID IN
+        (SELECT CNTRCT_CHG_ID FROM CN_CONTRACT_CHANGE WHERE CNTRCT_NO = #{CNTRCT_NO} AND DLT_YN = 'N' /* AND LAST_CHG_YN = 'Y' */);
+    </delete>
+
+
+    <!-- insert / insertCtrDtlsttThstry / 계약내역서 전체이력 선행 등록 -->
+    <insert id="insertContractBid"  parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.insertContractBid][choisr]  */
+        INSERT INTO CN_CONTRACT_BID_HISTORY (
+            CNTRCT_NO,
+            CBS_SNO,
+            EXPNSS_YN,
+            CNTRCT_UNIT_CNSTWK_SNO,
+            CNTRCT_DCNSTTY_SNO,
+            UP_CNTRCT_DCNSTTY_SNO,
+            CST_CNSTTY_SNO_VAL,
+            EXPNSS_SNO,
+            CST_BILL_LCT_CD,
+            EXPNSS_KIND_CD,
+            EXPNSS_BSCRT_PCT,
+            DRCT_CNSTCST_PCT,
+            EXPNSS_CALCFRMLA_CD,
+            CNSTTY_DTLS_DIV_CD,
+            DCNSTTY_LVL_NUM,
+            PRDNM,
+            SPEC,
+            UNIT,
+            QTY,
+            MTRLCST_UPRC,
+            LBRCST_UPRC,
+            GNRLEXPNS_UPRC,
+            SUM_UPRC,
+            MTRLCST_AMT,
+            LBRCST_AMT,
+            GNRLEXPNS_AMT,
+            SUM_AMT,
+            RMRK,
+            DCNSTTY_AMT_TY_CD,
+            STD_MRKT_UPRC_CD,
+            CST_RSCE_CD,
+            BUYTAX_OBJ_YN,
+            CST_RSCE_TY_CD,
+            OQTY_CHG_PERMSN_YN,
+            CST_UNIT_CNSTWK_NO,
+            CST_CNSTTY_SNO,
+            CST_DCNSTTY_SNO,
+            DLT_YN,
+            RGST_DT,
+            RGSTR_ID,
+            CHG_DT,
+            CHG_ID,
+            DLT_DT,
+            DLT_ID,
+            CNTRCT_CNST_TYPE
+        ) VALUES
+        <foreach collection="regList" item="it" separator=",">
+        (
+            #{it.CNTRCT_NO},
+            #{it.CBS_SNO},
+            #{it.EXPNSS_YN},
+            #{it.CNTRCT_UNIT_CNSTWK_SNO}::NUMERIC,
+            #{it.CNTRCT_DCNSTTY_SNO}::NUMERIC,
+            #{it.UP_CNTRCT_DCNSTTY_SNO}::NUMERIC,
+            #{it.CST_CNSTTY_SNO_VAL}::NUMERIC,
+            #{it.EXPNSS_SNO}::NUMERIC,
+            #{it.CST_BILL_LCT_CD},
+            #{it.EXPNSS_KIND_CD},
+            #{it.EXPNSS_BSCRT_PCT}::NUMERIC,
+            #{it.DRCT_CNSTCST_PCT}::NUMERIC,
+            #{it.EXPNSS_CALCFRMLA_CD},
+            #{it.CNSTTY_DTLS_DIV_CD},
+            #{it.DCNSTTY_LVL_NUM}::NUMERIC,
+            #{it.PRDNM},
+            #{it.SPEC},
+            #{it.UNIT},
+            #{it.QTY}::NUMERIC,
+            #{it.MTRLCST_UPRC}::NUMERIC,
+            #{it.LBRCST_UPRC}::NUMERIC,
+            #{it.GNRLEXPNS_UPRC}::NUMERIC,
+            #{it.SUM_UPRC}::NUMERIC,
+            #{it.MTRLCST_AMT}::NUMERIC,
+            #{it.LBRCST_AMT}::NUMERIC,
+            #{it.GNRLEXPNS_AMT}::NUMERIC,
+            #{it.SUM_AMT}::NUMERIC,
+            #{it.RMRK},
+            #{it.DCNSTTY_AMT_TY_CD},
+            #{it.STD_MRKT_UPRC_CD},
+            #{it.CST_RSCE_CD},
+            #{it.BUYTAX_OBJ_YN},
+            #{it.CST_RSCE_TY_CD},
+            #{it.OQTY_CHG_PERMSN_YN},
+            #{it.CST_UNIT_CNSTWK_NO},
+            #{it.CST_CNSTTY_SNO}::NUMERIC,
+            #{it.CST_DCNSTTY_SNO}::NUMERIC,
+            'N',
+            NOW(),
+            #{it.SYSTEM_ID},
+            NOW(),
+            #{it.SYSTEM_ID},
+            NULL,
+            NULL,
+            #{it.CNTRCT_CNST_TYPE}
+        )
+        </foreach>
+    </insert>
+
+    <!-- insert / copyOrdToCtrDtlstt / 차수 계약내역서 등록 후 계약내역서에 복사-->
+    <insert id="copyToContractBid" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.copyToContractBid][choisr]  */
+        INSERT INTO CN_CONTRACT_BID (
+            CNTRCT_NO,
+            CBS_SNO,
+            EXPNSS_YN,
+            CNTRCT_UNIT_CNSTWK_SNO,
+            CNTRCT_DCNSTTY_SNO,
+            UP_CNTRCT_DCNSTTY_SNO,
+            CST_CNSTTY_SNO_VAL,
+            EXPNSS_SNO,
+            CST_BILL_LCT_CD,
+            EXPNSS_KIND_CD,
+            EXPNSS_BSCRT_PCT,
+            DRCT_CNSTCST_PCT,
+            EXPNSS_CALCFRMLA_CD,
+            CNSTTY_DTLS_DIV_CD,
+            DCNSTTY_LVL_NUM,
+            PRDNM,
+            SPEC,
+            UNIT,
+            QTY,
+            MTRLCST_UPRC,
+            LBRCST_UPRC,
+            GNRLEXPNS_UPRC,
+            SUM_UPRC,
+            MTRLCST_AMT,
+            LBRCST_AMT,
+            GNRLEXPNS_AMT,
+            SUM_AMT,
+            RMRK,
+            DCNSTTY_AMT_TY_CD,
+            STD_MRKT_UPRC_CD,
+            CST_RSCE_CD,
+            BUYTAX_OBJ_YN,
+            CST_RSCE_TY_CD,
+            OQTY_CHG_PERMSN_YN,
+            CST_UNIT_CNSTWK_NO,
+            CST_CNSTTY_SNO,
+            CST_DCNSTTY_SNO,
+            DLT_YN,
+            RGST_DT,
+            RGSTR_ID,
+            CHG_DT,
+            CHG_ID,
+            DLT_DT,
+            DLT_ID,
+            CNTRCT_CNST_TYPE
+        )
+        SELECT
+            CNTRCT_NO,
+            CBS_SNO,
+            EXPNSS_YN,
+            CNTRCT_UNIT_CNSTWK_SNO,
+            CNTRCT_DCNSTTY_SNO,
+            UP_CNTRCT_DCNSTTY_SNO,
+            CST_CNSTTY_SNO_VAL,
+            EXPNSS_SNO,
+            CST_BILL_LCT_CD,
+            EXPNSS_KIND_CD,
+            EXPNSS_BSCRT_PCT,
+            DRCT_CNSTCST_PCT,
+            EXPNSS_CALCFRMLA_CD,
+            CNSTTY_DTLS_DIV_CD,
+            DCNSTTY_LVL_NUM,
+            PRDNM,
+            SPEC,
+            UNIT,
+            QTY,
+            MTRLCST_UPRC,
+            LBRCST_UPRC,
+            GNRLEXPNS_UPRC,
+            SUM_UPRC,
+            MTRLCST_AMT,
+            LBRCST_AMT,
+            GNRLEXPNS_AMT,
+            SUM_AMT,
+            RMRK,
+            DCNSTTY_AMT_TY_CD,
+            STD_MRKT_UPRC_CD,
+            CST_RSCE_CD,
+            BUYTAX_OBJ_YN,
+            CST_RSCE_TY_CD,
+            OQTY_CHG_PERMSN_YN,
+            CST_UNIT_CNSTWK_NO,
+            CST_CNSTTY_SNO,
+            CST_DCNSTTY_SNO,
+            DLT_YN,
+            RGST_DT,
+            RGSTR_ID,
+            CHG_DT,
+            CHG_ID,
+            DLT_DT,
+            DLT_ID,
+            CNTRCT_CNST_TYPE
+        FROM CN_CONTRACT_BID_HISTORY
+        WHERE CNTRCT_NO = #{CNTRCT_NO}
+        ORDER BY CBS_SNO
+        ON CONFLICT (CNTRCT_NO, CBS_SNO)
+        DO UPDATE SET
+            EXPNSS_YN = EXCLUDED.EXPNSS_YN,
+            CNTRCT_UNIT_CNSTWK_SNO = EXCLUDED.CNTRCT_UNIT_CNSTWK_SNO,
+            CNTRCT_DCNSTTY_SNO = EXCLUDED.CNTRCT_DCNSTTY_SNO,
+            UP_CNTRCT_DCNSTTY_SNO = EXCLUDED.UP_CNTRCT_DCNSTTY_SNO,
+            CST_CNSTTY_SNO_VAL = EXCLUDED.CST_CNSTTY_SNO_VAL,
+            EXPNSS_SNO = EXCLUDED.EXPNSS_SNO,
+            CST_BILL_LCT_CD = EXCLUDED.CST_BILL_LCT_CD,
+            EXPNSS_KIND_CD = EXCLUDED.EXPNSS_KIND_CD,
+            EXPNSS_BSCRT_PCT = EXCLUDED.EXPNSS_BSCRT_PCT,
+            DRCT_CNSTCST_PCT = EXCLUDED.DRCT_CNSTCST_PCT,
+            EXPNSS_CALCFRMLA_CD = EXCLUDED.EXPNSS_CALCFRMLA_CD,
+            CNSTTY_DTLS_DIV_CD = EXCLUDED.CNSTTY_DTLS_DIV_CD,
+            DCNSTTY_LVL_NUM = EXCLUDED.DCNSTTY_LVL_NUM,
+            PRDNM = EXCLUDED.PRDNM,
+            SPEC = EXCLUDED.SPEC,
+            UNIT = EXCLUDED.UNIT,
+            QTY = EXCLUDED.QTY,
+            MTRLCST_UPRC = EXCLUDED.MTRLCST_UPRC,
+            LBRCST_UPRC = EXCLUDED.LBRCST_UPRC,
+            GNRLEXPNS_UPRC = EXCLUDED.GNRLEXPNS_UPRC,
+            SUM_UPRC = EXCLUDED.SUM_UPRC,
+            MTRLCST_AMT = EXCLUDED.MTRLCST_AMT,
+            LBRCST_AMT = EXCLUDED.LBRCST_AMT,
+            GNRLEXPNS_AMT = EXCLUDED.GNRLEXPNS_AMT,
+            SUM_AMT = EXCLUDED.SUM_AMT,
+            RMRK = EXCLUDED.RMRK,
+            DCNSTTY_AMT_TY_CD = EXCLUDED.DCNSTTY_AMT_TY_CD,
+            STD_MRKT_UPRC_CD = EXCLUDED.STD_MRKT_UPRC_CD,
+            CST_RSCE_CD = EXCLUDED.CST_RSCE_CD,
+            BUYTAX_OBJ_YN = EXCLUDED.BUYTAX_OBJ_YN,
+            CST_RSCE_TY_CD = EXCLUDED.CST_RSCE_TY_CD,
+            OQTY_CHG_PERMSN_YN = EXCLUDED.OQTY_CHG_PERMSN_YN,
+            CST_UNIT_CNSTWK_NO = EXCLUDED.CST_UNIT_CNSTWK_NO,
+            CST_CNSTTY_SNO = EXCLUDED.CST_CNSTTY_SNO,
+            CST_DCNSTTY_SNO = EXCLUDED.CST_DCNSTTY_SNO,
+            CHG_DT = EXCLUDED.CHG_DT,
+            CHG_ID = EXCLUDED.CHG_ID,
+            CNTRCT_CNST_TYPE = EXCLUDED.CNTRCT_CNST_TYPE
+    </insert>
+
+    <!-- 원가계산서 업무 -->
+    <!-- 원가계산서 코드 리스트 목록 -->
+    <select id="getContractCalculatorCodeList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractCalculatorCodeList][choisr]  */
+        WITH RECURSIVE CODE_HIERARCHY AS (
+            SELECT
+                CMN_CD_DSPLY_ORDER, CMN_GRP_NO, CMN_GRP_CD, CMN_CD_NO, CMN_CD, CMN_CD_NM_KRN,
+                1 AS LEVEL, ATTRBT_CD1, ATTRBT_CD2, ATTRBT_CD3
+            FROM SM_COM_CODE
+            WHERE CMN_GRP_CD = (SELECT CMN_GRP_CD FROM SM_COM_CODE_GROUP WHERE CMN_CD = 'CBLIT')
+            AND ATTRBT_CD1 IS NULL
+
+            UNION ALL
+
+            SELECT
+                P.CMN_CD_DSPLY_ORDER, P.CMN_GRP_NO, P.CMN_GRP_CD, P.CMN_CD_NO, P.CMN_CD, P.CMN_CD_NM_KRN,
+                CH.LEVEL + 1, P.ATTRBT_CD1, P.ATTRBT_CD2, P.ATTRBT_CD3
+            FROM SM_COM_CODE P
+            INNER JOIN CODE_HIERARCHY CH ON P.ATTRBT_CD1 = CH.CMN_CD
+            WHERE P.CMN_GRP_CD = (SELECT CMN_GRP_CD FROM SM_COM_CODE_GROUP WHERE CMN_CD = 'CBLIT')
+        )
+        SELECT
+            CMN_CD AS CST_CALC_IT_CD,
+            ATTRBT_CD1 UP_CST_CALC_IT_CD,
+            CMN_CD_DSPLY_ORDER AS DSPLY_ORDR,
+            LEVEL,
+            CMN_CD_NM_KRN AS CST_CALC_IT_NM,
+            ATTRBT_CD2 CST_CALC_MTHD_NM,
+            ATTRBT_CD3 CST_CALC_MTHD_NOMFRM_CNTNTS
+        FROM CODE_HIERARCHY ORDER BY CMN_CD_DSPLY_ORDER;
+    </select>
+
+    <!-- 원가계산서_제경비 목록 -->
+    <select id="getExpnssList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getExpnssList][choisr]  */
+        SELECT
+            CNTRCT_NO,
+            EXPNSS_SNO,
+            EXPNSS_YN,
+            CST_BILL_LCT_CD,
+            EXPNSS_KIND_CD,
+            EXPNSS_BSCRT_PCT,
+            DRCT_CNSTCST_PCT,
+            EXPNSS_CALCFRMLA_CD,
+            PRDNM AS EXPNSS_NM,
+            SUM_AMT AS DSGN_EXPNSS,
+            DCNSTTY_AMT_TY_CD
+        FROM CN_CONTRACT_BID
+        WHERE 1=1
+            AND CNTRCT_NO = #{CNTRCT_NO}
+            AND EXPNSS_SNO IS NOT NULL
+        ORDER BY CST_BILL_LCT_CD, EXPNSS_SNO
+    </select>
+
+    <!-- 원가계산서_내역구분별 목록 -->
+    <select id="getDatcAmtList" parameterType="hashMap" resultType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getDatcAmtList][choisr]  */
+        SELECT
+            DCNSTTY_AMT_TY_CD,
+            COALESCE(SUM(MTRLCST_AMT), 0) AS DSGN_MTRLCST,              -- 직접재료비
+            COALESCE(SUM(LBRCST_AMT), 0) AS DSGN_LBRCST,                -- 직접노무비
+            COALESCE(SUM(GNRLEXPNS_AMT), 0) AS DSGN_GNRLEXPNS,          -- 산출경비
+            COALESCE(SUM(SUM_AMT), 0) AS DSGN_SUM_AMT,
+            CASE WHEN DCNSTTY_AMT_TY_CD IN ('0', '7', '19', '20') THEN 'Y' ELSE 'N' END AS DIR_YN,
+            CASE WHEN DCNSTTY_AMT_TY_CD IN ('0', '7', '19', '20') THEN 'Y' ELSE 'N' END AS SOON_YN,
+            CASE WHEN DCNSTTY_AMT_TY_CD IN ('0', '4', '5', '7', '19', '20') THEN 'Y' ELSE 'N' END AS COST_YN,
+            CASE WHEN DCNSTTY_AMT_TY_CD IN ('4', '5') THEN 'Y' ELSE 'N' END AS LOC5_YN
+        FROM CN_CONTRACT_BID
+        WHERE 1 = 1
+          AND CNTRCT_NO = #{CNTRCT_NO}
+          AND CNSTTY_DTLS_DIV_CD = 'S'
+        GROUP BY DCNSTTY_AMT_TY_CD
+        ORDER BY DCNSTTY_AMT_TY_CD
+    </select>
+
+    <!-- 원가계산서 등록 -->
+    <insert id="insertContractCalculator">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.insertContractCalculator][choisr]  */
+        INSERT INTO CN_CONTRACT_CALCULATOR (
+            CNTRCT_NO,
+            CST_CALC_IT_CD,
+            UP_CST_CALC_IT_CD,
+            DSPLY_ORDR,
+            CST_CALC_IT_NM,
+            CST_CALC_MTHD_NM,
+            CST_CALC_MTHD_NOMFRM_CNTNTS,
+            CST_CALCBLL_DSPLY_VAL,
+            OVRHDCST_PT,
+            DRCNSTCOST_CMPR_PT,
+            COST_AM,
+            DLT_YN,
+            RGST_DT,
+            RGSTR_ID,
+            CHG_DT,
+            CHG_ID,
+            DLT_DT,
+            DLT_ID
+        ) VALUES
+        <foreach collection="insCalclist" item="item" index="index" separator=",">
+        (
+            #{item.cntrctNo},
+            #{item.cstCalcItCd},
+            '',
+            #{index} + 1::numeric,
+            #{item.cstCalcItNm},
+            NULL,
+            NULL,
+            NULL,
+            #{item.ovrhdcstPt},
+            #{item.drcnstcostCmprPt},
+            #{item.costAm},
+            'N',
+            now(),
+            #{item.rgstrId},
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        )
+        </foreach>
+
+    </insert>
+
+    <!-- 원가계산서 삭제 -->
+    <delete id="deleteContractCalculator" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.deleteContractCalculator][choisr]  */
+        DELETE FROM CN_CONTRACT_CALCULATOR
+        WHERE CNTRCT_NO = #{CNTRCT_NO}
+    </delete>
+
+    <!-- 원가계산서 항목 업데이트 -->
+    <update id="updateContractCalculatorItem" parameterType="hashMap">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.updateContractCalculatorItem][choisr]  */
+        UPDATE CN_CONTRACT_CALCULATOR CALC SET
+            CST_CALC_IT_CD = CD.CMN_CD,
+            UP_CST_CALC_IT_CD = CD.ATTRBT_CD1,
+            CST_CALC_MTHD_NM = ATTRBT_CD2,
+            CST_CALC_MTHD_NOMFRM_CNTNTS = ATTRBT_CD3
+        FROM SM_COM_CODE CD
+        WHERE 1=1
+        AND CNTRCT_NO = #{CNTRCT_NO}
+        AND CD.CMN_GRP_CD = (SELECT CMN_GRP_CD FROM SM_COM_CODE_GROUP WHERE CMN_CD = 'CBLIT')
+        AND CST_CALC_IT_CD = CD.ATTRBT_CD4
+    </update>
+
+    <select id="getCalculatorConstructionList" parameterType="map" resultType="calculateCostOutput">
+	    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCalculatorConstructionList][leejw]  */
+        WITH RECURSIVE CODE_LIST(CST_CALC_IT_CD, CST_CALC_IT_NM, UP_CST_CALC_IT_CD, CST_CALC_MTHD_NM, DEPTH, PATH, CYCLE) AS (
+            SELECT A.CST_CALC_IT_CD,
+                A.CST_CALC_IT_NM,
+                A.UP_CST_CALC_IT_CD,
+                A.CST_CALC_MTHD_NM,
+                1,
+                ARRAY[A.CST_CALC_IT_CD::TEXT],
+                FALSE,
+                A.DSPLY_ORDR,
+                A.OVRHDCST_PT,
+                A.DRCNSTCOST_CMPR_PT,
+                A.COST_AM
+            FROM CN_CONTRACT_CALCULATOR A
+            WHERE A.UP_CST_CALC_IT_CD = '' AND A.CNTRCT_NO = #{cntrctNo}
+            UNION ALL
+            SELECT A.CST_CALC_IT_CD,
+                A.CST_CALC_IT_NM,
+                A.UP_CST_CALC_IT_CD,
+                A.CST_CALC_MTHD_NM,
+                B.DEPTH + 1,
+                ARRAY_APPEND(B.PATH, A.CST_CALC_IT_CD::TEXT),
+                A.CST_CALC_IT_CD = ANY(B.PATH),
+                A.DSPLY_ORDR,
+                A.OVRHDCST_PT,
+                A.DRCNSTCOST_CMPR_PT,
+                A.COST_AM
+            FROM CN_CONTRACT_CALCULATOR A, CODE_LIST B 
+            WHERE A.UP_CST_CALC_IT_CD = B.CST_CALC_IT_CD
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND NOT CYCLE
+        )
+        SELECT CST_CALC_IT_CD AS cstCalcItCd,
+                LPAD('', DEPTH) || CST_CALC_IT_NM AS cstCalcItNm,
+                UP_CST_CALC_IT_CD AS upCstCalcItCd,
+                LPAD('', DEPTH) || CST_CALC_MTHD_NM AS cstCalcMthdNm,
+                DEPTH AS aMenuLevel,
+                PATH AS path,
+                DSPLY_ORDR AS dsplOrdr,
+                COALESCE(OVRHDCST_PT, 0) AS ovrhdcstPt,
+                COALESCE(DRCNSTCOST_CMPR_PT, 0) AS drcnstcostCmprPt,
+                COALESCE(COST_AM, 0) AS costAm
+        FROM CODE_LIST
+        ORDER BY DSPLY_ORDR, PATH;
+    </select>
+
+    <select id="getContractBidConstructionList" parameterType="map" resultType="contractBidOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getContractBidConstructionList][leejw]  */
+        WITH RECURSIVE CODE_LIST(CNTRCT_DCNSTTY_SNO, PRDNM, UP_CNTRCT_DCNSTTY_SNO, CST_CALC_MTHD_NM, DEPTH, PATH, CYCLE, CBS_SNO, SPEC, UNIT, QTY, MTRLCST_UPRC, MTRLCST_AMT, LBRCST_UPRC, LBRCST_AMT, GNRLEXPNS_UPRC, GNRLEXPNS_AMT, SUM_UPRC, SUM_AMT, RMRK) AS (
+            SELECT (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CASE WHEN UP_CNTRCT_DCNSTTY_SNO = 0 THEN '' ELSE CAST(UP_CNTRCT_DCNSTTY_SNO AS TEXT) END)
+                , A.PRDNM
+                , 1
+                , ARRAY[(CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))]
+                , FALSE
+                , A.CBS_SNO
+                , A.SPEC
+                , A.UNIT
+                , A.QTY
+                , A.MTRLCST_UPRC
+                , A.MTRLCST_AMT
+                , A.LBRCST_UPRC
+                , A.LBRCST_AMT
+                , A.GNRLEXPNS_UPRC
+                , GNRLEXPNS_AMT
+                , A.SUM_UPRC
+                , A.SUM_AMT
+                , A.RMRK
+            FROM CN_CONTRACT_BID A
+            WHERE CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT) = '0'
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND A.EXPNSS_YN = 'N' 
+            UNION ALL
+            SELECT (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT))
+                , A.PRDNM
+                , B.DEPTH + 1
+                , ARRAY_APPEND(B.PATH, (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT)))
+                , (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.CNTRCT_DCNSTTY_SNO AS TEXT)) = ANY(B.PATH)
+                , A.CBS_SNO
+                , A.SPEC
+                , A.UNIT
+                , A.QTY
+                , A.MTRLCST_UPRC
+                , A.MTRLCST_AMT
+                , A.LBRCST_UPRC
+                , A.LBRCST_AMT
+                , A.GNRLEXPNS_UPRC
+                , A.GNRLEXPNS_AMT
+                , A.SUM_UPRC
+                , A.SUM_AMT
+                , A.RMRK
+            FROM CN_CONTRACT_BID A, CODE_LIST B
+            WHERE (CAST(A.CNTRCT_UNIT_CNSTWK_SNO AS TEXT) || CAST(A.UP_CNTRCT_DCNSTTY_SNO AS TEXT)) = B.CNTRCT_DCNSTTY_SNO
+            AND A.CNTRCT_NO = #{cntrctNo}
+            AND NOT CYCLE
+            AND A.EXPNSS_YN = 'N' 
+        )
+        SELECT CNTRCT_DCNSTTY_SNO
+            , LPAD('', DEPTH) || PRDNM AS PRDNM
+            , UP_CNTRCT_DCNSTTY_SNO
+            , DEPTH AS A_MENU_LEVEL
+            , PATH
+            , CBS_SNO
+            , SPEC
+            , UNIT
+            , QTY
+            , MTRLCST_UPRC
+            , MTRLCST_AMT
+            , LBRCST_UPRC
+            , LBRCST_AMT
+            , GNRLEXPNS_UPRC
+            , GNRLEXPNS_AMT
+            , SUM_UPRC
+            , SUM_AMT
+            , RMRK
+        FROM CODE_LIST
+        ORDER BY CBS_SNO, a_menu_level;
+    </select>
+
+    <select id="getCbsConstructionList" parameterType="map" resultType="cbsOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getCbsConstructionList][thkim]  */
+        WITH RECURSIVE DETAIL_SUM AS (
+            SELECT
+                CNTRCT_CHG_ID,
+                CNSTTY_SN 									AS PARENT_SN,
+                SUM(TRUNC(THIS_RSCE_QTY * MTRL_UPRC)) 		AS MTRL_AM,
+                SUM(TRUNC(THIS_RSCE_QTY * LBR_UPRC)) 		AS LBR_AM,
+                SUM(TRUNC(THIS_RSCE_QTY * GNRLEXPNS_UPRC)) 	AS GNRLEXPNS_AM,
+                SUM(
+                    TRUNC(THIS_RSCE_QTY * MTRL_UPRC) +
+                    TRUNC(THIS_RSCE_QTY * LBR_UPRC) +
+                    TRUNC(THIS_RSCE_QTY * GNRLEXPNS_UPRC)
+                ) 											AS SUM_AM
+            FROM CT_CBS_DETAIL
+            WHERE CNTRCT_CHG_ID = #{cntrctChgId}
+            GROUP BY CNTRCT_CHG_ID, CNSTTY_SN
+        ),
+        -- 2. 금액 누적용 bottom-up 재귀
+        COST_SUM AS (
+            SELECT
+                C.CNSTTY_SN,
+                C.UP_CNSTTY_CD,
+                C.CNSTTY_CD,
+                C.CNSTTY_NM,
+                C.CNTRCT_CHG_ID,
+                C.UNIT_CNST_TYPE,
+                COALESCE(D.MTRL_AM, 0)		AS MTRL_AM,
+                COALESCE(D.LBR_AM, 0) 		AS LBR_AM,
+                COALESCE(D.GNRLEXPNS_AM, 0) AS GNRLEXPNS_AM,
+                COALESCE(D.SUM_AM, 0) 		AS SUM_AM
+            FROM CT_CBS C
+            LEFT JOIN DETAIL_SUM D
+                ON C.CNSTTY_SN = D.PARENT_SN
+                AND C.CNTRCT_CHG_ID = D.CNTRCT_CHG_ID
+            WHERE C.CNTRCT_CHG_ID = #{cntrctChgId}
+
+            UNION ALL
+
+            SELECT
+                P.CNSTTY_SN,
+                P.UP_CNSTTY_CD,
+                P.CNSTTY_CD,
+                P.CNSTTY_NM,
+                P.CNTRCT_CHG_ID,
+                P.UNIT_CNST_TYPE,
+                C.MTRL_AM,
+                C.LBR_AM,
+                C.GNRLEXPNS_AM,
+                C.SUM_AM
+            FROM COST_SUM C
+            JOIN CT_CBS P
+                ON C.UP_CNSTTY_CD = P.CNSTTY_CD
+                AND C.CNTRCT_CHG_ID = P.CNTRCT_CHG_ID
+                AND C.UNIT_CNST_TYPE = P.UNIT_CNST_TYPE
+        ),
+        -- 3. 트리 구조용 top-down 재귀
+        TREE_PATH AS (
+            SELECT
+                C.CNSTTY_SN,
+                NULL::NUMERIC 		AS PARENT_SN,
+                C.UP_CNSTTY_CD,
+                C.CNSTTY_CD,
+                C.CNSTTY_NM,
+                C.CNTRCT_CHG_ID,
+                C.UNIT_CNST_TYPE,
+                C.CNSTTY_LVL_NUM,
+                C.RMRK_CNTNTS,
+                C.ETC_CNTNTS,
+                'CBS' 				AS NODE_TYPE,
+                1 AS DEPTH,
+                ARRAY[C.CNSTTY_CD]::VARCHAR[] AS PATH
+            FROM ct_cbs c
+            WHERE (C.UP_CNSTTY_CD IS NULL OR C.UP_CNSTTY_CD = '')
+            AND C.CNTRCT_CHG_ID = #{cntrctChgId}
+
+            UNION ALL
+
+            SELECT
+                C.CNSTTY_SN,
+                P.CNSTTY_SN,
+                C.UP_CNSTTY_CD,
+                C.CNSTTY_CD,
+                C.CNSTTY_NM,
+                C.CNTRCT_CHG_ID,
+                C.UNIT_CNST_TYPE,
+                C.CNSTTY_LVL_NUM,
+                C.RMRK_CNTNTS,
+                C.ETC_CNTNTS,
+                'CBS' AS NODE_TYPE,
+                P.DEPTH + 1,
+                P.PATH || C.CNSTTY_CD
+            FROM CT_CBS C
+            JOIN TREE_PATH P
+                ON C.UP_CNSTTY_CD = P.CNSTTY_CD
+                AND C.CNTRCT_CHG_ID = P.CNTRCT_CHG_ID
+                AND C.UNIT_CNST_TYPE = P.UNIT_CNST_TYPE
+        ),
+
+        -- 4. 트리에 누적 금액 JOIN해서 출력
+        CBS_TREE AS (
+            SELECT
+                T.CNSTTY_SN,
+                T.PARENT_SN,
+                T.UP_CNSTTY_CD,
+                T.CNSTTY_CD,
+                LPAD('', T.DEPTH * 2, ' ') || T.CNSTTY_NM AS INDENTED_CNSTTY_NM,
+                T.CNTRCT_CHG_ID,
+                T.UNIT_CNST_TYPE,
+                T.CNSTTY_LVL_NUM,
+                T.RMRK_CNTNTS,
+                T.ETC_CNTNTS,
+                T.NODE_TYPE,
+                COALESCE(SUM(S.MTRL_AM), 0) AS MTRL_AM,
+                COALESCE(SUM(S.LBR_AM), 0) AS LBR_AM,
+                COALESCE(SUM(S.GNRLEXPNS_AM), 0) AS GNRLEXPNS_AM,
+                COALESCE(SUM(S.SUM_AM), 0) AS SUM_AM,
+                T.DEPTH,
+                T.PATH
+            FROM TREE_PATH T
+            LEFT JOIN COST_SUM S
+            ON T.CNSTTY_SN = S.CNSTTY_SN
+            AND T.CNTRCT_CHG_ID = S.CNTRCT_CHG_ID
+            GROUP BY
+                T.CNSTTY_SN, T.PARENT_SN, T.UP_CNSTTY_CD, T.CNSTTY_CD, T.CNSTTY_NM,
+                T.CNTRCT_CHG_ID, T.UNIT_CNST_TYPE, T.CNSTTY_LVL_NUM,
+                T.RMRK_CNTNTS, T.ETC_CNTNTS, T.NODE_TYPE, T.DEPTH, T.PATH
+            ORDER BY 
+                T.UNIT_CNST_TYPE, T.PATH
+        ),
+
+        -- ct_cbs_detail → 각 노드 하위로 삽입할 detail 구성
+        DETAIL_NODES AS (
+            SELECT
+                D.DTL_CNSTTY_SN             AS CNSTTY_SN,
+                D.CNSTTY_SN                 AS PARENT_SN,
+                NULL                        AS CNSTTY_CD,
+                NULL                        AS UP_CNSTTY_CD,
+                D.DTL_CNSTTY_NM             AS CNSTTY_NM,
+                D.CNTRCT_CHG_ID,
+                T.UNIT_CNST_TYPE            AS UNIT_CNST_TYPE,
+                D.UNIT_CNST_TYPE            AS DETAIL_UNIT_CNST_TYPE,
+                T.CNSTTY_LVL_NUM + 1        AS CNSTTY_LVL_NUM,
+                D.SPEC_NM                   AS SPEC,
+                D.UNIT                      AS UNIT,
+                D.THIS_RSCE_QTY             AS QTY,
+                D.MTRL_UPRC                 AS MTRL_UPRC,
+                TRUNC(D.THIS_RSCE_QTY * D.MTRL_UPRC)            AS MTRL_AM,
+                D.LBR_UPRC                                      AS LBR_UPRC,
+                TRUNC(D.THIS_RSCE_QTY * D.LBR_UPRC)             AS LBR_AM,
+                D.GNRLEXPNS_UPRC                                AS GNRLEXPNS_UPRC,
+                TRUNC(D.THIS_RSCE_QTY * D.GNRLEXPNS_UPRC)       AS GNRLEXPNS_AM,
+                SUM(D.MTRL_UPRC + LBR_UPRC + GNRLEXPNS_UPRC)    AS SUM_UPRC,
+                SUM(
+                    TRUNC(D.THIS_RSCE_QTY * D.MTRL_UPRC) +
+                    TRUNC(D.THIS_RSCE_QTY * D.LBR_UPRC) +
+                    TRUNC(D.THIS_RSCE_QTY * D.GNRLEXPNS_UPRC)
+                )                                                   AS SUM_AM,
+                D.RMRK_CNTNTS,  
+                D.ETC_CNTNTS,   
+                'DETAIL'                                            AS NODE_TYPE,
+                T.DEPTH + 1                                         AS DEPTH,
+                T.PATH || ('DETAIL_' || D.DTL_CNSTTY_SN)::VARCHAR   AS PATH,
+                FALSE                                               AS CYCLE
+            FROM CT_CBS_DETAIL D
+            JOIN CBS_TREE T
+            ON D.CNTRCT_CHG_ID = T.CNTRCT_CHG_ID
+            AND D.CNSTTY_SN = T.CNSTTY_SN
+            GROUP BY
+                D.DTL_CNSTTY_SN, D.CNSTTY_SN, D.DTL_CNSTTY_NM, D.CNTRCT_CHG_ID,
+                T.UNIT_CNST_TYPE, D.UNIT_CNST_TYPE, T.CNSTTY_LVL_NUM,
+                D.SPEC_NM, D.UNIT, D.THIS_RSCE_QTY, D.MTRL_UPRC,
+                D.LBR_UPRC, D.GNRLEXPNS_UPRC, D.RMRK_CNTNTS,
+                D.ETC_CNTNTS, T.DEPTH, T.PATH
+        ),
+
+
+        -- CBS 노드
+        FULL_TREE AS (
+            SELECT
+                CNSTTY_SN,
+                PARENT_SN,
+                UP_CNSTTY_CD,
+                CNSTTY_CD,
+                INDENTED_CNSTTY_NM              AS CNSTTY_NM,
+                CNTRCT_CHG_ID,
+                UNIT_CNST_TYPE,
+                NULL                            AS DETAIL_UNIT_CNST_TYPE,
+                CNSTTY_LVL_NUM,
+                NULL                            AS SPEC,
+                NULL                            AS UNIT,
+                NULL                            AS QTY,
+                NULL                            AS MTRLCST_UPRC,
+                MTRL_AM                         AS MTRLCST_AMT,
+                NULL                            AS LBRCST_UPRC,
+                LBR_AM                          AS LBRCST_AMT,
+                NULL                            AS GNRLEXPNS_UPRC,
+                GNRLEXPNS_AM                    AS GNRLEXPNS_AMT,
+                NULL                            AS SUM_UPRC,
+                SUM_AM                          AS SUM_AMT,
+                RMRK_CNTNTS                     AS RMRK,
+                ETC_CNTNTS                      AS ETC,
+                NODE_TYPE,
+                DEPTH,
+                PATH
+            FROM CBS_TREE
+
+            UNION ALL
+
+            -- DETAIL 노드 (모든 필드 출력)
+            SELECT
+                CNSTTY_SN,
+                PARENT_SN,
+                UP_CNSTTY_CD,
+                CNSTTY_CD,
+                LPAD('', DEPTH * 2, ' ') || CNSTTY_NM AS CNSTTY_NM,
+                CNTRCT_CHG_ID,
+                UNIT_CNST_TYPE,
+                DETAIL_UNIT_CNST_TYPE,
+                CNSTTY_LVL_NUM,
+                SPEC,
+                UNIT,
+                QTY,
+                MTRL_UPRC                             AS MTRLCST_UPRC,
+                MTRL_AM                               AS MTRLCST_AMT,
+                LBR_UPRC                              AS LBRCST_UPRC,
+                LBR_AM                                AS LBRCST_AMT,
+                GNRLEXPNS_UPRC                        AS GNRLEXPNS_UPRC,
+                GNRLEXPNS_AM                          AS GNRLEXPNS_AMT,
+                SUM_UPRC                              AS SUM_UPRC,
+                SUM_AM                                AS SUM_AMT,
+                RMRK_CNTNTS                           AS RMRK,
+                ETC_CNTNTS                            AS ETC,
+                NODE_TYPE,
+                DEPTH,
+                PATH
+            FROM DETAIL_NODES
+        )
+
+        SELECT 
+            CNSTTY_SN,
+            PARENT_SN,
+            UP_CNSTTY_CD,
+            CNSTTY_CD,
+            CNSTTY_NM,
+            CNTRCT_CHG_ID,
+            UNIT_CNST_TYPE,
+            DETAIL_UNIT_CNST_TYPE,
+            CNSTTY_LVL_NUM,
+            SPEC,
+            UNIT,
+            QTY,
+            MTRLCST_UPRC,
+            MTRLCST_AMT,
+            LBRCST_UPRC,
+            LBRCST_AMT,
+            GNRLEXPNS_UPRC,
+            GNRLEXPNS_AMT,
+            SUM_UPRC,
+            SUM_AMT,
+            RMRK,
+            ETC,
+            NODE_TYPE,
+            DEPTH,
+            PATH
+        FROM FULL_TREE 
+        ORDER BY 
+            UNIT_CNST_TYPE, PATH;
+    </select>
+
+    <update id="updateDeleteContractstatus" parameterType="input">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.updateDeleteContractstatus][jhkim] */
+        UPDATE
+            CN_CONTRACT
+        SET
+            DLT_ID = #{usrId} ,
+                    DLT_YN = 'Y',
+                    DLT_DT = NOW()
+        WHERE
+            CNTRCT_NO = #{cntrctNo}
+    </update>
+
+
+    <select id="getSubcontractCompanyList" parameterType="String" resultType="contractcompanyOutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.getSubcontractCompanyList][jhkim]  */
+            SELECT
+                C.CORP_NM,
+                C.CORP_NO
+            FROM
+                CN_CONTRACT_COMPANY C
+            WHERE
+                C.CNTRCT_NO = #{cntrctNo}
+            AND C.DLT_YN = 'N'
+            ORDER BY
+                CASE WHEN C.RPRS_YN = 'Y' THEN 0 ELSE 1 END,
+                        C.RGST_DT DESC;
+    </select>
+
+	<select id="makeCntrctNo" parameterType="String" resultType="String">
+    	/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.makeCntrctNo][gwlee]  */
+		SELECT 	CASE
+					WHEN EXISTS ( 	SELECT 	CNTRCT_NO
+									FROM 	CN_CONTRACT
+									WHERE 	CNTRCT_NO LIKE #{cntrctNo} || '%'
+								) 
+						THEN 	(	SELECT 	#{cntrctNo} || CAST(REPLACE(CNTRCT_NO, #{cntrctNo}, '') AS INTEGER)+ 1
+									FROM 	CN_CONTRACT
+									WHERE 	CNTRCT_NO LIKE #{cntrctNo} || '%'
+									ORDER BY CAST(REPLACE(CNTRCT_NO, #{cntrctNo}, '') AS INTEGER) DESC
+									LIMIT 1
+								)
+					ELSE 
+						#{cntrctNo} || '1'
+				END AS CNTRCT_NO
+    </select>
+
+    <!--
+        계약변경 테이블(PHASE, LOCAL_CHG_NO, REASON)
+        PHASE=장기계속차수, LOCAL_CHG_NO=내부 계약변경횟수
+
+        * 외부_계약변경차수 = 내부_계약변경차수 + (이전 모든 장기계속차수의 건수 합) - (현재 장기계속차수의 순서 - 1) - **1
+        ** 유레카 내부 계약변경 회차 - 1 처리
+            e.g. "1" -> 00 , "5" -> 04
+    -->
+    <select id="convertToEurecaContractChangeNo" parameterType="map" resultType="string">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.convertToEurecaContractChangeNo][choisr]  */
+        WITH BASE AS (
+            SELECT
+                CNTRCT_PHASE AS PHASE,
+                CNTRCT_CHG_NO::NUMERIC AS LOCAL_CHG_NO
+            FROM   CN_CONTRACT_CHANGE
+            WHERE CNTRCT_NO = #{cntrctNo}
+            ORDER BY PHASE, CNTRCT_CHG_NO
+        ),
+        PHASE_CNT AS (
+             SELECT
+                 PHASE,
+                 COUNT(*) AS CNT,
+                 DENSE_RANK() OVER (ORDER BY PHASE) AS PHASE_ORD
+             FROM BASE
+             GROUP BY PHASE
+        ),
+        PHASE_AUG AS (
+            SELECT
+                PHASE,
+                CNT,
+                DENSE_RANK() OVER (ORDER BY PHASE) AS PHASE_ORD,
+                /* 이전 phase들의 누적 건수 */
+                SUM(cnt) OVER (ORDER BY PHASE
+                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS PREV_CNT_SUM
+            FROM phase_cnt
+        )
+        SELECT
+            /*B.PHASE,*/
+            /*B.LOCAL_CHG_NO,*/
+            /*PA.PHASE_ORD,*/
+            /*COALESCE(PA.PREV_CNT_SUM, 0)             AS PREV_CNT_SUM,*/
+            LPAD(
+                (CASE
+                     WHEN PA.PHASE_ORD = 1 THEN B.LOCAL_CHG_NO - 1
+                     ELSE B.LOCAL_CHG_NO + COALESCE(PA.PREV_CNT_SUM, 0) - (PA.PHASE_ORD - 1) - 1
+                END)::TEXT, 2, '0'
+            ) AS EURECA_CHG_NO
+        FROM BASE B
+        JOIN PHASE_AUG PA USING (PHASE)
+        ORDER BY B.PHASE DESC, B.LOCAL_CHG_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 계약의 안전사고일자 변경-->
+    <update id="updateSftyAcdntDt" parameterType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.contractstatus.updateSftyAcdntDt][thkim]  */
+        UPDATE CN_CONTRACT
+        SET
+        	SFTY_ACDNT_DT = #{recentlydisasterDate, jdbcType=TIMESTAMP} -- null 허용
+        WHERE
+         	CNTRCT_NO = #{cntrctNo}
+         	AND DLT_YN = 'N'
+    </update>
+
+</mapper>

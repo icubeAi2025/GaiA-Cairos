@@ -1,0 +1,675 @@
+{% extends 'layout/base_content' %}
+{% block content %}
+
+
+<section class="contents_wrap">
+
+	<article class="conts">
+		<div class="group">
+			<div class="conts_form">
+				<h3 class="conts_tit" id="sNoTxt"></h3>
+				<div class="btn_area s_default">
+					<button type="button" class="btn _outline" id="cancel">{{ message("btn.007") }}</button>
+				</div>
+			</div>
+
+			<div class="s_conts g-group">
+				<!-- S: TAB ----------------------------------------------------------------------- -->
+				<!-- TAB NAV -->
+				<div class="conts_tab">
+					<nav class="tab_nav">
+						<ul class="tab_list tab_default">
+							<li class="tab_item" data-id="tabs01">{{ message("item.projectcost.050") }}</li>
+							<li class="tab_item" data-id="tabs02">{{ message("item.projectcost.050") }} ({{
+								message("item.projectcost.077") }})</li>
+						</ul>
+					</nav>
+
+					<!-- TAB Conts -->
+					<div class="tab_conts_wrap">
+						<div id="tabs01" class="tab_conts">
+							<article class="s_conts ty1 conts" style="height: unset;">
+								<span class="tree_route">CBS</span>
+								<div class="g-group g-col2 ty1">
+									<!-- S: TREE View ------------------------------------------------------------------------ -->
+									<div class="treeview_area">
+										<div class="treeview ty_pd0" id="jstree" style="overflow: auto; height:550px;">
+										</div>
+									</div>
+									<!-- // E: TREE View ------------------------------------------------------------------------ -->
+
+									<div class="conts_area">
+										<div class="conts_grid">
+											<!-- S: search wrap ---------------------------------------------- -->
+											<div class="search_wrap">
+												<!-- searchbox -->
+												<div class="searchbox_wrap">
+													<input type="text" id="searchForm"
+														placeholder="{{ message('msg.projectcost.005') }}">
+													<button type="button" class="icon_btn search">
+														<i class="ic ic-search"></i>
+														<span class="blind"></span>
+													</button>
+												</div>
+											</div>
+											<!-- // E: search wrap ---------------------------------------------- -->
+											<div class="toolbar">
+												<div class="btn_area s_default _outline">
+													<button type="button" class="btn" id="paymentHistoryRecount">{{
+														message("item.projectcost.051") }}</button>
+													<button type="button" class="btn" id="paymentHistoryExportExcel"
+														style="display:none;">Excel</button>
+												</div>
+											</div>
+											<div class="summary put_txt _unit_won">
+												<div class="row">
+													<div class="col">
+														<div class="summary-label">{{ message("item.projectcost.052") }}
+														</div>
+														<div class="summary-data" id="thtmPaymentTotal"></div>
+													</div>
+												</div>
+											</div>
+
+											<div class="grid" id="paymentDataGrid">
+											</div>
+										</div>
+									</div>
+								</div>
+							</article>
+						</div>
+
+						<div id="tabs02" class="tab_conts">
+							<article class="conts g-row">
+								<div class="conts_grid">
+									<div class="toolbar">
+										<div class="btn_area s_default _outline">
+											<button type="button" class="btn" id="reCalc">{{
+												message("item.projectcost.058") }}</button>
+											<button type="button" class="btn" id="calcExportExcel"
+												style="display:none;">Excel</button>
+										</div>
+									</div>
+									<div class="summary put_txt _unit_won">
+										<div class="row">
+											<div class="col">
+												<div class="summary-label">{{ message('item.projectcost.020') }}</div>
+												<div class="summary-data" id="calcDt"></div>
+											</div>
+											<div class="col">
+												<div class="summary-label">{{ message('item.projectcost.022') }}</div>
+												<div class="summary-data" id="calcCntrctAmt"></div>
+											</div>
+										</div>
+									</div>
+
+									<div class="grid" id="calcDataGrid">
+									</div>
+								</div>
+							</article>
+						</div>
+					</div>
+
+				</div>
+				<!-- //E: TAB ----------------------------------------------------------------------- -->
+			</div>
+		</div>
+	</article>
+</section>
+
+<input type="text" id="cntrct_chg_no_first" hidden />
+<input type="text" id="chg_no" hidden />
+<input type="text" id="cnsttySn_arr" hidden />
+{% endblock content %}
+{% block footer_script %}
+<script src="/assets/js/projectcost/payment.js"></script>
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<script>
+	//새창 아이콘 렌더러
+	const newModalRenderer = window.NewModalRenderer;
+	let SearchArr = new Array();
+	var urlParams = new URLSearchParams(location.search);
+	var cntrctNo = urlParams.get('cntrctNo');
+	var sno = urlParams.get('sNo');
+	var id = urlParams.get('id');
+	var dt = urlParams.get('dt');
+	var tmnum = urlParams.get('tmnum');
+
+	// 20250217 계약변경차수 추가
+	var cntrctChgNo = urlParams.get('cntrctChgNo');
+
+
+	var init = function () {
+		gaiaCommon.LoadingOverlay('body', true);
+		sessionStorage.setItem('pCntrctNo', cntrctNo);
+
+		$("#cancel").click(function () {
+			window.location.href = `/projectcost?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`;
+		});
+
+		//기성 내역수량 재집계
+		$("#paymentHistoryRecount").click(function () {
+			window.location.href = `/projectcost/payment/recount?cntrctNo=` + cntrctNo + "&sNo=" + sno + "&id=" + id + "&dt=" + dt + "&tmnum=" + tmnum + `pjtNo=${pjtInfo.pjtNo}`;
+		});
+
+		//엑셀 - 사용 안 함
+		/**
+		$("#paymentHistoryExportExcel").click(function () {
+			$.ajax({
+				url: '/projectcost/create-contract?type=d&no=' + $("#chg_no").val() + "&id=" + $("#cntrctId option:selected").val(),
+				type: 'GET',
+				dataType: "html",
+				async: false,
+				success: function (data) {
+					$("#pop-layer").html(data);
+				},
+				error: function (xhr, status, error) {
+					// console.log(error);
+				}
+			});
+		});
+		*/
+
+		//		payment.getTreeList();
+
+	};
+
+	let payment = {
+		init: function () {
+			let _this = this;
+
+			if (!this.paymentGrid) {
+				this.paymentGrid = new tui.Grid({
+					el: document.getElementById('paymentDataGrid'),
+					//selectionUnit: 'row',
+					scrollX: true,
+					scrollY: true,
+					rowHeight: 10,
+					contextMenu: null,
+					//bodyHeight: 'auto',
+					//bodyHeight: 'fitToParent',
+					bodyHeight: 300,
+					header: {
+						height: 120,
+						complexColumns: [
+							{
+								header: '{{ message("item.projectcost.010") }}',
+								name: 'chkDetail',  // 변경내역(n차)
+								childNames: ['cntrct_qty', 'cntrct_uprc', 'cntrct_cost'],
+								renderer: CustomColumnHeader
+							},
+							{
+								header: '{{ message("item.projectcost.053") }}',
+								name: 'prevTotal',  // 전회(누계)
+								childNames: ['prev_qty', 'prev_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.054") }}',
+								name: 'thtmTotal',  // 금회
+								childNames: ['thtm_qty', 'thtm_cost']
+							},
+							{
+								header: '{{ message("item.projectcost.039") }}',
+								name: 'remndrTotal',    // 잔여
+								childNames: ['remndr_qty', 'remndr_cost']
+							},
+						],
+					},
+					columns: [
+						{ header: '{{ message("item.projectcost.002") }}', name: 'dtl_cnstty_nm', resizable: true, minWidth: 200 },
+						{ header: '{{ message("item.projectcost.003") }}', name: 'spec_nm', resizable: true, width: 100 },
+						{ header: '{{ message("item.projectcost.004") }}', name: 'unit', width: 50, align: 'center', resizable: true },
+						{ header: '{{ message("item.projectcost.005") }}', name: 'cntrct_qty', width: 50, resizable: true, align: 'center', formatter: numberFormat },
+						{
+							header: '{{ message("item.projectcost.006") }}', name: 'cntrct_uprc', width: 100, align: 'right',
+							formatter: (row, column, value) => {
+								return numberFormat(row, 'cvt');
+							}
+						},
+						{
+							header: '{{ message("item.projectcost.007") }}', name: 'cntrct_cost', width: 100, align: 'right',
+							formatter: (row, column, value) => {
+								return numberFormat(row, 'cvt');
+							}
+						},
+						{ header: '{{ message("item.projectcost.005") }}', name: 'prev_qty', width: 50, align: 'center', formatter: numberFormat },
+						{
+							header: '{{ message("item.projectcost.007") }}', name: 'prev_cost', width: 100, align: 'right',
+							formatter: (row, column, value) => {
+								return numberFormat(row, 'cvt');
+							}
+						},
+						{ header: '{{ message("item.projectcost.005") }}', name: 'thtm_qty', width: 50, align: 'center', formatter: numberFormat },
+						{
+							header: '{{ message("item.projectcost.007") }}', name: 'thtm_cost', width: 100, align: 'right',
+							formatter: (row, column, value) => {
+								return numberFormat(row, 'cvt');
+							}
+						},
+						{ header: '{{ message("item.projectcost.005") }}', name: 'remndr_qty', width: 50, align: 'center', formatter: numberFormat },
+						{
+							header: '{{ message("item.projectcost.007") }}', name: 'remndr_cost', width: 100, align: 'right',
+							formatter: (row, column, value) => {
+								return numberFormat(row, 'cvt');
+							}
+						},
+
+						/*{header: '차액', name: 'sp_cost', width: 100, align:'right', hidden: true,
+								formatter: function(e){
+									const price = e.value;
+									let result = 0;
+									if(price !== null){
+										result = price.toLocaleString();
+									} 
+									if(price < 0){
+										return '<div class="tui-grid-cell-content" style="color:red;">' + result + '</div>';
+									} else if(price > 0){
+										return '<div class="tui-grid-cell-content" style="color:blue;">' + result + '</div>';
+									} else {
+										return '<div class="tui-grid-cell-content">' + result + '</div>';
+									}							
+								}
+						},
+						{name: 'rsce_tp_cd', hidden: true},
+						{name: 'cntrct_chg_id', hidden: true}*/
+					]
+				});
+			}
+
+			let list = this.read();
+
+			if (list) {
+				this.paymentGrid.resetData(list);
+				refreshGrid(this.paymentGrid);
+			}
+
+			/* 검색창 관련 함수 */
+			const searchEl = $(".search");
+			const searchInputEl = searchEl.find("input");
+
+			searchEl.click(function () {
+				gaiaCommon.LoadingOverlay('body', true);
+				let arr = new Array();
+				arr = $("#cnsttySn_arr").val().split(",");
+				payment.init(arr);
+			});
+
+			//엔터 검색
+			$("#searchForm").on("keyup", function (key) {
+				if (key.keyCode == 13) {
+					gaiaCommon.LoadingOverlay('body', true);
+					let arr = new Array();
+					arr = $("#cnsttySn_arr").val().split(",");
+					payment.init(arr);
+				}
+			});
+		},
+		read: function () {
+			let _this = this;
+			let data;
+
+			let cnsttySnData = new Array();
+			cnsttySnData = $("#cnsttySn_arr").val().split(",");
+
+			var param = {
+				cntrctNo: cntrctNo
+				, payprceSno: sno
+				, cntrctChgId: id
+				, cnsttySnList: cnsttySnData
+				, searchText: $("#searchForm").val()
+			};
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-history-list',
+                param,
+                function (response) {
+                    data = response.details.paymentHistoryList;
+					let sum = 0;
+					data.forEach((e) => {
+						sum += e.thtm_cost;
+					});
+
+					$("#thtmPaymentTotal").text(sum.toLocaleString());
+                },
+                function (error) {
+                    console.error(error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+			gaiaCommon.LoadingOverlay('body', false);
+			return data;
+		},
+		getTreeList() {
+			var param = {
+				cntrctNo: cntrctNo
+				, payprceSno: sno
+				, cntrctChgId: id
+			};
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-cbs-list',
+                param,
+                function (data) { // cb
+                    $("#jstree").jstree({
+                        //'plugins': ["search"],
+                        'core': {
+                            'data': data.details.paymentCbsList,
+                            "check_callback": true,
+                            "themes": {
+                                "theme": "default",
+                                "dots": false,
+                                "responsive": false,
+                                "icons": false
+                            }
+                        }
+                    });
+
+                    if (data.details.paymentCbsList.length > 0) {
+                        payment.setTreeFunc();
+
+                        $("#jstree").bind("loaded.jstree", function (event, dt) {
+                            var depth = 2;
+                            dt.instance.get_container().find('li').each(function (i) {
+                                if (dt.instance.get_path($(this)).length <= depth) {
+                                    dt.instance.open_node($(this));
+                                }
+                            });
+                        });
+                    }
+
+                    // 첫 번째 노드 선택 로직
+                    var initArr = data.details.paymentCbsList[0];
+                    if ($('#jstree').jstree(true).settings.core.data.length > 0) {
+                        setTimeout(() => $('#jstree').jstree(true).select_node(initArr.id), 1500);
+                    }
+                },
+                function (error) {
+                    console.error("payment-cbs-list 호출 에러:", error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+		},
+		setTreeFunc() {
+			$('#jstree').bind('select_node.jstree', function (event, data) {
+				var idArr = new Array();
+				if (data.node.parent == "#") {
+					idArr = data.node.children_d;
+				} else {
+					if (data.node.children.length < 1) {
+						idArr.push(data.node.id);
+					} else {
+						idArr = data.node.children;
+					}
+				}
+				var ref = $('#jstree').jstree(true);
+				var allCategories = Object.values(ref._model.data);
+
+				var filterArr = allCategories.filter((item) => idArr.some((i) => i === item.id));
+				var searchArr = new Array();
+				var searchTxt = "";
+				$.each(filterArr, function (index, element) {
+					searchArr.push(element.original.cnstty_sn);
+					searchTxt += "," + element.original.cnstty_sn;
+				});
+				if (searchArr.length < 1) {
+					searchArr.push(data.node.original.cnstty_sn);
+				}
+				$("#cnsttySn_arr").val(searchArr);
+				//methods.getGridData(searchArr);
+				payment.init();
+			});
+		}
+	}
+
+
+	let calc = {
+		init: function (type) {
+			let _this = this;
+
+			if (this.calcGrid && type == "chg") {
+				this.calcGrid.resetData([]);
+			}
+
+			if (!this.calcGrid) {
+				this.calcGrid = new tui.Grid({
+					el: document.getElementById('calcDataGrid'),
+					//bodyHeight: 'fitToParent',
+					scrollX: true,
+					scrollY: true,
+					contextMenu: null,
+					//bodyHeight: 'fitToParent',
+					bodyHeight: 500,
+					treeColumnOptions: {
+						name: "cst_calc_it_nm",
+						useIcon: true,
+						useCascadingCheckbox: true,
+					},
+					header: {
+						columns: [
+							{
+								name: 'cost_am',
+								renderer: CustomColumnHeader2
+							},
+						]
+					},
+					columns: [
+						{ header: '{{ message("item.projectcost.025") }}', name: 'cst_calc_it_nm', width: 300 },
+						{ header: '{{ message("item.projectcost.026") }}', name: 'cst_calc_mthd_nm', resizable: true, minWidth: 200 },
+						{ header: '{{ message("item.projectcost.027") }}', name: 'ovrhdcst_pt', resizable: true, width: 100, align: 'right' },
+						{ header: '{{ message("item.projectcost.028") }}', name: 'drcnstcost_cmpr_pt', width: 110, align: 'right' },
+						{ header: '{{ message("item.projectcost.029") }}', name: 'ori_cost_am', width: 110, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.056") }}', name: 'thtm_cost_am', width: 110, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.057") }}', name: 'total_cost_am', width: 110, align: 'right', formatter: numberFormat },
+						{ header: '{{ message("item.projectcost.069") }}', name: 'remndr_am', width: 110, align: 'right', formatter: numberFormat },
+					]
+				});
+			}
+
+
+			let list = this.read();
+
+			if (list) {
+				this.calcGrid.resetData(list);
+			}
+
+		},
+		read: function () {
+			let _this = this;
+			let data;
+			let root;
+
+			var param = {
+				cntrctNo: cntrctNo
+				, payprceSno: sno
+				, cntrctChgId: id
+			};
+			//let newArr = new array();
+			var newArr = {};
+
+            gaiaCommon.post(
+                BASEPATH + 'payment/payment-cost-calculator-list',
+                param,
+                function (response) {
+                    data = response.details.paymentcostCalculatorList;
+
+					root = arrayToTree(data);
+					_this.calcGrid.resetData(root);
+                },
+                function (error) {
+                    console.error(error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                }
+            );
+
+			return root;
+		},
+
+	}
+
+	class CustomColumnHeader {
+		constructor(props) {
+			const columnInfo = props.columnInfo;
+			const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+		}
+
+		getElement() {
+			return this.el;
+		}
+
+		render(props) {
+			// 20250217 sno -> cntrctChgNo 변경
+			this.el.textContent = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', cntrctChgNo) + ")";
+		}
+	}
+
+
+	class CustomColumnHeader2 {
+		constructor(props) {
+			const columnInfo = props.columnInfo;
+			const el = document.createElement("div");
+			this.el = el;
+			columnInfo.header = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val()) + ")";
+			this.render(props);
+		}
+
+		getElement() {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.textContent = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val()) + ")";
+		}
+	}
+
+	class CustomColumnLink {
+		constructor(props) {
+			const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+		}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.innerHTML = `<div>` + props.value + ` <i class='ic ic-sent-to-back' onclick='goLink("` + props.grid.getRow(props.rowKey).rsce_cd + `", "` + $("#cntrctId option:selected").val() + `", "` + props.grid.getRow(props.rowKey).rsce_tp_cd + `");'>` + `</i></div>`;
+		}
+	}
+
+	function goLink(code, id, type) {
+		window.open("/projectcost/contract-detail?code=" + code + "&id=" + id + "&type=" + type, 'targetWindow', 'scrollbars=yes,resizable=yes,width=1200,height=700');
+	}
+
+
+	function arrayToTree(items) {
+		const map = {};
+		let root = null;
+
+		items.forEach(item => {
+			map[item.cst_calc_it_cd] = { ...item, _children: [] };
+		});
+
+		items.forEach(item => {
+			const node = map[item.cst_calc_it_cd];
+			if (item.up_cst_calc_it_cd === "") {
+				node._attributes = { expanded: true }
+				root = node;
+			} else {
+				node._attributes = { expanded: true }
+				map[item.up_cst_calc_it_cd]._children.push(node);
+			}
+		});
+
+		Object.values(map).forEach(item => {
+			if (item._children.length < 1 && item.a_menu_level != 1) {
+				delete item._children;
+			}
+		});
+
+		var result = Object.values(map).filter((row) => row.a_menu_level === 1);
+
+		var arr = new Array();
+		for (var key in result) {
+			arr.push(result[key]);
+		}
+
+		return arr;
+	}
+
+	function setChangeData() {
+		$("#chg_no").val($("#cntrctId option:selected").attr("cntrct_chg_no"));
+		$("#contractDt").text($("#cntrctId option:selected").attr("dt"));
+		$("#contractAmt").text($("#cntrctId option:selected").attr("chg_amt"));
+		$("#mlgTot").text($("#cntrctId option:selected").attr("mlg_tot").toLocaleString());
+		$("#calcDt").text($("#cntrctId option:selected").attr("dt"));
+		$("#calcAmt").text($("#cntrctId option:selected").attr("chg_amt"));
+		$("#calcCntrctAmt").text($("#cntrctId option:selected").attr("cntrct_amt").toLocaleString());
+	}
+
+
+	$(function () {
+		gaia.create({
+			$init: function ($params) {
+				$("._unit_won").addClass(getCookie('lang'));
+
+				gaiaPortal.navMenuInit('M0302', '{{ message("item.projectcost.050") }}');
+				$("#menuDepth").append('<li class=\"breadcrumb_item\" id=\"depth_txt\">{{ message("item.projectcost.050") }}</li>');
+
+				$("#sNoTxt").text("* {{ message('item.projectcost.059') }} : " + "{{ message('item.projectcost.060') }}".replace('{0}', tmnum) + " (" + dateFormat(dt, "g") + ")");
+
+
+				var tabItem = $(".tab_item");
+				var tabConts = $(".tab_conts");
+
+				$(tabItem).eq(0).addClass('active');
+				$(tabConts).eq(0).addClass('active');
+				// init(); 로딩이 끝나지 않고 페이지가 프리징 됨
+
+				$(tabItem).click(function (e) {
+					$(tabItem).removeClass('active');
+					$(tabConts).removeClass('active');
+
+					if (e.target.dataset.id == "tabs01") {
+						payment.init();
+
+						$("#menuName").text("{{ message('item.projectcost.050') }}")
+						$("#depth_txt").text("{{ message('item.projectcost.050') }}");
+
+						// 좌측 tree
+						payment.getTreeList();
+					} else {
+						calc.init();
+
+						$("#menuName").text("{{ message('item.projectcost.017') }}")
+						$("#depth_txt").text("{{ message('item.projectcost.017') }}");
+						$("#calcDt").text(dateFormat(dt, "g"));
+					}
+
+					$(this).addClass('active');
+					$("#" + $(this).data('id')).addClass('active');
+				});
+
+				// 최초 첫번째 탭 강제 클릭
+				$(tabItem).first().trigger("click");
+
+				gaia.loaded = true;
+			}
+		});
+	})
+	$(function () {
+		$("#cancel").click(function () {
+			window.location.href = `/projectcost/payment?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${pjtInfo.cntrctNo}`;
+		});
+	});
+
+
+</script>
+<script src="/webjars/jstree/jstree.min.js"></script>
+<script src="/assets/js/tree.js"></script>
+{% endblock footer_script %}

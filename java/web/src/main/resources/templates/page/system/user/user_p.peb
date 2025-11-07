@@ -1,0 +1,225 @@
+{% extends 'layout/base_popup' %}
+
+{% block head %}
+{% endblock head %}
+
+{% block content %}
+<section class="contents_wrap">
+    <article class="conts" id="container">
+        <div class="group">
+            <h3 class="conts_tit">{{ message('item.user.018') }}</h3>
+
+            <div class="conts_grid">
+                <div class="search_wrap">
+                    <span class="selectbox" id="selectBox">
+                        <select name="searchType" id="searchType">
+                            <option selected value="login_id">{{ message('item.user.001') }}</option>
+                            <option selected value="usr_nm">{{ message('item.user.003') }}</option>
+                        </select>
+                    </span>
+
+                    <div class="searchbox_wrap">
+                        <input type="text" name="searchValue" id="searchValue"
+                            onkeypress="if(event.keyCode == 13){page.user.search();}"
+                            placeholder="{{message('msg.004')}}" />
+                        <button type="button" class="icon_btn search" onclick='page.user.search()'><i
+                                class='ic ic-search'></i><span class='blind'>??</span></button>
+                    </div>
+
+                    <button type="button" class="btn _fill" onclick="page.user.create()" style="margin-left: 5px;">{{message("btn.001") }}</button>
+
+                    <div class="toolbar" style="margin-left: auto;">
+                        <div class="selectbox sort">
+                            <select name="items-per-page" id="items-per-page" onchange="page.user.changePerPage()">
+                                <option selected disabled value="">
+                                    {{ message("item.com.004") }}
+                                </option>
+                                <option value="5">5</option>
+                                <option selected value="10">10</option>
+                                <option value="15">15</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid" id="user-grid"></div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+    /* 20250423 Layout ±×¸®µå ¸®»çÀÌÂ¡ Ã³¸® */
+    .content_wrap {
+        display: block;
+    }
+
+    td[data-column-name="loginId"]>div.tui-grid-cell-content,
+    td[data-column-name="emailAdrs"]>div.tui-grid-cell-content {
+        text-overflow: ellipsis;
+    }
+</style>
+<script>
+    const newWindowViewRenderer = window.NewWindowViewRenderer;
+
+    const BASEPATH = "/api/system/user";
+    const channel = new BroadcastChannel("system-user");
+
+    var page = {
+        init() {
+            this.grid.init();
+            //page.grid.obj.methods.readData(); //
+        },
+        grid: {
+            obj: null,
+            init() {
+                const bodyHeight = 400;
+                if (this.obj) {
+                    return;
+                }
+                this.obj = $("#user-grid").setGrid({
+                    minBodyHeight: bodyHeight,
+                    // bodyHeight: bodyHeight,
+                    scrollY: true,
+                    scrollX: false,
+                    contextMenu: null,
+                    rowHeaders: [
+                        {
+                            type: "checkbox",
+                            header: `<input type="checkbox" id="checkAll" class="hidden-input" name="_checked" />`,
+                            width: 100,
+                        },
+                    ],
+                    columns: [
+                        {
+                            name: "usrId",
+                            hidden: true
+                        },
+                        {
+                            header: "{{ message('item.user.001') }}",
+                            name: "loginId",
+                        },
+                        {
+                            header: "{{ message('item.user.003') }}",
+                            name: "usrNm",
+                            className: "usrNm",
+                            align: "center"
+                        },
+                        {
+                            header: "{{ message('item.user.017') }}",
+                            name: "ratngNm",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.user.017') }}",
+                            name: "pstnNm",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.user.002') }}",
+                            name: "phoneNo",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.user.004') }}",
+                            name: "telNo",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.user.007') }}",
+                            name: "emailAdrs",
+                        },
+                        {
+                            header: "{{ message('item.com.003') }}",
+                            name: "useYn",
+                            align: "center",
+                        },
+                        {
+                            header: "{{ message('item.user.008') }}",
+                            name: "chgDt",
+                            align: "center",
+                        },
+                    ],
+                    readUrl: BASEPATH + "/get-sync-user-list",
+                    gridElement: "user-grid",
+                });
+            },
+        },
+        user: {
+            create() {
+                const grid = page.grid.obj.grid;
+                if (grid.getCheckedRows().length === 0) {
+                    // msg.021
+                    gaiaCommon.customAlert("{{ message('msg.021') }}");
+                    return false;
+                }
+
+                gaiaCommon.customConfirm("{{ message('item.user.019') }}", "{{ message('msg.user.015') }}", "{{ message('msg.user.016') }}", function () {
+
+                    const createData = grid.getCheckedRows().map(row => ({
+                        usrId: row.usrId,
+                        // loginId: row.loginId,
+                        // usrNm: row.usrNm,
+                        // phoneNo: row.phoneNo,
+                        // telNo: row.telNo,
+                        // userDiv: '02',
+                        // emailAdrs: row.emailAdrs,
+                        // useYn: 'Y',
+                    }));
+
+                    gaiaCommon.post(BASEPATH + "/user-sync-create", createData,
+                        function (result) {
+                            if (result.ok) {
+                                gaiaCommon.customAlert('{{ message("msg.005") }}');
+                                sendDataToParent({ msg: 'isSuccess' });
+                                page.init();
+                            }
+                        },
+                        function (error){
+                            popup.customAlert("저장에 실패하였습니다."); // 저장에 실패하였습니다.
+                            console.error(error);
+                        }
+                    );
+                });
+            },
+            search() {
+                const params = {
+                    searchType: $("#searchType").val(),
+                    searchValue: $("#searchValue").val()
+                };
+                page.grid.obj.methods.readData(params);
+
+            },
+            changePerPage() {
+                const size = $('select[id="items-per-page"]').val();
+                const param = {
+                    size: size,
+                };
+                page.grid.obj.methods.itemPerPageChange(param);
+            },
+
+        },
+    };
+
+    let sendDataToParent = function (data) {
+        let param = {
+            msg: "팝업에서 보낸 데이터",
+            data: data
+        }
+        channel.postMessage(param, location.origin);
+    }
+
+    $(function () {
+        gaia.create({
+            $init: function ($params) {
+                page.init();
+                gaiaPortal.navMenuInit("{{ message('item.wbsgen.039') }}", "{{ message('item.wbsgen.039') }}");
+
+                gaia.loaded = true
+            }
+        });
+    })
+</script>
+{% endblock footer_script %}

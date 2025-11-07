@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt">
+    <select id="getSafety"  parameterType="map" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getSafety][leejw]  */
+        SELECT  
+            CSI.CNTRCT_NO,
+            CSI.INSPECTION_NO,
+            CSI.TITLE,
+            CSIL.UP_CNSTTY_CD AS CNSTTY_CD,
+            SCC2.CMN_CD_NM_KRN AS CNSTTY_CD_NM,
+            TO_CHAR(CSI.ISP_REQ_DT, 'YYYY-MM-DD') AS ISP_REQ_DT,
+            CSI.ISP_ID,
+            SUI1.USR_NM AS ISP_ID_NM, 
+            TO_CHAR(CSI.ISP_DT, 'YYYY-MM-DD') AS ISP_DT,
+            CASE WHEN CSI.APPRVL_STATS = 'A' THEN TO_CHAR(CSI.APPRVL_DT, 'YYYY-MM-DD') ELSE NULL END AS APPRVL_DT,
+            CSI.APPRVL_ID,
+            CSI.APPRVL_STATS,
+            CASE WHEN CSI.APPRVL_STATS = 'A' THEN SUI2.USR_NM ELSE NULL END AS APPRVL_NM,
+            SCC.CMN_CD_NM_KRN AS APPRVL_STATS_NM,
+            -- 양호/불량 개수
+    		SUM(CASE WHEN CSIL2.DLT_YN = 'N' AND CSIL2.GD_FLTY_YN = 0 THEN 1 ELSE 0 END) AS GOOD_CNT,
+    		SUM(CASE WHEN CSIL2.DLT_YN = 'N' AND CSIL2.GD_FLTY_YN = 1 THEN 1 ELSE 0 END) AS BAD_CNT
+        FROM 
+            CW_SAFETY_INSPECTION CSI
+        LEFT JOIN
+            CW_STANDARD_INSPECTION_LIST CSIL 
+            ON CSI.CNSTTY_CD_L1 = CSIL.CNSTTY_CD  
+        LEFT JOIN
+            SM_USER_INFO SUI1 
+            ON CSI.ISP_ID = SUI1.USR_ID  
+        LEFT JOIN  
+            SM_USER_INFO SUI2 
+            ON CSI.APPRVL_ID = SUI2.USR_ID
+        LEFT JOIN
+            SM_COM_CODE SCC                    
+            ON SCC.CMN_CD = CSI.APPRVL_STATS
+            AND SCC.CMN_GRP_CD = #{apstscode}
+        LEFT JOIN
+            SM_COM_CODE SCC2                    
+            ON SCC2.CMN_CD = CSI.CNSTTY_CD
+            AND SCC2.CMN_GRP_CD = #{workcode}
+        LEFT JOIN
+		    CW_SAFETY_INSPECTION_LIST CSIL2
+		    ON CSI.INSPECTION_NO = CSIL2.INSPECTION_NO
+		    AND CSIL2.DLT_YN = 'N'
+        WHERE
+            CSI.CNTRCT_NO = #{cntrctNo}
+            AND (#{selectedWorkType} = '' OR CSI.CNSTTY_CD = #{selectedWorkType})
+            AND CSI.DLT_YN = 'N'
+        <if test="apprvlStats != null and apprvlStats != ''">
+            AND CSI.APPRVL_STATS = #{apprvlStats}
+        </if>
+        <if test="searchValue != null and searchValue != ''">
+            AND ( 
+                CSI.TITLE COLLATE "C" ILIKE '%' || #{searchValue} || '%'
+                OR CSIL.CNSTTY_NM COLLATE "C" ILIKE '%' || #{searchValue} || '%'
+                OR SUI1.USR_NM COLLATE "C" ILIKE '%' || #{searchValue} || '%'
+            )
+        </if>
+        GROUP BY
+		    CSI.CNTRCT_NO,
+		    CSI.INSPECTION_NO,
+		    CSI.TITLE,
+		    CSI.CNSTTY_CD_L1,
+		    CSIL.CNSTTY_NM,
+		    CSIL.UP_CNSTTY_CD,
+		    CSI.ISP_REQ_DT,
+		    CSI.ISP_ID,
+		    SUI1.USR_NM,
+		    CSI.ISP_DT,
+		    CSI.APPRVL_DT,
+		    CSI.APPRVL_ID,
+		    CSI.APPRVL_STATS,
+		    SUI2.USR_NM,
+		    SCC.CMN_CD_NM_KRN,
+		    SCC2.CMN_CD_NM_KRN
+        ORDER BY 
+            CSI.ISP_DT DESC;
+    </select>
+
+    <select id="getListTree" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getListTree][leejw]  */
+        WITH RECURSIVE TREE AS (
+	        SELECT
+                SC.CMN_CD AS ID,                
+                SC.CMN_CD_NM_KRN AS TEXT,       
+                NULL::TEXT AS PARENT,           
+                1 AS LEVEL,
+                '0'::VARCHAR AS ISPLSTID,
+                CAST(NULL AS TEXT) AS CNTRCT_NO             
+            FROM
+                SM_COM_CODE SC
+            WHERE
+                SC.CMN_GRP_CD = #{code}
+            UNION ALL
+            SELECT
+                CS.CNSTTY_CD AS ID,             
+                CS.CNSTTY_NM AS TEXT,           
+                CS.UP_CNSTTY_CD AS PARENT,      
+                CS.CNSTTY_LVL AS LEVEL,
+                CS.ISP_LST_ID::VARCHAR AS ISPLSTID,
+                CS.CNTRCT_NO AS CNTRCT_NO
+            FROM
+                CW_STANDARD_INSPECTION_LIST CS
+            JOIN
+                TREE T ON CS.UP_CNSTTY_CD = T.ID
+            WHERE
+                CS.CNTRCT_NO = 'CMIS'
+            AND 
+                CS.DLT_YN = 'N'
+            AND 
+                CS.CNSTTY_YN = 'Y'
+        )
+        SELECT 
+            T.ID,
+            T.TEXT,
+            T.PARENT,
+            T.LEVEL,
+            T.ISPLSTID,
+            T.CNTRCT_NO
+        FROM TREE T
+        ORDER BY T.LEVEL, T.ID;
+    </select>
+
+    <select id="getListContractTree" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getListContractTree][leejw]  */
+        WITH RECURSIVE TREE AS (
+                SELECT
+                SC.CMN_CD AS ID,
+                SC.CMN_CD_NM_KRN AS TEXT,
+                NULL::TEXT AS PARENT,
+                1 AS LEVEL,
+                '0'::VARCHAR AS ISPLSTID,
+                CAST(NULL AS TEXT) AS CNTRCT_NO   
+            FROM
+                SM_COM_CODE SC
+            WHERE
+                SC.CMN_GRP_CD = #{code}
+            UNION ALL
+            SELECT
+                CS.CNSTTY_CD AS ID,
+                CS.CNSTTY_NM AS TEXT,
+                CS.UP_CNSTTY_CD AS PARENT,
+                CS.CNSTTY_LVL AS LEVEL,
+                CS.ISP_LST_ID::VARCHAR AS ISPLSTID,
+                CS.CNTRCT_NO AS CNTRCT_NO
+            FROM
+                CW_STANDARD_INSPECTION_LIST CS
+            JOIN TREE T
+                ON CS.UP_CNSTTY_CD = T.ID
+            WHERE
+                CS.DLT_YN = 'N'
+            AND CS.CNSTTY_YN = 'Y'
+            AND CS.CNTRCT_NO in('CMIS', #{cntrctNo})
+            GROUP BY
+                CS.CNSTTY_CD,
+                CS.CNSTTY_NM,
+                CS.UP_CNSTTY_CD,
+                CS.CNSTTY_LVL,
+                CS.ISP_LST_ID,
+                CS.CNTRCT_NO 
+        )
+        SELECT
+            T.ID,
+            T.TEXT,
+            T.PARENT,
+            T.LEVEL,
+            T.ISPLSTID,
+            T.CNTRCT_NO
+        FROM TREE T
+        ORDER BY T.LEVEL, T.ID;
+    </select>
+
+     <select id="getSafetyList" parameterType="map" resultType="safetylistoutput">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getSafetyList][leejw]  */
+        SELECT 
+            CSIL.CNSTTY_NM ,
+            CSIL.GD_FLTY_YN ,
+            CSIL.IMPRV_REQ ,
+            CSIL.ISP_DSCRPT ,
+            CSIL.ISP_LST_ID ,
+            CSIL.ISP_LST_NO ,
+            CSIL2.CNSTTY_CD
+        FROM 
+            CW_SAFETY_INSPECTION_LIST CSIL 
+        LEFT JOIN
+            CW_STANDARD_INSPECTION_LIST CSIL2 
+        ON 
+            CSIL.ISP_LST_ID = CSIL2.ISP_LST_ID 
+        WHERE
+            CSIL.CNTRCT_NO in ('CMIS', #{cntrctNo}) 
+        AND
+            CSIL.INSPECTION_NO = #{inspectionNo}
+        AND 
+            CSIL.DLT_YN = 'N';
+    </select>
+
+    <select id="getSafeGridList" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getSafeGridList][leejw]  */
+        SELECT 
+            CS.ISP_LST_SNO ,
+            CS.ISP_LST_DSCRPT,
+            CS.ISP_LST_ID,
+            CS.CNTRCT_NO
+        FROM
+            CW_STANDARD_INSPECTION_LIST CS
+        WHERE 
+            CS.CNSTTY_CD = #{cnsttyCd}
+        AND 
+            CS.CNSTTY_YN = 'N'
+        AND 
+            CS.DLT_YN = 'N'
+        <if test="searchValue != null and searchValue != ''">
+            AND (
+                CS.ISP_LST_DSCRPT ILIKE '%' || #{searchValue} || '%'
+            )
+        </if>
+        AND (
+        <choose>
+            <when test="useType == 'common'">
+                CS.CNTRCT_NO = #{cntrctNo}
+            </when>
+            <otherwise>
+                CS.CNTRCT_NO IN ('CMIS', #{cntrctNo})
+            </otherwise>
+        </choose>
+        )
+        ORDER BY CS.ISP_LST_SNO;
+    </select>
+
+    <select id="getCnsttyLvl1" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getCnsttyLvl1][leejw]  */
+        SELECT 
+            CS.CNSTTY_NM,
+            CS.CNSTTY_CD
+        FROM 
+            CW_STANDARD_INSPECTION_LIST CS
+        WHERE 
+            CS.CNSTTY_LVL = 2
+        AND
+            CS.UP_CNSTTY_CD = #{upCnsttyCd}
+        AND
+            CS.DLT_YN = 'N'
+        AND 
+            CS.CNTRCT_NO in ('CMIS', #{cntrctNo}); 
+    </select>
+
+    <select id="getCnsttyLvl2" parameterType="map" resultType="map">
+         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getCnsttyLvl2][leejw]  */
+        WITH RECURSIVE TREE AS (
+            SELECT
+                CS.CNSTTY_CD AS ID,             
+                CS.CNSTTY_NM AS TEXT,           
+                CS.UP_CNSTTY_CD AS PARENT,      
+                CS.CNSTTY_LVL AS LEVEL,
+                CS.ISP_LST_ID AS ISPLSTID      
+            FROM
+                CW_STANDARD_INSPECTION_LIST CS
+            WHERE 
+                CS.DLT_YN = 'N'
+            AND 
+                CS.CNSTTY_YN = 'Y'
+            AND 
+                CS.CNTRCT_NO in ('CMIS', #{cntrctNo})
+            AND
+                CS.CNSTTY_CD = #{upCnsttyCd}
+            UNION ALL
+            SELECT
+                CS.CNSTTY_CD AS ID,             
+                CS.CNSTTY_NM AS TEXT,           
+                CS.UP_CNSTTY_CD AS PARENT,      
+                CS.CNSTTY_LVL AS LEVEL,
+                CS.ISP_LST_ID AS ISPLSTID      
+            FROM
+                CW_STANDARD_INSPECTION_LIST CS
+            JOIN TREE T 
+                ON CS.UP_CNSTTY_CD = T.ID
+            WHERE 
+                CS.DLT_YN = 'N'
+                AND CS.CNSTTY_YN = 'Y'
+                AND CS.CNTRCT_NO in ('CMIS', #{cntrctNo})
+        )
+        SELECT 
+            T.ID,
+            T.TEXT,
+            T.PARENT,
+            T.LEVEL,
+            T.ISPLSTID,
+            (SELECT STRING_AGG(CS.ISP_LST_ID::TEXT, ',' ORDER BY CS.ISP_LST_ID DESC)
+            FROM CW_STANDARD_INSPECTION_LIST CS
+            WHERE CS.CNTRCT_NO in ('CMIS', #{cntrctNo})
+            AND CS.CNSTTY_CD = T.ID
+            AND CS.CNSTTY_YN = 'N'
+            AND CS.DLT_YN = 'N') AS ALL_ISP_LST_IDS
+        FROM TREE T
+        ORDER BY T.LEVEL, T.ID;
+    </select>
+
+    <select id="getInspectionList" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getInspectionList][leejw]  */
+    SELECT 
+        CS.ISP_LST_ID,
+        CS.CNSTTY_NM,
+        CS.CNSTTY_CD,
+        CS.ISP_LST_DSCRPT,
+        (SELECT MAX(CS2.ISP_LST_ID) 
+        FROM CW_STANDARD_INSPECTION_LIST CS2 
+        WHERE CS2.CNTRCT_NO = CS.CNTRCT_NO
+        AND CS2.DLT_YN = 'N') AS MAX_ISP_LST_ID
+    FROM 
+        CW_STANDARD_INSPECTION_LIST CS
+    WHERE 
+        CS.CNTRCT_NO in ('CMIS', #{cntrctNo}) 
+    AND CS.CNSTTY_YN = 'N'
+    AND CS.DLT_YN = 'N'
+    AND CS.CNSTTY_CD = #{cnsttyCd}
+</select>
+
+<select id="getInspection" parameterType="map" resultType="safetyoutput">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getInspection][leejw]  */
+    SELECT 
+        CSI.CNTRCT_NO AS CNTRCTNO,
+        CSI.INSPECTION_NO AS INSPECTIONNO,
+        CSI.ISP_DOC_NO AS ISPDOCNO,
+        CSI.TITLE AS TITLE,
+        CSI.CNSTTY_CD,
+        CSI.CNSTTY_CD_L1 AS CNSTTYCDL1,
+        CSI.CNSTTY_CD_L2 AS CNSTTYCDL2,
+        CSI.ISP_DT AS ISPDT,
+        CSI.RSLT_YN as RSLTYN,
+        SC.CMN_CD_NM_KRN AS CNSTTYNM,
+        CSIL1.CNSTTY_NM AS CNSTTYNM1,  
+        STRING_AGG(DISTINCT CSIL2.CNSTTY_NM, ', ') AS CNSTTYNM2,
+        STRING_AGG(DISTINCT CSIL2_UP.CNSTTY_NM, ', ') AS UPCNSTTYNM2
+    FROM 
+        CW_SAFETY_INSPECTION CSI
+    JOIN 
+    	SM_COM_CODE SC
+    ON 
+        CSI.CNSTTY_CD = SC.CMN_CD
+    AND SC.CMN_GRP_CD = #{workcode}
+    LEFT JOIN 
+	    CW_STANDARD_INSPECTION_LIST CSIL1 
+	    ON CSI.CNSTTY_CD_L1 = CSIL1.CNSTTY_CD 
+	    AND CSIL1.CNTRCT_NO IN (#{cntrctNo}, 'CMIS')
+	LEFT JOIN 
+	    CW_STANDARD_INSPECTION_LIST CSIL2 
+	    ON CSIL2.CNSTTY_CD = ANY (STRING_TO_ARRAY(CSI.CNSTTY_CD_L2, ','))
+	    AND CSIL2.CNTRCT_NO IN (#{cntrctNo}, 'CMIS')
+    LEFT JOIN CW_STANDARD_INSPECTION_LIST CSIL2_UP
+        ON CSIL2.UP_CNSTTY_CD = CSIL2_UP.CNSTTY_CD
+        AND CSIL2_UP.CNTRCT_NO IN (#{cntrctNo}, 'CMIS')
+    WHERE 
+        CSI.CNTRCT_NO = #{cntrctNo}
+    AND
+        CSI.INSPECTION_NO = #{inspectionNo}
+    GROUP BY 
+        CSI.CNTRCT_NO, 
+        CSI.INSPECTION_NO, 
+        CSI.ISP_DOC_NO, 
+        CSI.TITLE, 
+        CSI.CNSTTY_CD,
+        CSI.CNSTTY_CD_L1, 
+        CSI.CNSTTY_CD_L2, 
+        CSI.ISP_DT,
+        CSI.RSLT_YN, 
+        CSIL1.CNSTTY_NM,
+        SC.CMN_CD_NM_KRN;
+</select>
+
+<select id="getSadTagList"  parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getSadTagList][leejw]  */
+    SELECT 
+        CS.CNTRCT_NO,
+        CS.SADTAG_NO,
+        CS.SADTAG_DOC_NO,
+        TO_CHAR(CS.FIND_DT, 'YYYY-MM-DD') AS FIND_DT,
+        TO_CHAR(CS.ACTN_TMLMT, 'YYYY-MM-DD') AS ACTN_TMLMT,
+        TO_CHAR(CS.ACTN_DT, 'YYYY-MM-DD') AS ACTN_DT,
+        CS.APPRVL_STATS,
+        SCC.CMN_CD_NM_KRN AS APPRVL_STATS_NM,
+        CS.TITLE,
+        CS.DFCCY_LCT,
+        CS.FIND_ID,
+        CS.ACTN_RSLT,
+        CS.AP_DOC_ID
+    FROM 
+        CW_SADTAG CS
+    LEFT JOIN
+        SM_COM_CODE SCC 
+        ON CS.APPRVL_STATS = SCC.CMN_CD
+        AND SCC.CMN_GRP_CD = '05271d71-8c1b-4742-bc7a-0868684faf5e'
+    WHERE
+        CS.CNTRCT_NO = #{cntrctNo}
+        AND CS.DLT_YN = 'N'
+    <if test="apprvlStats != null and apprvlStats != ''">
+        AND CS.APPRVL_STATS = #{apprvlStats}
+    </if>
+     <if test="searchValue != null and searchValue != ''">
+        AND (
+            CS.TITLE ILIKE '%' || #{searchValue} || '%'
+        )
+    </if>
+    ORDER BY
+        CS.RGST_DT ASC
+</select>
+
+<select id="getSadTag"  parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.safety.safetymgmt.getSadTag][leejw]  */
+    SELECT 
+        CS.SADTAG_DOC_NO ,
+        CS.DFCCY_TYP ,
+        CASE 
+            WHEN CS.DFCCY_TYP = 'A' THEN '교정'
+            WHEN CS.DFCCY_TYP = 'B' THEN '예방'
+            WHEN CS.DFCCY_TYP = 'C' THEN '개선'
+            WHEN CS.DFCCY_TYP = 'D' THEN '장기'
+        END AS DFCCY_TYP_KNM,
+        CS.TITLE,
+        TO_CHAR(CS.FIND_DT, 'YYYY-MM-DD') AS FIND_DT,
+        CS.FIND_ID ,
+        CS.DFCCY_CNTNTS ,
+        CS.DFCCY_LCT ,
+        TO_CHAR(CS.ACTN_TMLMT, 'YYYY-MM-DD') AS ACTN_TMLMT,
+        CS.PSTATS ,
+        CASE 
+            WHEN CS.PSTATS = 'C' THEN '완료'
+            WHEN CS.PSTATS = 'P' THEN '조치'
+        END AS PSTATS_KNM,
+        TO_CHAR(CS.ACTN_DT, 'YYYY-MM-DD') AS ACTN_DT,
+        CS.ACTN_ID,
+        CS.ACTN_RSLT 
+    FROM 
+        CW_SADTAG CS
+    WHERE 
+        CS.CNTRCT_NO = #{cntrctNo}
+    AND 
+        CS.SADTAG_NO = #{sadtagNo}
+</select>
+</mapper>

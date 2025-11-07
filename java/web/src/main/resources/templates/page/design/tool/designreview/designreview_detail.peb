@@ -1,0 +1,927 @@
+<div class="toolbar">
+    <div class="btn_area s_default" id="dsgn_detail_btn_area" style="justify-content: stretch;">
+        <!-- 페이징 기능 -->
+        <button type="button" class="btn _outline" id="detail-close-popup" onclick="dsgnDetail.close()">{{ message('btn.007') }}</button>
+        <div class="tui-pagination tui-grid-pagination">
+            <span class="tui-page-btn tui-is-disabled tui-first" id="firstPage" onclick="dsgnDetail.firstPage()">
+                <span class="tui-ico-first">first</span>
+            </span>
+            <span class="tui-page-btn tui-is-disabled tui-prev" id="prevPage" onclick="dsgnDetail.prevPage()">
+                <span class="tui-ico-prev">prev</span>
+            </span>
+            <span class="tui-page-btn" id="page_dsgnNo" style="width: 100px;">1</span>
+            <input type="hidden" id="pageNumber">1</input>
+            <span class="tui-page-btn tui-next" id="nextPage" onclick="dsgnDetail.nextPage()">
+                <span class="tui-ico-next">next</span>
+            </span>
+            <span class="tui-page-btn tui-is-disabled tui-last" id="lastPage" onclick="dsgnDetail.lastPage()">
+                <span class="tui-ico-last">last</span>
+            </span>
+        </div>
+        <div class="btn_group iconbtns">
+            <button class="icon_btn" id="open-new-window" onclick="dsgnDetail.open()">
+                <i class="fa-solid fa-up-right-from-square"></i>
+                <span class="tooltip">{{ message('item.com.017') }}</span>
+            </button>
+        </div>
+    </div>
+    <input type="hidden" id="detail_dsgnNo"/>
+</div>
+
+<div class="ty_list" id="dsgn_detail_list_tb">
+    <tr class="more_info">
+        <td class="ta_l" style="position: relative;">
+            <!-- 검토 의견-->
+            <dl class="more_data">
+                <h2>검토의견</h2>
+                <hr class="header_line"/> <!-- 구분 밑줄-->
+                <dt>제목</dt>
+                <dd id="dsgnTitle">검토 제목</dd>
+                <dt>검토 분류</dt>
+                <dd id="dsgnCdNm">검토 분류</dd>
+                <dt>검토 의견</dt>
+                <dd id=""><pre id="rvwOpnin"></pre></dd>
+                <dt>문제점</dt>
+                <dd id="isuYn">문제점</dd>
+                <dt>교훈</dt>
+                <dd id="lesnYn">교훈</dd>
+                <dt>검토자</dt>
+                <dd id="dsgnRgstNm">검토자</dd>
+                <dt>작성일</dt>
+                <dd id="dsgnRgstDt">작성일</dd>
+            </dl>
+            <dl class="more_data">
+                <div class="dwg_info">
+                    <dt>문서 번호</dt>
+                    <dd id="docNo">문서 번호</dd>
+                    <dt>도면 번호</dt>
+                    <dd id="dwgNo">도면 번호</dd>
+                    <dt>도면 명</dt>
+                    <dd id="dwgNm">도면 명</dd>
+                </div>
+            </dl>
+            <dl class="more_data">
+                <dt>첨부파일</dt>
+                <dd>
+                    <div class="attach_area detail" id="dsgn_attach_area" style="">
+                        <!-- 첨부파일 미등록 시 -->
+                        <p class="data_info" id="dsgn_data_info">
+                            등록된 첨부파일이 없습니다. </p>
+                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                            <div class="attach_list hide" id="dsgn_attach_list">
+                                <ul class="file_header">
+                                    <li class="header_item">
+                                        <div class="icon_btn">
+                                            <i class="ic ic-folder-open" id="dsgn_fileIcon"></i>
+                                            <span class="blind">파일명</span>
+                                            <!-- 파일명 -->
+                                        </div>
+                                        <span class="f_name">파일명</span>
+                                        <!-- 파일명 -->
+                                    </li>
+                                </ul>
+                                <ul class="file_list" id="dsgnFileList"></ul>
+                            </div>
+                    </div>
+                </dd>
+            </dl>
+            
+            <dl class="more_data">
+                <dt>도면 보기</dt>
+                <dd id="dsgn_dwg_view">
+                    <button type="button" class="icon_btn toggle-btn" style="padding: 0 0 .35em 0;" onclick="dsgnDetail.toggleView(this)">[ 펼치기 ]</button>
+                    <div class="toggle-content" style="display:none;">
+                        <dl class="dl_box p_photo" style="width: 100%; min-height:auto;" id="dsgn_rvw_container">
+                            <dt class="item_dt" style="width: 100%;">
+                                <label class="form_check"><span class="check_label">검토 도서</span></label>
+                            </dt>
+                            <dd>등록된 도면사진이 없습니다.</dd>
+                        </dl>
+                        <dl class="dl_box p_photo" style="width: 100%; min-height:auto;" id="dsgn_chg_container">
+                            <dt class="item_dt" style="width: 100%;">
+                                <label class="form_check"><span class="check_label">변경 요청 도서</span></label>
+                            </dt>
+                            <dd>등록된 도면사진이 없습니다.</dd>
+                        </dl>
+                    </div>
+                </dd>
+            </dl>    
+            <!-- 답변 관리-->
+            <dl class="more_data">
+                <h2>답변</h2>
+                <hr class="header_line"/> <!-- 구분 밑줄-->
+            </dl>
+            <div id="dsgn_rply_data_container">
+                <dl class="more_data">
+                    <div>
+                        <span class="name_color">박새롬(공무팀) - ${apprerNm}</span>
+                        <span>2025.02.17 - ${apprerDt}</span>
+                    </div>
+                </dl>
+                <dl class="more_data">
+                    <dt>답변 분류</dt>
+                    <dd id="rplyCdNm">동의함 - ${rplyStatus}</dd>
+                    <dt>답변 내용</dt>
+                    <dd id=""><pre id="rplyCntnts"></pre></dd>
+                    <dt>첨부파일</dt>
+                    <dd>
+                        <div class="attach_area" id="rply_attach_area">
+                            <!-- 첨부파일 미등록 시 -->
+                            <p class="data_info" id="rply_data_info">
+                                등록된 첨부파일이 없습니다. </p>
+                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                            <div class="attach_list hide" id="rply_attach_list">
+                                <ul class="file_header">
+                                    <li class="header_item">
+                                        <div class="icon_btn">
+                                            <i class="ic ic-folder-open" id="rply_fileIcon"></i>
+                                            <span class="blind">파일명</span>
+                                            <!-- 파일명 -->
+                                        </div>
+                                        <span class="f_name">파일명</span>
+                                        <!-- 파일명 -->
+                                    </li>
+                                </ul>
+                                <ul class="file_list" id="rplyFileList"></ul>
+                            </div>
+                        </div>
+                    </dd>
+                    <!-- 도면 보기 -->
+                    <dt>도면 보기</dt>
+                    <dd id="dsgn_resp_view">
+                        <button type="button" class="icon_btn toggle-btn" style="padding: 0 0 .35em 0;" onclick="dsgnDetail.toggleView(this)">[ 펼치기 ]</button>
+                        <div class="toggle-content" style="display:none;">
+                            <dl class="dl_box p_photo" style="width: 100%; min-height:auto;" id="dsgn_rvw_resp_container">
+                                <dt class="item_dt" style="width: 100%;">
+                                    <label class="form_check"><span class="check_label">도면 사진</span></label>
+                                </dt>
+                                <dd>등록된 도면사진이 없습니다.</dd>
+                            </dl>
+                        </div>
+                    </dd>
+                </dl>
+            </div>
+
+            <!-- 평가 관리 -->
+            <dl class="more_data">
+                <h2>평가</h2>
+                <hr class="header_line"/> <!-- 구분 밑줄-->
+            </dl>
+            <div id="dsgn_apprer_data_container">
+                <!-- 동적으로 여러개 생성.-->
+                <dl class="more_data">
+                    <div>
+                        <span class="name_color">박새롬(공무팀) - ${apprerNm}</span>
+                        <span>2025.02.17 - ${apprerDt}</span>
+                    </div>
+                </dl>
+                <dl class="more_data" id="dsgn_apprer_data">
+                    <dt>평가 의견</dt>
+                    <dd>동의함 - ${apprerStatus}</dd>
+                    <dt>첨부파일</dt>
+                    <dd>
+                        <div class="attach_area" id="attach_area">
+                            <!-- 첨부파일 미등록 시 -->
+                            <p class="data_info" id="data_info">
+                                등록된 첨부파일이 없습니다. </p>
+                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                            <div class="attach_list hide" id="attach_list">
+                                <ul class="file_header">
+                                    <li class="header_item">
+                                        <div class="icon_btn">
+                                            <i class="ic ic-folder-open" id="fileIcon"></i>
+                                            <span class="blind">파일명</span>
+                                            <!-- 파일명 -->
+                                        </div>
+                                        <span class="f_name">파일명</span>
+                                        <!-- 파일명 -->
+                                    </li>
+                                </ul>
+                                <ul class="file_list" id="fileList"></ul>
+                            </div>
+                        </div>
+                    </dd>
+                </dl>
+            </div>
+            <dl class="more_result_data">
+                <hr class="" />
+                <div class="response-meta">
+                    <div class="author-date">
+                        <dt>평가자 동의</dt>
+                        <dd id="apprerCdNm">동의 - {apprerCd}</dd>
+                        <dt>작성자</dt>
+                        <dd class="sub_name_color" id="apprerRgstrNm">박새롬(안전품질관리) - {apprerNm}</dd>
+                        <dt>완료일</dt>
+                        <dd id="apprerRgstrDt">2024-01-15 - {apprerDt}</dd>
+                    </div>
+                </div>
+            </dl>
+
+            <!-- 백체크 -->
+            <dl class="more_data">
+                <h2>백체크</h2>
+                <hr class="header_line"/> <!-- 구분 밑줄-->
+            </dl>
+            <div id="dsgn_backchk_data_container">
+                <!-- 동적으로 여러개 생성.-->
+                <dl class="more_data">
+                    <div>
+                        <span class="name_color">박새롬(공무팀) - ${apprerNm}</span>
+                        <span>2025.02.17 - ${apprerDt}</span>
+                    </div>
+                </dl>
+                <dl class="more_data" id="dsgn_backchk_data">
+                    <dt>백체크 의견</dt>
+                    <dd>동의함 - ${backchkStatus}</dd>
+                    <dt>첨부파일</dt>
+                    <dd>
+                        <div class="attach_area" id="attach_area">
+                            <!-- 첨부파일 미등록 시 -->
+                            <p class="data_info" id="data_info">
+                                등록된 첨부파일이 없습니다. </p>
+                            <!-- 첨부파일 등록 시 활성화 'hide'제거-->
+                            <div class="attach_list hide" id="attach_list">
+                                <ul class="file_header">
+                                    <li class="header_item">
+                                        <div class="icon_btn">
+                                            <i class="ic ic-folder-open" id="fileIcon"></i>
+                                            <span class="blind">파일명</span>
+                                            <!-- 파일명 -->
+                                        </div>
+                                        <span class="f_name">파일명</span>
+                                        <!-- 파일명 -->
+                                    </li>
+                                </ul>
+                                <ul class="file_list" id="fileList"></ul>
+                            </div>
+                        </div>
+                    </dd>
+                </dl>
+            </div>
+            <dl class="more_result_data">
+                <hr class="" />
+                <div class="author-date">
+                    <dt>백체크</dt>
+                    <dd id="backchkCdNm">종결 - {backchkCdNm}</dd>
+                    <dt>작성자</dt>
+                    <dd class="sub_name_color" id="backchkRgstrNm">박새롬(안전품질관리) - {backchkRgstrNm}</dd>
+                    <dt>완료일</dt>
+                    <dd id="backchkRgstrDt">2024-01-15 - {backchkDt}</dd>
+                </div>
+            </dl>
+        </td>
+    </tr>
+    <div id="dwg_popup">
+    </div>
+</div>
+<script>
+    // 새창 모드일 경우,
+    var dsgnDetailPopup;
+    var dsgnTotalCnt;
+
+    var dsgnDetail = {
+        searchData: null, // 그리드 목록이 검색되어진 상태인 경우,
+        initRowData: null, // 새창 열기 시, 사용.
+        currentPageNumber: null, // 새창 열기 시, 사용
+        init(rowData){
+            this.initRowData = rowData;
+            this.renderDsgnEl(rowData);
+        },
+        renderDsgnEl(rowData){
+            this.dataReset();
+
+            $("#page_dsgnNo").text(rowData.dsgnNo);
+
+            /* 설계 검토 의견 매핑 */
+            $("#detail_dsgnNo").val(rowData.dsgnNo);
+
+            if(rowData.isuYn === 'Y') {
+                $("#dsgnTitle").addClass("dfccy_priority");
+            }
+
+            $("#dsgnTitle").text(gaiaCommon.decodeSafeText(rowData.title));
+            $("#dsgnCdNm").text(rowData.dsgnCdNm);
+            $("#docNo").text(gaiaCommon.decodeSafeText(rowData.docNo));
+            $("#dwgNo").text(gaiaCommon.decodeSafeText(rowData.dwgNo));
+            $("#dwgNm").text(gaiaCommon.decodeSafeText(rowData.dwgNm));
+            $("#rvwOpnin").text(gaiaCommon.decodeSafeText(rowData.rvwOpnin));
+            $("#isuYn").text(rowData.isuYn === 'Y' ? 'YES' : 'NO');
+            $("#lesnYn").text(rowData.lesnYn === 'Y' ? 'YES' : 'NO');
+            $("#dsgnRgstNm").text(rowData.rgstrNm);
+            $("#dsgnRgstDt").text(rowData.rgstDt);
+
+            // 첨부파일 리스트
+            const fileLists = rowData.files;
+            const fileListContainer = $(`#dsgnFileList`);
+            const dataInfo = $(`#dsgn_data_info`);
+            const attachList = $(`#dsgn_attach_list`);
+            let listItem = this.createAttachArea(fileLists);
+            if(listItem != ''){
+                dataInfo.addClass("hide");
+                attachList.removeClass("hide");
+                fileListContainer.append(listItem);
+            }
+
+            // 검토, 변경사항 도서 렌더링
+            const rvwDwgFile = rowData.rvwDwgFile;
+            const rvwDwgDscrpt = rowData.rvwDwgDscrpt;  
+            const chgDwgFile = rowData.chgDwgFile;
+            const chgDwgDscrpt = rowData.chgDwgDscrpt;
+
+            this.setDsgnDwg(rvwDwgFile, rvwDwgDscrpt, "rvw");
+            this.setDsgnDwg(chgDwgFile, chgDwgDscrpt, "chg");
+
+            /* 답변 사항 매핑 */
+            this.setDsgnRply(rowData);
+
+            /* 평가, 백체크 사항 매핑 */
+            this.setDsgnApprerAndBackchk(rowData);
+
+        },
+        createAttachArea(fileList){
+            let listItem = '';
+            if (fileList && fileList.length > 0) {
+                const imgExts = ['jpeg','jpg','png','webp','gif'];
+                fileList.forEach((file, index) => {
+                    let ext = file.fileDiskNm.split(".").pop()
+                    listItem += `
+                        <li class="list_item">
+                            <a class="icon_btn" href="${file.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload')}/${file.fileDiskNm}"  download="${file.fileNm}">
+                                <i class="ic ic-folder-open"></i>
+                                <span class="blind">${file.fileNm}</span>
+                            </a>
+                            <a class="f_name" href="${file.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload')}/${file.fileDiskNm}"  download="${file.fileNm}" >${file.fileNm}</a>`
+                    if(imgExts.includes(ext)){
+                        listItem += `<div class='thumbnail'><a href="javascript:dsgnDetail.openImagePopup('${file.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload')}/${file.fileDiskNm}')"><img src="${file.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload')}/${file.fileDiskNm}"></a></div>`;
+                    }
+                    listItem += `</li>`;
+                });
+            }
+            return listItem;
+        },
+
+        // 평가, 백체크 요소 렌더링
+        setDsgnApprerAndBackchk(rowData){
+            const apprerCdNm = rowData.apprerCdNm;
+            const backchkCdNm = rowData.backchkCdNm;
+            const apprerContainer = $("#dsgn_apprer_data_container");   // 평가자 컨테이너
+            const backchkContainer = $("#dsgn_backchk_data_container"); // 백체크 컨테이너
+            let isApprer = true;
+            let isBackchk = true;
+
+            // 기존 데이터 초기화
+            apprerContainer.empty();
+            backchkContainer.empty();
+
+            if(!apprerCdNm){
+                apprerContainer.append(`<dl class="more_data" style="justify-content: center;"><p class="data_info">평가 데이터가 없습니다.</p></dl>`);
+                $("#apprerCdNm").text('');
+                $("#apprerRgstrNm").text('');
+                $("#apprerRgstrDt").text('');
+                isApprer = false;
+            }else{
+                // 평가 데이터 설정
+                $("#apprerCdNm").text(rowData.apprerCdNm);
+                $("#apprerRgstrNm").text(rowData.apprerRgstrNm);
+                $("#apprerRgstrDt").text(rowData.apprerRgstDt);
+            }
+
+            if(!backchkCdNm){
+                backchkContainer.append(`<dl class="more_data" style="justify-content: center;"><p class="data_info">백체크 데이터가 없습니다.</p></dl>`);
+                $("#backchkCdNm").text('');
+                $("#backchkRgstrNm").text('');
+                $("#backchkRgstrDt").text('');
+                isBackchk = false;
+            }else{
+                // 백체크 데이터 설정
+                $("#backchkCdNm").text(rowData.backchkCdNm);
+                $("#backchkRgstrNm").text(rowData.backchkRgstrNm);
+                $("#backchkRgstrDt").text(rowData.backchkRgstDt);
+            }
+
+            // 평가, 백체크 데이터가 없을 경우, 서버 호출 X
+            if(!isApprer && !isBackchk){
+                return;
+            }
+
+            const reqData = {
+                dsgnNo: rowData.dsgnNo,
+                cntrctNo: cntrctNo
+            }
+
+            gaiaCommon.post(`/api/design/review/detail/sub-data`,reqData,function (data) {
+                let apprer = data.details.apprer;
+                let backchk = data.details.backchk;
+
+                console.log("apprer: ", apprer);
+                console.log("backchk: ", backchk);
+
+                // 평가 데이터 요소 렌더링
+                apprer.forEach((item, index) => {
+                    const apprerHtml = `
+                        <dl class="more_data">
+                            <div>
+                                <span class="name_color">${item.apprerRgstrNm}</span>
+                                <span>${item.apprerRgstDt}</span>
+                            </div>
+                        </dl>
+                        <dl class="more_data">
+                            <dt>평가 의견</dt>
+                            <dd><pre>${item.evlOpnin}</pre></dd>
+                            <dt>첨부파일</dt>
+                            <dd>
+                                <div class="attach_area detail" style="overflow-y: scroll;">
+                                    <p class="data_info" id="apprer_data_info_${index}">등록된 첨부파일이 없습니다.</p>
+                                    <div class="attach_list hide" id="apprer_attach_list_${index}">
+                                        <ul class="file_header">
+                                            <li class="header_item">
+                                                <div class="icon_btn">
+                                                    <i class="ic ic-folder-open"></i>
+                                                    <span class="blind">파일명</span>
+                                                </div>
+                                                <span class="f_name">파일명</span>
+                                            </li>
+                                        </ul>
+                                        <ul class="file_list" id="apprerFileList_${index}"></ul>
+                                    </div>
+                                </div>
+                            </dd>
+                        </dl>`;
+
+                    apprerContainer.append(apprerHtml);
+
+                    // 첨부파일 추가
+                    console.log("item.apprerFiles: ", item.apprerFiles);
+                    dsgnDetail.setDsgnApprerFiles(item.apprerFiles, index);
+                });
+
+                // 백체크 데이터 요소 렌더링
+                backchk.forEach((item, index) => {
+                    const backchkHtml = `
+                        <dl class="more_data">
+                            <div>
+                                <span class="name_color">${item.backchkRgstrNm}</span>
+                                <span>${item.backchkRgstDt}</span>
+                            </div>
+                        </dl>
+                        <dl class="more_data">
+                            <dt>백체크 의견</dt>
+                            <dd><pre>${item.bckchkOpnin}</pre></dd>
+                            <dt>첨부파일</dt>
+                            <dd>
+                                <div class="attach_area detail" style="overflow-y: scroll;">
+                                    <p class="data_info" id="backchk_data_info_${index}">등록된 첨부파일이 없습니다.</p>
+                                    <div class="attach_list hide" id="backchk_attach_list_${index}">
+                                        <ul class="file_header">
+                                            <li class="header_item">
+                                                <div class="icon_btn">
+                                                    <i class="ic ic-folder-open"></i>
+                                                    <span class="blind">파일명</span>
+                                                </div>
+                                                <span class="f_name">파일명</span>
+                                            </li>
+                                        </ul>
+                                        <ul class="file_list" id="backchkFileList_${index}"></ul>
+                                    </div>
+                                </div>
+                            </dd>
+                        </dl>`;
+
+                    backchkContainer.append(backchkHtml);
+                    // 첨부파일 추가
+                    dsgnDetail.setDsgnBackchkFiles(item.backchkFiles, index);
+                });
+
+                console.log("데이터 세팅 완료!");
+            },function (xhr, status, error) {
+                console.log(`[Modal] 설계 검토 관리 상세보기 초기 데이터 세팅 실패, /api/design/designReview/detail/sub-data, PARAMS : ${reqData}`,error);
+            });
+        },
+
+        // 답변 요소 렌더링
+        setDsgnRply(rowData) {
+            // console.log("답변 데이터 설정 중...", rowData);
+
+            const replyContainer = $("#dsgn_rply_data_container");
+            replyContainer.empty(); // 기존 데이터 초기화
+
+            if (!rowData || !rowData.rplyStatus) {
+                replyContainer.append(`<dl class="more_data" style="justify-content: center;"><p class="data_info">답변 데이터가 없습니다.</p></dl>`);
+            }else{
+                const rplyHtml = `
+                    <dl class="more_data">
+                        <div>
+                            <span class="name_color">${rowData.rplyRgstrNm}</span>
+                            <span>${rowData.rplyRgstDt}</span>
+                        </div>
+                    </dl>
+                    <dl class="more_data">
+                        <dt>답변 분류</dt>
+                        <dd>${rowData.rplyStatus}</dd>
+                        <dt>답변 내용</dt>
+                        <dd><pre>${rowData.rplyCntnts}</pre></dd>
+                        <dt>첨부파일</dt>
+                        <dd>
+                            <div class="attach_area detail" style="overflow-y: scroll;">
+                                <p class="data_info" id="rply_data_info">등록된 첨부파일이 없습니다.</p>
+                                <div class="attach_list hide" id="rply_attach_list">
+                                    <ul class="file_header">
+                                        <li class="header_item">
+                                            <div class="icon_btn">
+                                                <i class="ic ic-folder-open"></i>
+                                                <span class="blind">파일명</span>
+                                            </div>
+                                            <span class="f_name">파일명</span>
+                                        </li>
+                                    </ul>
+                                    <ul class="file_list" id="rplyFileList"></ul>
+                                </div>
+                            </div>
+                        </dd>
+                        <!-- 도면 보기 -->
+                        <dt>도면 보기</dt>
+                        <dd id="dsgn_resp_view">
+                            <button type="button" class="icon_btn toggle-btn" style="padding: 0 0 .35em 0;" onclick="dsgnDetail.toggleView(this)">[ 펼치기 ]</button>
+                            <div class="toggle-content" style="display:none;">
+                                <dl class="dl_box p_photo" style="width: 100%; min-height:auto;" id="dsgn_dwg_rply_container">
+                                    <dt class="item_dt" style="width: 100%;">
+                                        <label class="form_check"><span class="check_label">도면 사진</span></label>
+                                    </dt>
+                                    
+                                </dl>
+                            </div>
+                        </dd>
+                    </dl>
+                    `;
+    
+                replyContainer.append(rplyHtml);
+            }
+
+
+            // 첨부파일 추가
+            this.setDsgnRplyFiles(rowData.replyFiles);
+
+            // 도면사진 추가
+            this.setDsgnDwg(rowData.rplyDwgFile, rowData.rplyDwgDscrpt, "rply");
+        },
+
+        setDsgnRplyFiles(replyFiles) {
+            const fileListContainer = $("#rplyFileList");
+            const dataInfo = $("#rply_data_info");
+            const attachList = $("#rply_attach_list");
+
+            fileListContainer.empty(); // 기존 리스트 초기화
+
+            if (!replyFiles || replyFiles.length === 0) {
+                dataInfo.removeClass("hide").text("등록된 첨부파일이 없습니다.");
+                attachList.addClass("hide");
+                return;
+            }
+
+            dataInfo.addClass("hide");
+            attachList.removeClass("hide");
+
+            let listItem = this.createAttachArea(replyFiles);
+            fileListContainer.append(listItem);
+        },
+
+        setDsgnApprerFiles(apprerFiles, index) {
+            const fileListContainer = $(`#apprerFileList_${index}`);
+            const dataInfo = $(`#apprer_data_info_${index}`);
+            const attachList = $(`#apprer_attach_list_${index}`);
+
+            fileListContainer.empty(); // 기존 리스트 초기화
+
+            if (!apprerFiles || apprerFiles.length === 0) {
+                console.log("등록된 첨부파일이 없습니다.");
+                dataInfo.removeClass("hide").text("등록된 첨부파일이 없습니다.");
+                attachList.addClass("hide");
+                return;
+            }
+
+            dataInfo.addClass("hide");
+            attachList.removeClass("hide");
+
+            let listItem = this.createAttachArea(apprerFiles);
+            fileListContainer.append(listItem);
+        },
+
+        setDsgnBackchkFiles(backchkFiles, index) {
+            const fileListContainer = $(`#backchkFileList_${index}`);
+            const dataInfo = $(`#backchk_data_info_${index}`);
+            const attachList = $(`#backchk_attach_list_${index}`);
+
+            fileListContainer.empty(); // 기존 리스트 초기화
+
+            if (!backchkFiles || backchkFiles.length === 0) {
+                dataInfo.removeClass("hide").text("등록된 첨부파일이 없습니다.");
+                attachList.addClass("hide");
+                return;
+            }
+
+            dataInfo.addClass("hide");
+            attachList.removeClass("hide");
+
+            let listItem = this.createAttachArea(backchkFiles);
+            fileListContainer.append(listItem);
+        },
+
+        setDsgnDwg(dwgFile, dwgDscrpt, mode){
+            
+            let imgSrc = dwgFile ? dwgFile.fileDiskPath.replace(/\\/g, '/').replace(/^.*\/upload/, '/upload') + "/" + dwgFile.fileDiskNm : "";
+            
+            let dwgHtml = dwgFile ? ` <dd class="item_dd" style="width: 100%;">
+                                <figure class="p_photo_info">
+                                    <a href="javascript:void(0);" onclick="dsgnDetail.openImagePopup('${imgSrc}')">
+                                        <img src="${imgSrc}" style="min-height:200px;">
+                                    </a>
+                                    <figcaption>
+                                        <p class="desc">${dwgDscrpt}</p>
+                                    </figcaption>
+                                </figure>
+                            </dd>` : `<dd>등록된 도면사진이 없습니다.</dd>`;
+
+            if(mode === "rvw"){
+                $("#dsgn_rvw_container").html(dwgHtml);
+            }
+            else if(mode === "chg"){
+                $("#dsgn_chg_container").html(dwgHtml);
+            }
+            else if(mode === "rply"){
+                $("#dsgn_dwg_rply_container").html(dwgHtml);
+            }
+            else{
+                console.error("Not found mode.");
+            }
+        },
+
+        toggleView(button) {
+            let $button = $(button);
+            let content = $button.next();
+
+            if (content.is(":hidden")) {
+                content.css("display", "flex");
+                $button.text("[ 닫기 ]");
+            } else {
+                content.hide();
+                $button.text("[ 펼치기 ]");
+            }
+        },
+
+        openImagePopup(imageSrc) {
+            var img = new Image();
+            img.src = imageSrc;
+            img.onload = function () {
+                var width = img.width;
+                var height = img.height;
+                window.open(imageSrc, 'dwg_popup', `width=${width},height=${height},scrollbars=yes`);
+            };
+        },
+
+        dataReset(){
+            console.log("데이터 초기화 중...");
+
+            /* 설계 검토 의견 사항 초기화 */
+            $("#dsgnTitle").text("");
+            $("#isuYn").prop("checked", false);
+            $("#lesnYn").prop("checked", false);
+            $("#dsgnCdNm").text("");
+            $("#docNo").text("");
+            $("#dwgNo").text("");
+            $("#dwgNm").text("");
+            $("#rvwOpnin").text("");
+            $("#dsgnRgstNm").text("");
+            $("#dsgnRgstDt").text("");
+
+            /* 설계 첨부파일 초기화 */
+            $("#dsgn_data_info").removeClass("hide").text("등록된 첨부파일이 없습니다.");
+            $("#dsgn_attach_list").addClass("hide");
+            $("#dsgnFileList").empty();
+
+            // /* 답변 사항 초기화 */
+            $("#rplyStatus").text("");
+            $("#rplyCntnts").text("");
+            $("#rplyRgstrNm").text("");
+            $("#rplyRgstDt").text("");
+
+            /* 답변 첨부파일 초기화 */
+            $("#rply_data_info").removeClass("hide").text("등록된 첨부파일이 없습니다.");
+            $("#rply_attach_list").addClass("hide");
+            $("#rplyFileList").empty();
+
+            // /* 종결 사항 초기화 */
+            // $("#edCdNm").text("");
+            // $("#edRgstrNm").text("");
+            // $("#edRgstrDt").text("");
+
+            console.log("데이터 초기화 완료!");
+        },
+
+        close(){
+            this.dataReset();
+
+            $("#dsgn_list").show();
+            $("#dsgn_detail_list").hide();
+        },
+
+        open(){
+            const dsgnNo = $("#detail_dsgnNo").val();
+
+            if(!cntrctNo || !dsgnPhaseNo){
+                gaiaCommon.customAlert("설계 검토 단계 정보가 없습니다.");
+                return;
+            }
+
+            if(!dsgnNo){
+                gaiaCommon.customAlert("설계 검토 번호 정보가 없습니다."); // 설계 검토 번호 정보가 없습니다.
+                return;
+            }
+
+            dsgnDetail.currentPageNumber = $("#pageNumber").val();
+
+            const url = `/design/designReview/form/detail?dsgnNo=${dsgnNo}&dsgnPhaseNo=${dsgnPhaseNo}&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}`;
+
+            const _width = 1150;
+            const _height = 950;
+
+            let _left = Math.ceil((window.screen.width - _width)/2);
+            _left += window.screenLeft; // 듀얼 모니터일 때
+            const _top = Math.ceil((window.screen.height - _height)/2);
+
+            dsgnDetailPopup = window.open(url, "dsgnDetailPopup", `width=${_width}, height=${_height},left=${_left},top=${_top}, scrollbars=yes, resizable=yes`);
+            this.close();
+        },
+
+        // 페이징 관련 함수
+        firstPage(){
+            // cntrctNo, dsgnPhaseNo, page, perPage
+
+            const reqData = {
+                cntrctNo: cntrctNo,
+                dsgnPhaseNo: dsgnPhaseNo,
+                page: 1,
+                perPage: 1
+            };
+
+            // searchData가 존재하면 추가
+            if (dsgnDetail.searchData) {
+                Object.assign(reqData, dsgnDetail.searchData);  // searchData 값들을 reqData에 병합
+            }
+            gaiaCommon.post(`/api/design/review/detail`,reqData,function (result) {
+                if(result.ok){
+                    console.log(result.details.dsgnDetail);
+
+                    if (result.details.dsgnDetail.length == 0) {
+                        alert('데이터가 존재하지 않습니다.');
+                        return;
+                    }
+
+                    const rowData = result.details.dsgnDetail[0];
+                    dsgnDetail.renderDsgnEl(rowData);
+
+                    // 페이지 번호 설정
+                    $("#pageNumber").val(1);
+
+                    // 버튼 상태 업데이트
+                    dsgnDetail.updatePaginationButtons(1);
+                }
+            },function(error){
+                console.log(`[Modal] 설계 검토 관리 상세보기 페이징, /api/design/designReview/detail, PARAMS : ${reqData}`,error);
+            })
+        },
+
+        prevPage(){
+            // cntrctNo, dsgnPhaseNo, page, perPage
+            const prevPage = Number($("#pageNumber").val()) - 1;
+            if (prevPage < 1) return; // 첫 페이지 이하로 이동 불가
+
+            const reqData = {
+                cntrctNo: cntrctNo,
+                dsgnPhaseNo: dsgnPhaseNo,
+                page: prevPage,
+                perPage: 1
+            };
+
+            // searchData가 존재하면 추가
+            if (dsgnDetail.searchData) {
+                Object.assign(reqData, dsgnDetail.searchData);  // searchData 값들을 reqData에 병합
+            }
+            gaiaCommon.post(`/api/design/review/detail`,reqData,function (result) {
+                if(result.ok){
+                    console.log(result.details.dsgnDetail);
+
+                    if (result.details.dsgnDetail.length == 0) {
+                        alert('데이터가 존재하지 않습니다.');
+                        return;
+                    }
+
+                    const rowData = result.details.dsgnDetail[0];
+                    dsgnDetail.renderDsgnEl(rowData);
+
+                    // 페이지 번호 설정
+                    $("#pageNumber").val(prevPage);
+                    dsgnDetail.updatePaginationButtons(prevPage);
+                }
+            },function(error){
+                console.log(`[Modal] 설계 검토 관리 상세보기 이전 페이지, /api/design/designReview/detail, PARAMS : ${reqData}`,error);
+            })
+        },
+
+        nextPage(){
+            // cntrctNo, dsgnPhaseNo, page, perPage
+            const nextPage = Number($("#pageNumber").val()) + 1;
+            if (nextPage > dsgnTotalCnt) return; // 마지막 페이지 초과 이동 방지
+
+            const reqData = {
+                cntrctNo: cntrctNo,
+                dsgnPhaseNo: dsgnPhaseNo,
+                page: nextPage,
+                perPage: 1
+            };
+
+            // searchData가 존재하면 추가
+            if (dsgnDetail.searchData) {
+                Object.assign(reqData, dsgnDetail.searchData);  // searchData 값들을 reqData에 병합
+            }
+            gaiaCommon.post(`/api/design/review/detail`,reqData,function (result) {
+                if(result.ok){
+                    console.log(result.details.dsgnDetail);
+
+                    if (result.details.dsgnDetail.length == 0) {
+                        alert('데이터가 존재하지 않습니다.');
+                        return;
+                    }
+
+                    const rowData = result.details.dsgnDetail[0];
+                    dsgnDetail.renderDsgnEl(rowData);
+
+                    // 페이지 번호 설정
+                    $("#pageNumber").val(nextPage);
+
+                    dsgnDetail.updatePaginationButtons(nextPage);
+                }
+            },function(error){
+                console.log(`[Modal] 설계 검토 관리 상세보기 다음 페이지, /api/design/designReview/detail, PARAMS : ${reqData}`,error);
+            })
+        },
+
+        lastPage(){
+            // cntrctNo, dsgnPhaseNo, page, perPage
+            const lastPage = dsgnTotalCnt;
+
+            const reqData = {
+                cntrctNo: cntrctNo,
+                dsgnPhaseNo: dsgnPhaseNo,
+                page: lastPage,
+                perPage: 1
+            };
+
+            // searchData가 존재하면 추가
+            if (dsgnDetail.searchData) {
+                Object.assign(reqData, dsgnDetail.searchData);  // searchData 값들을 reqData에 병합
+            }
+
+            gaiaCommon.post(`/api/design/review/detail`,reqData,function (result) {
+                if(result.ok){
+                    console.log(result.details.dsgnDetail);
+
+                    if (result.details.dsgnDetail.length == 0) {
+                        alert('데이터가 존재하지 않습니다.');
+                        return;
+                    }
+
+                    const rowData = result.details.dsgnDetail[0];
+                    dsgnDetail.renderDsgnEl(rowData);
+
+                    // 페이지 번호 설정
+                    $("#pageNumber").val(lastPage);
+
+                    dsgnDetail.updatePaginationButtons(lastPage);
+                }
+            },function(error){
+                console.log(`[Modal] 설계 검토 관리 상세보기 마지막 페이지, /api/design/designReview/detail, PARAMS : ${reqData}`,error);
+            })
+        },
+
+        // 페이지 버튼 상태 업데이트 함수 추가
+        updatePaginationButtons(currentPage) {
+            const totalPages = dsgnTotalCnt;
+
+            // 첫 페이지인 경우 '<<"' '<' 버튼 비활성화
+            if (currentPage <= 1) {
+                $("#firstPage, #prevPage").addClass("tui-is-disabled");
+            } else {
+                $("#firstPage, #prevPage").removeClass("tui-is-disabled");
+            }
+
+            // 마지막 페이지인 경우 '>' '>>' 버튼 비활성화
+            if (currentPage >= totalPages) {
+                $("#nextPage, #lastPage").addClass("tui-is-disabled");
+            } else {
+                $("#nextPage, #lastPage").removeClass("tui-is-disabled");
+            }
+        },
+        
+    };
+    
+</script>

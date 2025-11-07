@@ -1,0 +1,465 @@
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="title" content="" />
+<meta name="keywords" content="" />
+<meta name="description" content="" />
+<meta name="robots" content="noindex, nofollow" />
+
+<meta property="og:title" content="GaiA / CaiROS">
+<meta property="og:description" content="GaiA / CaiROS">
+<meta property="og:image" content="/assets/images/logo/logo.svg">
+
+<title>{{ envMode != null and envMode != "prod" ? "[" + envMode + "] " : "" }} {{ title != null ? title : "GAIA-CMIS" }}</title>
+
+<!-- ============================== 추후 삭제 예정 항목 Start ============================== -->
+<!-- <link rel="shortcut icon" href="/assets/static/common/favicon.ico" />
+<link rel="stylesheet" href="/assets/static/css/pims.css" /> -->
+
+<!-- slickgrid CSS, JS source start-->
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/css/bootstrap-datepicker3.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/themes/base/jquery-ui.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/xpressengine/XEIcon@2.3.3/xeicon.min.css" /> -->
+
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" ></script> -->
+
+<!-- <link rel="stylesheet" href="/assets/static/slick/slick.grid.css" />
+<link rel="stylesheet" href="/assets/static/slick/slick-default-theme.css" />
+<link rel="stylesheet" href="/assets/static/slick/slick.custom.css" />
+
+<link rel="stylesheet" href="/assets/static/common/pcommon3.css" />
+<link rel="stylesheet" href="/assets/static/common/pces.css" />
+<link rel="stylesheet" href="/assets/static/common/fonts.css" />
+
+<link rel="shortcut icon" href="/assets/static/common/favicon3.ico" type="image/x-icon" />
+
+<script src="/assets/static/common/check_browser.js"></script> -->
+<!-- slickgrid CSS, JS source end-->
+<!-- ============================== 추후 삭제 예정 항목 End ============================== -->
+
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- GAIA-CMIS 2024 신규 추가 항목 -->
+
+<link rel="stylesheet" href="/assets/css/all.min.css" />
+
+<!-- toast grid, jstree CSS source start-->
+<link rel="stylesheet" href="/assets/css/jstree/themes/default/style.min.css" />
+<link rel="stylesheet" href="/assets/static/tui-pagination/dist/tui-pagination.css" />
+<link rel="stylesheet" href="/assets/static/tui-pagination/dist/tui-pagination.min.css"/>
+<link rel="stylesheet" href="/assets/static/tui-grid/dist/tui-grid.css" />
+<!-- toast grid, jstree CSS source end-->
+
+<script src="/assets/static/toast/zephyr-toast.js"></script>
+<link rel="stylesheet" href="/assets/static/toast/zephyr-toast.css" />
+<link rel="stylesheet" href="/assets/static/toast/zephyr-toast-animate.css" />
+
+<!-- 신규 CSS 적용 Start -->
+<link rel="stylesheet" href="/assets/css/common.css" />
+<link rel="stylesheet" href="/assets/css/content.css" />
+<link rel="stylesheet" href="/assets/css/icofonts.css" />
+<link rel="stylesheet" href="/assets/css/pretendard-subset.css" />
+<link rel="stylesheet" href="/assets/css/slick.css" />
+<link rel="stylesheet" href="/assets/css/component.css" />
+<link rel="stylesheet" href="/assets/css/custom.css" />
+<!-- 신규 CSS 적용 End -->
+
+<link rel="icon" href="/assets/images/logo/{{platform}}.ico">
+
+<!--그리드 엑셀 export 라이브러리 start-->
+<script src="/assets/static/sheet_js/xlsx.full.min.js"></script>
+<!--그리드 엑셀 export 라이브러리 end-->
+
+<!-- 암호화 s -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
+<script src="/assets/js/common/crypto.common.js"></script>
+<!-- 암호화 e -->
+
+<script src="/webjars/handlebars/handlebars.min.js"></script>
+<script src="https://unpkg.com/vue@3.5.21"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<!-- toast grid JS source start-->
+<script src="/assets/static/tui-pagination/dist/tui-pagination.js"></script>
+<script src="/assets/static/tui-pagination/dist/tui-pagination.min.js"></script>
+<script src="/assets/static/tui-grid/dist/tui-grid.js"></script>
+<!-- toast grid JS source end-->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script src="https://unpkg.com/dayjs"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+
+<!-- 최신 jquery 가져오기 -->
+<!-- <script  src="http://code.jquery.com/jquery-latest.min.js"></script> -->
+
+<!-- smarteditor CSS, JS source start-->
+<script src="/assets/static/smarteditor2/js/HuskyEZCreator.js"></script>
+<!-- smarteditor CSS, JS source end-->
+
+<!-- 디자인에서 적용한 스크립트 Start -->
+<script type="text/javascript" src="/assets/js/jquery-2.2.0.min.js"></script>
+<script type="text/javascript" src="/assets/js/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="/assets/js/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="/assets/js/slick.min.js"></script>
+<script type="text/javascript" src="/assets/js/ui.js"></script>
+<script type="text/javascript" src="/assets/js/loadingoverlay.min.js"></script>
+<!-- 디자인에서 적용한 스크립트 End -->
+
+<!-- gaia_common.js -> main_common.js 일부기능 이관 -->
+<script src="/assets/js/main_common.js"></script>
+<!-- <script src="/webjars/jquery/jquery.min.js"></script>
+<script src="/webjars/jquery-ui/jquery-ui.min.js"></script> -->
+<script src="/assets/js/gaia_common.js"></script>
+
+<script src="/assets/js/common/axios.common.js"></script>
+
+<!--grid 커스텀 JS-->
+<script src="/assets/js/grid.js"></script>
+<script src="/assets/js/custom_renderer.js"></script>
+<script src="/assets/js/custom_editor.js"></script>
+<script src="/assets/js/fetch_options_data.js"></script>
+<!--공통 JS-->
+<script src="/assets/js/common.js"></script>
+
+
+<!-- 유효성 검사 JS-->
+<script src="/assets/js/validation.js"></script>
+
+<script src="/assets/static/tware/tware.class.js"></script>
+
+<script src="/assets/js/gaia-cairos.js"></script>
+
+<script>
+    const uuid = gaia.generateUUID();
+    console.log('uuid', uuid)
+
+    let REPORT_VIEWER_URL = '{{ REPORT_VIEWER_URL }}';
+    const REPORT_EXPORT_URL = '{{ REPORT_EXPORT_URL }}';
+
+    const SESSION_EXPIRED_MSG = '로그인 세션이 만료되어 로그아웃 되었습니다.\n로그인 페이지로 이동합니다';
+
+    /* 전 서비스 영역 글로벌 변수 */
+    const message = {
+        msg064: '{{ message("msg.064") }}',
+        itemDash041: '{{ message("item.dash.041") }}',
+        itemDash042: '{{ message("item.dash.042") }}',
+        itemDash043: '{{ message("item.dash.043") }}',
+    }
+    Object.freeze(message);
+
+    /* 플랫폼 구분 전역 상수 */
+    const PLATFORM = {
+        CURRENT: `{{ platform != null ? platform : "GAIA---CMIS" }}`.toUpperCase(),  // 현재 접속 플랫폼 PGAIA -> GAIA로 변경됨!!
+		TYPE: `{{ platform != null ? platform : "GAIA---CMIS" }}`.toUpperCase(),  // 현재 접속 플랫폼
+        GAIA: `{{ gaia }}`.toUpperCase(),     // GAIA
+        CAIROS: `{{ cairos }}`.toUpperCase()  // CMIS
+    }
+
+	if (PLATFORM.CURRENT === 'PGAIA') PLATFORM.CURRENT = PLATFORM.GAIA;
+    Object.freeze(PLATFORM);
+
+    const envMode = '{{ envMode }}';
+
+    let isGAIA = () => { return PLATFORM.CURRENT === PLATFORM.GAIA; };
+    let isCAIROS = () => {
+        return (PLATFORM.CURRENT === PLATFORM.CAIROS
+                || PLATFORM.CURRENT === 'CAIROS'
+                || PLATFORM.CURRENT === 'CMIS');
+    };   // TODO 영향성 분석 후, CAIROS 변경 필요 .
+
+    const isProd = () => {
+        return '{{ envMode }}' === 'prod';
+    }
+
+    if (isProd()) {
+        console.log = function(){};
+        console.info = function(){};
+    }
+
+    const CRYPTO_CONFIG = {
+        iv: '{{ crypto.iv }}',
+        salt: '{{ crypto.salt }}',
+        secretKey: '{{ crypto.secretKey }}',
+        keySize: '{{ crypto.keySize }}',
+        iterationCount: '{{ crypto.iterationCount }}'
+    };
+
+    Object.freeze(CRYPTO_CONFIG);
+
+    const me = '{{ me }}';
+
+    const generateCommonHeaders = async (url, remoteAddr) => {
+        console.log('generateCommonHeaders', url, remoteAddr);
+        const commonData = JSON.parse( await sessionStorage.getItem('pageCommonData') || "{}" );
+
+        return {
+            platform: PLATFORM.CURRENT
+            , requestUrl: url
+            , requestId: uuid
+            , remoteAddr: remoteAddr
+            , userId: gaiaCommon.me.info ? gaiaCommon.me.info.usrId : ''
+            , dateTime: dayjs().format('YYYYMMDDHHmmss')
+            , referer: location.pathname
+            , pjtNo: commonData.pjtNo
+            , cntrctNo: commonData.cntrctNo
+        };
+    }
+
+    function gridApiRequest(url, method, params) {
+        return fetch(url, {
+            method: method || 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Common-Header': 'from-tui-grid'
+            },
+            body: JSON.stringify(params)
+        }).then(res => res.json());
+    }
+
+    function createDataSource(apiConfig) {
+        console.log('apiConfig', apiConfig)
+
+        return {
+            api: apiConfig,
+            contentType: 'application/json',
+            withCredentials: true,
+            initialRequest: true,
+            headers: {
+                'X-Trace-Id': 'your-trace-id', // 예시 공통 헤더
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'REQUEST_COMMON_HEADER': JSON.stringify(generateCommonHeaders(apiConfig.readData.url, ''))
+            },
+            serialize(params) {
+                console.log('[TUI Grid 요청]', params);
+                return JSON.stringify(params);
+            }
+        };
+    }
+
+    const originalSetDataSource = tui.Grid.prototype.setDataSource;
+    console.log('originalSetDataSource', tui.Grid.prototype);
+
+    tui.Grid.prototype.setDataSource = function(dataSource) {
+        console.log('setDataSource', dataSource);
+        // 공통 설정 주입
+        dataSource.headers = {
+            ...(dataSource.headers || {}),
+            'X-Common-Header': 'from-prototype'
+        };
+
+        dataSource.serialize = function(params) {
+            console.log('[Grid Intercepted Params]', params);
+            return JSON.stringify(params);
+        };
+
+        return originalSetDataSource.call(this, dataSource);
+    };
+
+    $(document).ready(async function() {
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS)$/i.test(settings.type) && !this.crossDomain) {
+//                    xhr.setRequestHeader('X-CSRF-Token', 'your_csrf_token');
+                }
+				const currentPageUrl = window.location.pathname + window.location.search;
+                xhr.setRequestHeader("X-Current-Page", currentPageUrl);
+            }
+        });
+        // console.log('commonData', commonData);
+
+        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+            options.timeout = 1000 * 60 * 60;
+
+            // const headers = {
+            //     platform: PLATFORM.CURRENT
+            //     , requestUrl: jqXHR.url
+            //     , requestId: uuid
+            //     , remoteAddr: jqXHR.remoteAddr
+            //     , userId: gaiaCommon.me.info ? gaiaCommon.me.info.usrId : ''
+            //     , dateTime: dayjs().format('YYYYMMDDHHmmss')
+            //     , referer: location.pathname
+            //     , pjtNo: commonData.pjtNo
+            //     , cntrctNo: commonData.cntrctNo
+            // }
+
+            console.log('options', options);
+            console.log('originalOptions', originalOptions);
+            console.log('jqXHR', jqXHR);
+
+            jqXHR.setRequestHeader("REQUEST_COMMON_HEADER", JSON.stringify(generateCommonHeaders(options.url, jqXHR.remoteAddr)));
+        });
+
+        $(document).ajaxStart(function() {
+            // console.log("ajaxStart");
+        }).ajaxStop(function() {
+            // console.log("ajaxStop");
+        }).ajaxError(function(event, xhr, options, result) {
+            console.log("ajaxError", event, xhr, options, result);			
+			
+			if (xhr.responseText && xhr.responseText.trim() !== "") {
+                if (!tware.utils.isJsonString(xhr.responseText)) {
+                    return;
+                }
+
+                const json = JSON.parse(xhr.responseText);
+				if(json.errorCode && json.errorCode.trim() !== "") {
+            		console.log("에러 발생!!!!!");
+					$('#error_title').text(json.errorCode+" ERROR");
+					$('#error_msg').text(decodeString(json.resultMsg));
+
+					if (json.errorCode === '401') { // AJAX 호출 시 UNAUTHORIZED 오류가 발생하면 인증정보 없음 메시지 처리 후 로그인 페이지로 이동
+						$('#message').text('로그인 페이지로 이동합니다.');
+						$('#errorView').addClass('open');
+						setTimeout(() => {	
+							$('#errorView').removeClass('open');			
+							if(opener){ // popup일 때
+								opener.location.href = json.apiLoginPageInfo;
+								self.close();
+							}else{ // popup이 아닐 때 
+								window.location.href = json.apiLoginPageInfo;
+							}
+						}, 2000);
+					}else if(json.errorCode === '9999') { // AJAX 호출 시 ACCESS_DENIED 오류가 발생하면 접근 권한 없습니다. 메시지 처리
+						if(opener){ // popup일 때
+							$('#message').text('팝업창을 닫습니다.');
+						}else{ // popup이 아닐 때 
+							$('#message').text('이전 페이지로 이동합니다.');
+						}
+						$('#errorView').addClass('open');
+						setTimeout(() => {	
+							$('#errorView').removeClass('open');			
+							if(opener){ // popup일 때
+								self.close();
+							}else{ // popup이 아닐 때 
+                                gaia.goBack();
+							}
+						}, 2000);
+					}else if(json.errorCode === '500') { // AJAX 호출 시 INTERNAL_SERVER_ERROR 오류가 발생하면 시스템 오류가 발생했습니다. 없습니다. 메시지 처리1005
+						$('#message').text('시스템 오류가 발생했습니다.');
+						$('#errorView').addClass('open');
+						setTimeout(() => {	
+							$('#errorView').removeClass('open');		
+						}, 2000);
+					}else if(json.errorCode === '1005') { // AJAX 호출 시 INTERNAL_SERVER_ERROR 오류가 발생하면 시스템 오류가 발생했습니다. 없습니다. 메시지 처리
+						$('#message').text('사용자 정보가 없습니다.');
+						$('#errorView').addClass('open');
+						setTimeout(() => {	
+							$('#errorView').removeClass('open');		
+						}, 2000);
+					}else {
+						$('#errorView').addClass('open');
+						setTimeout(() => {	
+							$('#errorView').removeClass('open');		
+						}, 2000);
+					}
+				}
+            }
+            
+        }).ajaxSend(function() {
+            // console.log("ajaxSend");
+        }).ajaxSuccess(function() {
+            // console.log("ajaxSuccess");
+        }).ajaxComplete(function() {
+            // console.log("ajaxComplete");
+        });
+
+        //tigerjun test s
+        /*
+        const callbackResizeObserver = (entries, observer) => {
+            entries.forEach(entry => {
+                console.log(entry);
+            });
+        }
+
+        const elBody = $('body').get(0);
+        const resizeObserver = new ResizeObserver(callbackResizeObserver);
+        resizeObserver.observe(elBody);
+
+
+        const callback = (mutationList, observer) => {
+            // console.log(mutationList);
+        };
+
+        const el = document.getElementById('userNm');
+        const mutationObserver = new MutationObserver(callback);
+        mutationObserver.observe(el, {
+            childList: true,
+            subtree: true,
+            attributeOldValue: true,
+        });
+        mutationObserver.disconnect();
+        */
+        //tigerjun test e
+
+        // startSse(); //sse start
+    });
+
+    //tigerjun test s
+    var source = null;
+
+    function startSse() {
+        source = new EventSource(`/webApi/notify/users/${gaiaCommon.me.info.usrId}/messages`);
+        console.log("create EventSource");
+
+        source.onmessage = function(ev) {
+            try {
+                const notify = JSON.parse(ev.data);
+
+                if (notify.type !== 'health') {
+                    const toast = new ZephyrToast();
+
+                    toast.info(notify.message, {
+                        "position": "top-right",
+                        "type": "info",
+                        "duration": 2000,
+                        "title": "test",
+                        "showProgress": true,
+                        "showClose": true,
+                        "newestOnTop": true,
+                        "animation": {
+                            "in": "slideInRight",
+                            "out": "slideOutRight"
+                        }
+                    });
+                }
+            } catch(error) {
+            }
+        };
+        source.onerror = function(err) {
+            console.log("on err: ", err);
+            stopSse();
+        };
+    }
+
+    function stopSse() {
+        if (source != null) {
+            source.close();
+            console.log("close EventSource");
+            source = null;
+        }
+    }
+
+	function decodeString(str){	
+		if(str.indexOf("+") > 0){		
+			return decodeURIComponent(decodeURI(str).replace(/\+/g, " "));	
+		} else {		
+			return decodeURIComponent(decodeURI(str));	
+		}
+	}
+
+    window.addEventListener("unload", function () {
+        stopSse();
+    });
+    //tigerjun test e
+</script>
+
+<section id="hiddenSection" style="display: none"></section>
+<section>{% include "sub/error_modal" %}</section>
+{% include "sub/handlebars-template" %}
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- -------------------------------------------------------------------------------------------------------------------------------------- -->

@@ -1,0 +1,774 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user">
+
+    <select id="selectAccessMenuAuthotiry" parameterType="string" resultType="accessMenuAuthority">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectAccessMenuAuthotiry][hsjang]  */
+        select 
+			distinct a.menu_no, a.cntrct_no 
+		from (	
+			select
+				m.menu_no,
+				g.cntrct_no
+			from
+				sm_menu_authority_group m
+				inner join sm_authority_group g
+				on m.rght_grp_no = g.rght_grp_no and m.dlt_yn ='N' and g.dlt_yn='N'
+				inner join sm_authority_group_users gu
+				on gu.rght_grp_no = g.rght_grp_no and gu.rght_grp_usr_ty ='D'
+				inner join sm_department d 
+				on gu.auth_no = d.dept_no and d.dlt_yn ='N'
+				inner join sm_organization o 
+				on d.dept_no = o.dept_no 
+				and o.login_id = #{value} and o.dlt_yn ='N'
+
+			union all
+				
+			select
+				m.menu_no,
+				g.cntrct_no
+			from
+				sm_menu_authority_group m
+				inner join sm_authority_group g
+				on m.rght_grp_no = g.rght_grp_no and m.dlt_yn ='N' and g.dlt_yn='N'
+				inner join sm_authority_group_users gu
+				on gu.rght_grp_no = g.rght_grp_no and gu.rght_grp_usr_ty in ('U','R')
+				inner join sm_organization o
+				on gu.auth_no = o.org_no and o.dlt_yn ='N'
+				and o.login_id = #{value}
+		) a
+    </select>
+
+	<select id="selectAccessAuthotiry" parameterType="string" resultType="accessAuthority">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectAccessAuthotiry][hsjang]  */
+        select 
+			distinct a.cntrct_no 
+		from (	
+			select
+				g.cntrct_no
+			from
+				sm_authority_group g
+				inner join sm_authority_group_users gu
+				on gu.rght_grp_no = g.rght_grp_no and gu.rght_grp_usr_ty ='D' and g.dlt_yn='N'
+				inner join sm_department d 
+				on gu.auth_no = d.dept_no and d.dlt_yn ='N'
+				inner join sm_organization o 
+				on d.dept_no = o.dept_no 
+				and o.usr_id = #{value} and o.dlt_yn ='N'
+
+			union all
+				
+			select
+				g.cntrct_no
+			from
+				sm_authority_group g
+				inner join sm_authority_group_users gu
+				on gu.rght_grp_no = g.rght_grp_no and gu.rght_grp_usr_ty in ('U','R') and g.dlt_yn='N'
+				inner join sm_organization o
+				on gu.auth_no = o.org_no and o.dlt_yn ='N'
+				and o.usr_id = #{value}
+		) a
+    </select>
+
+	<select id="selectSSOUser" parameterType="String" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectSSOUser][gwLee]  */
+        SELECT  A.USR_ID AS USR_ID,
+                A.LOGIN_ID AS LOGIN_ID,
+                A.USR_NM AS USR_NM,
+                A.EMAIL_ADRS AS EMAIL_ADRS,
+                (CASE   WHEN A.MNG_DIV = 'A'
+                        THEN 'ADMIN'
+                        ELSE 'NORMAL'
+                END) AS USER_TYPE,
+                (CASE   WHEN A.MNG_DIV = 'A' OR A.MNG_DIV = 'C' OR A.MNG_DIV = 'M'
+                        THEN 'Y'
+                        ELSE 'N'
+                END) AS PROJECT_ADD
+        FROM    SM_USER_INFO A
+        WHERE   A.DLT_YN = 'N'
+        AND     A.USR_ID = #{usrId}
+        LIMIT 1
+    </select>
+
+	<select id="selectOracleUserList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectOracleUserList][gwLee]  */
+        SELECT 	사용자ID AS USR_ID, 
+				nvl(로그인ID, ' ') AS LOGIN_ID, 
+				nvl(사용자명, ' ') AS USR_NM, 
+				'' AS RATNG_CD, 
+				'' AS PSTN_CD, 
+				직책명 AS PSTN_NM, 
+				휴대전화번호 AS PHONE_NO, 
+				'' AS TEL_NO, 
+				이메일 AS EMAIL_ADRS, 
+				DECODE(사용자상태구분코드, '1', 'Y', 'N') AS USE_YN, 
+				DECODE(사용자상태구분코드, '1', 'N', 'Y') AS DLT_YN, 
+				등록일시 AS RGST_DT, 
+				등록자ID AS RGSTR_ID, 
+				변경일시 AS CHG_DT, 
+				변경자ID AS CHG_ID  
+		FROM 	공통_사용자정보
+    </select>
+
+	<insert id="userApiInsertAndUpdate" parameterType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.userApiInsertAndUpdate][gwLee]  */
+		<foreach collection="list" item="user" open="" separator=";" close="">
+			INSERT INTO SM_USER_INFO 	(	USR_ID, 
+											LOGIN_ID, 
+											USR_NM, 
+											RATNG_CD, 
+											PSTN_CD, 
+											PHONE_NO, 
+											TEL_NO, 
+											EMAIL_ADRS,
+											MNG_DIV,
+											USE_YN, 
+											DLT_YN, 
+											RGSTR_ID, 
+											RGST_DT, 
+											CHG_ID, 
+											CHG_DT)	VALUES
+										(	#{user.USR_ID},
+											#{user.LOGIN_ID},
+											#{user.USR_NM},
+											#{user.RATNG_CD},
+											#{user.PSTN_CD},
+											#{user.PHONE_NO},
+											#{user.TEL_NO},
+											#{user.EMAIL_ADRS},
+											#{user.MNG_DIV},
+											#{user.USE_YN},
+											#{user.DLT_YN},
+											#{user.RGSTR_ID},
+											#{user.RGST_DT}::timestamp,
+											#{user.CHG_ID},
+											#{user.CHG_DT}::timestamp )
+			ON CONFLICT (USR_ID)
+			DO UPDATE
+			SET LOGIN_ID 	= #{user.LOGIN_ID},
+				USR_NM 		= #{user.USR_NM},
+				PHONE_NO 	= #{user.PHONE_NO},
+				EMAIL_ADRS 	= #{user.EMAIL_ADRS},
+				MNG_DIV 	= #{user.MNG_DIV},
+				CHG_ID 		= #{user.CHG_ID},
+				CHG_DT 		= #{user.CHG_DT}::timestamp
+		</foreach>
+    </insert>
+
+	<!-- 관리자 사용자 목록 -->
+	<select id="getAdminUserList" parameterType="userListInput" resultType="userOutput">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getAdminUserList][jhkim]  */
+			SELECT
+				DISTINCT 
+				A.USR_ID,
+				A.LOGIN_ID,
+				A.USR_NM,
+				D.CMN_CD_NM_KRN AS RATNG_NM,
+				E.CMN_CD_NM_KRN AS PSTN_NM,
+				A.PHONE_NO,
+				A.EMAIL_ADRS,
+				(CASE
+					WHEN A.MNG_DIV = 'A' THEN '시스템 관리자'
+					WHEN A.MNG_DIV = 'C' THEN 'CS센터 사용자'
+					WHEN A.MNG_DIV = 'M' THEN '감독관'
+					ELSE '일반 사용자'
+				END) AS MNG_DIV,
+				(CASE
+					WHEN A.USE_YN = 'Y' THEN '사용'
+					ELSE '사용안함'
+				END) AS USE_YN,
+				A.CHG_DT,
+				A.RGST_DT,
+				(
+					SELECT 	COUNT(A.*) 
+					FROM 	(
+								SELECT 	DISTINCT 
+										A.USR_ID
+								FROM 	SM_USER_INFO A
+										LEFT OUTER JOIN SM_ORGANIZATION B ON B.LOGIN_ID = A.LOGIN_ID AND A.DLT_YN = 'N'
+										LEFT OUTER JOIN SM_COMPANY C ON C.CORP_NO = B.CORP_NO
+										LEFT OUTER JOIN SM_COM_CODE D ON A.RATNG_CD = D.CMN_CD AND D.CMN_GRP_CD = #{cmnGrpCdRatng}
+										LEFT OUTER JOIN SM_COM_CODE E ON A.PSTN_CD = E.CMN_CD AND E.CMN_GRP_CD = #{cmnGrpCdPstn}
+								WHERE 	A.DLT_YN = 'N' 
+								AND 	( 		A.EMAIL_ADRS ILIKE CONCAT('%', #{keyword}, '%') 
+											OR 	A.USR_NM ILIKE CONCAT('%', #{keyword}, '%')
+											OR 	(	CASE 
+														WHEN A.USE_YN = 'Y' THEN '사용'
+														ELSE '사용안함'
+													END ) ILIKE CONCAT('%', #{keyword}, '%')
+										)
+								<choose>
+									<when test="searchGroup != null and searchName == 'all'">
+										AND C.COMP_GRP_CD 	= #{searchGroup}
+									</when>
+									<when test="searchName != null and searchName.trim() != ''">
+										AND C.COMP_GRP_CD 	= #{searchGroup}
+										AND C.CORP_NO 		= #{searchName}
+									</when>
+									<when test="searchGroup == 'none'">
+										AND B.DEPT_NO IS NULL
+									</when>
+								</choose>	
+							) AS A
+				) AS CNT
+			FROM
+				SM_USER_INFO A
+				LEFT OUTER JOIN SM_ORGANIZATION B ON B.LOGIN_ID = A.LOGIN_ID AND A.DLT_YN = 'N'
+				LEFT OUTER JOIN SM_COMPANY C ON C.CORP_NO = B.CORP_NO
+				LEFT OUTER JOIN SM_COM_CODE D ON A.RATNG_CD = D.CMN_CD AND D.CMN_GRP_CD = #{cmnGrpCdRatng}
+				LEFT OUTER JOIN SM_COM_CODE E ON A.PSTN_CD = E.CMN_CD AND E.CMN_GRP_CD = #{cmnGrpCdPstn}
+			WHERE 
+				A.DLT_YN = 'N'
+				AND (A.EMAIL_ADRS ILIKE CONCAT('%', #{keyword}, '%')
+				OR A.USR_NM ILIKE CONCAT('%', #{keyword}, '%')
+				OR (CASE 
+						WHEN A.USE_YN = 'Y' THEN '사용'
+						ELSE '사용안함'
+					END) ILIKE CONCAT('%', #{keyword}, '%'))
+				<choose>
+					<when test="searchGroup != null and searchName == 'all'">
+						AND C.COMP_GRP_CD = #{searchGroup}
+					</when>
+					<when test="searchName != null and searchName.trim() != ''">
+						AND C.COMP_GRP_CD = #{searchGroup}
+						AND C.CORP_NO = #{searchName}
+					</when>
+					<when test="searchGroup == 'none'">
+						AND B.DEPT_NO IS NULL
+					</when>
+				</choose>
+			<if test="pageable.sort.isEmpty()">
+				ORDER BY A.CHG_DT DESC
+			</if>
+		<include refid="sqlx.commonPageable"></include>
+	</select>
+
+	<!-- 일반(GaiA/CaiROS)사용자 목록 -->
+	<select id="getUserList" parameterType="userListInput" resultType="userOutput">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getUserList][jhkim]  */
+			SELECT
+				DISTINCT (A.USR_ID),
+				C.LOGIN_ID,
+				C.USR_NM,
+				D.CMN_CD_NM_KRN AS RATNG_NM,
+				E.CMN_CD_NM_KRN AS PSTN_NM,
+				C.PHONE_NO,
+				C.EMAIL_ADRS,
+				(CASE
+					WHEN C.MNG_DIV = 'A' THEN '시스템 관리자'
+					WHEN C.MNG_DIV = 'C' THEN 'CS센터 사용자'
+					WHEN C.MNG_DIV = 'M' THEN '감독관'
+					ELSE '일반 사용자'
+				END) AS MNG_DIV,
+				C.MNG_DIV,
+				(CASE
+					WHEN C.USE_YN = 'Y' THEN '사용'
+					ELSE '사용안함'
+				END) AS USE_YN,
+				C.CHG_DT,
+				B.CNTRCT_NO,
+				C.RGST_DT,
+				(	SELECT 	COUNT(A.*)
+					FROM 	(
+								SELECT 	DISTINCT (A.USR_ID),
+										C.LOGIN_ID,
+										B.CNTRCT_NO
+								FROM 	SM_ORGANIZATION A
+										INNER JOIN SM_DEPARTMENT B ON
+											A.DEPT_NO = B.DEPT_NO
+											AND B.DLT_YN = 'N'
+											AND B.PJT_TYPE =  #{systemType}
+										INNER JOIN SM_USER_INFO C ON
+								WHERE A.DLT_YN = 'N' 
+								AND (C.EMAIL_ADRS ILIKE CONCAT('%', #{keyword}, '%') 
+									OR C.USR_NM ILIKE CONCAT('%', #{keyword}, '%')
+									OR (CASE 
+											WHEN C.USE_YN = 'Y' THEN '사용'
+											ELSE '사용안함'
+										END) ILIKE CONCAT('%', #{keyword}, '%'))
+								AND B.PJT_NO = #{pjtNo}
+								AND B.CNTRCT_NO = #{cntrctNo}
+								AND A.DLT_YN = 'N'
+							) AS A
+				) AS CNT
+			FROM
+				SM_ORGANIZATION A
+			INNER JOIN SM_DEPARTMENT B ON
+				A.DEPT_NO = B.DEPT_NO
+				AND B.DLT_YN = 'N'
+				AND B.PJT_TYPE =  #{systemType}
+			INNER JOIN SM_USER_INFO C ON
+				A.USR_ID = C.USR_ID
+				AND C.DLT_YN = 'N'
+			LEFT OUTER JOIN SM_COM_CODE D ON
+				C.RATNG_CD = D.CMN_CD
+				and D.CMN_GRP_CD = #{cmnGrpCdRatng}
+			LEFT OUTER JOIN SM_COM_CODE E ON
+				C.PSTN_CD = E.CMN_CD
+				AND E.CMN_GRP_CD = #{cmnGrpCdPstn}
+			WHERE A.DLT_YN = 'N' 
+			AND (C.EMAIL_ADRS ILIKE CONCAT('%', #{keyword}, '%') 
+				OR C.USR_NM ILIKE CONCAT('%', #{keyword}, '%')
+				OR (CASE 
+						WHEN C.USE_YN = 'Y' THEN '사용'
+						ELSE '사용안함'
+					END) ILIKE CONCAT('%', #{keyword}, '%'))
+			AND B.PJT_NO = #{pjtNo}
+			AND B.CNTRCT_NO = #{cntrctNo}
+			AND A.DLT_YN = 'N'
+			<if test="pageable.sort.isEmpty()">
+				ORDER BY C.CHG_DT DESC
+			</if>
+		<include refid="sqlx.commonPageable"></include>
+	</select>
+
+	<!-- 사용자 상세정보를 가져온다. -->
+	<select id="getUserDetail" parameterType="userInput" resultType="userOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getUserDetail][jhkim]  */
+		SELECT
+				SUI.LOGIN_ID,
+				SUI.PHONE_NO,
+				SUI.USR_NM,
+				SUI.TEL_NO,
+				SUI.RATNG_CD,
+				SCC1.CMN_CD_NM_KRN AS RATNG_NM,
+				SUI.PSTN_CD,
+				SCC2.CMN_CD_NM_KRN AS PSTN_NM,
+				SUI.EMAIL_ADRS,
+				(CASE
+					WHEN SUI.MNG_DIV = 'A' THEN '시스템 관리자'
+					WHEN SUI.MNG_DIV = 'C' THEN 'CS센터 사용자'
+					WHEN SUI.MNG_DIV = 'M' THEN '감독관'
+					ELSE '일반 사용자'
+				END) AS MNG_DIV_NM,
+				SUI.MNG_DIV,
+				SUI.USE_YN
+		FROM
+				SM_USER_INFO SUI
+		LEFT JOIN 
+				SM_COM_CODE SCC1 ON SUI.RATNG_CD = SCC1.CMN_CD AND SCC1.CMN_GRP_CD = #{cmnGrpCdRatng}  
+		LEFT JOIN 
+				SM_COM_CODE SCC2 ON SUI.PSTN_CD = SCC2.CMN_CD AND SCC2.CMN_GRP_CD = #{cmnGrpCdPstn}
+		WHERE
+				SUI.USR_ID = #{usrId}
+				AND SUI.DLT_YN ='N'
+    </select>
+
+	<select id="getUserAccessAuthority" parameterType="string" resultType="accessAuthority">
+		/* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getUserAccessAuthority][thkim]  */
+		SELECT  (CASE   WHEN A.MNG_DIV = 'A'
+                        THEN 'ADMIN'
+                        ELSE 'NORMAL'
+                END) AS USER_TYPE
+		FROM    SM_USER_INFO  A
+		WHERE   A.DLT_YN = 'N'
+		AND     A.USR_ID = #{usrId}
+	</select>
+
+	<!-- OCI의 사용자 정보를 가져온다. -->
+	<select id="selectOracleUserListDev" parameterType="SyncUserListInput" resultType="UserOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectOracleUserListDev][choisr]  */
+        SELECT * FROM (
+            SELECT INNER_QUERY.*, ROWNUM AS RN FROM (
+            SELECT 	사용자ID AS USR_ID,
+                    nvl(로그인ID, ' ') AS LOGIN_ID,
+                    nvl(사용자명, ' ') AS USR_NM,
+                    '' AS RATNG_NM,
+                    직책명 AS PSTN_NM,
+                    휴대전화번호 AS PHONE_NO,
+                    '' AS TEL_NO,
+                    이메일 AS EMAIL_ADRS,
+                    DECODE(사용자상태구분코드, '1', 'Y', 'N') AS USE_YN,
+                    DECODE(사용자상태구분코드, '1', 'N', 'Y') AS DLT_YN,
+                    등록일시 AS RGST_DT,
+                    등록자ID AS RGSTR_ID,
+                    변경일시 AS CHG_DT,
+                    변경자ID AS CHG_ID,
+                    COUNT(*) OVER() AS TOTAL_NUM
+            FROM 	공통_사용자정보
+            WHERE 사용자상태구분코드 = '1'
+            <choose>
+                <when test="searchType != null and searchType != '' and searchType == 'login_id'">
+                    AND 로그인ID LIKE '%' || #{searchValue} || '%'
+                </when>
+                <when test="searchType != null and searchType != '' and searchType == 'usr_nm'">
+                AND 사용자명 LIKE '%' || #{searchValue} || '%'
+                </when>
+            </choose>
+            <if test="pageable.sort.isEmpty()">
+                ORDER BY 등록일시 DESC
+            </if>
+            ) INNER_QUERY
+            <![CDATA[
+            WHERE ROWNUM <= #{endRow}
+            ]]>
+        )
+        <![CDATA[
+        WHERE RN > #{offset}
+        ]]>
+    </select>
+
+	<!-- NCP의 사용자 정보를 가져온다. -->
+    <select id="selectPortalUserListDev" parameterType="SyncUserListInput" resultType="UserOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectPortalUserListDev][thkim]  */
+        SELECT
+                USR_ID,
+                USR_NM,
+                CORP_NO,
+                DEPT_NM,
+                PSTN_NM,
+                LOGIN_ID,
+                TEL_NO,
+                MTEL_NO AS PHONE_NO,
+                LOGIN_ID AS EMAIL_ADRS,
+                'Y' AS USE_YN,
+                RGST_DT,
+                RGSTR_ID,
+                CHG_DT,
+                CHGR_ID,
+                COUNT(*) OVER() AS TOTAL_NUM
+        FROM
+                PORTAL.CO_USER_INFO CUI
+        WHERE
+                NOT EXISTS (
+                    SELECT 1
+                    FROM GAIA_CMIS.SM_USER_INFO SUI
+                    WHERE SUI.USR_ID = CUI.USR_ID
+                )
+        <choose>
+            <when test="searchType != null and searchType != '' and searchType == 'login_id'">
+                AND LOGIN_ID LIKE '%' || #{searchValue} || '%'
+            </when>
+            <when test="searchType != null and searchType != '' and searchType == 'usr_nm'">
+                AND USR_NM LIKE '%' || #{searchValue} || '%'
+            </when>
+        </choose>
+        <if test="pageable.sort.isEmpty()">
+            ORDER BY CHG_DT DESC
+        </if>
+        <include refid="sqlx.commonPageable"></include>
+    </select>
+
+    <!-- OCI 에서 추가 할 사용자 정보를 가져온다. -->
+    <select id="getSelectedOciUserList"  parameterType="map" resultType="syncUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getSelectedOracleUserList][gwlee]  */
+        SELECT 	사용자ID AS OCI_USR_ID,
+                nvl(로그인ID, ' ') AS LOGIN_ID,
+                nvl(사용자명, ' ') AS USR_NM,
+                휴대전화번호 AS PHONE_NO,
+                사용자전화번호 AS TEL_NO,
+                이메일 AS EMAIL_ADRS,
+                (SELECT CORP_NO FROM COMM_CORP_USR_CAT WHERE USR_ID = 사용자ID) AS CORP_NO
+        FROM 	공통_사용자정보
+        WHERE 사용자상태구분코드 = '1'
+        AND 사용자ID IN
+        <foreach item="user" collection="userList" open="(" separator="," close=")">
+            #{user.usrId}
+        </foreach>
+    </select>
+
+	<!-- NCP 에서 추가 할 사용자 정보를 가져온다. -->
+    <select id="getSelectedNcpUserList"  parameterType="map" resultType="syncUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.getSelectedNcpUserList][gwlee]  */
+        SELECT 	USR_ID AS NCP_USR_ID,
+                LOGIN_ID AS LOGIN_ID,
+                USR_NM AS USR_NM,
+                MTEL_NO AS PHONE_NO,
+                TEL_NO AS TEL_NO,
+                LOGIN_ID AS EMAIL_ADRS,
+                CORP_NO
+        FROM 	PORTAL.CO_USER_INFO CUI
+        WHERE 	1=1
+        AND     USR_ID IN
+		<foreach item="user" collection="userList" open="(" separator="," close=")">
+			#{user.usrId}
+		</foreach>
+    </select>
+
+	<!-- OCI/NCP 에서 사용자 정보를 가져와서 입력한다. -->
+    <insert id="insertSyncUserInfo" parameterType="map">
+      /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.insertSyncUserInfo][gwlee]  */
+	  <foreach collection="userList" item="user" open="" separator=";" close="">
+			INSERT INTO SM_USER_INFO 	(	USR_ID, 
+											LOGIN_ID, 
+											OCI_USR_ID, 
+											NCP_USR_ID, 
+											USR_NM, 
+											PHONE_NO, 
+											TEL_NO, 
+											EMAIL_ADRS, 
+											RGSTR_ID, 
+											RGST_DT, 
+											CHG_ID, 
+											CHG_DT,
+			                           		CORP_NO
+			                           )	VALUES
+										(	<if test=' user.ociUsrId != null and user.ociUsrId != "" '>
+											( 	SELECT 	CASE
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 1 THEN 'O00000000' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 2 THEN 'O0000000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 3 THEN 'O000000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 4 THEN 'O00000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 5 THEN 'O0000' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 6 THEN 'O000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 7 THEN 'O00' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'O', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 8 THEN 'O0' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															ELSE 'O' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER)), 0) = 0 THEN 1
+																						ELSE MAX(CAST(REPLACE(USR_ID, 'O', '0') AS INTEGER))+ 1
+																					END) AS TEXT)			
+														END AS SEQ
+												FROM 	SM_USER_INFO
+												WHERE 	USR_ID LIKE 'O%'
+											),
+											</if>
+											<if test=' user.ncpUsrId != null and user.ncpUsrId != "" '>
+											( 	SELECT 	CASE
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 1 THEN 'N00000000' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 2 THEN 'N0000000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 3 THEN 'N000000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 4 THEN 'N00000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																					ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																				END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 5 THEN 'N0000' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 6 THEN 'N000' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 7 THEN 'N00' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															WHEN ( CHAR_LENGTH(	CAST( ( CASE
+																							WHEN COALESCE( MAX( CAST( REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																								ELSE MAX( CAST( REPLACE( USR_ID, 'N', '0') AS INTEGER))+ 1
+																							END) AS TEXT))) = 8 THEN 'N0' || CAST(( CASE 	WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																																				ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																																			END) AS TEXT)
+															ELSE 'N' || CAST(( CASE WHEN COALESCE(MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER)), 0) = 0 THEN 1
+																						ELSE MAX(CAST(REPLACE(USR_ID, 'N', '0') AS INTEGER))+ 1
+																					END) AS TEXT)			
+														END AS SEQ
+												FROM 	SM_USER_INFO
+												WHERE 	USR_ID LIKE 'N%'
+											),
+											</if>											
+											#{user.loginId},
+											#{user.ociUsrId},
+											#{user.ncpUsrId},
+											#{user.usrNm},
+											#{user.phoneNo},
+											#{user.telNo},
+											#{user.emailAdrs},
+											#{user.rgstrId},
+											NOW(),
+											#{user.rgstrId},
+											NOW(),
+										 	#{user.corpNo}
+										 )
+			ON CONFLICT (LOGIN_ID)
+			DO UPDATE
+			SET LOGIN_ID	= #{user.loginId},
+				OCI_USR_ID 	= #{user.ociUsrId},
+				NCP_USR_ID 	= #{user.ncpUsrId},
+				USR_NM 		= #{user.usrNm},
+				PHONE_NO 	= #{user.phoneNo},
+				TEL_NO 		= #{user.telNo},
+				EMAIL_ADRS 	= #{user.emailAdrs},
+				CHG_ID 		= #{user.rgstrId},
+				CHG_DT 		= NOW(),
+		  		CORP_NO		= #{user.corpNo}
+		</foreach>
+    </insert>
+
+	<!-- OCI로 API 동기화 할 사용자정보를 가져온다. -->
+    <select id="selectedApiOciUserList"  parameterType="map" resultType="syncUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectedApiOciUserList][gwlee]  */
+        SELECT 	USR_ID AS USR_ID,
+                LOGIN_ID AS LOGIN_ID,
+				OCI_USR_ID AS OCI_USR_ID,
+				NCP_USR_ID AS NCP_USR_ID,
+                USR_NM AS USR_NM,
+                PHONE_NO AS PHONE_NO,
+                TEL_NO AS TEL_NO,
+                EMAIL_ADRS AS EMAIL_ADRS
+        FROM 	SM_USER_INFO
+        WHERE 	1=1
+        AND     NCP_USR_ID IN
+        <foreach item="user" collection="userList" open="(" separator="," close=")">
+            #{user.usrId}
+        </foreach>
+    </select>
+
+	<!-- NCP로 API 동기화 할 사용자정보를 가져온다. -->
+    <select id="selectedApiNcpUserList"  parameterType="map" resultType="syncUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.selectedApiNcpUserList][gwlee]  */
+        SELECT 	USR_ID AS USR_ID,
+                LOGIN_ID AS LOGIN_ID,
+				OCI_USR_ID AS OCI_USR_ID,
+				NCP_USR_ID AS NCP_USR_ID,
+                USR_NM AS USR_NM,
+                PHONE_NO AS PHONE_NO,
+                TEL_NO AS TEL_NO,
+                EMAIL_ADRS AS EMAIL_ADRS
+        FROM 	SM_USER_INFO
+        WHERE 	1=1
+        AND     OCI_USR_ID IN
+		<foreach item="user" collection="userList" open="(" separator="," close=")">
+			#{user.usrId}
+		</foreach>
+    </select>
+
+	<!-- API통신을 통해 사용자정보를 입력한다. -->
+    <insert id="insertApiUserInfo" parameterType="map">
+      /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.insertApiUserInfo][gwlee]  */
+	  <foreach collection="userList" item="user" open="" separator=";" close="">
+			INSERT INTO SM_USER_INFO 	(	USR_ID, 
+											LOGIN_ID, 
+											OCI_USR_ID, 
+											NCP_USR_ID, 
+											USR_NM, 
+											PHONE_NO, 
+											TEL_NO, 
+											EMAIL_ADRS, 
+											RGSTR_ID, 
+											RGST_DT, 
+											CHG_ID, 
+											CHG_DT)	VALUES
+										(	#{user.usrId},
+											#{user.loginId},
+											#{user.ociUsrId},
+											#{user.ncpUsrId},
+											#{user.usrNm},
+											#{user.phoneNo},
+											#{user.telNo},
+											#{user.emailAdrs},
+											#{user.rgstrId},
+											NOW(),
+											#{user.rgstrId},
+											NOW() )
+			ON CONFLICT (USR_ID)
+			DO UPDATE
+			SET LOGIN_ID	= #{user.loginId},
+				OCI_USR_ID 	= #{user.ociUsrId},
+				NCP_USR_ID 	= #{user.ncpUsrId},
+				PHONE_NO 	= #{user.phoneNo},
+				TEL_NO 		= #{user.telNo},
+				EMAIL_ADRS 	= #{user.emailAdrs},
+				CHG_ID 		= #{user.rgstrId},
+				CHG_DT 		= NOW()
+		</foreach>
+    </insert>
+
+	<!--사용자 사용여부 수정시 조직테이블 재직삾 설정 변경-->
+	<update id="updateSmOrganizationInfo" parameterType="updateUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.updateSmOrganizationInfo][gwLee]  */
+		UPDATE 	SM_ORGANIZATION
+        SET 	FLAG = #{flag}, chg_id = #{chgId}, chg_dt = now()
+        WHERE 	USR_ID = #{usrId}
+    </update>
+
+	<!--사용자 정보 변경 변경-->
+	<update id="updateUserInfo" parameterType="smUserInfo">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.user.updateUserInfo][gwLee]  */
+        /* [dsjung] 2025-07-25 재사용을 위해 값이 존재하는 필드들만 수정되도록 향상 */
+		UPDATE sm_user_info
+		set
+			<if test="usrNm != null and usrNm != ''">
+				usr_nm = #{usrNm},
+			</if>
+			<if test="ratngCd != null and ratngCd != ''">
+				ratng_cd = #{ratngCd},
+			</if>
+			<if test="pstnCd != null and pstnCd != ''">
+				pstn_cd = #{pstnCd},
+			</if>
+			<if test="phoneNo != null and phoneNo != ''">
+				phone_no = #{phoneNo},
+			</if>
+			<if test="telNo != null and telNo != ''">
+				tel_no = #{telNo},
+			</if>
+			<if test="emailAdrs != null and emailAdrs != ''">
+				email_adrs = #{emailAdrs},
+			</if>
+			<if test="mngDiv != null and mngDiv != ''">
+				mng_div = #{mngDiv},
+			</if>
+			<if test="useYn != null and useYn != ''">
+				use_yn = #{useYn},
+			</if>
+			<if test="dltYn != null and dltYn != ''">
+				dlt_yn = #{dltYn},
+			</if>
+			chg_dt = now(), chg_id = #{chgId}
+		WHERE usr_id = #{usrId}
+    </update>
+
+</mapper>

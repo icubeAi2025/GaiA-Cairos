@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mappers.components.log.apiLog">
+
+    <sql id="columns">
+        api_log_no
+        , api_id
+        , api_type
+        , source_system_code
+        , target_system_code
+        , service_type
+        , service_key
+        , req_method
+        , result_code
+        , req_header
+        , req_data
+        , req_dt
+        , res_header
+        , res_data
+        , res_dt
+        , error_yn
+        , error_reason
+        , rgstr_id
+        , rgst_dt
+    </sql>
+
+    <select id="selectList" resultType="smApiLog">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.apiLog.selectList][bjkim]  */
+        SELECT <include refid="columns" />
+        FROM sm_api_log log
+        <where>
+           /* AND DEPTH <![CDATA[<]]> */
+        </where>
+        ORDER BY api_log_no DESC
+    </select>
+
+    <select id="selectOne" resultType="smApiLog">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.apiLog.selectOne][bjkim]  */
+        SELECT <include refid="columns" />
+        FROM sm_api_log log
+        <where>
+            <if test=' apiLogNo != null '>
+                AND api_log_no = #{apiLogNo}
+            </if>
+            <if test=' !"".equals(serviceKey) '>
+                AND service_key = #{serviceKey}
+            </if>
+            <if test=' !"".equals(userId) '>
+                AND rgstr_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.components.log.apiLog.insert][bjkim]  */
+        INSERT INTO sm_api_log (
+            api_id
+            , api_type
+            , source_system_code
+            , target_system_code
+            , service_type
+            , service_key
+            , req_method
+            , result_code
+            , req_header
+            , req_data
+            , req_dt
+            , res_header
+            , res_data
+            , res_dt
+            , error_yn
+            , error_reason
+            , rgstr_id
+            , rgst_dt
+        ) values (
+            #{apiId}
+            , #{apiType}
+            , #{sourceSystemCode}
+            , #{targetSystemCode}
+            , #{serviceType}
+            , #{serviceKey}
+            , #{reqMethod}
+            , #{resultCode}
+            , #{reqHeader}
+            , #{reqData}
+            , #{reqDt}
+            , #{resHeader}
+            , #{resData}
+            , #{resDt}
+            , #{errorYn}
+            , #{errorReason}
+            , #{rgstrId}
+            , now()
+        )
+    </insert>
+</mapper>

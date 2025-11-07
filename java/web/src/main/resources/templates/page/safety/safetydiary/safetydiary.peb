@@ -1,0 +1,980 @@
+{% extends 'layout/base_content' %}
+{% block head %}
+{% endblock %}
+{% block content %}
+<!--*디자인 적용 new 시작*-->
+<section class="contents_wrap g-row">
+	<article class="conts_area">
+		<div class="conts">
+			<div class="conts_grid" style="margin-top: 10px;">
+				<!-- S: search wrap ---------------------------------------------- -->
+				<div class="search_wrap">
+					<span class="selectbox">
+						<select name="apprvlStats" id="apprvlStats">
+							<option value="" selected>{{ message('item.projectcost.047') }}</option>
+							<option value="A">{{ message('btn.025') }}</option>
+							<option value="R">{{ message('btn.026') }}</option>
+							<option value="E">{{ message('btn.027') }}</option>
+						</select>
+					</span>
+					<!-- searchbox -->
+					<div class="searchbox_wrap" style="width: 300px;">
+						<input type="text" id="searchInput" placeholder="보고서 번호, 작성자">
+						<button type="submit" class="icon_btn search">
+							<i class="ic ic-search"></i>
+							<span class="blind">검색</span>
+						</button>
+					</div>
+				</div>
+
+				<div class="search_group" style="display: none;">   <!-- 검색 조건 박스-->
+					<div class="search_row"> <!-- 검색 조건 1번째 줄 -->
+						<div class="search_col">
+							<div class="search_label">기간</div>
+							<div class="search_data">
+								<input type="date" name="start_dt" class="date" id="start_dt" placeholder="날짜 입력">
+								<span class="range-separator">~</span>
+								<input type="date" name="end_dt" class="date" id="end_dt" placeholder="날짜 입력">
+							</div>
+						</div>
+						<div class="search_col">
+							<div class="search_label">
+								<button type="button" class="btn _outline" onclick="page.setStartDateByOffset('7d')">7일</button>
+								<button type="button" class="btn _outline" onclick="page.setStartDateByOffset('1m')">1개월</button>
+								<button type="button" class="btn _outline" onclick="page.setStartDateByOffset('3m')">3개월</button>
+								<button type="button" class="btn _outline" onclick="page.setStartDateByOffset('6m')">6개월</button>
+								<button type="button" class="btn _outline" onclick="page.setStartDateByOffset('1y')">1년</button>
+							</div>
+							<div class="search_data"></div>
+						</div>
+					</div>
+					<div class="search_row">   <!-- 검색 조건 2번째 줄 -->
+						<div class="search_col">
+							<div class="search_label">승인상태</div>
+							<div class="search_data">
+<!--								<span class="selectbox">-->
+<!--									<select name="apprvlStats" id="apprvlStats">-->
+<!--										<option value="" selected>{{ message('item.projectcost.047') }}</option>-->
+<!--										<option value="A">{{ message('btn.025') }}</option>-->
+<!--										<option value="R">{{ message('btn.026') }}</option>-->
+<!--										<option value="E">{{ message('btn.027') }}</option>-->
+<!--									</select>-->
+<!--								</span>-->
+							</div>
+						</div>
+						<div class="search_col">
+							<div class="search_label">키워드</div>
+							<div class="search_data">
+								<input type="text" name="searchTerm" placeholder="보고서 번호, 작성자" onkeypress="if(event.keyCode == 13){page.safetyDiary.search();}">
+							</div>
+						</div>
+					</div>
+					<div class="search_btn_wrap">
+						<button type="button" class="btn _fill" onclick="page.safetyDiary.search()">검색</button>
+						<button type="button" class="btn _outline" onclick="page.safetyDiary.searchInit()">초기화</button>
+					</div>
+				</div>
+				<div class="toolbar" style="display: none;">
+					<div class="btn_area s_default">
+						<!--				    <button type="button" class="btn _outline" onclick="page.safetyDiary.deleteUserLogList()">{{ message('btn.002') }}</button> -->
+						<div class=totla-count>
+							총 <strong id="totalCnt">0</strong>건
+						</div>
+					</div>
+					<span class="selectbox" style="margin-left: inherit; width: inherit;">
+					<!-- <select name="items-per-page" id="items-per-page" onchange="page.changePerPage()"> -->
+					<select name="items-per-page" id="items-per-page">
+					  <option selected disabled value="">{{ message('item.com.004') }}</option>
+					  <option value="5">5</option>
+					  <option value="25">25</option>
+					  <option value="50">50</option>
+					</select>
+				</span>
+				</div>
+				<!-- 버튼 영역 -->
+				<div class="toolbar">
+					<div class="btn_area s_default _outline">
+						{{ btnHtml | raw }}
+						<div class="btn_group _outline">
+							{{ chkBtnHtml | raw }}
+						</div>
+					</div>
+				</div>
+				<div class="grid" id="safetyDiaryDataGrid"></div>
+			</div>
+		</div>
+	</article>
+</section>
+
+{% endblock content %}
+
+{% block footer_script %}
+<style>
+	.search_group {
+		border: solid 1px #EAEAEA;
+		border-radius: 10px;
+		padding: 15px;
+	}
+	.search_row {
+		display: flex;
+		gap: 16px; /* 항목 간 간격 */
+		align-items: center;
+		justify-content: space-between; /* 아이템 사이 동일 간격 */
+		padding-bottom: 10px;
+	}
+
+	.search_col {
+		flex: 1;                /* 모든 항목 동일 너비로 */
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;           /* 줄어들 수 있게 설정 */
+	}
+
+	.search_label {
+		white-space: nowrap;
+		font-weight: 500;
+		width: 80px;
+	}
+
+	.search_data {
+		flex: 1;                /* 나머지 공간 차지 */
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.search_btn_wrap {
+		display: flex;
+		gap: 8px;
+		justify-content: center; /* 우측 정렬 */
+		margin-top: 12px;
+	}
+</style>
+<script>
+	/************************************************************
+	 * 페이지 글로벌 변수
+	 ***********************************************************/
+
+	const urlParams = new URLSearchParams(window.location.search);
+	const bodyHeight = window.innerHeight - 460;
+
+	//새창 아이콘 렌더러
+	const newWindowViewRenderer = window.NewWindowViewRenderer;
+	const customColumnCheckbox = window.CustomColumnCheckbox;
+	const BASEPATH = '/api/safety/safety-diary';
+	var requestData = {};
+
+	var pjtNo = urlParams.get('pjtNo');
+	var cntrctNo = urlParams.get('cntrctNo');
+	var isDelAuth = "{{ isDelAuth }}"; 	// 삭제 권한 여부
+	var isAddAuth = "{{ isAddAuth }}";
+	var imgDir = "{{ imgDir }}";
+
+	var page = {};
+	var grid = {};
+	let user;
+	let startDt;
+	let endDt;
+
+	/************************************************************
+	 * 페이지 사용 함수
+	 ***********************************************************/
+
+	// FOR GRID - 바로가기
+	class CustomColumnLink {
+		constructor(props) {
+			const el = document.createElement("div");
+			this.el = el;
+			this.render(props);
+			this.addEventListeners(props);
+		}
+
+		getElement(props) {
+			return this.el;
+		}
+
+		render(props) {
+			this.el.innerHTML = `<div style="position: relative;">` + props.value + ` <i class='ic ic-sent-to-onoff' style='opacity:0;position:absolute;padding:0 15px; right:10px;' onclick='goLink("detail", "` + props.grid.getRow(props.rowKey).safe_diary_id + `");'>` + `</i></div>`;
+		}
+
+		addEventListeners(props) {
+
+			const rowSelector = `td[data-row-key="${props.rowKey}"]`; // 예시 CSS 선택자
+			const rowElements = document.querySelectorAll(rowSelector); // NodeList 반환
+			if (rowElements.length > 0) {
+
+				rowElements.forEach((rowElement) => {
+					rowElement.addEventListener("mouseenter", (event) => {
+						let icon = event.target.querySelector(".ic-sent-to-onoff");
+						if (icon !== null) icon.style.opacity = 1;
+					});
+					rowElement.addEventListener("mouseleave", (event) => {
+						let icon = event.target.querySelector(".ic-sent-to-onoff");
+						if (icon !== null) icon.style.opacity = 0;
+					});
+				});
+
+			} else {
+				// console.error("행 요소를 찾을 수 없습니다:", this.rowKey);
+			}
+
+		}
+	}
+
+	page = {
+		isDelAuth: "{{ isDelAuth }}", 	// 삭제 권한 여부
+		// 1. 페이지 로드 -> 초기화
+		init() {
+
+			// 1-1. 초기화 -> 계약변경 설정
+			gaiaCommon.makeCntrctSelectBox(
+					".contents_wrap .conts",
+					() => {
+						$(".btn_area").hide();
+						page.changeCntrctList(cntrctNo);
+					},
+					(cntrctNo) => {
+						page.changeCntrctList(cntrctNo);
+					},
+					(cntrctNo) => {
+						page.changeCntrctList(cntrctNo);
+					}
+			);
+
+			// Timepicker 날짜 초기화
+			page.setTodayToInput('start_dt');
+			page.setTodayToInput('end_dt');
+
+			// this.safetyDiary.gridInit();
+
+			// 'items-per-page' 셀렉트박스 변경 이벤트 리스너 추가
+			$('#items-per-page').on('change', (event) => {
+				const newPerPage = parseInt(event.target.value, 10);
+				if (this.safetyDiary.grid) {
+					this.safetyDiary.grid.setPerPage(newPerPage); // 그리드의 perPage 설정 업데이트
+				}
+			});
+
+		},
+
+		// 계약 별 안전일지 조회 (Admin / gaia)
+		changeCntrctList(selectCntrctNo){
+			let params = {
+				pjtNo: pjtNo,
+				cntrctNo: selectCntrctNo,
+				searchText: ''
+			}
+			selectedCntrctNo = selectCntrctNo;
+			cntrctNo = selectCntrctNo;
+
+			const searchData = gaia.getSearchData(params);
+			if (searchData && Object.keys(searchData).length !== 0) {
+				grid.read(searchData);
+
+				Object.entries(searchData).forEach(([key, value]) => {
+					$(`#${key}`).val(value);
+				});
+			}else{
+				grid.read(params);
+			}
+		},
+
+		// 검색 조건 유지, session 저장
+		updateRequestData: function () {
+			requestData.appStatus = $("#appStatus").val();
+			requestData.searchInput = $("#searchInput").val();
+			gaia.setSearchData(requestData);
+		},
+
+		//알림창 기능
+		customAlert: function (msg) {
+			$('.pop_box.toast').show();
+			$('.toast_msg').text(msg);
+			$('.pop_box.toast').addClass('on');
+
+			// 일정 시간 후에 'on' 클래스 제거
+			setTimeout(function() {
+				$('.pop_box.toast').removeClass('on');
+				$('.pop_box.toast').hide();
+			}, 1500); // 1500ms = 1.5초
+		},
+
+		// Timepicker 현재 날짜로 초기화
+		formatToday: function() {
+			const today = new Date();
+			const yyyy = today.getFullYear();
+			const mm = String(today.getMonth() + 1).padStart(2, '0');
+			const dd = String(today.getDate()).padStart(2, '0');
+			return `${yyyy}-${mm}-${dd}`;
+		},
+
+		// 선택한 Timepicker formatToday 함수 실행
+		setTodayToInput: function (id) {
+			const el = document.getElementById(id);
+			if (el && !el.value) {
+				el.value = this.formatToday();
+			}
+		},
+
+		// Timepicker 유효성 확인
+		validateDates: function () {
+			const startEl = document.getElementById('start_dt');
+			const endEl = document.getElementById('end_dt');
+
+			if (!startEl.value || !endEl.value) {
+				alert("시작일과 종료일을 모두 입력해주세요.");
+				return false;
+			}
+
+			const startDate = new Date(startEl.value);
+			const endDate = new Date(endEl.value);
+			const today = new Date();
+			today.setHours(23, 59, 59, 999); // 오늘 마지막 시간으로 설정: 날짜 비교할 때 시간 기준으로 비교함
+
+			// 종료일이 시작일보다 이전
+			if (endDate < startDate) {
+				alert("검색 종료 시점은 시작 시점보다 뒤에 있어야 합니다.");
+				return false;
+			}
+
+			// 날짜 범위가 1년 초과
+			const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+			if ((endDate - startDate) > oneYearMs) {
+				alert("날짜 검색 범위는 최대 1년입니다.");
+				return false;
+			}
+
+			// 미래 날짜 검사
+			if (startDate > today || endDate > today) {
+				alert("날짜 설정이 잘못되었습니다.");
+				return false;
+			}
+			return true;
+		},
+
+		// 검색 날짜 종료 기준으로부터 클릭한 버튼만큼 이전 일자로 시작 날짜 설정
+		setStartDateByOffset: function (offsetStr) {
+			const endEl = document.getElementById('end_dt');
+			const startEl = document.getElementById('start_dt');
+
+			const endDate = new Date(endEl.value);
+
+			let startDate = new Date(endDate);
+			const unit = offsetStr.slice(-1);
+			const amount = parseInt(offsetStr.slice(0, -1), 10);    // 마지막 글자 빼고 10진수로 변환
+
+			switch (unit) {
+				case 'd': startDate.setDate(startDate.getDate() - amount); break;
+				case 'm': startDate.setMonth(startDate.getMonth() - amount); break;
+				case 'y': startDate.setFullYear(startDate.getFullYear() - amount); break;
+			}
+
+			// 날짜를 YYYY-MM-DD 형식으로 변환
+			const yyyy = startDate.getFullYear();
+			const mm = String(startDate.getMonth() + 1).padStart(2, '0');
+			const dd = String(startDate.getDate()).padStart(2, '0');
+			const formatted = `${yyyy}-${mm}-${dd}`;
+
+			startEl.value = formatted;
+
+		}
+
+	};
+
+	grid = {
+		gridHeader: {
+			height: 120,
+			complexColumns: [
+				{
+					header: '{{ message("item.construction.005") }}',
+					name: 'wthr',
+					childNames: ['forc_am', 'forc_pm']
+				},
+				{
+					header: '{{ message("item.construction.008") }}',
+					name: 'tmprt',
+					childNames: ['ta_max', 'ta_min']
+				}
+			],
+		},
+		gridColumns: [
+			{
+				header: '{{ message("item.construction.001") }}', name: 'repo_no', allowMerging: true, align: 'center', resizable: true, minWidth: 120,
+				renderer: {
+					type:window.IconRenderer,
+					options:[{
+						type:"newWindow",
+						isHover:true,
+						success:(rowData) => {
+							goLink("detail", rowData.safe_diary_id);
+						}
+					}]
+				}
+			},
+			{ header: '{{ message("item.construction.002") }}', name: 'repo_dt', resizable: true, align: 'center', width: 120 },
+			{ header: '{{ message("item.construction.003") }}', name: 'rgstr_nm', resizable: true, align: 'center', width: 120, },
+			{
+				header: '{{ message("item.construction.004") }}', name: 'aprv_nm', width: 120, align: 'center',
+			},
+			{
+				header: '{{ message("item.projectcost.047") }}', name: 'apprvl_stats_krn', width: 120, align: 'center',
+				class: "multi-line-css",
+				renderer:{
+					type:window.IconRenderer,
+					options:[
+						{
+							type:"printer",
+							auth:(rowData) => {
+								return rowData.apprvl_stats === "A";
+							},
+							success:(rowData)=>{
+								// PDF 미리보기
+								const docId = rowData.doc_id;
+								// 파라미터 1: 통합문서관리(DOC), 2: 열람할 문서 key(cw_daily_report 의 docId), 3: 다운로드 여부(o: 'DA', x: 입력안함)
+								gaiaCommon.pdfViewUtil('DOC', docId, 'DA');
+							}
+						}
+					]
+				},
+			},
+			{
+				header: '{{ message("item.construction.006") }}', name: 'forc_am', width: 120, align: 'left',
+				class: "multi-line-css",
+			},
+			{
+				header: '{{ message("item.construction.007") }}', name: 'forc_pm', width: 120, align: 'left',
+			},
+			{ header: '{{ message("item.construction.009") }}', name: 'ta_max', width: 80, align: 'center' },
+			{ header: '{{ message("item.construction.010") }}', name: 'ta_min', width: 80, align: 'center' },
+			{ name: 'safe_diary_id', hidden: true },
+
+		],
+		read: function (params) {
+			const Grid = tui.Grid;
+			let _this = this;
+
+			if (this.safetyDiaryDataGrid) {
+				this.safetyDiaryDataGrid.destroy(); // 기존 인스턴스 제거
+				this.safetyDiaryDataGrid = null;
+			}
+
+			const dataSource = createDataSource({
+				readData: {
+					url: BASEPATH+'/list',
+					method: "POST",
+					initParams: params
+				}
+			});
+
+			if (!this.safetyDiaryDataGrid) {
+				this.safetyDiaryDataGrid = new Grid({
+					el: document.getElementById('safetyDiaryDataGrid'),
+					data: dataSource,
+					scrollX: true,
+					scrollY: true,
+					width: 'auto',
+					bodyHeight: bodyHeight,
+					rowHeaders: [
+						{
+							type: 'checkbox',
+							width: 100,
+							renderer: {
+								type: window.IconRenderer,
+								options:[
+									{
+										type:"checkBox",
+									},
+									{
+										type:"trash",
+										auth:isDelAuth == 'Y',
+										success:(rowData)=>{
+											deleteDiary(rowData.safe_diary_id,rowData.apprvl_stats,rowData.atchFileNo)
+										}
+									},
+									{
+										type:"copy",
+										auth:isAddAuth == 'Y',
+										success:(rowData)=>{
+											copyDiary(rowData.safe_diary_id);
+										}
+									},
+									{
+										type:"eyes",
+										success:(rowData)=>{
+											gaiaCommon.openReportViewer('/safety-report/safety_report.jrf',{
+												'p_safeDiaryId':rowData.safe_diary_id
+												,'p_imgDir':imgDir.substring(0,imgDir.indexOf("/upload"))
+												,'p_baseUrl':window.location.origin
+											})
+										}
+									}
+								]
+							}
+						},
+
+					],
+					header: grid.gridHeader,
+					columns: grid.gridColumns,
+					contextMenu: null,
+				});
+				this.safetyDiaryDataGrid.on('onGridUpdated', () => {
+					const copyGridColumns = JSON.parse(JSON.stringify(grid.gridColumns));
+					const data = this.safetyDiaryDataGrid.getData(); // 현재 데이터 가져오기
+					// if (data.length === 0 || data[0].cntrctPhase === '0') {
+					// 	this.safetyDiaryDataGrid.setColumns(copyGridColumns.filter(elem => elem.name !== 'cntrctPhase'));
+					// } else {
+					// 	this.safetyDiaryDataGrid.setColumns(copyGridColumns);
+					// }
+				});
+
+				this.safetyDiaryDataGrid.on('click', function (e) {
+					const rowKey = e.rowKey;
+					if (e.columnName === "_checked" && e.nativeEvent.target.className === "checkGroup") {
+						let temp = _this.safetyDiaryDataGrid.getRow(rowKey);
+						temp._attributes.checked = _this.safetyDiaryDataGrid.getRow(rowKey)._attributes.checked ? false : true;
+						_this.safetyDiaryDataGrid.setRow(rowKey,temp);
+						return e.stop();
+					}
+				});
+			}
+			refreshGrid(this.safetyDiaryDataGrid);
+		}
+	}
+
+	// 단건 - 안전일지 복사
+	let copyDiary = function(safe_diary_id) {
+		const diaryId = safe_diary_id;
+		if (!diaryId) {
+			gaiaCommon.customAlert("선택된 항목의 정보를 찾을 수 없습니다");
+			return;
+		}
+		const copyParam = {
+			cntrctNo: cntrctNo,
+			safeDiaryId: diaryId,
+		}
+
+		copySafetyDiary(copyParam);
+	}
+
+	// 안전일지 복사
+	let copySafetyDiary = function(copyParam) {
+		const today = new Date();
+		$("#copyDate").attr("max", today.toLocaleDateString("en-CA"));
+
+		gaiaCommon.customDateConfirm("복사", "날짜 선택", "{{ message('msg.009') }}", function () {
+
+			const copyDate = $('#copyDate').val().replaceAll('-','');
+			copyParam.dailyReportDate = copyDate;
+			copyParam.dailyReportDateIso = $('#copyDate').val();
+
+			if (!copyDate) {
+				gaiaCommon.customAlert("복사할 날짜를 선택해주세요");
+				return;
+			}
+
+			// 금일 이후 날짜 선택한 경우 return
+			let selectedDate = new Date(copyDate);
+
+			// 시간 비교 시 시각 00:00:00으로 고정 (날짜만 비교)
+			selectedDate.setHours(0, 0, 0, 0);
+			today.setHours(0, 0, 0, 0);
+
+			if (selectedDate > today) {
+				gaiaCommon.customAlert("미래 일자로 게시물을 작성할 수 없습니다.");
+				return false;
+			}
+
+			gaiaCommon.post(`/api/safety/safety-diary/diary-exists`, copyParam,function (response) {
+				if (response.details.reportExists) {
+					gaiaCommon.customAlert("해당 날짜에 안전일지가 이미 존재합니다.");
+					return;
+				}
+
+				// 2. 복사 실행
+				gaiaCommon.LoadingOverlay('body', true);
+				gaiaCommon.post(`/api/safety/safety-diary/copy`, copyParam, function(response){
+					if (response.ok && response.details.success) {
+						gaiaCommon.customAlert("복사가 완료되었습니다.", function() {
+							// 수정 페이지로 이동
+							gaiaCommon.LoadingOverlay('body', false);
+							window.location.href = `/safety/safety-diary/update?pjtNo=${pjtInfo.pjtNo}&cntrctNo=${cntrctNo}&diaryId=${response.details.newSafeDiaryId}`;
+						});
+					} else {
+						gaiaCommon.LoadingOverlay('body', false);
+						gaiaCommon.customAlert(response.details.message || "복사에 실패했습니다.");
+					}
+				}, function(){
+					gaiaCommon.customAlert("복사 중 오류가 발생했습니다.");
+				})
+			},function () {
+				gaiaCommon.customAlert("존재 여부 확인 중 오류가 발생했습니다.");
+			})
+		})
+	}
+
+	// 안전일지 전자결재 승인요청
+	let approval = function() {
+		const allRows = grid.safetyDiaryDataGrid.getData();
+		let selectedRow = [];
+		let setMsg;
+
+		allRows.forEach(row => {
+			if(row._attributes.checked) {
+				const apprvlStats = row.apprvl_stats;
+				selectedRow.push({
+					cntrctNo: row.cntrct_no,
+					safetyDiaryId: row.safe_diary_id,
+				});
+				if(apprvlStats === 'E') {
+					setMsg = "{{ message('msg.monthlyreport.005') }}";	// 이미 승인 요청 중인 보고서입니다.
+				} else if(apprvlStats === 'A') {
+					setMsg = "{{ message('msg.monthlyreport.006') }}";	// 이미 결재가 완료된 보고서입니다.
+				}
+				// else if(apprvlStats === 'R') {
+				// 	setMsg = "{{ message('msg.monthlyreport.007') }}";	// 이미 결재가 반려된 보고서입니다.
+				// }
+			}
+		});
+
+		if(selectedRow.length === 0) {
+			let msg = "{{ message('msg.035') }}".replace("{0}", "{{ message('btn.027') }}");
+			gaiaCommon.customAlert(msg);
+			return;
+		}
+
+		if(setMsg) {
+			gaiaCommon.customAlert(setMsg);
+			return;
+		}
+
+		cntrctNo = $('#cntrctNo').val() ?? cntrctNo;
+
+		gaiaCommon.customConfirm("{{ message('btn.027') }}", "안전일지 승인요청", "{{ message('msg.monthlyreport.008') }}", function(){
+			let data = selectedRow;
+
+			gaiaCommon.LoadingOverlay('body', true);
+
+			$.ajax({
+				url: BASEPATH+'/request-approval',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset=UTF-8',
+				data: JSON.stringify(data),
+				success: function(result){
+					if(result.ok) {
+						gaiaCommon.customAlert("{{ message('msg.monthlyreport.009') }}", function(){
+							const searchValue = $('#searchInput').val();
+							let searchParams = {
+								pjtNo: pjtNo,
+								cntrctNo: cntrctNo,
+								searchText: searchValue
+							};
+							grid.read(searchParams);
+						});
+					} else if(result.errorCode === '1000') {
+						gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}");
+					} else if(result.errorCode === '1003'){
+						gaiaCommon.customAlert("{{ message('msg.app.050') }}");
+					}
+				},
+				error: function(result) {
+					gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}", function(){
+						window.location.reload();
+					});
+				},
+				complete: function() {
+					gaiaCommon.LoadingOverlay('body', false);
+				}
+			});
+		});
+	}
+
+	// 승인상태에 따른 삭제 처리
+	let approval_cancel = function() {
+		const allRows = grid.safetyDiaryDataGrid.getData();
+		let selectedRow = [];
+		let setMsg;
+
+		allRows.forEach(row => {
+			if(row._attributes.checked) {
+				const apprvlStats = row.apprvl_stats;
+				selectedRow.push({
+					cntrctNo: row.cntrct_no,
+					safetyDiaryId: row.safe_diary_id,
+					apDocId: row.ap_doc_id,
+					docId: row.doc_id,
+				});
+
+				// 승인 상태가 아닌 경우 승인취소 불가
+				if(apprvlStats !== 'A') {
+					setMsg = "승인취소는 승인 상태의 항목만 가능합니다.";
+				}
+			}
+		});
+
+		// 유효성 검사
+		if(selectedRow.length === 0) {
+			let msg = "{{ message('msg.035') }}".replace("{0}", "승인취소");
+			gaiaCommon.customAlert(msg);
+			return;
+		}
+
+		if(setMsg) {
+			gaiaCommon.customAlert(setMsg);
+			return;
+		}
+
+		// 승인취소 확인 다이얼로그
+		gaiaCommon.customConfirm("승인취소", "선택한 항목의 승인을 취소하시겠습니까?", "", function(){
+			$.ajax({
+				url: BASEPATH+'/cancel-approval',
+				method: 'POST',
+				dataType: 'json',
+				contentType: 'application/json; charset=UTF-8',
+				data: JSON.stringify(selectedRow),
+				success: function(result){
+					if(result.ok) {
+						gaiaCommon.customAlert("승인이 취소되었습니다.", function(){
+							// 그리드 새로고침
+							const searchValue = $('#searchInput').val();
+							let searchParams = {
+								pjtNo: pjtNo,
+								cntrctNo: cntrctNo,
+								searchText: searchValue
+							};
+							grid.read(searchParams);
+						});
+					} else {
+						gaiaCommon.customAlert("승인취소 처리 중 오류가 발생했습니다.");
+					}
+				},
+				error: function(xhr, status, error) {
+					console.error(status, error);
+					gaiaCommon.customAlert("승인취소 처리 중 오류가 발생했습니다.");
+				}
+			});
+		});
+	}
+
+	// 단건 - 안전일지 삭제
+	let deleteDiary = function(safe_diary_id, apprvl_stats, atch_file_no) {
+		const diaryId = safe_diary_id;
+		if (!diaryId) {
+			gaiaCommon.customAlert("선택된 항목의 정보를 찾을 수 없습니다");
+			return;
+		}
+
+		const deleteParam = [{
+			cntrctNo: cntrctNo,
+			safeDiaryId: diaryId,
+			apprvlStats: apprvl_stats,
+			atchFileNo: atch_file_no
+		}];
+
+		deleteSafetyDiary(deleteParam);
+	}
+
+	// 안전일지 삭제 기능 (통합)
+	let deleteSafetyDiary = function(deleteParam) {
+		// 승인된 항목 체크
+		const hasApprovedItem = deleteParam.some && deleteParam.some(item => item.apprvlStats === 'A' || item.apprvlStats === 'E');
+
+		if (hasApprovedItem) {
+			gaiaCommon.customAlert("승인 요청 또는 승인된 문서는 삭제할 수 없습니다.");
+			return;
+		}
+
+		const confirmTitle = Array.isArray(deleteParam) ? "선택한 안전일지를 삭제합니다." : "해당 안전일지를 삭제합니다.";
+		const deleteList = Array.isArray(deleteParam) ? deleteParam : [deleteParam];
+
+		gaiaCommon.customConfirm("삭제", confirmTitle, "삭제하시겠습니까?", function () {
+			let data = deleteList;
+
+			gaiaCommon.post('/api/safety/safety-diary/delete', data, function (response) {
+				if (response.ok) {
+					gaiaCommon.customAlert("{{ message('msg.006') }}", function() {
+						// 그리드 새로고침
+						const searchValue = $('#searchInput').val();
+						let searchParams = {
+							pjtNo: pjtNo,
+							cntrctNo: cntrctNo,
+							searchText: searchValue
+						};
+						grid.read(searchParams);
+					});
+				} else {
+					gaiaCommon.customAlert("삭제 중 오류가 발생했습니다.");
+				}
+			}, function() {
+				gaiaCommon.customAlert("삭제 중 오류가 발생했습니다.");
+			});
+		});
+	}
+
+	/************************************************************
+	 * 페이지 이벤트 바인딩
+	 ***********************************************************/
+
+	// 검색
+	$('.icon_btn.search').on('click', function () {
+		const searchValue = $('#searchInput').val();
+		let searchParams = {
+			pjtNo: pjtNo,
+			cntrctNo: cntrctNo,
+			searchText: searchValue,
+			apprvlStats: $('#apprvlStats').val()
+		}
+		grid.read(searchParams)
+		page.updateRequestData();
+	});
+
+	// 엔터키 검색
+	$(document).ready(function () {
+		$('#searchInput').on('keypress', function (event) {
+			if (event.which === 13) {
+				const searchValue = $('#searchInput').val();
+				let searchParams = {
+					pjtNo: pjtNo,
+					cntrctNo: cntrctNo,
+					searchText: searchValue,
+					apprvlStats: $('#apprvlStats').val()
+				}
+				grid.read(searchParams)
+				page.updateRequestData();
+			}
+		});
+	});
+
+
+	// 목록 - 안전일지 복사 기능
+	$('.btn_copy').on('click', function() {
+		let checkedList = []; // 체크된 행
+		const allRows = grid.safetyDiaryDataGrid.getData();
+
+		allRows.forEach(row => {
+			if (row._attributes.checked) {
+				checkedList.push({
+					cntrctNo: row.cntrct_no,
+					safeDiaryId: row.safe_diary_id,
+				});
+				checkedRowkey = row.rowKey;
+			}
+		});
+
+		if (checkedList.length === 0) {
+			gaiaCommon.customAlert("복사할 항목을 선택해주세요");
+			return;
+		}else if (checkedList.length > 1) {
+			gaiaCommon.customAlert("복사할 항목을 하나만 선택해주세요");
+			return;
+		}else {
+			const copyParam = checkedList[0];
+			copySafetyDiary(copyParam);
+		}
+	})
+
+	// 목록 - 안전일지 삭제 기능
+	$('.btn_delete').on('click', function() {
+		let checkedList = []; // 체크된 행
+		const allRows = grid.safetyDiaryDataGrid.getData();
+
+		allRows.forEach(row => {
+			if (row._attributes.checked) {
+				checkedList.push({
+					cntrctNo: row.cntrct_no,
+					safeDiaryId: row.safe_diary_id,
+					apprvlStats: row.apprvl_stats,
+					atchFileNo: row.atch_file_no,
+				});
+			}
+		});
+
+		if (checkedList.length === 0) {
+			gaiaCommon.customAlert("삭제할 항목을 선택해주세요");
+			return;
+		}
+
+		deleteSafetyDiary(checkedList);
+	});
+
+	// 결재 요청
+	$('.btn_apprvl').on('click', approval);
+
+	// 결재 취소
+	$('.btn_apprvl_cancel').on('click', approval_cancel);
+
+
+	// FIXME 검색 조건에 따른 수정처리
+
+	// 페이지 이동
+	let goLink = function(type, diaryId) {
+		let cntrctNoVal = $("#cntrctNo option:selected").val() || cntrctNo;
+
+		if (type == "del") {
+			if ($('input:checkbox[name=item-check]:checked').length < 1) {
+				gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.002') }}"));
+				return false;
+			}
+			delDailyreport("b");
+		}
+
+		if (type == "edit") {
+			if ($('input:checkbox[name=item-check]:checked').length < 1) {
+				gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.003') }}"));
+				return false;
+			}
+			if ($('input:checkbox[name=item-check]:checked').length > 1) {
+				gaiaCommon.customAlert("{{ message('msg.036') }}".replace('{0}', "{{ message('btn.003') }}"));
+				return false;
+			}
+
+			let options = "toolbar=no,scrollbars=no,resizable=yes,status=no,menubar=no,width=1200, height=800, top=0,left=0";
+
+			const [selected] = grid.safetyDiaryDataGrid.getData().filter(row => row._attributes.checked);
+			const apprvl_stats = selected ? selected.apprvl_stats : null;
+			const apprvl_stats_krn = selected ? selected.apprvl_stats_krn : null;
+
+			if (apprvl_stats == "A" || apprvl_stats == "E") {
+				// 승인요청, 승인 상태 수정 불가
+				gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', apprvl_stats_krn).replace('{1}', "{{ message('btn.003') }}"));
+				return false;
+			} else {
+				const diaryId      = selected ? selected.safe_diary_id : null;
+
+				window.location.href = `/safety/safety-diary/update?cntrctNo=${cntrctNoVal}&pjtNo=${pjtInfo.pjtNo}&diaryId=${diaryId}`;
+			}
+		}
+
+		if (type == "add") {
+			window.location.href = `/safety/safety-diary/create?cntrctNo=${cntrctNoVal}&pjtNo=${pjtInfo.pjtNo}`;
+		}
+		if (type == "detail") {
+			window.location.href = `/safety/safety-diary/detail?cntrctNo=${cntrctNoVal}&pjtNo=${pjtInfo.pjtNo}&diaryId=${diaryId}`;
+		}
+	}
+
+	/************************************************************
+	 * 페이지 로드
+	 ***********************************************************/
+	$(document).ready(function() {
+		gaia.create({
+			$init: function ($params) {
+				gaiaPortal.navMenuInit('M1003', '{{ message("item.safetydiary.001") }}');
+				page.init();
+				// safetyDiaryGrid.init();
+			}
+		});
+
+
+		$('.pop_box.toast').hide();
+		// 창닫기 버튼 클릭 시 알림창 숨김 처리
+		$('.pop_close').click(function() {
+			$('.pop_box.toast').removeClass('on');
+			$('.pop_box.toast').hide();
+		});
+	});
+
+
+</script>
+
+{% endblock footer_script %}

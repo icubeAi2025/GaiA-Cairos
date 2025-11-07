@@ -1,0 +1,75 @@
+<div class="pop_open modal" id="appLineModal">
+    <div class="pop_box _md">
+        <div class="pop_header">
+            <h5 class="pop_tit">{{ message('item.app.056') }}</h5>
+            <div class="btn_area">
+                <button type="button" class="icon_btn pop_close">
+                    <i class="ic ic-close"></i>
+                    <span class="blind">창닫기</span>
+                </button>
+            </div>
+
+        </div>
+        <div class="pop_body">
+            <ol id="appLineModalBody" class="ol_colorsquare"></ol>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).on('click', '.open_apLine_modal', function() {
+        var docNo = $(this).data('doc-no');    
+        var docId = $(this).data('doc-id');    
+        var modal = $('#appLineModal');
+        modal.css('display', 'block');
+        $('#appLineModalBody').empty();
+        let params = {
+            apDocId : docId
+        }
+        gaiaCommon.get("/api/eapproval/approval/approval-line", params, function(data) {
+            data.details.approvalLine.forEach(function(line, index) {
+                let apStatsType;
+                let apStatsText;
+
+                switch(line.ap_stats) {
+                    case 'A':
+                        apStatsType = '_success'
+                        apStatsText = "{{ message('btn.025') }}"
+                        break;
+                    case 'R':
+                        apStatsType = '_finish';
+                        apStatsText = "{{ message('btn.026') }}"
+                        break;
+                    default:
+                        apStatsType = '_ing';
+                        apStatsText = "{{ message('item.app.019') }}"
+                        break;
+                }
+                let approvalLineHtml = `
+                                        <li>
+                                            <div class="doc_item_wrap">
+                                                <div class="doc_item">
+                                                    <p class="doc_item_header">
+                                                        <span class="label ${apStatsType} s_small">${apStatsText}</span>
+                                                        <span class="writer_info">
+                                                            <span>${line.usr_nm}</span>
+                                                            ${line.dept_nm ? `<span> ${line.dept_nm}</span>` : ''}
+                                                        </span>
+                                                        <b>[${apStatsText}]</b>
+                                                        ${line.ap_stats !== 'I' ? `<span class="update">${line.chg_dt}</span>` : ''}
+                                                    </p>
+                                                    ${line.ap_usr_opnin ? `<p class="doc_item_body">${line.ap_usr_opnin}</p>` : `<p class="doc_item_body"></p>`}
+                                                </div>
+                                            </div>
+                                        </li>
+                                        `;
+                $('#appLineModalBody').append(approvalLineHtml); // 모달 컨테이너에 추가
+            })
+        })
+    });
+
+    $('.pop_close').on('click', function() {
+        $('#appLineModal').fadeOut();
+    });
+</script>
+

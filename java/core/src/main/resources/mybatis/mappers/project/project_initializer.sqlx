@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer">
+
+    <select id="selectDepartmentCount" resultType="integer">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectDepartmentCount][bjkim] */
+        SELECT COUNT(*)
+        FROM SM_DEPARTMENT
+        WHERE PJT_NO = #{pjtNo}
+        AND CNTRCT_NO = #{cntrctNo}
+        AND DEPT_ID = #{deptId}
+    </select>
+
+    <select id="selectDepartmentList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectDepartmentList][bjkim] */
+        SELECT
+            DEPT_NO
+            , DEPT_NM
+            , DEPT_DSCRPT
+            , SVR_TYPE
+        FROM SM_DEPARTMENT
+        <where>
+            AND PJT_NO = #{pjtNo}
+            AND CNTRCT_NO = #{cntrctNo}
+            AND DEPT_ID IN
+            <foreach item="deptId" collection="list" separator="," open="(" close=")">
+                #{deptId}
+            </foreach>
+        </where>
+    </select>
+
+    <insert id="insertDepartment">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertDepartment][bjkim] */
+        INSERT INTO SM_DEPARTMENT (
+            dept_no
+            ,corp_no
+            ,pjt_no
+            ,cntrct_no
+            ,pjt_type
+            ,dept_id
+            ,dept_nm
+            ,dept_dscrpt
+            ,up_dept_id
+            ,dept_lvl
+            ,dsply_ordr
+            ,pstn_nm
+            ,mng_nm
+            ,use_yn
+            ,dlt_yn
+            ,rgstr_id
+            ,rgst_dt
+            ,chg_id
+            ,chg_dt
+            ,dsply_yn
+            ,svr_type
+            ,dept_yn
+            ,dept_uuid
+        ) VALUES (
+            nextval('sm_department_dept_no_seq'::regclass)
+            , #{corpNo}
+            , #{pjtNo}
+            , #{cntrctNo}
+            , #{pjtType}
+            , #{deptId}
+            , #{deptNm}
+            , #{deptDscrpt}
+            , #{upDeptId}
+            , #{deptLvl}
+            <choose>
+                <when test=' "MAX".equals(dsplyOrdr) '>
+                    , (
+                        SELECT COALESCE(MAX(DSPLY_ORDR)+1, 1)
+                        FROM SM_DEPARTMENT
+                        WHERE PJT_TYPE = #{pjtType}
+                        AND DEPT_LVL = #{deptLvl}
+                        <if test=' whereUpDeptId != null and whereUpDeptId != "" '>
+                            AND up_dept_id = #{whereUpDeptId}
+                        </if>
+                    )
+                </when>
+                <otherwise>
+                    , #{dsplyOrdr}
+                </otherwise>
+            </choose>
+            , #{pstnNm}
+            , #{mngNm}
+            , 'Y'
+            , 'N'
+            , #{rgstrId}
+            , now()
+            , #{chgId}
+            , now()
+            , 'Y'
+            , #{svrType}
+            , #{deptYn}
+            , #{deptUuid}
+        );
+    </insert>
+
+    <insert id="insertDepartmentForSelect">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertDepartmentForSelect][bjkim] */
+        INSERT INTO SM_DEPARTMENT(
+            dept_no
+            ,corp_no
+            ,pjt_no
+            ,cntrct_no
+            ,pjt_type
+            ,dept_id
+            ,dept_nm
+            ,dept_dscrpt
+            ,up_dept_id
+            ,dept_lvl
+            ,dsply_ordr
+            ,pstn_nm
+            ,mng_nm
+            ,use_yn
+            ,dlt_yn
+            ,rgstr_id
+            ,rgst_dt
+            ,chg_id
+            ,chg_dt
+            ,dlt_id
+            ,dlt_dt
+            ,dsply_yn
+            ,svr_type
+            ,dept_yn
+        )
+        SELECT
+            (SELECT nextval('sm_department_dept_no_seq'::regclass))
+            , CORP_NO
+            , PJT_NO
+            , CNTRCT_NO
+            , #{pjtType}
+            , #{deptId}
+            , DEPT_NM
+            , DEPT_DSCRPT
+            , #{upDeptId}
+            , DEPT_LVL
+            , (SELECT MAX(DSPLY_ORDR)+1 FROM SM_DEPARTMENT WHERE PJT_TYPE = #{pjtType} AND DEPT_LVL = #{whereDeptLvl})
+            , PSTN_NM
+            , MNG_NM
+            , USE_YN
+            , DLT_YN
+            , RGSTR_ID
+            , now()
+            , CHG_ID
+            , now()
+            , DLT_ID
+            , DLT_DT
+            , DSPLY_YN
+            , SVR_TYPE
+            , DEPT_YN
+        FROM SM_DEPARTMENT
+        WHERE PJT_NO = #{pjtNo}
+        AND CNTRCT_NO = #{pjtNo}
+        AND PJT_TYPE = #{wherePjtType}
+        AND DEPT_ID = #{whereDeptId}
+    </insert>
+
+    <update id="updateDepartment">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.updateDepartment][bjkim] */
+        UPDATE SM_DEPARTMENT
+        <set>
+            <if test=' deptNm != null and deptNm != "" '>
+                , DEPT_NM = #{deptNm}
+            </if>
+            , CHG_DT = NOW()
+        </set>
+        <where>
+            AND PJT_NO = #{pjtNo}
+            <if test=' cntrctNo != null and cntrctNo != "" '>
+                AND CNTRCT_NO = #{cntrctNo}
+            </if>
+            <if test=' deptLvl != null '>
+                AND DEPT_LVL = #{deptLvl}
+            </if>
+        </where>
+    </update>
+
+    <update id="deleteDepartment">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.deleteDepartment][bjkim] */
+        UPDATE SM_DEPARTMENT
+        <set>
+            , DLT_YN = 'Y'
+            , DLT_ID = 'SYSTEM'
+            , DLT_DT = NOW()
+        </set>
+        <where>
+            AND PJT_NO = #{pjtNo}
+            <if test=' cntrctNo != null and cntrctNo != "" '>
+                AND CNTRCT_NO = #{cntrctNo}
+            </if>
+        </where>
+    </update>
+
+    <insert id="insertAuthorityGroup">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertAuthorityGroup][bjkim] */
+        INSERT INTO SM_AUTHORITY_GROUP (
+            RGHT_GRP_NO
+            , RGHT_GRP_CD
+            , PJT_NO
+            , CNTRCT_NO
+            , PJT_TYPE
+            , RGHT_GRP_NM_ENG
+            , RGHT_GRP_NM_KRN
+            , RGHT_GRP_DSCRPT
+            , RGHT_GRP_TY
+            , RGHT_GRP_ROLE
+            , USE_YN
+            , DLT_YN
+            , RGSTR_ID
+            , RGST_DT
+            , CHG_ID
+            , CHG_DT
+        ) VALUES (
+            nextval('sm_authority_group_rght_grp_no_seq')
+            , #{rghtGrpCd}
+            , #{pjtNo}
+            , #{cntrctNo}
+            , #{pjtType}
+            , NULL
+            , #{deptNm}
+            , #{deptDscrpt}
+            , #{rghtGrpTy}
+            , #{svrType}
+            , 'Y'
+            , 'N'
+            , 'SYSTEM'
+            , now()
+            , 'SYSTEM'
+            , now()
+        )
+
+        <selectKey resultType="integer" keyProperty="rghtGrpNo" order="AFTER">
+            SELECT RGHT_GRP_NO
+            FROM SM_AUTHORITY_GROUP
+            WHERE RGHT_GRP_CD = #{rghtGrpCd}
+            ORDER BY RGST_DT DESC
+            LIMIT 1
+        </selectKey>
+    </insert>
+
+    <insert id="insertAuthorityGroupUsers">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertAuthorityGroupUsers][bjkim] */
+        INSERT INTO SM_AUTHORITY_GROUP_USERS (
+            RGHT_GRP_USR_NO
+            , RGHT_GRP_NO
+            , AUTH_NO
+            , RGHT_GRP_CD
+            , RGHT_GRP_USR_TY
+            , RGSTR_ID
+            , RGST_DT
+        ) VALUES (
+            nextval('sm_authority_group_users_rght_grp_usr_no_seq')
+            , #{rghtGrpNo}
+            , #{deptNo}
+            , #{rghtGrpCd}
+            , #{rghtGrpUsrTy}
+            , 'SYSTEM'
+            , now()
+        );
+    </insert>
+
+    <select id="selectMenuList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectMenuList][bjkim] */
+        SELECT MENU_NO, MENU_CD
+        FROM SM_MENU
+        WHERE DLT_YN = 'N'
+        AND LK_YN = 'Y'
+        AND MENU_USE_YN = 'Y'
+        AND UP_MENU_CD NOT IN ('M11', 'M12')
+    </select>
+
+    <insert id="insertMenuAuthorityGroup">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertMenuAuthorityGroup][gwlee] */
+		INSERT INTO SM_MENU_AUTHORITY_MAPPING
+		SELECT 	D.MENU_CD, 
+				C.RGHT_GRP_CD, 
+				D.RGHT_KIND, 
+				'SYSTEM', 
+				NOW()
+		FROM  	SM_DEPARTMENT A,
+				SM_AUTHORITY_GROUP_USERS B,
+				SM_AUTHORITY_GROUP C,
+				SM_MENU_AUTHORITY_MAPPING_INIT D
+		WHERE 	A.DEPT_NO = B.AUTH_NO
+		AND 	B.RGHT_GRP_NO = C.RGHT_GRP_NO
+		AND 	RIGHT(A.DEPT_ID, 2) = D.DEPT_ID_TYPE 
+		AND 	A.DEPT_YN = 'Y'
+		AND 	A.USE_YN = 'Y'
+		AND 	A.DLT_YN = 'N'
+		AND 	C.USE_YN = 'Y'
+		AND 	C.DLT_YN = 'N'
+		AND 	A.PJT_NO 	= #{pjt_no}
+		AND 	A.CNTRCT_NO = #{cntrct_no}
+		AND 	A.PJT_TYPE 	= #{pjt_type}
+		AND 	C.PJT_NO 	= #{pjt_no}
+		AND 	C.CNTRCT_NO = #{cntrct_no}
+		AND 	C.PJT_TYPE 	= #{pjt_type}
+		<!-- 로직 변경으로 주석
+        INSERT INTO SM_MENU_AUTHORITY_GROUP(
+            MENU_RGHT_NO
+            , MENU_NO
+            , MENU_CD
+            , RGHT_GRP_NO
+            , RGHT_GRP_CD
+            , RGHT_KIND
+            , DLT_YN
+            , RGSTR_ID
+            , RGST_DT
+            , CHG_ID
+            , CHG_DT
+        ) VALUES (
+            nextval('sm_menu_authority_group_menu_rght_no_seq')
+            , #{menuNo}
+            , #{menuCd}
+            , #{rghtGrpNo}
+            , #{rghtGrpCd}
+            , 'R'
+            , 'N'
+            , 'SYSTEM'
+            , NOW()
+            , 'SYSTEM'
+            , NOW()
+        ) -->
+    </insert>
+
+    <select id="selectComCodeList" resultType="string">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectComCodeList][bjkim] */
+        SELECT cmn_cd
+        FROM sm_com_code
+        <where>
+            AND cmn_grp_cd = 'd4bf74e8-b862-4389-a8f1-8c167b877556'
+            AND dlt_yn = 'N'
+            <if test=' cmnCd != null and cmnCd != "" '>
+                AND cmn_cd != #{cmnCd}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insertNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertNavigation][bjkim] */
+        INSERT INTO dc_navigation(
+            NAVI_NO
+            , NAVI_ID
+            , PJT_NO
+            , CNTRCT_NO
+            , NAVI_DIV
+            , NAVI_PATH
+            , NAVI_NM
+            , UP_NAVI_NO
+            , UP_NAVI_ID
+            , NAVI_LEVEL
+            , NAVI_TYPE
+            , NAVI_SHAR_YN
+            , DLT_YN
+            , RGSTR_ID
+            , RGST_DT
+            , CHG_ID
+            , CHG_DT
+            , DLT_ID
+            , DLT_DT
+            , NAVI_KEY
+            , REF_SYS_KEY
+        ) VALUES (
+            nextval('dc_navigation_navi_no_seq')
+            , #{naviId}
+            , #{pjtNo}
+            , #{cntrctNo}
+            , #{naviDiv}
+            , #{naviPath}
+            , #{naviNm}
+            , 0
+            , ''
+            , 0
+            , 'FOLDR'
+            , ''
+            , 'N'
+            , 'SYSTEM'
+            , now()
+            , 'SYSTEM'
+            , now()
+            , NULL
+            , NULL
+            , COALESCE(#{pjtNo}, '') || '::' || COALESCE(#{cntrctNo}, '')
+            , #{refSysKey}
+        )
+
+        <selectKey resultType="integer" keyProperty="naviNo" order="AFTER">
+            SELECT NAVI_NO
+            FROM dc_navigation
+            WHERE NAVI_ID = #{naviId}
+            ORDER BY RGST_DT DESC
+            LIMIT 1
+        </selectKey>
+    </insert>
+
+    <update id="updateNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.updateNavigation][bjkim] */
+        UPDATE DC_NAVIGATION
+        <set>
+            <if test=' naviPath != null and naviPath != "" '>
+                , NAVI_PATH = #{naviPath}
+            </if>
+            <if test=' naviNm != null and naviNm != "" '>
+                , NAVI_NM = #{naviNm}
+            </if>
+            , CHG_DT = NOW()
+        </set>
+        <where>
+            AND PJT_NO = #{pjtNo}
+            <if test=' cntrctNo != null and cntrctNo != "" '>
+                AND CNTRCT_NO = #{cntrctNo}
+            </if>
+            AND NAVI_ID like '%_'||#{cntrctNo}
+            AND NAVI_LEVEL = 0
+        </where>
+    </update>
+
+    <update id="deleteNavigation">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.deleteNavigation][bjkim] */
+        UPDATE DC_NAVIGATION
+        <set>
+            , DLT_YN = 'Y'
+            , DLT_ID = 'SYSTEM'
+            , DLT_DT = NOW()
+        </set>
+        <where>
+            AND PJT_NO = #{pjtNo}
+            <if test=' cntrctNo != null and cntrctNo != "" '>
+                AND CNTRCT_NO = #{cntrctNo}
+            </if>
+        </where>
+    </update>
+
+    <select id="selectAuthorityGroupList" resultType="map">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectAuthorityGroupList][bjkim] */
+        SELECT
+            RGHT_GRP_NO
+            , RGHT_GRP_CD
+        FROM SM_AUTHORITY_GROUP
+        WHERE DLT_YN = 'N'
+        AND PJT_NO = #{pjtNo}
+        AND CNTRCT_NO = #{cntrctNo}
+        AND PJT_TYPE = #{pjtType}
+    </select>
+
+    <insert id="insertAuthority">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.insertAuthority][bjkim] */
+        INSERT INTO dc_authority(
+            rght_no
+            , rght_grp_no
+            , id
+            , no
+            , rght_grp_cd
+            , rght_ty
+            , dlt_yn
+            , rgstr_id
+            , rgst_dt
+            , chg_id
+            , chg_dt
+        ) VALUES (
+            nextval('dc_authority_rght_no_seq')
+            , #{rghtGrpNo}
+            , #{naviId}
+            , #{naviNo}
+            , #{rghtGrpCd}
+            , 'R'
+            , 'N'
+            , 'SYSTEM'
+            , NOW()
+            , 'SYSTEM'
+            , NOW()
+        );
+    </insert>
+
+    <select id="selectNaviFolderTypeList" resultType="map">
+            /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.project.project_initializer.selectNaviFolderTypeList][thkim] */
+            SELECT
+                cmn_cd,
+                cmn_cd_nm_krn as folder_type_nm,
+                attrbt_cd1 as property_data,
+                attrbt_cd2 as navi_role,
+                attrbt_cd3 as folder_kind
+            FROM sm_com_code
+            <where>
+                AND cmn_grp_cd = 'e2c3dc06-2359-4a70-b0f1-b0ec4de87671'
+                AND dlt_yn = 'N'
+                AND cmn_cd != #{excludedCmnCd}
+            </where>
+    </select>
+</mapper>

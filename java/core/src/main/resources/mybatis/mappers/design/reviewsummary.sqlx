@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ideait.platform.gaiacairos.mybatis.mappers.design.reviewsummary">
+	<select id="getReviewsummaryList" parameterType="input" resultType="reviewsummaryListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.design.reviewsummary.getReviewsummaryList][leejw]  */
+    WITH DESIGN_DATA AS (
+        SELECT
+            DDR.DSGN_NO,
+            DDR.DSGN_CD,
+            SCC.CMN_CD_NM_KRN,
+            SUI.USR_NM,
+            DR.RPLY_CD,
+            DDR.APPRER_CD,
+            DDR.BACKCHK_CD,
+            DDR.RGSTR_ID
+        FROM
+            DM_DESIGN_REVIEW DDR
+        LEFT JOIN 
+            SM_COM_CODE SCC 
+        ON 
+            SCC.CMN_CD = DDR.DSGN_CD
+        AND 
+            SCC.CMN_GRP_CD = '19a8bb53-74b4-405a-8d91-2b38555fc7d9'
+        LEFT JOIN 
+            SM_USER_INFO SUI  
+        ON  
+            SUI.USR_ID = DDR.RGSTR_ID
+        LEFT JOIN 
+            DM_RESPONSE DR 
+        ON 
+            DDR.DSGN_NO = DR.DSGN_NO
+        AND 
+            DR.DLT_YN = 'N'
+        WHERE
+            DDR.CNTRCT_NO = #{cntrctNo}
+        AND DDR.DLT_YN = 'N'
+        <if test="dsgnPhaseNoList != null and dsgnPhaseNoList.size() > 0">
+            AND DDR.DSGN_PHASE_NO IN
+            <foreach item="item" collection="dsgnPhaseNoList" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="rgstrIdList != null and rgstrIdList.size() > 0">
+            AND SUI.USR_ID IN
+            <foreach item="item" collection="rgstrIdList" open="(" separator="," close=")">
+                <if test="item == 'myDsgn'">
+                    #{myDsgn}
+                </if>
+                <if test="item != 'myDsgn'">
+                    #{item}
+                </if>
+            </foreach>
+        </if>
+    ),
+    TOTAL_COUNT AS (
+        SELECT COUNT(*) AS DSGN_CNT
+        FROM DESIGN_DATA
+    )
+    SELECT
+        <choose>
+                <when test="summaryType == 'cnstty'">
+                    'Total' AS CNSTTY_NM,
+                    '' AS DSGN_CD,
+                </when>
+                <when test="summaryType == 'rgstr'">
+                    'Total' AS RGSTR_NM,
+                    '' AS RGSTR_ID,
+                </when>
+        </choose>
+        COUNT(*) AS DSGN_CNT,
+        COALESCE(ROUND((COUNT(*) * 100.0 / NULLIF((SELECT DSGN_CNT FROM TOTAL_COUNT), 0)), 2), 0) AS DSGN_PER,
+        SUM(CASE WHEN RPLY_CD = '0201' THEN 1 ELSE 0 END) AS REPLY_AGREE_CNT,
+        SUM(CASE WHEN RPLY_CD = '0202' THEN 1 ELSE 0 END) AS REPLY_DISAGREE_CNT,
+        SUM(CASE WHEN RPLY_CD = '0203' THEN 1 ELSE 0 END) AS REPLY_CHECK_CNT,
+        SUM(CASE WHEN RPLY_CD = '0204' THEN 1 ELSE 0 END) AS REPLY_INFO_CNT,
+        SUM(CASE WHEN RPLY_CD IN ('0202', '0203', '0204') THEN 1 ELSE 0 END) AS REPLY_TOTAL_CNT,
+        SUM(CASE WHEN APPRER_CD = '0301' THEN 1 ELSE 0 END) AS AP_PENDING_CNT,
+        SUM(CASE WHEN APPRER_CD = '0302' THEN 1 ELSE 0 END) AS AP_ONHOLD_CNT,
+        SUM(CASE WHEN BACKCHK_CD = '0401' THEN 1 ELSE 0 END) AS BACK_CLOSED_CNT1,
+        SUM(CASE WHEN BACKCHK_CD = '0402' THEN 1 ELSE 0 END) AS BACK_CLOSED_CNT2
+    FROM
+        DESIGN_DATA
+    UNION ALL
+    SELECT
+        <choose>
+                <when test="summaryType == 'cnstty'">
+                    CMN_CD_NM_KRN AS CNSTTY_NM,
+                    DSGN_CD AS DSGN_CD,
+                </when>
+                <when test="summaryType == 'rgstr'">
+                    USR_NM AS RGSTR_NM,
+                    RGSTR_ID AS RGSTR_ID,
+                </when>
+        </choose>
+        COUNT(*) AS DSGN_CNT,
+        COALESCE(ROUND((COUNT(*) * 100.0 / NULLIF((SELECT DSGN_CNT FROM TOTAL_COUNT), 0)), 2), 0) AS DSGN_PER,
+        SUM(CASE WHEN RPLY_CD = '0201' THEN 1 ELSE 0 END) AS REPLY_AGREE_CNT,
+        SUM(CASE WHEN RPLY_CD = '0202' THEN 1 ELSE 0 END) AS REPLY_DISAGREE_CNT,
+        SUM(CASE WHEN RPLY_CD = '0203' THEN 1 ELSE 0 END) AS REPLY_CHECK_CNT,
+        SUM(CASE WHEN RPLY_CD = '0204' THEN 1 ELSE 0 END) AS REPLY_INFO_CNT,
+        SUM(CASE WHEN RPLY_CD IN ('0202', '0203', '0204') THEN 1 ELSE 0 END) AS REPLY_TOTAL_CNT,
+        SUM(CASE WHEN APPRER_CD = '0301' THEN 1 ELSE 0 END) AS AP_PENDING_CNT,
+        SUM(CASE WHEN APPRER_CD = '0302' THEN 1 ELSE 0 END) AS AP_ONHOLD_CNT,
+        SUM(CASE WHEN BACKCHK_CD = '0401' THEN 1 ELSE 0 END) AS BACK_CLOSED_CNT,
+        SUM(CASE WHEN BACKCHK_CD = '0402' THEN 1 ELSE 0 END) AS BACK_CLOSED_CNT
+    FROM
+        DESIGN_DATA
+    GROUP BY
+        <choose>
+                <when test="summaryType == 'cnstty'">
+                    CMN_CD_NM_KRN, DSGN_CD
+                </when>
+                <when test="summaryType == 'rgstr'">
+                    USR_NM, RGSTR_ID
+                </when>
+        </choose>;
+    </select>
+
+	<select id="getSummaryListCount" parameterType="map" resultType="Long">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.design.reviewsummary.getSummaryListCount][leejw]  */
+       
+    </select>
+
+	<select id="getReviewsummaryRgstrList" parameterType="String" resultType="reviewsummaryRgstrListOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mappers.design.reviewsummary.getReviewsummaryRgstrList][leejw]  */
+		SELECT	SUI.USR_ID,
+				SUI.USR_NM
+		FROM	DM_DESIGN_REVIEW DDR
+		LEFT JOIN 
+				SM_USER_INFO SUI  
+		ON		SUI.USR_ID = DDR.RGSTR_ID
+		WHERE
+				DDR.CNTRCT_NO = #{cntrctNo}
+		GROUP BY
+				SUI.USR_ID;
+    </select>
+</mapper>
