@@ -28,7 +28,6 @@ public class ResourcePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("자원투입현황 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         
         return "page/construction/resource/resource";
     }
@@ -48,7 +47,6 @@ public class ResourcePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("자원투입현황 상세(월별) 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         
         return "page/construction/resource/resource_r_monthly";
     }
@@ -63,7 +61,6 @@ public class ResourcePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("자원투입현황 상세(일별) 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         
         return "page/construction/resource/resource_r_daily";
     }

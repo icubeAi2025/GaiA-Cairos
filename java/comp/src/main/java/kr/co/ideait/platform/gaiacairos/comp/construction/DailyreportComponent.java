@@ -6,22 +6,21 @@ import kr.co.ideait.platform.gaiacairos.comp.eapproval.DraftComponent;
 import kr.co.ideait.platform.gaiacairos.comp.eapproval.helper.EapprovalHelper;
 import kr.co.ideait.platform.gaiacairos.comp.eapproval.service.ApprovalRequestService;
 import kr.co.ideait.platform.gaiacairos.comp.project.service.InformationService;
-import kr.co.ideait.platform.gaiacairos.comp.system.service.CommonCodeService;
-import kr.co.ideait.platform.gaiacairos.comp.system.service.DocumentManageService;
 import kr.co.ideait.platform.gaiacairos.core.base.AbstractComponent;
 import kr.co.ideait.platform.gaiacairos.core.exception.ErrorType;
 import kr.co.ideait.platform.gaiacairos.core.exception.GaiaBizException;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.*;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.DailyreportMybatisParam;
+import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.dailyreport.DailyReportDto;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.dailyreport.DailyreportForm;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.security.UserAuth;
 import kr.co.ideait.platform.gaiacairos.core.util.restclient.DocumentServiceClient;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -490,6 +489,21 @@ public class DailyreportComponent extends AbstractComponent {
 
         // prActivity 리스트에서 제거
         prActivity.removeIf(m -> finishedIds.contains(Objects.toString(m.get("activity_id"), null)));
+
+        // 명일 액티비티 조회할 경우 금일 액티비티 완료된 항목 제외
+        if("TM".equals(workDtType)) {
+            List<Map<String, Object>> todayFinishedList = dailyreportService.selectTodayCompletedActivityIds(cntrctNo, dailyReportId);
+            log.info("selectPrActivityList: 금일 완료된 액티비티 제외 조회 건 수 = {}", todayFinishedList.size());
+
+            Set<String> todayFinishedIds = todayFinishedList.stream()
+                    .map(m -> Objects.toString(m.get("activity_id"), null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            // 금일 완료된 액티비티도 제거
+            prActivity.removeIf(m -> todayFinishedIds.contains(Objects.toString(m.get("activity_id"), null)));
+        }
+
         return prActivity;
     }
 
@@ -1107,17 +1121,56 @@ public class DailyreportComponent extends AbstractComponent {
         return dailyreportService.getActivityNm(cntrctNo, dailyReportId, workDtType);
     }
 
-    // 금일 액티비티 조회
-    public List selectTodayActivityList(String cntrctNo, Long dailyReportId, String workDtType) {
-        log.info("selectTodayActivityList: 금일 액티비티 조회. cntrctNo = {}, dailyReportId = {}, workDtType = {}", cntrctNo, dailyReportId, workDtType);
-        // 이전 게시물이 직전일자인지 확인
-        Boolean exist = dailyreportService.selectPrevDailyReportExist(cntrctNo, dailyReportId);
+
+    /**
+     * 금일 액티비티 조회
+     * 현재 게시물에 저장되어 있는 액티비티 우선 조회,
+     * 없으면 이전 최신 게시물의 승인 여부 확인 및 액티비티 조회
+     * 없으면 이전 게시물에 저장되어 있는 명일 액티비티 조회
+     * 이전 게시물이 없는 경우 pr_activity 액티비티 조회
+     */
+    public List selectTodayActivityList(String cntrctNo, Long dailyReportId, String dailyReportDate) {
+        log.info("selectTodayActivityList: 금일 액티비티 조회. cntrctNo = {}, dailyReportId = {}, dailyReportDate = {}", cntrctNo, dailyReportId, dailyReportDate);
         List<Map<String, Object>> todayActivity = new ArrayList<>();
-        if(exist) {
-            // 이전 게시물이 직전일자이면 그 게시물의 명일 액티비티를 조회함
-            todayActivity = dailyreportService.selectTodayActivityList(cntrctNo, dailyReportId, workDtType);
+        List<Map<String, Object>> prevUnapprovedReport = new ArrayList<>();
+        Boolean prevUnapprovedActivityExist = false;
+        Long prevDailyReportId = 0L;
+
+        // 현재 게시물의 액티비티 저장되어 있으면 저장되어 있는 액티비티 조회
+        List<Map<String,Object>> savedTodayActivity = dailyreportService.selectTodayActivityList(cntrctNo, dailyReportId, "TD", false);
+
+        // 현재게시물 이전 게시물 중 제일 최신 게시물의 승인 여부 확인
+        // 승인 되지 않았다면 그 게시물의 액티비티 복사 후 삭제, QDB도 삭제
+        prevUnapprovedReport = dailyreportService.selectPrevUnapprovedReport(cntrctNo, dailyReportDate);
+        if(prevUnapprovedReport != null && prevUnapprovedReport.size() != 0) {
+            prevDailyReportId = prevUnapprovedReport.get(0).get("daily_report_id") != null
+                    ? Long.valueOf(Objects.toString(prevUnapprovedReport.get(0).get("daily_report_id")))
+                    : null;
+            prevUnapprovedActivityExist = dailyreportService.checkActivityExists(cntrctNo, prevDailyReportId);
+        }
+
+        // 이전 게시물 존재 여부 확인
+        Boolean exist = dailyreportService.selectPrevDailyReportExist(cntrctNo, dailyReportId);
+
+        if(!savedTodayActivity.isEmpty()) {
+            // 현재 게시물에 저장되어 있는 액티비티 조회
+            log.info("selectTodayActivityList: 현재 게시물에 액티비티 존재");
+            todayActivity = savedTodayActivity;
+        } else if (prevUnapprovedActivityExist != null && prevUnapprovedActivityExist ) {
+            log.info("selectTodayActivityList: 현재 게시물의 직전 게시물 미승인 상태");
+            // 직전 게시물 금일 액티비티 가져옴
+            todayActivity = dailyreportService.selectTodayActivityList(cntrctNo, prevDailyReportId, "TD", false);
+
+            // 직전 게시물 QDB, Activity 삭제
+            this.deleteQdb(cntrctNo, prevDailyReportId);
+            dailyreportService.updateDeleteActivityList(cntrctNo, prevDailyReportId,"TD");  // 금일
+        } else if(exist) {
+            // 직전일자 게시물이 존재할 경우 그 게시물의 명일 액티비티를 조회
+            log.info("selectTodayActivityList: 현재 게시물에 액티비티 미존재, 직전일자 게시물 존재");
+            todayActivity = dailyreportService.selectTodayActivityList(cntrctNo, dailyReportId, "TM", true);    // workDtType: TM
         } else {
-            // 직전 일자 게시물이 없으면(휴무/공휴일) pr_activity 조회함
+            // 직전 일자 게시물이 없으면(휴무/공휴일) pr_activity 조회
+            log.info("selectTodayActivityList: 현재 게시물에 액티비티 미존재, 직전일자 게시물 미존재, PR_ACTIVITY 조회 진행");
             todayActivity = dailyreportService.selectTodayActivityFromPrActivity(cntrctNo, dailyReportId);
         }
         return todayActivity;
@@ -1170,24 +1223,321 @@ public class DailyreportComponent extends AbstractComponent {
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(formatDate);
-        // cal.add(Calendar.DATE, 1);
 
         String strNewFormatDate = formatter.format(cal.getTime());
-        // dailyreportService.addDefaultActivity(activity, strNewFormatDate);
-
-        // activity.setWorkDtType("TD".toString());
-        // dailyreportService.addDefaultActivity(activity, result.getDailyReportDate());
-        // dailyreportService.addQdb(activity);
+        // 이전 보고서 중 제일 최신에 작성한 게시물의 자원 복사 추가함
         dailyreportService.addTodayResource(activity, strNewFormatDate);
 
-        // dailyreportService.updateRate(result);
+        // 명일 액티비티 우선 저장(사용자가 명일 액티비티 페이지 오픈해서 저장하지 않을 수 있으므로..)
+        if("TM".equals(activity.getWorkDtType())) {
+            List<Map<String, Object>> prevUnapprovedReport = new ArrayList<>();
+            Boolean prevUnapprovedActivityExist = false;
+            Long prevDailyReportId = 0L;
+            List<Map<String, Object>> tomorrowActivity = new ArrayList<>();
+            // 현재게시물 이전 게시물 중 제일 최신 게시물의 승인 여부 확인
+            // 승인 되지 않았다면 그 게시물의 액티비티 복사 후 삭제
+            prevUnapprovedReport = dailyreportService.selectPrevUnapprovedReport(result.getCntrctNo(), result.getDailyReportDate());
+            if(prevUnapprovedReport != null && prevUnapprovedReport.size() != 0) {
+                prevDailyReportId = prevUnapprovedReport.get(0).get("daily_report_id") != null
+                        ? Long.valueOf(Objects.toString(prevUnapprovedReport.get(0).get("daily_report_id")))
+                        : null;
+                prevUnapprovedActivityExist = dailyreportService.checkActivityExists(result.getCntrctNo(), prevDailyReportId);
+            }
 
+            if(prevUnapprovedActivityExist) {
+                tomorrowActivity = dailyreportService.selectTodayActivityList(result.getCntrctNo(), prevDailyReportId, "TM", false);   // 명일 액티비티 추가
+                dailyreportService.updateDeleteActivityList(result.getCntrctNo(), prevDailyReportId,"TM");  // 명일 액티비티 삭제
+            } else {
+                tomorrowActivity = dailyreportService.selectTodayActivityFromPrActivity(activity.getCntrctNo(), activity.getDailyReportId());
+            }
+            if(tomorrowActivity != null) {
+                // 조회 결과 Map에서 DTO로 형 변환
+                List<CwDailyReportActivity> activityList = tomorrowActivity.stream()
+                        .map(map -> {
+                            CwDailyReportActivity dto = new CwDailyReportActivity();
+                            dto.setCntrctNo((String) activity.getCntrctNo());
+                            dto.setDailyReportId(activity.getDailyReportId());
+                            dto.setWorkDtType("TM");
+                            dto.setActualBgnDate((String)map.get("actual_bgn_date"));
+                            dto.setActualEndDate((String)map.get("actual_end_date"));
+                            dto.setActualReqreDaynum(
+                                    map.get("actual_reqre_daynum") == null ? null :
+                                            Long.parseLong(map.get("actual_reqre_daynum").toString())
+                            );
+                            dto.setPstats((String)map.get("pstats"));
+                            dto.setRgstrId(UserAuth.get(true).getUsrId());
+                            dto.setChgId(UserAuth.get(true).getUsrId());
+                            dto.setActivityId((String)map.get("activity_id"));
+                            dto.setDltYn("N");
+                            return dto;
+                        })
+                        .collect(Collectors.toList());
+                this.addOrUpdateDailyReportActivities(activityList);
+            }
+        }
         return result;
     }
-    // 명일 액티비티 조회
-    public List selectTomorrowActivityList(String cntrctNo, Long dailyReportId) {
+    /**
+     * 명일 액티비티 조회
+     * 현재 게시물에 저장되어 있는 액티비티 우선 조회,
+     * 없으면 이전 최신 게시물의 승인 여부 확인 및 액티비티 조회
+     * 없으면 이전 게시물에 저장되어 있는 명일 액티비티 조회
+     * 이전 게시물이 없는 경우 pr_activity 액티비티 조회
+     */
+    public List selectTomorrowActivityList(String cntrctNo, Long dailyReportId, String dailyReportDate) {
         log.info("selectTomorrowActivityList: 명일 액티비티 조회. cntrctNo = {}, dailyReportId = {}", cntrctNo, dailyReportId);
+        List<Map<String, Object>> tomorrowActivity = new ArrayList<>();
 
-        return dailyreportService.selectTodayActivityFromPrActivity(cntrctNo, dailyReportId);
+        // 현재 게시물의 액티비티 저장되어 있으면 저장되어 있는 액티비티 조회
+        List<Map<String,Object>> savedTodayActivity = dailyreportService.selectTodayActivityList(cntrctNo, dailyReportId, "TM", false);
+
+        if(!savedTodayActivity.isEmpty()) {
+            log.info("selectTomorrowActivityList: 현재 게시물에 액티비티 존재");
+            tomorrowActivity = savedTodayActivity;
+        } else {
+            log.info("selectTomorrowActivityList: 현재  액티비티 미존재, PR_ACTIVITY 조회 진행");
+            tomorrowActivity = dailyreportService.selectTodayActivityFromPrActivity(cntrctNo, dailyReportId);
+        }
+        return tomorrowActivity;
+    }
+
+    /**
+     * 작업일지 금일 액티비티, 자원 업데이트
+     *
+     * @param dailyReportActivity
+     * @param dailyReportResource
+     * @param dailyReportData
+     * @return
+     */
+    @Transactional
+    public void addOrUpdateActAndRes(List<CwDailyReportActivity> dailyReportActivity,
+                                  List<CwDailyReportResource> dailyReportResource, CwDailyReport dailyReportData) {
+
+        if(dailyReportActivity != null) {
+            this.addOrUpdateDailyReportActivities(dailyReportActivity);
+        }
+
+        // 금일 액티비티 기준으로만 QDB, 자원, 공정률 생성
+        if (dailyReportActivity != null && !dailyReportActivity.isEmpty()) {
+            if(("TD").equals(dailyReportActivity.get(0).getWorkDtType())) {
+                this.addOrUpdateDailyReportQdb(dailyReportActivity);
+                // null → BigDecimal.ZERO
+                if (dailyReportResource != null) {
+                    dailyReportResource.forEach(res -> {
+                        if (res.getTotalQty() == null)  res.setTotalQty(BigDecimal.ZERO);
+                        if (res.getActualQty() == null) res.setActualQty(BigDecimal.ZERO);
+                        if (res.getAcmtlQty() == null)  res.setAcmtlQty(BigDecimal.ZERO);
+                        if (res.getRemndrQty() == null) res.setRemndrQty(BigDecimal.ZERO);
+                    });
+                    this.addOrUpdateDailyReportResource(dailyReportResource);
+                    this.updateDailyReportSummary(dailyReportData);
+                }
+            }
+        }
+    }
+
+    // 작업일지 금일/명일 액티비티 추가 및 수정
+    @Transactional
+    public void addOrUpdateDailyReportActivities(List<CwDailyReportActivity> dailyReportActivity) {
+
+        try {
+            log.info("updateDailyReportActivities: 액티비티 추가 및 업데이트 진행");
+
+            dailyReportActivity.forEach(id -> {
+                Map<String, Object> resultMap = dailyreportService.selectActivityByCntrctNoAndDailyReportIdAndDailyActivityId(id);
+
+                id.setRgstrId(UserAuth.get(true).getUsrId());
+                id.setChgId(UserAuth.get(true).getUsrId());
+
+                if (StringUtils.isNotBlank(id.getActualBgnDate()) && StringUtils.isNotBlank(id.getActualEndDate())) {
+                    id.setPstats("0101");   // 완료
+                } else if ((StringUtils.isNotBlank(id.getActualBgnDate()) && StringUtils.isBlank(id.getActualEndDate())) ||
+                        StringUtils.isBlank(id.getActualBgnDate()) && StringUtils.isBlank(id.getActualEndDate())) {
+                    id.setPstats("0102");   // 진행
+                }
+                if (resultMap != null) {
+                    // 수정
+                    dailyreportService.updateActivityData(id, "TDTM");
+                } else if (resultMap == null && id.getDltYn().toString().equals("N")) {
+                    // 추가
+                    dailyreportService.addDailyReportActivity(id);
+                }
+
+                // 금일 액티비티 수정한 경우 명일도 업데이트 (삭제 제외)
+                if("TD".equals(id.getWorkDtType()) && ("N").equals(id.getDltYn())) {
+                    dailyreportService.updateActivityData(id, "TM");
+                }
+
+                // 금일 액티비티 완료 처리한 경우 명일 액티비티 삭제
+                if("0101".equals(id.getPstats()) && "TD".equals(id.getWorkDtType()) && ("N").equals(id.getDltYn())) {
+                    id.setWorkDtType("TM");
+                    id.setDltYn("Y");
+                    dailyreportService.updateActivityData(id, "TM");
+                }
+
+            });
+        } catch (RuntimeException e) {
+            throw new GaiaBizException(ErrorType.ETC, "액티비티 업데이트 중 알 수 없는 오류 발생. error = {}", e.getMessage(), e);
+
+        }
+    }
+
+    // QDB 모두 삭제 후 신규 추가
+    @Transactional
+    public void addOrUpdateDailyReportQdb(List<CwDailyReportActivity> dailyReportActivity) {
+
+        try {
+            log.info("addOrUpdateDailyReportQdb: QDB 업데이트");
+
+            String cntrctNo = dailyReportActivity.get(0).getCntrctNo();
+            String cntrctChgId = dailyReportActivity.get(0).getCntrctChgId();
+            Long dailyReportId = dailyReportActivity.get(0).getDailyReportId();
+            String usrId = UserAuth.get(true).getUsrId();
+
+            // 기존 QDB 모두 물리 삭제
+            // activityId 수집
+            List<String> activityIdList = dailyReportActivity.stream()
+                    .filter(act -> act.getActivityId() != null)
+                    .map(CwDailyReportActivity::getActivityId)
+                    .distinct()
+                    .toList();
+
+            if (activityIdList.isEmpty()) {
+                log.info("addOrUpdateDailyReportQdb: 삭제 대상 ActivityId가 존재하지 않아 QDB 삭제 생략");
+            } else {
+                DailyReportDto.CwDailyReportQdbGroup cdrq = new DailyReportDto.CwDailyReportQdbGroup();
+                cdrq.setCntrctNo(cntrctNo);
+                cdrq.setDailyReportId(dailyReportId);
+
+                dailyreportService.deleteDailyReportQdbList(cdrq);
+                log.info("addOrUpdateDailyReportQdb: QDB 삭제 완료 (activity {}건)", activityIdList.size());
+            }
+
+            // 금일 액티비티에 해당하는 QDB insert
+            for (CwDailyReportActivity act : dailyReportActivity) {
+                if (act.getActivityId() == null || act.getTodayExeRate() == null) continue;
+                Map<String, Object> map = new HashMap<>();
+                map.put("cntrctNo", cntrctNo);
+                map.put("dailyReportId", dailyReportId);
+                map.put("usrId", usrId);
+                map.put("activityId", act.getActivityId());
+                map.put("todayExeRate", act.getTodayExeRate());
+                dailyreportService.insertDailyReportQdbList(map);
+            }
+        } catch (RuntimeException e) {
+            throw new GaiaBizException(ErrorType.ETC, "액티비티 업데이트 중 알 수 없는 오류 발생. error = {}", e.getMessage(), e);
+
+        }
+    }
+
+    // 작업일지 자원 추가 및 수정
+    @Transactional
+    public void addOrUpdateDailyReportResource(List<CwDailyReportResource> resource) {
+
+        List<Map<String, Object>> insertList = new ArrayList<>();
+        List<Map<String, Object>> updateList = new ArrayList<>();
+
+
+        try {
+            log.info("addOrUpdateDailyReportResource: 자원 추가 및 업데이트 진행");
+
+            resource.forEach(id -> {
+                CwDailyReportResource cwDailyReportResource = dailyreportService.getDailyReportResource(
+                        id.getCntrctNo(), id.getDailyReportId(), id.getRsceSno(), id.getDltYn());
+
+                DailyreportForm.ManualDailyReportResource mrr = new DailyreportForm.ManualDailyReportResource();
+
+                mrr.setCntrctNo(id.getCntrctNo());
+                mrr.setDailyReportId(id.getDailyReportId());
+                mrr.setRsceTpCd(id.getRsceTpCd());
+                mrr.setRsceCd(id.getRsceCd());
+                List<Map<String, Object>> rsceSnoList = dailyreportService.selectRsceSnoByCntrctNoAndDailyReportIdAndRsceCdAndRsceTpCd(mrr);
+                log.info("addOrUpdateDailyReportResource: rsceSnoList 조회 성공. {}", rsceSnoList);
+
+                BigDecimal totalQty = id.getTotalQty();
+                if (totalQty == null) totalQty = BigDecimal.ZERO;
+
+                // actual_qty null 방어 코드
+                BigDecimal actualQty = id.getActualQty();
+                if (actualQty == null) actualQty = BigDecimal.ZERO;
+
+                // acmtl_qty null 방어 코드
+                BigDecimal acmtlQty = id.getAcmtlQty();
+                if (acmtlQty == null) acmtlQty = BigDecimal.ZERO;
+
+                // remndr_qty null 방어 코드
+                BigDecimal remndrQty = id.getRemndrQty();
+                if (remndrQty == null) remndrQty = BigDecimal.ZERO;
+
+
+                Map<String, Object> row = new HashMap<>();
+                row.put("cntrctNo",id.getCntrctNo());
+                row.put("dailyReportId",id.getDailyReportId());
+                row.put("rsceTpCd",id.getRsceTpCd());
+                row.put("rsceCd",id.getRsceCd());
+                row.put("totalQty", totalQty);
+                row.put("actualQty", actualQty);
+                row.put("acmtlQty", acmtlQty);
+                row.put("remndrQty", remndrQty);
+                row.put("govsplyMtrlYn",
+                        (id.getGovsplyMtrlYn() == null || id.getGovsplyMtrlYn().toString().isEmpty())
+                                ? "N"
+                                : id.getGovsplyMtrlYn()
+                );
+                row.put("cntrctChgId", id.getCntrctChgId());
+                row.put("dltYn", id.getDltYn());
+                row.put("manualYn", id.getManualYn());
+                row.put("rgstrId", UserAuth.get(true).getUsrId());
+                row.put("chgId", UserAuth.get(true).getUsrId());
+
+                boolean isUpdate = false;
+                for (Map<String, Object> rsce : rsceSnoList) {
+                    row.put("rsceSno", rsce.get("rsce_sno"));
+                    updateList.add(row);
+                    isUpdate = true;
+                    break;
+                }
+
+                if (!isUpdate) {
+                    insertList.add(row); // INSERT용
+                }
+            });
+                if (!updateList.isEmpty()) {
+                    dailyreportService.updateResourceSummaryManually(updateList);
+                }
+
+                if (!insertList.isEmpty()) {
+                    dailyreportService.insertResourceSummaryManually(insertList);
+                }
+
+
+        } catch (RuntimeException e) {
+            throw new GaiaBizException(ErrorType.ETC, "액티비티 업데이트 중 알 수 없는 오류 발생. error = {}", e.getMessage(), e);
+
+        }
+    }
+    // 승인 안된(pr_activity의 actual_start과 actual_finish 가 없는) 액티비티 조회
+    public Boolean checkActivityExists(String cntrctNo, Long dailyReportId) {
+        return dailyreportService.checkActivityExists(cntrctNo, dailyReportId);
+    }
+
+    // QDB 물리 삭제
+    @Transactional
+    public void deleteQdb(String cntrctNo, Long dailyReportId) {
+        try {
+            log.info("deleteQdb: QDB 삭제");
+            DailyReportDto.CwDailyReportQdbGroup cdrq = new DailyReportDto.CwDailyReportQdbGroup();
+            cdrq.setCntrctNo(cntrctNo);
+            cdrq.setDailyReportId(dailyReportId);
+
+            dailyreportService.deleteDailyReportQdbList(cdrq);
+        } catch (RuntimeException e) {
+            throw new GaiaBizException(ErrorType.ETC, "Qdb 삭제 중 알 수 없는 오류 발생. error = {}", e.getMessage(), e);
+
+        }
+    }
+    // 현재 게시물 이전 제일 최신 게시물 중 승인되지 않은 게시물 조회
+    public List selectPrevUnapprovedReport(String cntrctNo, String dailyReportDate) {
+        return dailyreportService.selectPrevUnapprovedReport(cntrctNo, dailyReportDate);
     }
 }

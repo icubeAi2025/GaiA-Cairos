@@ -58,7 +58,6 @@ public class ContractPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("공사비 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         if(type != null && !type.equals("") && "p".equals(type.toString())) {
             model.addAttribute("header", false);
         }else{
@@ -124,7 +123,6 @@ public class ContractPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("공사비 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         return "page/projectcost/contract/contract_detail";
     }
 }

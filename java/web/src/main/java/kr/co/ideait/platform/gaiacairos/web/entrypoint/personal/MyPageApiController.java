@@ -46,7 +46,6 @@ public class MyPageApiController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("내 정보 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return myPageComponent.getLoginUserInfo(commonReqVo);
 	}
@@ -58,7 +57,6 @@ public class MyPageApiController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("내 정보 수정");
-		systemLogComponent.addUserLog(userLog);
 
 		Result ok = Result.ok();
 
@@ -93,7 +91,6 @@ public class MyPageApiController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("마이페이지 썸네일");
-		systemLogComponent.addUserLog(userLog);
 
 		HashMap<String, Object> result = null;
 

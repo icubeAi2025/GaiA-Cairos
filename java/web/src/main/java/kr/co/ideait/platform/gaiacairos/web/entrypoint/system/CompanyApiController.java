@@ -52,7 +52,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("이데아 플랫폼/PCES 업체목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         CompanyMybatisParam.CompanyListInput input = companyForm.toCompanyListInput(companyListGet);
 
@@ -77,7 +76,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         CompanyListInput input = companyForm.toCompanyListInput(companyListGet);
 
@@ -104,7 +102,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         UserCompanyListInput input = companyForm.toUserCompanyListInput(userCompanyListGet);
         return Result.ok().put("userComanyList", companyComponent.getUserCompanyList(input));
@@ -123,7 +120,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 상세 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("company", companyDto.fromSmCompany(companyComponent.getCompany(corpNo)));
@@ -143,7 +139,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 등록");
-        systemLogComponent.addUserLog(userLog);
 
         companyComponent.createCompany(companyForm.toSmCompany(company), commonReqVo);
 
@@ -163,7 +158,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 코드 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("exist", companyComponent.checkCorpNo(corpNo));
     }
@@ -182,7 +176,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         companyComponent.deleteCompanyList(corpNoList.getCorpNoList(), commonReqVo);
         return Result.ok();
@@ -201,7 +194,6 @@ public class CompanyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("회사 수정");
-        systemLogComponent.addUserLog(userLog);
 
         SmCompany smCompany = companyComponent.getCompany(company.getCorpNo());
         if (smCompany != null) { // 데이터가 있는지 확인

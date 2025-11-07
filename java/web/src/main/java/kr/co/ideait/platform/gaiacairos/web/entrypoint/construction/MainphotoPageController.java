@@ -25,7 +25,6 @@ public class MainphotoPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요 공정 사진 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/mainphoto/mainphoto";
     }

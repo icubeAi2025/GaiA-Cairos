@@ -60,7 +60,6 @@ public class DocumentPageController extends AbstractController {
                 break;
         }
 
-        systemLogComponent.addUserLog(userLog);
 
         if(pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
             return "redirect:/";

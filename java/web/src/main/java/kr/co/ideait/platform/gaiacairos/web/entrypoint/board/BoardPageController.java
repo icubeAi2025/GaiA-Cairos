@@ -25,7 +25,6 @@ public class BoardPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("메인화면 게시글 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         return "page/board/mainboard";
     }
 
@@ -35,7 +34,6 @@ public class BoardPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("메인화면 게시글 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
         return "page/board/mainboardList";
     }
 

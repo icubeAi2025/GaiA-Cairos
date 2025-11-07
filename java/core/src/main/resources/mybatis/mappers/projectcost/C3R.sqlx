@@ -2470,9 +2470,9 @@
             DELETE FROM CT_CBS_RESOURCE WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND CNSTTY_SN != 0 AND DTL_CNSTTY_SN != 0;
         </if>
         /* 원가_세부공종 삭제 */
-        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND DTL_CNSTTY_SN != 0;
+        DELETE FROM CT_CBS_DETAIL WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
         /* 원가_공종 삭제 */
-        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID} AND CNSTTY_SN != 0;
+        DELETE FROM CT_CBS WHERE CNTRCT_CHG_ID = #{CNTRCT_CHG_ID};
 
         /* 계약내역서(BID) 삭제 */
         DELETE FROM CN_CONTRACT_BID WHERE CNTRCT_NO = #{CNTRCT_NO};
@@ -2489,6 +2489,7 @@
             CNTRCT_CNST_TYPE,
             CNTRCT_UNIT_CNSTWK_SNO,
             CNTRCT_DCNSTTY_SNO,
+            UP_CNTRCT_DCNSTTY_SNO,
             CNSTTY_DTLS_DIV_CD,
             PRDNM,
             SPEC,
@@ -2512,6 +2513,7 @@
             #{it.cntrctCnstType},
             #{it.cntrctUnitCnstwkSno},
             #{it.cntrctDcnsttySno},
+            COALESCE(CAST(#{it.upCntrctDcnsttySno} AS numeric), 0),
             #{it.cnsttyDtlsDivCd},
             #{it.prdnm},
             #{it.spec},

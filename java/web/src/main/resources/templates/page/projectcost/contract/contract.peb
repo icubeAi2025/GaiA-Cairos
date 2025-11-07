@@ -81,7 +81,7 @@
             },
             // initCb: 초기 세팅 후 호출
             function(initialCntrctNo) {
-                cntrctNo = $('cntrctNo').val();
+                cntrctNo = $('#cntrctNo').val();
                 loadEurecaView(initialCntrctNo);
             },
             // chgCb: 값 변경 시 호출

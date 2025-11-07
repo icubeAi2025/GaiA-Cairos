@@ -109,7 +109,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 업로드");
-//        systemLogComponent.addUserLog(userLog);
 
         log.info("============request data=============");
         log.info("docInfo={}", doc);
@@ -130,7 +129,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 다중 생성");
-//        systemLogComponent.addUserLog(userLog);
 
         documentComponent.createNavigationList(navigationList);
 
@@ -143,7 +141,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("폴더유형 네비 최신 문서 정보 조회");
-//        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("resultCode", "00").put("data", documentComponent.getLastestDcStorageMainByFolderType(requestParams));
     }
@@ -178,7 +175,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("폴더명 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         String result = documentService.checkHasNavigationType(checkHasFolderType);
 
@@ -198,7 +194,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("전자결재 문서 네비게이션 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String naviDiv = "01"; // 통합문서관리
         String cntrctNo = inputParam.get("cntrctNo");
@@ -252,7 +247,6 @@ public class DocumentInterfaceController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결재 승인 문서 생성");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Object> result = documentService.createApprovalDocument(inputParam);
         String resultMsg = result != null && !"00".equals(result.get("resultCode").toString()) ?

@@ -51,7 +51,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재문서 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		approvalList.setApUsrId(UserAuth.get(true).getUsrId());
 		approvalList.setPjtNo(UserAuth.get(true).getPjtNo());
@@ -74,7 +73,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("상세검색 서식 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("pjtNo", UserAuth.get(true).getPjtNo())
@@ -96,7 +94,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("상세검색 문서구분 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("apTypeList", approvalComponent.selectApTypeOptionsList());
 	}
@@ -117,7 +114,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재선 모달창 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		String userInfo = cookieService.getCookie(request, cookieVO.getPortalCookieName());
 
@@ -149,7 +145,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재문서 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		String userInfo = cookieService.getCookie(request, cookieVO.getPortalCookieName());
 		String [] param = userInfo.split(":");
@@ -185,7 +180,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재결과 일괄 승인 또는 반려");
 
-		systemLogComponent.addUserLog(userLog);
 
 		Map<String, Object> reqVoMap = new HashMap<String, Object>();
 		reqVoMap.put("apiYn", commonReqVo.getApiYn());
@@ -211,7 +205,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재문서 단건 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		Map<String, Object> reqVoMap = new HashMap<String, Object>();
 		reqVoMap.put("apiYn", commonReqVo.getApiYn());
@@ -235,7 +228,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("참조자 문서확인 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		Map<String, Object> reqVoMap = new HashMap<String, Object>();
 		reqVoMap.put("apiYn", commonReqVo.getApiYn());
@@ -260,7 +252,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("사용자 부서 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("usrId", UserAuth.get(true).getUsrId())
@@ -293,7 +284,6 @@ public class ApprovalApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("부서별 직원 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("empList", approvalComponent.selectEmployeeList(deptId));
 	}

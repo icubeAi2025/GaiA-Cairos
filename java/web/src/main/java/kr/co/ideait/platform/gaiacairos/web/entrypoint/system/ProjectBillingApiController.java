@@ -47,7 +47,6 @@ public class ProjectBillingApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("계약 리스트 tree 조회");
-        systemLogComponent.addUserLog(userLog);
 
         log.debug("==============================================");
 		log.debug("cmis-project-list");
@@ -65,7 +64,6 @@ public class ProjectBillingApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("계약번호에 따른 유료 기능 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         log.debug("==============================================");
 		log.debug("project-billing-list" + cntrctNo);
@@ -86,7 +84,6 @@ public class ProjectBillingApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("계약번호에 따른 유료 기능 등록 및 삭제");
-        systemLogComponent.addUserLog(userLog);
 
 
         ObjectMapper mapper = new ObjectMapper();  

@@ -184,7 +184,7 @@
             </if>
             <if test=' dltYn != null and "" != dltYn '>
                 ,dlt_yn = #{dltYn}
-                <if test=' "Y" eq dltYn '>
+                <if test=' "Y" == dltYn '>
                     ,dlt_id = #{dltId}
                     ,dlt_dt = NOW()
                 </if>
@@ -564,7 +564,7 @@
             </if>
             <if test=' dltYn != null and "" != dltYn '>
                 , dlt_yn = #{dltYn}
-                <if test=' "Y" eq dltYn '>
+                <if test=' "Y" == dltYn '>
                     , dlt_id = #{dltId}
                     , dlt_dt = now()
                 </if>

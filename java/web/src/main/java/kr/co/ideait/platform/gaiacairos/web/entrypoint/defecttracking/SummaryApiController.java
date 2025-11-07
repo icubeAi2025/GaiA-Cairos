@@ -50,7 +50,6 @@ public class SummaryApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함요약보고서 > 결함 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         MybatisInput input = MybatisInput.of().add("cntrctNo", summaryListGet.getCntrctNo())
                 .add("summaryType", summaryListGet.getSummaryType())
@@ -80,7 +79,6 @@ public class SummaryApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함요약보고서 > 결함 단계 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("dfccyPhaseList", defectTrackingComponent.getDfccyPhaseList(dfccyPhaseListGet.getCntrctNo(), dfccyPhaseCd));
     }
@@ -100,7 +98,6 @@ public class SummaryApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함요약보고서 > 작성자 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("rgstrList", summaryComponent.getRgstrList(summaryListGet.getCntrctNo()));
     }

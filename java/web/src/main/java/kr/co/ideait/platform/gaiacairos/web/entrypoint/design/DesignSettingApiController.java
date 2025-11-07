@@ -37,7 +37,6 @@ public class DesignSettingApiController extends AbstractController {
 
 		List selectPhaseList = designSettingComponent.getDesignSettingListData(cntrctNo);
 		userLog.setResult("성공");
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("selectPhaseList",selectPhaseList);
 	}
@@ -57,7 +56,6 @@ public class DesignSettingApiController extends AbstractController {
 		List phase = designSettingComponent.getDetailSettingData(designPhaseDetail);
 
 		userLog.setResult("성공");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("phase",phase);
 	}
@@ -76,7 +74,6 @@ public class DesignSettingApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토단계 추가");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -95,7 +92,6 @@ public class DesignSettingApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토단계 수정");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -114,7 +110,6 @@ public class DesignSettingApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토단계 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -133,7 +128,6 @@ public class DesignSettingApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토단계 순서 변경");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}

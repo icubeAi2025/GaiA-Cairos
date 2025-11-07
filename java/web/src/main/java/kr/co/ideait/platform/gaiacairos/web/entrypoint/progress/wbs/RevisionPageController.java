@@ -34,7 +34,6 @@ public class RevisionPageController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("revision 목록 조회 화면 반환");
 
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제, 가져오기 페이지 이동 버튼
 		String[] btnId = { "REVISION_D_01", "REVISION_C_02"};
@@ -59,7 +58,6 @@ public class RevisionPageController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("revision 생성 화면");
 
-		systemLogComponent.addUserLog(userLog);
 
 		// 팝업 유무 확인 "p" - 팝업 , "d" - 일반
 		if (type == null) type = "d";

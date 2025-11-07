@@ -40,7 +40,6 @@ public class SafetyDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전일지 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 상단 기본버튼 삭제, 수정, 추가, 복사, 승인요청
         String[] btnId = { "SAFE_REP_D01", "SAFE_REP_U01", "SAFE_REP_C01",
@@ -72,7 +71,6 @@ public class SafetyDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전일지 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/safetydiary/safetydiary_c";
     }
@@ -84,7 +82,6 @@ public class SafetyDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전일지 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 메뉴 관리에서 등록한 버튼 아이디
         String[] btnId = { "SAFE_REP_U01"};
@@ -112,7 +109,6 @@ public class SafetyDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전일지 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/safetydiary/safetydiary_u";
     }

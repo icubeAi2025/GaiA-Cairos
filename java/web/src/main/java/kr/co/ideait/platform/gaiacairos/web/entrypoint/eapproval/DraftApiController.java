@@ -69,7 +69,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 대시보드 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		int page = dashoardForm.getPage();
 		int size = dashoardForm.getSize();
@@ -117,7 +116,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 대시보드 문서 별 페이징 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		int page = dashoardForm.getPage();
 		int size = dashoardForm.getSize();
@@ -152,7 +150,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문서 선택페이지 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("pjtNo", UserAuth.get(true).getPjtNo())
@@ -182,7 +179,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문서 서식 검색");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("pjtNo", UserAuth.get(true).getPjtNo())
@@ -209,7 +205,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문 선택 서식 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("frmNo", frmNo)
@@ -233,7 +228,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문 작성 임시저장 문서 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("frmNo", frmNo)
@@ -262,7 +256,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문 작성 결재선 검색");
 
-		systemLogComponent.addUserLog(userLog);
 
 		String userInfo = cookieService.getCookie(request, cookieVO.getPortalCookieName());
 		String [] param = userInfo.split(":");
@@ -294,7 +287,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("기안문서 임시저장 or 상신");
 
-		systemLogComponent.addUserLog(userLog);
 
 		Map<String, Object> reqVoMap = new HashMap<String, Object>();
 		reqVoMap.put("apiYn", commonReqVo.getApiYn());
@@ -317,7 +309,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("임시저장문서 상세조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("tempDraft", draftComponent.selectTempDraft(apDocId));
 	}
@@ -337,7 +328,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("임시저장 문서 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		draftComponent.deleteTemporary(apDocId);
 
@@ -358,7 +348,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결재요청 or 결과작성 요청 or 임시저장 문서 일괄 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제 ID 설정
 		deleteList.forEach(apDoc -> {
@@ -391,7 +380,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 첨부파일 다운로드");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return draftComponent.fileDownload(fileNo, apDocId);
 
@@ -410,7 +398,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("서식 즐겨찾기 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("bookmarkList", draftComponent.selectBookmarkList());
 	}
@@ -429,7 +416,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("서식 즐겨찾기 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		draftComponent.createBookmark(frmNo);
 
@@ -450,7 +436,6 @@ public class DraftApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("서식 즐겨찾기 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		draftComponent.deleteBookmark(frmNo);
 
@@ -494,7 +479,6 @@ public class DraftApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("전자결재 문서 네비게이션 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String naviDiv = "01"; // 통합문서관리
         String naviId = String.format("%s_%s", naviDiv, cntrctNo);

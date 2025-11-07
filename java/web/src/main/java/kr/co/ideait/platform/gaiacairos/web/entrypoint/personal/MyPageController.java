@@ -27,7 +27,6 @@ public class MyPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("마이페이지");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/portal/mypage";
 	}

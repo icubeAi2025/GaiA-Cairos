@@ -42,7 +42,6 @@ public class ProjectInstallManagePageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		String[] userParam = commonReqVo.getUserParam();
 
@@ -73,7 +72,6 @@ public class ProjectInstallManagePageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		String[] userParam = commonReqVo.getUserParam();
 

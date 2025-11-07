@@ -47,7 +47,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctNo", weeklyreportList.getCntrctNo())
 				.add("apprvlStats", weeklyreportList.getApprvlStats())
@@ -71,7 +70,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctChgId", weeklyreportDetail.getCntrctChgId())
 				.add("weeklyReportId", weeklyreportDetail.getWeeklyReportId());
@@ -99,7 +97,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("금주 주요 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctChgId", weeklyreportDetail.getCntrctChgId())
 				.add("weeklyReportId", weeklyreportDetail.getWeeklyReportId())
@@ -125,7 +122,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("금주 지연 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctChgId", weeklyreportDetail.getCntrctChgId())
 				.add("weeklyReportId", weeklyreportDetail.getWeeklyReportId())
@@ -151,7 +147,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("차주 주요 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctChgId", weeklyreportDetail.getCntrctChgId())
 				.add("weeklyReportId", weeklyreportDetail.getWeeklyReportId())
@@ -177,7 +172,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		int count = weeklyreportService.checkWeeklyReport(weeklyreportInsert.getCntrctNo(), weeklyreportInsert.getPrWeeklyReport().getReportDate());
 
@@ -203,7 +197,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("report", weeklyreportService.updateWeeklyreport(weeklyreportUpdate.getPrWeeklyReport(), weeklyreportForm.toUpdateWeeklyProgressList(weeklyreportUpdate.getProgressList())));
 	}
@@ -223,7 +216,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 Activity 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		weeklyreportService.updateActivity(weeklyreportForm.toUpdateWeeklyActivityInput(updateActivity));
 
@@ -245,7 +237,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		weeklyreportComponent.deleteWeeklyreport(weeklyreportForm.toUpdateWeeklyreportInput(weeklyreportDeleteList.getDelList()));
 
@@ -267,7 +258,6 @@ public class WeeklyreportApiController extends AbstractController{
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("주간보고 전자결재 승인요청");
 
-		systemLogComponent.addUserLog(userLog);
 
 		weeklyreportComponent.requestApprovalWeeklyreport(weeklyreportForm.toUpdateWeeklyreportInput(weeklyreportUpdateList.getUpdateReportList()), weeklyreportUpdateList.getCntrctNo(), commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
 

@@ -42,7 +42,6 @@ public class MainphotoApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요 공정 사진 계약코드 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("contractList", mainphotoService.selectContractList(mainphotoMain.getPjtNo()));
@@ -61,7 +60,6 @@ public class MainphotoApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요 공정 사진 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("mainphotoList", mainphotoService.selectMainphotoList(mainphotoMain.getCntrctNo(),

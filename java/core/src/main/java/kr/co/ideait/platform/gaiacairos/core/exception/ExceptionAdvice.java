@@ -51,7 +51,6 @@ public class ExceptionAdvice extends AbstractBase {
         log.error("handleException: {}", ex);
 
         Log.SmUserLogDto logDto = (Log.SmUserLogDto)threadContext.get();
-//        log.info("logDto: {}", logDto);
 
         if (logDto != null && !StringUtils.isEmpty(logDto.getPlatform())) {
             logDto.setResult("FAIL");
@@ -64,7 +63,6 @@ public class ExceptionAdvice extends AbstractBase {
             // FIXME: 로그가 많이 나와, 개발이 힘들어 임시로 로그없게 합니다. (나중에 없는 리소스를 확인해야 할수 있음)
             return getSimpleResponse(GaiaBizException.of(noResourceFoundException), request);
         } else {
-//            log.error(ex.getMessage(), ex);
             return getSimpleResponse(GaiaBizException.of(ex), request);
         }
     }
@@ -99,14 +97,12 @@ public class ExceptionAdvice extends AbstractBase {
         String apiLoginPageInfo = StringUtils.defaultString(getApiLoginPage(req));
 
         if (url.startsWith(API_PREFIX)) {
-        	log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
             log.info("/api 오류가 발생했습니다.");
             log.info("이동한 페이지는 {}입니다.", returnUrl);
             log.info("이동한 페이지는 {}입니다.", apiLoginPageInfo);
             log.info("오류 타입은 {} 입니다!!", gaiaBizException.getErrorType());
             log.info("오류 메시지(은)는 {} 입니다!!", gaiaBizException.getMessage());
             log.info("오류 코드(은)는 {} 입니다!!", gaiaBizException.getNokResult().getCode());
-            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         	Map<String, String> result = Maps.newHashMap();
 
@@ -129,19 +125,24 @@ public class ExceptionAdvice extends AbstractBase {
 //            throw gaiaBizException;
         } else {
             HttpSession session = req.getSession();
-            session.setAttribute("loginPageInfo", isSafe(returnUrl) ?  returnUrl : "");
-            session.setAttribute("apiLoginPageInfo", isSafe(apiLoginPageInfo) ?  apiLoginPageInfo : "");
+
+            if (isSafe(returnUrl)) {
+                session.setAttribute("loginPageInfo", returnUrl);
+            }
+
+            if (isSafe(apiLoginPageInfo)) {
+                session.setAttribute("apiLoginPageInfo", apiLoginPageInfo);
+            }
+
             session.setAttribute("errorMsg", gaiaBizException.getMessage());
             session.setAttribute("detailMsg", gaiaBizException.getDetailMessage());
             
-            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
             log.info("오류가 발생했습니다. 커스텀 오류로! 지정한 오류 페이지로 이동합니다.");
             log.info("이동한 페이지는 {}입니다.", returnUrl);
             log.info("이동한 페이지는 {}입니다.", apiLoginPageInfo);
             log.info("오류 타입은 {} 입니다!!", gaiaBizException.getErrorType());
             log.info("오류 메시지(은)는 {} 입니다!!", gaiaBizException.getMessage());
             log.info("오류 상세메시지(은)는 {} 입니다!!", gaiaBizException.getDetailMessage());
-            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
             return switch (gaiaBizException.getErrorType()) {
                 case BAD_REQUEST 	-> "error/400";
                 case UNAUTHORIZED 	-> "error/401";
@@ -252,6 +253,8 @@ public class ExceptionAdvice extends AbstractBase {
 
             response.setStatus(500);
             response.getWriter().write("{\"result\":\"nok\"}");
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

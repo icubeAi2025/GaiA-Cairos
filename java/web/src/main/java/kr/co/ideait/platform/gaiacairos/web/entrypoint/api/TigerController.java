@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import kr.co.ideait.iframework.FormatUtil;
 import kr.co.ideait.iframework.annotation.Description;
+import kr.co.ideait.platform.gaiacairos.comp.TestComponent;
 import kr.co.ideait.platform.gaiacairos.comp.auth.AuthComponent;
 import kr.co.ideait.platform.gaiacairos.comp.document.DocumentComponent;
 import kr.co.ideait.platform.gaiacairos.comp.projectcost.service.PaymentService;
@@ -48,6 +49,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/webApi/test")
 public class TigerController extends AbstractController {
+
+    @Autowired
+    TestComponent testComponent;
 
     @Autowired
     DocumentComponent documentComponent;
@@ -153,6 +157,18 @@ public class TigerController extends AbstractController {
         log.info("userAuthentication : {}", userAuthentication);
 
         return Result.ok();
+    }
+
+    /**
+     * 문서 삭제
+     */
+    @GetMapping("/ssh")
+    @ApiResponse(description = "문서 삭제")
+    @Description(name = "문서 삭제", description = "문서 삭제", type = Description.TYPE.MEHTOD)
+    public Result testSsh( @RequestParam Map<String, Object> params, HttpServletRequest request) throws Exception {
+        log.info("params : {}", params);
+
+        return testComponent.connectSSH(params);
     }
 
     /**

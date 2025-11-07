@@ -20,7 +20,7 @@ import java.util.Arrays;
 
 @Slf4j
 @SpringBootApplication(scanBasePackages = {
-        "kr.co.ideait.iframework", "kr.co.ideait.platform.gaiacairos"
+        "kr.co.ideait.iframework", "com.tware", "kr.co.ideait.platform.gaiacairos"
 })
 @PropertySources({
         @PropertySource(value = "classpath:application.properties", ignoreResourceNotFound = false),

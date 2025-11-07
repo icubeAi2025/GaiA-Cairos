@@ -59,7 +59,6 @@ public class DisasterDiaryApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 추가");
-        systemLogComponent.addUserLog(userLog);
 
         log.info("createDisasterDiary: 재해일지 추가. params = {}", report.toString());
         disasterDiaryComponent.addDisasterDiary(report, commonReqVo);
@@ -108,7 +107,6 @@ public class DisasterDiaryApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 수정");
-        systemLogComponent.addUserLog(userLog);
 
         log.info("updateDisasterDiary: 재해일지 수정. params = {}", report.toString());
         disasterDiaryComponent.modifyDisasterDiary(report, commonReqVo);
@@ -135,7 +133,6 @@ public class DisasterDiaryApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         if(param.getCntrctNo() == null){
             param.setCntrctNo(commonReqVo.getCntrctNo());
@@ -166,7 +163,6 @@ public class DisasterDiaryApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         if(param.get("disasterDiaryDeleteParam") == null){
             throw new GaiaBizException(ErrorType.BAD_REQUEST, "삭제할 재해일지 정보가 없습니다.");

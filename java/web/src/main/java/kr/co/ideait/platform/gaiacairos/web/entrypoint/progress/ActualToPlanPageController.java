@@ -23,7 +23,6 @@ public class ActualToPlanPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("계획대비실적 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/progress/actualtoplan/actualtoplan";
     }

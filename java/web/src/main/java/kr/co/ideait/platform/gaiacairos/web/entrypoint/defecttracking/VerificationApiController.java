@@ -53,7 +53,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인 관리 목록조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		dfccyConfirmList.setLang(langInfo);
 		dfccyConfirmList.setUsrId(UserAuth.get(true).getUsrId());
@@ -83,7 +82,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함분류 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("dfccySelectbox", verificationComponent.selectDfccyCd());
 	}
@@ -103,7 +101,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함분류 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("dfccyConfirm", verificationComponent.selectDfccyConfirmDetail(verificationForm.toDfccyConfirmDetailInput(dfccyConfirmDetail)));
 	}
@@ -124,7 +121,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 QA / 관리관 확인 이력 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		confirmHistory.setLang(langInfo);
 		return Result.ok().put("historyList", verificationComponent.selectConfirmHistoryList(verificationForm.toConfirmHistoryInput(confirmHistory)));
@@ -148,7 +144,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인 의견 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		verificationComponent.insertDfccyConfirm(dfccyConfirmInsert.getDtDeficiencyConfirm(), files, defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -172,7 +167,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인 의견 수정");
 
-		systemLogComponent.addUserLog(userLog);
 
 		verificationComponent.updateDfccyConfirm(verificationForm.toDfccyConfirmInsertInput(dfccyConfirmInsert), files, defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -193,7 +187,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인 의견 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		verificationComponent.deleteVerification(dfccySeq, true, UserAuth.get(true).getUsrId(), UserAuth.get(true).getPjtNo(), defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -214,7 +207,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인 의견 전체 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		verificationComponent.deleteAllVerification(delDfccyList.getDelDfccyList(), true, UserAuth.get(true).getUsrId(), UserAuth.get(true).getPjtNo(), defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -236,7 +228,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인결과_관리관 일괄 종료");
 
-		systemLogComponent.addUserLog(userLog);
 
 		if(finishList != null && !finishList.isEmpty()) {
 			verificationComponent.finishList(finishList, defectTrackingHelper.createReqVoMap(commonReqVo));
@@ -260,7 +251,6 @@ public class VerificationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 확인결과_QA 일괄 종료");
 
-		systemLogComponent.addUserLog(userLog);
 
 		if(finishList != null && !finishList.isEmpty()) {
 			verificationComponent.finishList(finishList, defectTrackingHelper.createReqVoMap(commonReqVo));

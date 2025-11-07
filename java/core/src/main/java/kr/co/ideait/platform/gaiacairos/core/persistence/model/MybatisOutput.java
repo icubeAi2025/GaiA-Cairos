@@ -25,7 +25,13 @@ public class MybatisOutput extends HashMap<String, Object> {
 
                 Pattern p = Pattern.compile(regex);
                 String computedKey = p.matcher(key.toLowerCase())
-                        .replaceAll(match -> match.group(1).toUpperCase());
+                        .replaceAll(match -> {
+                            String group = match.group(1);
+                            if(group != null) {
+                                return group.toUpperCase();
+                            }
+                            return null;
+                        });
                 this.put(computedKey, value);
                 this.remove(key);
             }

@@ -79,7 +79,8 @@ public class PotalApiController extends AbstractController {
 									langInfo.equals("en") ? smComCode.getCmnCdNmEng() : smComCode.getCmnCdNmKrn());
 							return codeCombo;
 						}))
-				.put("noticeList", mainBoardService.getMainBoardList(input));
+				.put("noticeList", mainBoardService.getMainBoardList(input))
+				.put("projectPhotoMap",portalComponent.getProjectPhotoList(input));
 	}
 
 	/**
@@ -263,6 +264,14 @@ public class PotalApiController extends AbstractController {
         
         portalComponent.newUseReuestSendMail(params.getPjtNm(), params.getPjtNm(), params.getUsrId());
 
+		return Result.ok();
+	}
+
+	@PostMapping("/set-cookie")
+	public Result setCookie(CommonReqVo commonReqVo, @Valid @RequestBody PortalForm.MenuListParam menuListParam,
+							HttpServletRequest request, HttpServletResponse response) {
+		//현재 선택된 프로젝트번호 와 계약번호 쿠키 셋팅
+		cookieService.setHttpOnlyCookie(response, cookieVO.getSelectCookieName(), menuListParam.getPjtNo() + ":" + menuListParam.getCntrctNo(), 60 * 60 * 24);
 		return Result.ok();
 	}
 }

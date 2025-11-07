@@ -38,7 +38,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 나의 결재선 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("lineset", lineSetComponent.getMyLineSetList());
 	}
@@ -56,7 +55,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 관리자 결재선 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctNo", cntrctNo);
 		return Result.ok().put("lineset", lineSetComponent.getAdminLineSetList(input));
@@ -80,7 +78,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 결재선 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		String userInfo = cookieService.getCookie(request, cookieVO.getPortalCookieName());
 		String [] param = userInfo.split(":");
@@ -106,7 +103,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 관리자 결재선 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("detailList", lineSetComponent.getAdminLineSetDetail(apLineNo, cntrctNo));
 	}
@@ -125,7 +121,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 나의 결재선 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		lineSetComponent.deleteLineSetList(delList.getDelList());
 
@@ -146,7 +141,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 관리자 결재선 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		lineSetComponent.deleteLineSetList(delList.getDelList());
 
@@ -168,7 +162,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 나의 결재선 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		lineSetComponent.createLineSet(saveList.getApLinesetMng(), saveList.getApLineSet(), saveList.getCntrctNo());
 
@@ -190,7 +183,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 나의 결재선 수정");
 
-		systemLogComponent.addUserLog(userLog);
 
 		lineSetComponent.updateLineSet(saveList.getApLinesetMng(), saveList.getApLineSet());
 
@@ -212,7 +204,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 관리자 결재선 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		// 중복체크: 착공계(문서코드10) 중복 가능
 		checkDuplicate(saveList.getApLinesetMng().getApType(), saveList.getCntrctNo());
@@ -237,7 +228,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("전자결재 설정 - 관리자 결재선 수정");
 
-		systemLogComponent.addUserLog(userLog);
 
 		ApLinesetMng old = lineSetComponent.getAdminLineSet(saveList.getApLinesetMng().getApLineNo());
 		if(!old.getApType().equals(saveList.getApLinesetMng().getApType())) {
@@ -264,7 +254,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("관리자 결재선 부서 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("pjtNo", UserAuth.get(true).getPjtNo())
 												.add("cntrctNo", cntrctNo);
@@ -289,7 +278,6 @@ public class LineSetApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("관리자 결재선 검색");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("pjtNo", UserAuth.get(true).getPjtNo())
 												.add("usrId", UserAuth.get(true).getUsrId())

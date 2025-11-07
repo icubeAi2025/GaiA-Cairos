@@ -4,18 +4,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 
 import kr.co.ideait.platform.gaiacairos.comp.auth.AuthComponent;
+import kr.co.ideait.platform.gaiacairos.comp.dashboard.service.DashboardService;
 import kr.co.ideait.platform.gaiacairos.comp.mail.MailComponent;
 import kr.co.ideait.platform.gaiacairos.comp.portal.service.PortalService;
 import kr.co.ideait.platform.gaiacairos.core.base.AbstractComponent;
 import kr.co.ideait.platform.gaiacairos.core.constant.CommonCodeConstants;
+import kr.co.ideait.platform.gaiacairos.core.exception.ErrorType;
 import kr.co.ideait.platform.gaiacairos.core.exception.GaiaBizException;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.*;
 import kr.co.ideait.platform.gaiacairos.core.persistence.model.MybatisInput;
+import kr.co.ideait.platform.gaiacairos.core.persistence.vo.dashboard.DashboardMybatisParam;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.portal.PortalMybatisParam.MainComprehensiveProjectInput;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.portal.PortalMybatisParam.SelectMenuInput;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.portal.PortalMybatisParam.SelectResourcesAuthorityInput;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.security.UserAuth;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.board.BoardForm;
+import kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.board.BoardMybatisParam;
 import kr.co.ideait.platform.gaiacairos.core.util.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +51,10 @@ public class PortalComponent extends AbstractComponent {
 	
 	@Autowired
 	MailComponent mailComponent;
-	
+
+    @Autowired
+    private DashboardService dashboardService;
+
 	/**
 	 * 로그인 사용자 정보 조회
 	 *
@@ -519,5 +526,32 @@ public class PortalComponent extends AbstractComponent {
 		}
 
 		return result;
+	}
+
+	public Map<String, DashboardMybatisParam.PhotoOutput> getProjectPhotoList(BoardMybatisParam.BoardListInput input) {
+		UserAuth userAuth = UserAuth.get(true);
+		if(userAuth == null){
+			throw new GaiaBizException(ErrorType.UNAUTHORIZED,"인증 정보가 만료되었습니다.");
+		}
+		MainComprehensiveProjectInput param = new MainComprehensiveProjectInput();
+		param.setLoginId(userAuth.getLogin_Id());
+		param.setUsrId(userAuth.getUsrId());
+		param.setConPstatsCd(CommonCodeConstants.CON_PSTATS_CODE_GROUP_CODE);
+		param.setMajorCnsttyCd(CommonCodeConstants.WORKTYPE_CODE_GROUP_CODE);
+		param.setPjtType(pjtType);
+		param.setPjtDiv(pjtType.substring(0, 1));
+
+		List<Map<String,Object>> projectList = portalService.selectMainComprehensiveProjectList(param);
+
+		Map<String,DashboardMybatisParam.PhotoOutput> projectPhotoMap = new HashMap<>();
+		for(Map<String,Object> project : projectList){
+			DashboardMybatisParam.MainInput mainInput = new DashboardMybatisParam.MainInput();
+			String pjtNo = (String)project.get("pjt_no");
+			mainInput.setPjtNo(pjtNo);
+			DashboardMybatisParam.PhotoOutput photoOutput = dashboardService.getProjectPhoto(mainInput);
+
+			projectPhotoMap.put(pjtNo, photoOutput);
+		}
+		return projectPhotoMap;
 	}
 }

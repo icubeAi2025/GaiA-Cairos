@@ -525,11 +525,8 @@
                         });
                         data = summary.summaryDetail;
 
-                        if (data.dailyReportDate == "" && sType == "d") {
-                            $("#dailyReportDate").hide();
-                        } else {
-                            $("#dailyReportDate").val(data.dailyReportDate);
-                        }
+
+                        $("#dailyReportDate").val(data.dailyReportDate);
 
 
                         $("#reportNo").val(gaiaCommon.decodeSafeText(data.reportNo));
@@ -681,10 +678,8 @@
                                         , base: imagePath
                                         , cnstty_pht_sno: row.cnstty_pht_sno
                                     });
-                    let hid = "style='display:none;'"
-                    if (sType == "e") {
-                        hid = "";
-                    }
+                    let hid = ""
+
                     $(".process_photo_list").slick('slickAdd',
                         `<div class="custom-slide" data-seq="${seq}">` +
                         `<input id="slick_` + row.cnstty_pht_sno + `" file_no="` + row.file_no + `" cnstty_pht_sno="` + row.sno + `" shot_date="` + row.shot_date + `" hidden>` +
@@ -968,7 +963,8 @@
                     cbs_insert_yn: $li.attr("data-cbs-insert-yn") ?? "N",
                     rsce_nm: $li.attr("data-rsce-nm") ?? "",
                     spec_nm: $li.attr("data-spec-nm") ?? "",
-                    unit: $li.attr("data-unit") ?? ""
+                    unit: $li.attr("data-unit") ?? "",
+                    dsply_order: $li.attr("data-dsply-order") ?? ""
                 });
             });
             console.log('*** uiData = ',uiData);
@@ -1001,6 +997,7 @@
                     found.rsce_nm         = ui.rsce_nm ?? found.rsce_nm ?? "";
                     found.spec_nm         = ui.spec_nm ?? found.spec_nm ?? "";
                     found.unit            = ui.unit ?? found.unit ?? "";
+                    found.dsply_order     = ui.dsply_order ?? found.dsply_order ?? "";
                     // 살아있는 항목은 기본 N
                     if (found.dlt_yn !== "Y") found.dlt_yn = "N";
                 }
@@ -1089,13 +1086,21 @@
         function renderResourceList(data, targetSelector) {
             const $list = $(targetSelector);
             $list.empty();
-            data.forEach((item) => {
+
+            // dsply_order 오름차순 정렬
+            const sortedData = (data || []).slice().sort((a, b) => {
+                if (!a.dsply_order && b.dsply_order) return 1;   // a가 비었으면 뒤로
+                if (a.dsply_order && !b.dsply_order) return -1;  // b가 비었으면 뒤로
+                return Number(a.dsply_order) - Number(b.dsply_order);
+            });
+
+            sortedData.forEach((item) => {
                 const actualQty = Number(item.actual_qty) || 0;
                 const acmtlQty = Number(item.acmtl_qty) || 0;
                 const todayAcmtlQty = acmtlQty + actualQty; // 전일누계 + 금일수량
 
                 // 자재(M), 장비(E)인 경우 규격(spec_nm) 표시
-                const rsceTp = (item.rsce_tp_cd || '').substring(0, 1); // L, M, E 중 첫 글자
+                const rsceTp = (item.rsce_tp_cd || '').substring(0, 1);
                 const spec = item.spec_nm && item.spec_nm.trim() !== '' ? ` (${item.spec_nm})` : '';
                 const nameWithSpec =
                     rsceTp === 'M' || rsceTp === 'E'
@@ -1116,6 +1121,7 @@
                         data-rsce-tp-cd="${String(item.rsce_tp_cd)}"
                         data-manual-yn="${String(item.manual_yn)}"
                         data-cbs-insert-yn="${String(item.cbs_insert_yn)}"
+                        data-dsply-order="${String(item.dsply_order)}"
                     >
                         <span class="r_name">${nameWithSpec}</span>
                         (<span class="r_actual_qty">${item.actual_qty}</span> /
@@ -1146,7 +1152,8 @@
                         remndr_qty:       N($li.attr('data-remndr-qty')),
                         ori_qty:          N($li.attr('data-ori-qty')),
                         manual_yn:        $li.attr('data-manual-yn') ?? 'Y',
-                        cbs_insert_yn:    $li.attr('data-cbs-insert-yn') ?? 'N'
+                        cbs_insert_yn:    $li.attr('data-cbs-insert-yn') ?? 'N',
+                        dsply_order:         N($li.attr('data-dsply-order'))
                     });
                 });
             return list;
@@ -1257,6 +1264,21 @@
             const trimmed = fixed.replace(/\.?0+$/, "");
             return trimmed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
+        // 자원 모달에서 사용: 소수점이 0으로 끝날경우 0 제거 + 0 이하 값은 공백
+        function formatNumberMaterial(num) {
+            // 문자열 가능성/콤마 제거 후 숫자화
+            const n = Number(String(num ?? "").replace(/,/g, '').trim());
+
+            // 유효하지 않은 값만 공백 반환
+            if (!Number.isFinite(n)) return "";
+
+            // 0이하 공백처리
+            if (n <= 0) return "";
+
+            const fixed = n.toFixed(3);
+            const trimmed = fixed.replace(/\.?0+$/, "");
+            return trimmed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
 
         // 자원 모달에서 사용: 계산하기 위해 숫자만 필터링
         function cleanNumber(v) {     // 계산/저장용
@@ -1288,7 +1310,28 @@
                 }
             };
         }
+        // 자원 모달에서 사용: 그리드에서 수량 입력란 커스텀
+        function CustomQtyTextEditorMaterial(props) {
+            const el = document.createElement('input');
+            el.type = 'text';
+            el.value = props?.value ?? "";
 
+            return {
+                getElement() {
+                    return el;
+                },
+                getValue() {
+                    let result = el.value.replace(/[^0-9.-]/g, "");
+                    if (result === "") return "";
+                    const num = Number(result);
+                    if (Number.isNaN(num)) return "";
+                    return parseFloat(num.toFixed(3));
+                },
+                mounted() {
+                    el.select();
+                }
+            };
+        }
         // 자원 모달에서 사용: 난수 생성
         function generateGnrlexpnsCd() {
             let num = Math.floor(Math.random() * 1e9).toString().padStart(9, "0");

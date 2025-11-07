@@ -342,7 +342,6 @@
                 const listId = containerId === "#dfccyPhaseContainer" ? "dfccyPhaseList" : "rgstrList";
                 const $list = $('#' + listId).empty();
                 const items = data.details[listId];
-
                 const myDfccy = containerId === "#dfccyPhaseContainer" ? '' :
                     `<li class="list_item">
                         <label class="form_check">
@@ -361,9 +360,9 @@
                 ${myDfccy}
                 `);
 
-                items.forEach(({ usrNm, usrId, dfccyPhaseNm, dfccyPhaseNo }) => {
-                    const name = usrNm || dfccyPhaseNm;
-                    const id = usrId || dfccyPhaseNo;
+                items.forEach(({ usrNm, usrId, dfccy_phase_nm, dfccy_phase_no }) => {
+                    const name = usrNm || dfccy_phase_nm;
+                    const id = usrId || dfccy_phase_no;
                     $list.append(`
                         <li class="list_item">
                             <label class="form_check">

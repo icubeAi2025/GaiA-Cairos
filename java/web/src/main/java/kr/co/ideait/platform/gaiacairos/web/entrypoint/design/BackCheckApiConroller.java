@@ -54,7 +54,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 목록조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("dsgnList", pageData.getContent())
 							.put("totalCount", totalCount);
@@ -74,7 +73,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 상세조회");
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("backchkList", backchkList);
 	}
@@ -95,7 +93,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 추가");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -116,7 +113,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 수정");
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok();
 	}
@@ -135,7 +131,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 결과 등록");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -154,7 +149,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -173,7 +167,6 @@ public class BackCheckApiConroller extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 백체크 의견 일괄 삭제");
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok();
 	}

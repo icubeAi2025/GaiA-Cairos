@@ -236,31 +236,21 @@
         },
 
         makeSelectBox: function (comCodeSelectBoxGets) {
-            $.ajax({
-                url: "/api/util/make-selectBox",
-                method: "POST",
-                dataType: "json",
-                xhrFields: { withCredentials: true },
-                contentType: "application/json; charset=UTF-8",
-                traditional: true,
-                data: JSON.stringify(comCodeSelectBoxGets), // 요청 데이터로 comCodeSelectBoxGets 배열을 전송
-                success: function (data) {
-                    let returnMap = data.details.returnMap;
-                    comCodeSelectBoxGets.forEach(function (item, index) {
-                        let addAppLineContent = document.getElementById(
+            gaiaCommon.post("/api/util/make-selectBox", comCodeSelectBoxGets, function (data) {
+                let returnMap = data.details.returnMap;
+                comCodeSelectBoxGets.forEach(function (item, index) {
+                    let addAppLineContent = document.getElementById(
                             item.selectBoxId
-                        );
-                        let categorySelect = `${returnMap[item.selectBoxId]}`;
-                        if (addAppLineContent) {
-                            addAppLineContent.innerHTML =
+                    );
+                    let categorySelect = `${returnMap[item.selectBoxId]}`;
+                    if (addAppLineContent) {
+                        addAppLineContent.innerHTML =
                                 returnMap[item.selectBoxId];
-                        }
-                        $(`#selectBox${index + 1}`).append(categorySelect);
-                    });
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error making select box:", status, error);
-                },
+                    }
+                    $(`#selectBox${index + 1}`).append(categorySelect);
+                });
+            }, function (error) {
+                console.error("Error making select box:", error);
             });
         },
 

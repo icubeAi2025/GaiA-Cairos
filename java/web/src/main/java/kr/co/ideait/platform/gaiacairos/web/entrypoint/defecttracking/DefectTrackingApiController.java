@@ -52,7 +52,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함단계 리스트 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("dfccyPhaseList", defectTrackingComponent.getDfccyPhaseList(dfccyPhaseListGet.getCntrctNo(), dfccyPhaseListGet.getDfccyPhaseCd())
                                                                             .stream().map(defectTrackingDto::toDfccyPhase));
@@ -76,7 +75,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return GridResult.ok(defectTrackingComponent.getDfccyListToGrid(defectTrackingForm.toDfccySearchInput(defectTrackingListGet), langInfo));
 
@@ -100,7 +98,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 선택한 결함 데이터 상세 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("dfccyDetail", defectTrackingComponent.getDfccyList(defectTrackingForm.toDfccySearchInput(defectTrackingListGet), langInfo));
     }
@@ -123,7 +120,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 작성자 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("rgstrList", defectTrackingComponent.getRgstrList(cntrctNo, dfccyPhaseNo));
     }
@@ -144,7 +140,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 추가/수정 - Activity 리스트 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("activityList", defectTrackingComponent.getActivityList(params));
     }
@@ -164,7 +159,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 추가/수정 - Activity 리스트 검색");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("activityListSearch", defectTrackingComponent.getActivityListSearch(params));
     }
@@ -191,7 +185,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 수정 - 결함 조회");
 
-        systemLogComponent.addUserLog(userLog);
         return Result.ok().put("returnMap", defectTrackingComponent.getDfccy(cntrctNo, dfccyPhaseNo, dfccyNo, langInfo));
     }
 
@@ -213,7 +206,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 추가");
 
-        systemLogComponent.addUserLog(userLog);
 
         defectTrackingComponent.createDeficiency(defectTrackingForm.toDeficiency(dfccy), defectTrackingForm.toDeficiencyActivityList(dfccy.getActivity()), files);
         return Result.ok();
@@ -237,7 +229,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 수정");
 
-        systemLogComponent.addUserLog(userLog);
 
         DtDeficiency oldDeficiency = defectTrackingComponent.getDfccy(update.getCntrctNo(), update.getDfccyNo());
         defectTrackingComponent.updateDeficiency(defectTrackingForm.updateDeficiency(update, oldDeficiency), defectTrackingForm.toDeficiencyActivityList(update.getActivity()), newFiles, update.getDelFileList());
@@ -259,7 +250,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 삭제");
 
-        systemLogComponent.addUserLog(userLog);
 
         defectTrackingComponent.deleteDeficiencyList(dfccyNoList.getDfccyNoList());
         return Result.ok();
@@ -280,7 +270,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 > 결함 상세 조회 시, 해당 결함의 결함 확인 리스트 조회");
 
-        systemLogComponent.addUserLog(userLog);
         return Result.ok().put("dtConfirm", defectTrackingComponent.getDeficiencyConfirmList(dfccyNo));
     }
 
@@ -302,7 +291,6 @@ public class DefectTrackingApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결함추적 메뉴 첨부파일 다운로드");
 
-        systemLogComponent.addUserLog(userLog);
 
         return defectTrackingComponent.fileDownload(fileNo, sno);
     }

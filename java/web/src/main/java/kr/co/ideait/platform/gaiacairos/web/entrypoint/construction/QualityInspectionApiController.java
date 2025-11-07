@@ -68,7 +68,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 데이터 전체 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("qualitylist",
                 qualityService.getQualityList(param.getCntrctNo(), param.getSearchValue(),
@@ -86,7 +85,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         for (int i = 0; i < qualityList.getQualityList().size(); i++) {
             qualityinspectionComponent.deleteQuality(qualityList.getQualityList().get(i), commonReqVo.getUserId());
@@ -105,7 +103,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("검측요청");
-        systemLogComponent.addUserLog(userLog);
 
         qualityinspectionComponent.inspectionRequestList(commonReqVo, paramList, request);
         return Result.ok();
@@ -122,7 +119,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결재요청");
-        systemLogComponent.addUserLog(userLog);
 
         qualityinspectionComponent.paymentRequest(commonReqVo, qualityList.getQualityList(), qualityList.getCmnCdNmKrn(),
                 commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
@@ -141,7 +137,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("결재취소");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Object> param = new HashMap<>();
         param.put("qualityList", qualityList.getQualityList());
@@ -172,7 +167,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("감리 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String cntrctNo = (String) param.get("cntrctNo");
         String searchValue = (String) param.get("searchValue");
@@ -195,7 +189,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 단일 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Object> resultMap = qualityinspectionComponent.getQuality(cntrctNo, qltyIspId);
         return Result.ok()
@@ -220,7 +213,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         qualityinspectionComponent.createQuality(commonReqVo, quality, commonReqVo.getUserId(), files, photos);
         return Result.ok();
@@ -241,7 +233,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwQualityInspection updated = qualityinspectionComponent.updateQuality(commonReqVo, update,
                 newFiles, removedFileNos,
@@ -259,7 +250,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("Activity 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String cntrctNo = (String) param.get("cntrctNo");
         String searchValue = (String) param.get("searchValue");
@@ -278,7 +268,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("checkList",
                 qualityService.getAllCheckList(check.getCntrctNo(), check.getCnsttyCd(), check.getUpCnsttyCd(),
@@ -297,7 +286,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("공종 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("selectBox",
                 qualityService.makeSelectBox(construct.getCntrctNo(), construct.getUpCnsttyCd()));
@@ -315,7 +303,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("전체 공종 목록 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String check = "common";
         return Result.ok().put("treeList", qualityService.getTreeList(cntrctNo, check));
@@ -331,7 +318,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("계약의 공종 목록 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String check = "contract";
         return Result.ok().put("treeList", qualityService.getTreeList(cntrctNo, check));
@@ -347,7 +333,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("공종 추가");
-        systemLogComponent.addUserLog(userLog);
 
         CwCntqltyCheckList cwWork = qualityinspectionForm.toEntity(work);
         cwWork.setChklstId(UUID.randomUUID().toString());
@@ -368,7 +353,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("공종 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwCntqltyCheckList oldWork = qualityService.getCwCntqltyCheckList(update.getCntrctNo(), update.getChklstId()); // 수정할
                                                                                                                        // 공종
@@ -399,7 +383,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("공종 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         qualityService.deleteWork(delete.getCntrctNo(), delete.getChklstId());
         return Result.ok();
@@ -415,7 +398,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("공종코드 중복체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("result",
                 qualityService.checkCode(checkCode.getCnsttyCd()));
@@ -431,7 +413,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("check", qualityService.getCheck(get.getChklstId()));
     }
@@ -446,7 +427,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 추가");
-        systemLogComponent.addUserLog(userLog);
 
         CwCntqltyCheckList cwCheck = qualityinspectionForm.toEntity(check);
         cwCheck.setChklstId(UUID.randomUUID().toString());
@@ -466,7 +446,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwCntqltyCheckList oldCheck = qualityService.getCheck(update.getChklstId());
         oldCheck.setChklstDscrpt(update.getChklstDscrpt());
@@ -486,7 +465,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         for (int i = 0; i < chklstIds.getChklstIds().size(); i++) {
             CwCntqltyCheckList delete = qualityService.getCheck(chklstIds.getChklstIds().get(i));
@@ -505,7 +483,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("체크리스트 전체 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("gridList",
                 qualityService.getGridList(grid.getCntrctNo(), grid.getCnsttyCd(), grid.getSearchValue(),
@@ -525,7 +502,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("검측결과 데이터 등록/수정");
-        systemLogComponent.addUserLog(userLog);
 
         qualityinspectionComponent.addResult(result, commonReqVo.getUserId());
         return Result.ok();
@@ -542,7 +518,6 @@ public class QualityInspectionApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("조치사항 데이터 등록/수정");
-        systemLogComponent.addUserLog(userLog);
 
         qualityinspectionComponent.addAction(action);
         return Result.ok();
@@ -561,7 +536,6 @@ public class QualityInspectionApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("품질검측 첨부파일 다운로드");
 
-        systemLogComponent.addUserLog(userLog);
 
         return qualityService.fileDownload(fileNo, sno);
     }

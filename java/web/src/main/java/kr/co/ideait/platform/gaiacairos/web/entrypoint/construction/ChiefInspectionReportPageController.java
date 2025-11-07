@@ -32,7 +32,6 @@ public class ChiefInspectionReportPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("책임감리일지 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 메뉴 관리에서 등록한 버튼 아이디
         String[] btnId = { "CFINSP_D_01", "CFINSP_U_02", "CFINSP_C_03", "CFINSP_C_02" };
@@ -65,7 +64,6 @@ public class ChiefInspectionReportPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("책임감리일지 상세조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if (!"old".equals(btnAuthType)) {
             // 메뉴 관리에서 등록한 버튼 아이디
@@ -94,7 +92,6 @@ public class ChiefInspectionReportPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("책임감리일지 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
 
         return "page/construction/chiefinspectionreport/chiefinspectionreport_c";
@@ -107,7 +104,6 @@ public class ChiefInspectionReportPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("책임감리일지 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/chiefinspectionreport/chiefinspectionreport_u";
     }

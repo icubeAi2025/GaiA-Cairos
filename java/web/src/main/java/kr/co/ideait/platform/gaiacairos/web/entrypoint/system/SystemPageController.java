@@ -53,7 +53,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("회사관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         return "redirect:/";
@@ -96,7 +95,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("회사관리 회사 등록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         log.info("프로젝트 정보가 없습니다.");
@@ -128,7 +126,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("회사관리 회사 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         log.info("프로젝트 정보가 없습니다.");
@@ -161,7 +158,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("회사관리 회사 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -202,7 +198,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -258,7 +253,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 하위 부서 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -282,7 +276,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 부서 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -302,7 +295,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 소속 직원 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -328,7 +320,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 소속 직원 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -345,7 +336,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("부서관리 소속 직원 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] param = commonReqVo.getUserParam();
 
@@ -366,7 +356,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "USER_C_01" };
                 String[] btnClass = { "btn _fill" };
@@ -390,7 +379,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 관리 EURECA 사용자 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/system/user/user_p";
 
@@ -407,7 +395,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 관리 사용자 등록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if ("d".equals(type)) {
                         model.addAttribute("header", true);
@@ -427,7 +414,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 관리 사용자 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if ("d".equals(type)) {
                         model.addAttribute("header", true);
@@ -447,7 +433,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 관리 사용자 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if ("d".equals(type)) {
                         model.addAttribute("header", true);
@@ -482,7 +467,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -554,7 +538,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 하위메뉴 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -577,7 +560,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 메뉴 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -597,7 +579,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 유료 기능 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -619,7 +600,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 버튼 권한 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -642,7 +622,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 관리 버튼 권한 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -664,7 +643,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("권한 그룹 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -719,7 +697,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("권한 그룹 관리 그룹 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -751,7 +728,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("권한 그룹 관리 그룹 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -781,7 +757,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("권한 그룹 관리 그룹 사용자(부서) 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -802,7 +777,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("권한 그룹 관리 그룹 사용자(사용자) 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -825,7 +799,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 권한 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -869,7 +842,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 권한 관리 권한 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -895,7 +867,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("메뉴 권한 관리 권한 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.equals("") || cntrctNo == null || cntrctNo.equals("")) {
                         return "redirect:/";
@@ -919,7 +890,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기초데이터 관리 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 // 그룹코드용 버튼
                 String[] grpBtnId = { "COMCODE_D_01", "COMCODE_U_02", "COMCODE_C_03" };
@@ -978,7 +948,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기초데이터관리 코드그룹 등록,수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/commoncode/common_code_group_cu";
@@ -996,7 +965,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기초데이터관리 코드 등록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/commoncode/common_code_c";
@@ -1016,7 +984,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기초데이터관리 코드 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/commoncode/common_code_u";
@@ -1034,7 +1001,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기초데이터관리 코드 상세조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 // 코드용 버튼
                 String[] cdBtnId = { "COMCODE_U_05" };
@@ -1062,7 +1028,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("권한그룹");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/system/projectbilling/project_billing";
         }
@@ -1079,7 +1044,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("게시판관리 공지사항 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "BOARD_D_02", "BOARD_U_02", "BOARD_C_02" };
                 String[] btnClass = { "btn _outline", "btn _outline", "btn _fill" };
@@ -1104,13 +1068,10 @@ public class SystemPageController extends AbstractController {
         // @IsAdmin
         @GetMapping("/board/faqboard")
         @Description(name = "게시판관리 FAQ 화면", description = "게시판관리의 게시글 목록 화면 반환.", type = Description.TYPE.MEHTOD)
-        public String faqBoard(CommonReqVo commonReqVo, HttpServletRequest request, Model model,
-                        @RequestParam(value = "pjtNo", required = false) String pjtNo,
-                        @RequestParam(value = "cntrctNo", required = false) String cntrctNo) {
+        public String faqBoard(CommonReqVo commonReqVo, HttpServletRequest request, Model model) {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("게시판관리 FAQ 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "BOARD_D_02", "BOARD_U_02", "BOARD_C_02" };
                 String[] btnClass = { "btn _outline", "btn _outline", "btn _fill" };
@@ -1131,14 +1092,11 @@ public class SystemPageController extends AbstractController {
 
         @GetMapping("/board/create")
         @Description(name = "게시판관리 추가 화면", description = "게시판관리의 게시글 추가 화면 반환.", type = Description.TYPE.MEHTOD)
-        public String boardCreate(CommonReqVo commonReqVo, Model model,
-                        @RequestParam(value = "pjtNo", required = false) String pjtNo,
-                        @RequestParam(value = "cntrctNo", required = false) String cntrctNo) {
+        public String boardCreate(CommonReqVo commonReqVo, Model model) {
 
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("게시판관리 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/board/board_c";
@@ -1146,14 +1104,11 @@ public class SystemPageController extends AbstractController {
 
         @GetMapping("/board/update")
         @Description(name = "게시판관리 수정 화면", description = "게시판관리의 게시글 수정 화면 반환.", type = Description.TYPE.MEHTOD)
-        public String boardUpdate(CommonReqVo commonReqVo, Model model,
-                        @RequestParam(value = "pjtNo", required = false) String pjtNo,
-                        @RequestParam(value = "cntrctNo", required = false) String cntrctNo) {
+        public String boardUpdate(CommonReqVo commonReqVo, Model model) {
 
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("게시판관리 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/board/board_u";
@@ -1161,13 +1116,10 @@ public class SystemPageController extends AbstractController {
 
         @GetMapping("/board/read")
         @Description(name = "게시판관리 조회 화면", description = "게시판관리의 게시글 조회 화면 반환.", type = Description.TYPE.MEHTOD)
-        public String boardRead(CommonReqVo commonReqVo, Model model,
-                        @RequestParam(value = "pjtNo", required = false) String pjtNo,
-                        @RequestParam(value = "cntrctNo", required = false) String cntrctNo) {
+        public String boardRead(CommonReqVo commonReqVo, Model model) {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("게시판관리 상세조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 //                String[] btnId = { "BOARD_U_02" };
 //                String[] btnClass = { "btn _outline" };
@@ -1194,7 +1146,6 @@ public class SystemPageController extends AbstractController {
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("친환경 자재 설정 화면 접속");
 
-                systemLogComponent.addUserLog(userLog);
 
 //                String[] btnId = { "ECOMATERIAL_D_01", "ECOMATERIAL_U_01", "ECOMATERIAL_C_01" };
 //                String[] btnClass = { "btn _outline", "btn _outline", "btn _fill" };
@@ -1227,7 +1178,6 @@ public class SystemPageController extends AbstractController {
                         model.addAttribute("header", false);
                 }
 
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/ecomaterial/ecomaterial_c";
@@ -1249,7 +1199,6 @@ public class SystemPageController extends AbstractController {
                         model.addAttribute("header", false);
                 }
 
-                systemLogComponent.addUserLog(userLog);
 
 
                 return "page/system/ecomaterial/ecomaterial_u";
@@ -1266,7 +1215,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 로그 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         return "redirect:/";
@@ -1288,7 +1236,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("사용자 로그 관리 상세조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         return "redirect:/";
@@ -1310,7 +1257,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("API 로그 관리 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         return "redirect:/";
@@ -1332,7 +1278,6 @@ public class SystemPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("API 로그 관리 상세 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if (pjtNo == null || pjtNo.isEmpty() || cntrctNo == null || cntrctNo.isEmpty()) {
                         return "redirect:/";

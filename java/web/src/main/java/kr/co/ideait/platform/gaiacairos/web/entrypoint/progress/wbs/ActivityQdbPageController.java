@@ -20,7 +20,6 @@ public class ActivityQdbPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("Activity 내역 관리 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/wbs/activityqdb/activityqdb";
 	}

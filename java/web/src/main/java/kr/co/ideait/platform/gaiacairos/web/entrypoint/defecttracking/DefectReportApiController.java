@@ -43,7 +43,6 @@ public class DefectReportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함보고서 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		defectReportList.setLang(langInfo);
 		
@@ -66,7 +65,6 @@ public class DefectReportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함보고서 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		MybatisInput input = MybatisInput.of().add("cntrctNo", defectReportDetail.getCntrctNo())
 												.add("dfccyNo", defectReportDetail.getDfccyNo())
@@ -89,7 +87,6 @@ public class DefectReportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함보고서 결함단계 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("dfccyPhaseList", defectReportComponent.selectPhaseCd(cntrctNo));
 	}
@@ -108,7 +105,6 @@ public class DefectReportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함보고서 작성자 목록 조회 ");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("rgstrList", defectReportComponent.selectRgstrNm(cntrctNo));
 	}

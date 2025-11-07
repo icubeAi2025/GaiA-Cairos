@@ -65,7 +65,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 목록 메인 데이터 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 //TODO 추후 아래 내용들을 컴포넌트로 옮기기!!!
                 String userId = commonReqVo.getUserId();
@@ -116,7 +115,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("reportList", inspectionreportService.getReportList(input.getYear(),
                                 input.getMonth(), input.getSearchValue(), input.getSelectValue(), input.getCntrctNo(),
@@ -133,7 +131,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 년도 데이터 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 List<String> years = inspectionreportService.getReportYears(input.getCntrctNo());
                 return Result.ok().put("yearList", years);
@@ -152,7 +149,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 상세 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("reportData", // 감리일지 데이터
@@ -174,7 +170,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 복사");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("copiedData", // 복사된 감리일지 데이터
                                 inspectionReportComponent.copyReport(commonReqVo, input));
@@ -192,7 +187,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 inspectionReportComponent.addReport(commonReqVo, input);
                 return Result.ok().put("success", true);
@@ -209,7 +203,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 inspectionReportComponent.updateReport(commonReqVo, input);
                 return Result.ok().put("success", true);
@@ -225,7 +218,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 삭제");
-                systemLogComponent.addUserLog(userLog);
 
                 for (int i = 0; i < input.getReportList().size(); i++) {
                         CwInspectionReport delete = inspectionreportService.getInspectionData(
@@ -245,7 +237,6 @@ public class InspectionreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 작성완료");
-                systemLogComponent.addUserLog(userLog);
 
                 // 감리일지 상태값 업데이트
                 for (InspectionreportForm.CreateReport report : inputList) {
@@ -270,7 +261,6 @@ public class InspectionreportApiController extends AbstractController {
         // Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         // userLog.setLogType(LogType.FUNCTION.name());
         // userLog.setExecType("감리일지 게시물 존재 여부 확인");
-        // systemLogComponent.addUserLog(userLog);
 
         // // 보고일자 & 업무구분별 중복체크(중복아닐 시 true 반환, 중복이면 false 반환)
         // return Result.ok()

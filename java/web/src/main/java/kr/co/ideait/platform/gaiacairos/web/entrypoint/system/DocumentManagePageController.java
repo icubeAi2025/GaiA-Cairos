@@ -36,7 +36,6 @@ public class DocumentManagePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("착공계 관리 메인페이지 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/system/document/document";
 	}
@@ -48,7 +47,6 @@ public class DocumentManagePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("착공계 문서의 속성 데이터를 관리하는 페이지");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/system/document/property/property_popup";
     }
@@ -60,7 +58,6 @@ public class DocumentManagePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("착공계 문서의 HTML 양식 데이터를 관리하는 페이지");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/system/document/html/html_popup";
     }
@@ -72,7 +69,6 @@ public class DocumentManagePageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("TODO");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/system/document/common/common_document_pdf_preview";
     }

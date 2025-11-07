@@ -99,7 +99,6 @@ public class DailyreportPageController extends AbstractController {
 
                 userLog.setExecType("작업일지 상세 화면 접속");
 
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_detail";
         }
@@ -136,7 +135,6 @@ public class DailyreportPageController extends AbstractController {
 
                 userLog.setExecType("작업일지 추가 화면 접속");
 
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_create";
         }
@@ -174,7 +172,6 @@ public class DailyreportPageController extends AbstractController {
                 userLog.setExecType("작업일지 수정 화면 접속");
 
 
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_update";
         }
@@ -220,7 +217,6 @@ public class DailyreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("작업일지 금일 실적 변경 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_today_update";
         }
@@ -257,7 +253,6 @@ public class DailyreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("작업일지 금일 실적 상세 화면");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_today_detail";
         }
@@ -292,7 +287,6 @@ public class DailyreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("작업일지 명일 실적 변경 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_tomorrow_update";
         }
@@ -328,7 +322,6 @@ public class DailyreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("작업일지 명일 실적 상세 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/dailyreport/dailyreport_tomorrow_detail";
         }

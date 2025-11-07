@@ -60,7 +60,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("menuList",
@@ -78,7 +77,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("내 메뉴 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("menuList",
@@ -96,7 +94,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 유료기능 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         SmMenu smMenu = menuComponent.getMenu(menuCd);
         if (smMenu != null) {
@@ -118,7 +115,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 코드 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("exist", menuComponent.existMenuCode(menuCd));
@@ -134,7 +130,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 등록");
-        systemLogComponent.addUserLog(userLog);
 
         SmMenu smMenu = menuForm.toSmMenu(menu);
         return Result.ok()
@@ -152,7 +147,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 수정");
-        systemLogComponent.addUserLog(userLog);
 
 
         SmMenu smMenu = menuComponent.getMenu(menu.getMenuCd());
@@ -179,7 +173,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         menuComponent.deleteMenuList(menuCdList.getMenuCdList(), commonReqVo);
         return Result.ok();
@@ -196,7 +189,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 위로 이동");
-        systemLogComponent.addUserLog(userLog);
 
         SmMenu smMenu = menuForm.toSmMenu(menuMove);
         boolean result = menuComponent.upMenu(smMenu, commonReqVo);
@@ -217,7 +209,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 아래로 이동");
-        systemLogComponent.addUserLog(userLog);
 
         SmMenu smMenu = menuForm.toSmMenu(menuMove);
         boolean result = menuComponent.downMenu(smMenu, commonReqVo);
@@ -239,7 +230,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 유료기능 등록");
-        systemLogComponent.addUserLog(userLog);
 
         SmBilling smBilling = menuForm.toSmBilling(billing);
         boolean existBilling = menuComponent.existBilling(smBilling); //유료기능이 존재하는지 체크
@@ -262,7 +252,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 유료기능 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         menuComponent.deleteBilling(menuBillingNoList.getBilNoList(), commonReqVo);
         return Result.ok();
@@ -281,7 +270,6 @@ public class MenuApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선택한 메뉴 계층리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("menuBreadcrumb", menuComponent.getMenuBreadcrumb(menuCd, commonReqVo.getPlatform()).stream().map(menuDto::fromSmMenuMybatis));
     }

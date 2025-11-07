@@ -56,7 +56,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("depositList", depositService.selectDepositList(depositMain.getCntrctNo()));
@@ -75,7 +74,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 추가");
-        systemLogComponent.addUserLog(userLog);
 
         deposit.setDltYn("N");
 
@@ -97,7 +95,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwFrontMoney depositData = depositService.getDepositData(deposit.getCntrctNo(),
                 deposit.getPpaymnySno());
@@ -125,7 +122,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("depositDetail",
@@ -146,7 +142,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         depositComponent.delDeposit(deposit.getDepositList());
 
@@ -166,7 +161,6 @@ public class DepositApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("선급금 및 공제금 상태 업데이트");
-        systemLogComponent.addUserLog(userLog);
 
         depositComponent.updateDepositList(deposit.getDepositList(), commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
 

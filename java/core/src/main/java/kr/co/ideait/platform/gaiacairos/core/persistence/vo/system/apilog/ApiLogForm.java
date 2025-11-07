@@ -7,6 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants.ComponentModel;
 
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.apilog.ApiLogMybatisParam.ApiLogListInput;
+
 @Mapper(componentModel = ComponentModel.SPRING)
 public interface ApiLogForm {
 

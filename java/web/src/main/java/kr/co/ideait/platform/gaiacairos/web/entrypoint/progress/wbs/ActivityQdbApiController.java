@@ -36,7 +36,6 @@ public class ActivityQdbApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("Activity 내역관리 - WBS 탭_QDB 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return GridResult.ok(activityQdbService.selectActivityWbsQdbList(activityQdbForm.toActivityWbsQdbListInput(activityWbsQdbList)));
 	}
@@ -54,7 +53,6 @@ public class ActivityQdbApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("Activity 내역관리 - WBS 탭_트리 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("wbsTreeList", activityQdbService.selectWbsTreeList(activityQdbForm.toActivityTreeListInput(activityTree)));
 	}
@@ -72,7 +70,6 @@ public class ActivityQdbApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("Activity 내역관리 - CBS 탭_detail 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return GridResult.ok(activityQdbService.selectActivityCbsList(activityQdbForm.toActivityCbsListInput(activityCbsList)));
 	}
@@ -90,7 +87,6 @@ public class ActivityQdbApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("Activity 내역관리 - CBS 탭_QDB 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return GridResult.ok(activityQdbService.selectActivityCbsQdbList(activityQdbForm.toActivityCbsQdbListInput(activityCbsList)));
 	}
@@ -108,7 +104,6 @@ public class ActivityQdbApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("Activity 내역관리 - CBS 탭_트리 조회");
 
-		systemLogComponent.addUserLog(userLog);
 		
 		return Result.ok().put("cbsTreeList", activityQdbService.selectCbsTreeList(activityQdbForm.toActivityTreeListInput(activityTree)));
 	}

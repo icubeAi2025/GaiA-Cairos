@@ -30,7 +30,6 @@ public class DashboardPageController extends AbstractController {
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("메인대시보드 화면 접속");
 
-        systemLogComponent.addUserLog(userLog);
 
         return "page/dashboard/main_home";
     }
@@ -46,7 +45,6 @@ public class DashboardPageController extends AbstractController {
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("종합대시보드 화면 접속");
 
-        systemLogComponent.addUserLog(userLog);
 
         return "page/dashboard/dashBoard_type01";
     }
@@ -62,7 +60,6 @@ public class DashboardPageController extends AbstractController {
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("메인대시보드 친환경 목록 화면 접속");
 
-        systemLogComponent.addUserLog(userLog);
 
         String[] userParam = commonReqVo.getUserParam();
 

@@ -186,12 +186,12 @@
                 success: function (response) {
                     let kma = response.details.kma;
 
-                    $("#amWthr").val(kma.am_wf);
-                    $("#pmWthr").val(kma.pm_wf);
-                    $("#dlowstTmprtVal").val(kma.ta_min);
-                    $("#dtopTmprtVal").val(kma.ta_max);
-                    $("#prcptRate").val(kma.rn_day);
-                    $("#snowRate").val(kma.sd_max);
+                    $("#amWthr").val(kma?.am_wf ?? '');
+                    $("#pmWthr").val(kma?.pm_wf ?? '');
+                    $("#dlowstTmprtVal").val(kma?.ta_min ?? '');
+                    $("#dtopTmprtVal").val(kma?.ta_max ?? '');
+                    $("#prcptRate").val(kma?.rn_day ?? '');
+                    $("#snowRate").val(kma?.sd_max ?? '');
                 },
                 error: function (response) {
                     gaiaCommon.customAlert("{{ message('msg.construction.002') }}");
@@ -227,7 +227,30 @@
 
                 const formData = objectifyForm(inputForm);
 
-                addDailyReport(formData);
+                // 제일 최신 게시물 승인 여부 확인
+                const prevDailyReport = await checkApprvlStats(reportDate);
+
+                if(Array.isArray(prevDailyReport) && prevDailyReport.length > 0){
+                    let prevDailyReportId = prevDailyReport[0].daily_report_id;
+                    const activityExists = await checkActivity(prevDailyReportId);
+                    if (activityExists) {
+                        gaiaCommon.LoadingOverlay('body', false);
+                        const confirmed = await gaiaCommon.progressConfirm(
+                            '작업일지 추가 여부 확인',
+                            '작업일지 추가 여부 확인',
+                            `[${prevDailyReport[0].daily_report_date}]에 작성한 작업일지 중 시작(종료)된 작업 Activity가 있습니다.\n결재가 완료되지 않을 경우 [${reportDate}] 날짜로 시작(종료)일이 변경됩니다.\n진행하시겠습니까?`
+                        );
+                        if (confirmed) {
+                            addDailyReport(formData);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        addDailyReport(formData);
+                    }
+                } else {
+                    addDailyReport(formData);
+                }
             } catch (err) {
                 console.error("saveDailyReport error:", err);
                 gaiaCommon.customAlert("저장 중 오류가 발생했습니다.");
@@ -236,11 +259,65 @@
           }
         }
 
+        // 현재 게시물 이전 제일 최신 게시물 승인 여부 확인
+        async function checkApprvlStats(reportDate) {
+            var param = {
+                cntrctNo: cntrctNo,
+                dailyReportDate: reportDate
+            };
+
+            const response = await $.ajax({
+                url: BASEPATH + 'dailyreport/prev-unapproved-report',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function (response, status, xhr) {
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    gaiaCommon.LoadingOverlay('body', false);
+                    return false;
+                }
+            });
+
+
+            return response.details?.prevUnapprovedReport;
+        }
+
+        // 액티비티 승인 여부 확인
+        async function checkActivity(latestDailyReportId) {
+            console.log('*** latestDailyReportId = ',latestDailyReportId);
+            var param = {
+                cntrctNo: cntrctNo
+                , dailyReportId: latestDailyReportId
+            };
+
+            const response = await $.ajax({
+                url: BASEPATH + 'dailyreport/activity-exists',
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json; charset-utf-8',
+                data: JSON.stringify(param),
+                async: false,
+                success: function (response, status, xhr) {
+                },
+                error: function (xhr, status, error) {
+                    console.error(status, error);
+                    gaiaCommon.customAlert("{{ message('msg.060') }}");
+                    gaiaCommon.LoadingOverlay('body', false);
+                    return false;
+                }
+            });
+            return response.details.activityExists;
+        }
+
         // 유효성 오류 처리 공통
         function handleValidationError(msg) {
             gaiaCommon.customAlert(msg);
             gaiaCommon.LoadingOverlay('body', false);
-            throw new Error("ValidationError");
         }
 
         function objectifyForm(formArray) {
@@ -253,7 +330,7 @@
         }
 
 
-        function addDailyReport(addParam) {
+        async function addDailyReport(addParam) {
 
             const response = $.ajax({
                 url: BASEPATH + 'dailyreport/add-copy-dailyreport',
@@ -264,8 +341,17 @@
                     if (result.ok) {
                         gaiaCommon.customAlert("{{ message('msg.034') }}", function () {
                             currentRId = result.details.dailyreportId;
-                            window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}`;
+
+                            const savedTime = localStorage.getItem("hideActivityPage");
+                            const drDt = $("#dailyReportDate").val().trim();
+                            if (savedTime && Date.now() < savedTime) {
+                                window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}`;
+                            } else {
+                                window.location.href = "/construction/dailyreport-today-update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+                            }
                         });
+                    } else {
+                        gaiaCommon.customAlert("해당 날짜의 보고서는 이미 등록되어 있습니다.");
                     }
                 }
             });

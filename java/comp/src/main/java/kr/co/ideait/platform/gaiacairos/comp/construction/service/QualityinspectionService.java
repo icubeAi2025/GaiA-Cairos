@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +48,7 @@ import kr.co.ideait.platform.gaiacairos.core.persistence.entity.CwQualityActivit
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.CwQualityCheckList;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.CwQualityInspection;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.CwQualityPhoto;
+import kr.co.ideait.platform.gaiacairos.core.persistence.entity.CwRequestItem;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.DcStorageMain;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmComCode;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwAttachmentsRepository;
@@ -55,12 +57,12 @@ import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwQual
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwQualityCheckListRepository;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwQualityInspectionRepository;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwQualityPhotoRepository;
+import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.CwRequestItemRepository;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.QualityinspectionMybatisParam.ActivityOutput;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.QualityinspectionMybatisParam.CheckListOutput;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.QualityinspectionMybatisParam.QualityOutPut;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.document.DocumentForm;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.security.UserAuth;
-import kr.co.ideait.platform.gaiacairos.core.persistence.vo.system.document.CbgnPropertyDto;
 import kr.co.ideait.platform.gaiacairos.core.type.FileUploadType;
 import kr.co.ideait.platform.gaiacairos.core.util.FileService;
 import kr.co.ideait.platform.gaiacairos.core.util.PdfUtil;
@@ -89,6 +91,9 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
 
     @Autowired
     CwQualityPhotoRepository cwQualityPhotoRepository;
+
+    @Autowired
+    CwRequestItemRepository cwRequestItemRepository;
 
     @Autowired
     FileService fileService;
@@ -344,7 +349,9 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
                 cwAttachments.setSno(sno); // 각 파일에 대해 순차적인 sno 설정
                 sno++; // 다음 파일의 sno 값 증가
             } else { // 파일 수정
-                cwAttachments.setSno(cwAttachmentsRepository.findMaxSnoByFileNo(cwAttachments.getFileNo()) + 1);
+                if(cwAttachments.getSno() == null) {
+                    cwAttachments.setSno(cwAttachmentsRepository.findMaxSnoByFileNo(cwAttachments.getFileNo()) + 1);
+                }
             }
             cwAttachmentsRepository.save(cwAttachments); // 파일 저장
         }
@@ -667,12 +674,12 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
      * @param apDocId
      * @return
      */
-    public Map<String, Object> selectQualityInspectionByApDocId(String apDocId, String status) {
+    public Map<String, Object> selectQualityInspectionByApDocId(String apDocId) {
         Map<String, Object> returnMap = new HashMap<>();
         CwQualityInspection cwQualityInspection = cwQualityInspectionRepository.findByApDocId(apDocId).orElse(null);
         if (cwQualityInspection != null) {
             returnMap.put("report", cwQualityInspection);
-            returnMap.put("resources", selectQualityInspectionResource(cwQualityInspection, status));
+            returnMap.put("resources", selectQualityInspectionResource(cwQualityInspection));
         }
         return returnMap;
     }
@@ -683,7 +690,7 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
      * @param qualityInspection
      * @return
      */
-    public Map<String, Object> selectQualityInspectionResource(CwQualityInspection qualityInspection, String status) {
+    public Map<String, Object> selectQualityInspectionResource(CwQualityInspection qualityInspection) {
         Map<String, Object> returnMap = new HashMap<>();
         // 리소스 조회 로직
         List<CwQualityActivity> cwQualityActivities = activityRepository
@@ -693,6 +700,8 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
         List<CwQualityPhoto> cwQualityPhotos = cwQualityPhotoRepository.findByCntrctNoAndQltyIspIdAndDltYn(
                 qualityInspection.getCntrctNo(), qualityInspection.getQltyIspId(), "N");
         List<CwCntqltyCheckList> cntqltyCheckLists = cntqltyCheckListRepository.findByDltYn("N");
+        CwRequestItem requestItem = cwRequestItemRepository.findByReqInsIdAndDltYn(qualityInspection.getQltyIspId(),
+                "N");
 
         // 품질검측 첨부파일 (파일 객체 대신 메타데이터만 전송)
         List<Map<String, Object>> qualityFileInfo = Collections.emptyList();
@@ -708,11 +717,10 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
 
         returnMap.put("checkList", cwQualityCheckLists);
         returnMap.put("cntqltyLists", cntqltyCheckLists);
-        if ("ISP".equals(status)) { // 검측 요청시
-            returnMap.put("activity", cwQualityActivities);
-            returnMap.put("photo", cwQualityPhotos);
-            returnMap.put("qualityFileInfo", qualityFileInfo);
-        }
+        returnMap.put("activity", cwQualityActivities);
+        returnMap.put("photo", cwQualityPhotos);
+        returnMap.put("qualityFileInfo", qualityFileInfo);
+        returnMap.put("requestItem", requestItem);
 
         return returnMap;
     }
@@ -764,90 +772,6 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
                 return;
             cwQualityInspectionRepository.updateByApDocId(apDoc.getApDocId(), usrId, LocalDateTime.now());
         });
-    }
-
-    /**
-     * 품질검측 API통신 -> 리소스 저장
-     */
-    @Transactional
-    public void insertResourcesToApi(CwQualityInspection cwQualityInspection,
-            List<CwQualityActivity> cwQualityActivities,
-            List<CwQualityCheckList> cwQualityCheckLists,
-            List<CwQualityPhoto> cwQualityPhotos,
-            List<CwCntqltyCheckList> cwCntqltyCheckLists,
-            List<Map<String, Object>> qualityFileInfo,
-            List<Map<String, Object>> photoFileInfo) {
-
-        cwQualityInspectionRepository.save(cwQualityInspection);
-
-        if (cwQualityActivities != null && !cwQualityActivities.isEmpty()) {
-            for (CwQualityActivity activity : cwQualityActivities) {
-                activityRepository.save(activity);
-            }
-        }
-
-        if (cwQualityCheckLists != null && !cwQualityCheckLists.isEmpty()) {
-            for (CwQualityCheckList checklist : cwQualityCheckLists) {
-                checkListRepository.save(checklist);
-            }
-        }
-
-        if (cwQualityPhotos != null && !cwQualityPhotos.isEmpty()) {
-            for (CwQualityPhoto photo : cwQualityPhotos) {
-                cwQualityPhotoRepository.save(photo);
-            }
-        }
-
-        // 파일 정보에서 품질검측 첨부파일들 가져오기
-        log.info("##### Received qualityFileInfo: {}", qualityFileInfo != null ? qualityFileInfo.size() : 0);
-        if (qualityFileInfo != null && !qualityFileInfo.isEmpty()) {
-            log.info("##### Processing {} qualityInspection attachment file info", qualityFileInfo.size());
-            insertQualityFileInfoToApiForInspection(cwQualityInspection, qualityFileInfo);
-        } else {
-            log.info("##### No qualityInspection attachment file info received");
-        }
-
-        log.info("##### Received photoFileInfo: {}", photoFileInfo != null ? photoFileInfo.size() : 0);
-        if (photoFileInfo != null && !photoFileInfo.isEmpty()) {
-            log.info("##### Processing {} photo attachment file info", photoFileInfo.size());
-            insertQualityFileInfoToApiForPhoto(cwQualityInspection, cwQualityPhotos, photoFileInfo);
-        } else {
-            log.info("##### No photo attachment file info received");
-        }
-    }
-
-    private void insertQualityFileInfoToApiForInspection(CwQualityInspection cwQualityInspection,
-            List<Map<String, Object>> fileInfo) {
-
-        CwQualityInspection inspection = cwQualityInspectionRepository.findByCntrctNoAndQltyIspIdAndDltYn(
-                cwQualityInspection.getCntrctNo(), cwQualityInspection.getQltyIspId(), "N");
-
-        if (inspection == null) {
-            log.error("QualityInspection not found for: {}", cwQualityInspection.getQltyIspId());
-            return;
-        }
-
-        insertFileInfoToApi(inspection.getCntrctNo(), fileInfo,
-                inspection.getAtchFileNo(), inspection.getRgstrId());
-    }
-
-    private void insertQualityFileInfoToApiForPhoto(CwQualityInspection cwQualityInspection,
-            List<CwQualityPhoto> photos,
-            List<Map<String, Object>> fileInfo) {
-
-        if (photos == null || photos.isEmpty()) {
-            log.warn("No photo metadata provided for photo file upload");
-            return;
-        }
-
-        Integer photoFileNo = photos.get(0).getAtchFileNo();
-        if (photoFileNo == null) {
-            log.warn("First photo has no attachment fileNo, skipping photo file upload");
-            return;
-        }
-
-        insertFileInfoToApi(cwQualityInspection.getCntrctNo(), fileInfo,
-                photoFileNo, cwQualityInspection.getRgstrId());
     }
 
     // 파일 정보 변환 헬퍼 메소드 (JSON 직렬화 가능) - 파일 내용 포함
@@ -919,6 +843,64 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
         return fileInfoList;
     }
 
+    /**
+     * 품질검측 API통신 -> 리소스 저장
+     */
+    @Transactional
+    public void insertResourcesToApi(CwQualityInspection cwQualityInspection,
+            List<CwQualityActivity> cwQualityActivities,
+            List<CwQualityCheckList> cwQualityCheckLists,
+            List<CwQualityPhoto> cwQualityPhotos,
+            List<CwCntqltyCheckList> cwCntqltyCheckLists,
+            List<Map<String, Object>> qualityFileInfo,
+            CwRequestItem cwRequestItem) {
+
+        cwQualityInspectionRepository.save(cwQualityInspection);
+        cwRequestItemRepository.save(cwRequestItem);
+
+        if (cwQualityActivities != null && !cwQualityActivities.isEmpty()) {
+            for (CwQualityActivity activity : cwQualityActivities) {
+                activityRepository.save(activity);
+            }
+        }
+
+        if (cwQualityCheckLists != null && !cwQualityCheckLists.isEmpty()) {
+            for (CwQualityCheckList checklist : cwQualityCheckLists) {
+                checkListRepository.save(checklist);
+            }
+        }
+
+        if (cwQualityPhotos != null && !cwQualityPhotos.isEmpty()) {
+            for (CwQualityPhoto photo : cwQualityPhotos) {
+                cwQualityPhotoRepository.save(photo);
+            }
+        }
+
+        // 파일 정보에서 품질검측 첨부파일들 가져오기
+        log.info("##### Received qualityFileInfo: {}", qualityFileInfo != null ? qualityFileInfo.size() : 0);
+        if (qualityFileInfo != null && !qualityFileInfo.isEmpty()) {
+            log.info("##### Processing {} qualityInspection attachment file info", qualityFileInfo.size());
+            insertQualityFileInfoToApiForInspection(cwQualityInspection, qualityFileInfo);
+        } else {
+            log.info("##### No qualityInspection attachment file info received");
+        }
+    }
+
+    private void insertQualityFileInfoToApiForInspection(CwQualityInspection cwQualityInspection,
+            List<Map<String, Object>> fileInfo) {
+
+        CwQualityInspection inspection = cwQualityInspectionRepository.findByCntrctNoAndQltyIspIdAndDltYn(
+                cwQualityInspection.getCntrctNo(), cwQualityInspection.getQltyIspId(), "N");
+
+        if (inspection == null) {
+            log.error("QualityInspection not found for: {}", cwQualityInspection.getQltyIspId());
+            return;
+        }
+
+        insertFileInfoToApi(inspection.getCntrctNo(), fileInfo,
+                inspection.getAtchFileNo(), inspection.getRgstrId());
+    }
+
     @Transactional
     public void insertFileInfoToApi(String cntrctNo, List<Map<String, Object>> files, Integer fileNo, String rgstrId) {
         List<CwAttachments> cwAttachmentsList = new ArrayList<>();
@@ -962,6 +944,20 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
                     log.info("##### Base64 content length for {} file {}: {}", fileName,
                             base64Content.length());
 
+                    if (base64Content == null) {
+                        log.error("##### base64Content is null");
+                    } else {
+                        log.info("##### base64Content length: {}, sample: [{}]",
+                                base64Content.length(),
+                                base64Content.substring(0, Math.min(100, base64Content.length())));
+                    }
+
+                    base64Content = StringEscapeUtils.unescapeHtml4(base64Content);
+                    log.info("##### Base64 content length for {} file after unescape: {}", fileName,
+                            base64Content.length());
+                    log.info("##### Sample after unescape: [{}]",
+                            base64Content.substring(0, Math.min(100, base64Content.length())));
+
                     byte[] fileContent = Base64.getDecoder().decode(base64Content);
                     log.info("##### Decoded {} file content: {} bytes", fileContent.length);
 
@@ -989,6 +985,7 @@ public class QualityinspectionService extends AbstractGaiaCairosService {
 
                     CwAttachments cwAttachments = new CwAttachments();
                     cwAttachments.setFileNo(fileNo);
+                    cwAttachments.setSno((Integer) fileInfo.get("sno"));
                     cwAttachments.setFileDiv(fileDiv);
                     cwAttachments.setFileNm(fileName);
                     cwAttachments.setFileDiskNm(savedFileName);

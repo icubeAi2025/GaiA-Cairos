@@ -39,7 +39,6 @@ public class DepositPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("선급금 및 공제금 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 // 상단 기본버튼
                 String[] btnId = { "DEP_D_01", "DEP_U_01", "DEP_C_02", "DEP_AP_REQ" };
@@ -82,7 +81,6 @@ public class DepositPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("선금 및 공제금 추가 및 상세 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/projectcost/deposit/deposit_u";
         }

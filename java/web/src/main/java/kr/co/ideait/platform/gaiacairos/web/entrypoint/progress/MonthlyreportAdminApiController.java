@@ -40,7 +40,6 @@ public class MonthlyreportAdminApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 관리관용 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return GridResult.ok(monthlyreportAdminComponent.getMonthlyreportAdminList(monthlyreportAdminForm.toMonthlyreportAdminInput(input)));
 	}

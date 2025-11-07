@@ -8,6 +8,7 @@
         <div class="conts_form">
             <div class="btn_area s_default _outline">
                 {{ btnHtml | raw }}
+                <button id="btnRetry" type="button" class="btn _fill" style="display: none" onclick="page.retry()">재실행</button>
                 <button type="button" class="btn _outline" id="close-popup" onclick="popup.close()">
                     {{ message("btn.007") }}
                 </button>
@@ -58,6 +59,14 @@
                         <div class="col">
                             <div class="form_label">API ID</div>
                             <div class="form_data" id="apiId">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row -->
+                    <div class="row">
+                        <div class="col">
+                            <div class="form_label">실패 요청 재시도 거래 아이디</div>
+                            <div class="form_data" id="invokeTranId">
                             </div>
                         </div>
                     </div>
@@ -150,6 +159,16 @@
 				$("#newWindow").hide();
 			}
 
+            $('#btnRetry').on('click', function () {
+                gaiaCommon.post(`/api/system/api-log/${apiLogNo}/fail-request-retry`, {}, function(result) {
+                    console.log('result', result)
+                    // gaiaPortal.customAlert("재실행 요청에 실패 했습니다.", function(){
+                    // });
+                }, function(error) {
+                    gaiaPortal.customAlert("재실행 요청에 실패 했습니다.", function(){
+                    });
+                });
+            });
     	},
 
 		loadApiLogData: function (apiLogNo) {
@@ -164,6 +183,7 @@
 					$('#serviceType').text(data.serviceType);
 					$('#serviceUuid').text(data.serviceUuid);
 					$('#apiId').text(data.apiId);
+					$('#invokeTranId').text(data.invokeTranId);
 					$('#reqDt').text(data.reqDt);
 					$('#resDt').text(data.resDt);
 					$('#reqData').text(data.reqData);
@@ -171,6 +191,10 @@
 					$('#resultCode').text(data.resultCode);
 					$('#errorYn').text(data.errorYn);
 					$('#errorReason').text(data.errorReason);
+
+                    if (data.resultCode !== 200) {
+                        $('#btnRetry').show();
+                    }
 
 					popup.mode = "read";
 
@@ -222,26 +246,20 @@
 				$('.pop_box.toast').hide();
 			}, 1500); // 1500ms = 1.5초
 		}
-
-
 	}
-	$(function() {
 
+	$(function() {
 		gaia.create({
             $init: function ($params) {
 				popup.init();
-
             }
         });
-
 
 		// 창닫기 버튼 클릭 시 알림창 숨김 처리
 		$('.pop_close').click(function() {
 			$('.pop_box.toast').removeClass('on');
 			$('.pop_box.toast').hide();
 		});
-
-
 	});
 </script>
 {% endblock footer_script %}

@@ -31,7 +31,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제, 추가, 수정, 승인요청 버튼
 		String[] btnId = {"MNTHRPT_D_01", "MNTHRPT_U_04", "MNTHRPT_C_02", "MNTHRPT_U_03"};
@@ -57,7 +56,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/monthlyreport/monthlyreport_c"; 
 	}
@@ -70,7 +68,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 상세 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		// 수정 버튼
 		String[] cuBtnId = {"MNTHRPT_U_04"};
@@ -95,7 +92,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/monthlyreport/monthlyreport_u"; 
 	}
@@ -108,7 +104,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 금월 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/monthlyreport/monthlyreport_modal_major"; 
 	}
@@ -121,7 +116,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 금월 지연 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/monthlyreport/monthlyreport_modal_delay"; 
 	}
@@ -134,7 +128,6 @@ public class MonthlyreportPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고 익월 예정 지연 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/monthlyreport/monthlyreport_modal_next"; 
 	}

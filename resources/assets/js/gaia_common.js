@@ -29,22 +29,21 @@
                     withCredentials: true,
                 },
                 data: params,
-                success(result) {
-                    if (result?.ok || result.result) {
-                        cb(result);
+                success: function(result,status,xhr) {
+                    if (xhr.status === 200 && cb) {
+                        cb(result, xhr);
                     } else {
-                        gaiaCommon.customAlert(result?.message || "error");
+                        gaiaCommon.customAlert(status || "error");
                         if (errorCallback !== null && errorCallback !== undefined) {
-                            errorCallback(result);
+                            errorCallback(xhr);
                         }
                         else{
-                            console.log(result)
+                            console.log(xhr)
                         }
                     }
                 },
-                error(error) {
-                    gaiaCommon.LoadingOverlay('body', false);
-                    // [dsjung] 2025-05-20 error 핸들링을 위한 콜백 추가
+                error: function(xhr,status,error) {
+                    console.log(error);
                     if (errorCallback !== null && errorCallback !== undefined) {
                         errorCallback(error);
                     }
@@ -52,9 +51,9 @@
                         console.log(error)
                     }
                 },
-                complete(xhr){
+                complete(xhr, status){
                     if(complete){
-                        complete(xhr);
+                        complete(xhr, status);
                     }
                     else{
                         console.log(`${url} 처리 완료, XHR :`,xhr);
@@ -86,11 +85,11 @@
                     withCredentials: true,
                 },
                 data: params,
-                success: function(data, textStatus, xhr) {
+                success: function(result,status,xhr) {
                     if (xhr.status === 200 && cb) {
-                        cb(data, xhr);
+                        cb(result, xhr);
                     } else {
-                        gaiaCommon.customAlert(textStatus || "error");
+                        gaiaCommon.customAlert(status || "error");
                         if (errorCallback !== null && errorCallback !== undefined) {
                             errorCallback(xhr);
                         }
@@ -99,7 +98,7 @@
                         }
                     }
                 },
-                error: function(error) {
+                error: function(xhr,status,error) {
                     console.log(error);
                     if (errorCallback !== null && errorCallback !== undefined) {
                         errorCallback(error);
@@ -108,9 +107,9 @@
                         console.log(error)
                     }
                 },
-                complete(xhr){
+                complete(xhr, status){
                     if(complete){
-                        complete(xhr);
+                        complete(xhr, status);
                     }
                     else{
                         console.log(`${url} 처리 완료, XHR :`,xhr);
@@ -137,32 +136,31 @@
                 },
                 contentType: "application/json; charset-utf-8",
                 data: JSON.stringify(params),
-                success(result,status,xhr) {
-                    if (result?.ok && cb) {
-                        cb(result);
+                success: function(result,status,xhr) {
+                    if (xhr.status === 200 && cb) {
+                        cb(result, xhr);
                     } else {
+                        gaiaCommon.customAlert(status || "error");
                         if (errorCallback !== null && errorCallback !== undefined) {
-                            errorCallback(result,status,xhr);
+                            errorCallback(xhr);
                         }
                         else{
-                            gaiaCommon.customAlert(result?.message || "error");
-                            console.log(result)
+                            console.log(xhr)
                         }
                     }
                 },
-                error(xhr,status,error) {
-                    gaiaCommon.LoadingOverlay('body', false);
-                    // [choisr] 2024-12-19 error 핸들링을 위한 콜백 추가
+                error: function(xhr,status,error) {
+                    console.log(error);
                     if (errorCallback !== null && errorCallback !== undefined) {
-                        errorCallback(xhr,status,error);
+                        errorCallback(error);
                     }
                     else{
                         console.log(error)
                     }
                 },
-                complete(xhr){
+                complete(xhr, status){
                     if(complete){
-                        complete(xhr);
+                        complete(xhr, status);
                     }
                     else{
                         console.log(`${url} 처리 완료, XHR :`,xhr);
@@ -219,22 +217,21 @@
                 //
                 //     jqXHR.setRequestHeader("X-REQUEST_COMMON_HEADER", JSON.stringify(headers));
                 },
-                success(result) {
-                    if (result?.ok) {
-                        cb(result);
+                success: function(result,status,xhr) {
+                    if (xhr.status === 200 && cb) {
+                        cb(result, xhr);
                     } else {
-                        gaiaCommon.customAlert(result?.message || "error");
+                        gaiaCommon.customAlert(status || "error");
                         if (errorCallback !== null && errorCallback !== undefined) {
-                            errorCallback(result);
+                            errorCallback(xhr);
                         }
                         else{
-                            console.log(result)
+                            console.log(xhr)
                         }
                     }
                 },
-                error(error) {
-                    gaiaCommon.LoadingOverlay('body', false);
-                    // [dsjung] 2025-05-20 error 핸들링을 위한 콜백 추가
+                error: function(xhr,status,error) {
+                    console.log(error);
                     if (errorCallback !== null && errorCallback !== undefined) {
                         errorCallback(error);
                     }
@@ -242,14 +239,14 @@
                         console.log(error)
                     }
                 },
-                 complete(xhr){
-                     if(complete){
-                         complete(xhr);
-                     }
-                     else{
-                         console.log(`${url} 처리 완료, XHR :`,xhr);
-                     }
-                 }
+                complete(xhr, status){
+                    if(complete){
+                        complete(xhr, status);
+                    }
+                    else{
+                        console.log(`${url} 처리 완료, XHR :`,xhr);
+                    }
+                }
             });
         },
 
@@ -475,6 +472,50 @@
                 $('#bohalEditModal').hide();
                 $('.bohalEditModal.fade').hide();
                 document.body.style.overflow = 'unset';
+            });
+        },
+
+        // 진행, 취소 버튼 있는 confirm
+        progressConfirm(msg1, msg2, msg3) {
+            return new Promise((resolve) => {
+                $('.progressModal.fade').show();
+                $('#progressModal').show();
+
+                $('.pop_progress_tit').text(msg1).css('margin', '3px');
+                $('.msg_progress_tit').text(msg2);
+                $('.msg_tit_dlt').text(msg3);
+                $('.msg_tit_dlt').css('white-space', 'pre-line'); // 줄바꿈 처리
+                $('#progressModal').addClass('on');
+
+                document.body.style.overflow = 'hidden';
+
+                // 공통 취소 처리 함수
+                function handleCancel() {
+                    $("#progressModal").hide();
+                    $('.progressModal.fade').hide();
+                    document.body.style.overflow = 'unset';
+                    resolve(false); // 🚫 취소 → false 반환
+                }
+
+                // 공통 진행 처리 함수
+                function handleConfirm() {
+                    $("#progressModal").hide();
+                    $('.progressModal.fade').hide();
+                    document.body.style.overflow = 'unset';
+                    resolve(true); // ✅ 진행 → true 반환
+                }
+
+                // 중복 방지: 기존 이벤트 제거
+                $("#pop_box_progress_cancle").off("click");
+                $("#pop_box_progress").off("click");
+                $(".icon_btn.pop_close i").off("click");
+
+                // 취소 버튼, X 아이콘
+                $("#pop_box_progress_cancle").on("click", handleCancel);
+                $(".icon_btn.pop_close i").on("click", handleCancel);
+
+                // 진행 버튼
+                $("#pop_box_progress").on("click", handleConfirm);
             });
         },
 

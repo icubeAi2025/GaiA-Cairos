@@ -239,8 +239,9 @@ public class DocumentService extends AbstractGaiaCairosService {
         //TODO. 문서관리 시스템 분리 후 관리기능으로 전환 필요.
         if (navigation.getNaviFolderType() != null && !navigation.getNaviFolderType().isBlank() && !"0".equals(navigation.getNaviFolderType())) {
             SmComCode smComCode = commonCodeService.getCommonCodeByGrpCdAndCmnCd(CommonCodeConstants.DOCUMENT_NAVI_FOLDER_TYPE_GROUP_CODE, navigation.getNaviFolderType());
-
-            navigation.setNaviId(smComCode.getAttrbtCd2().replaceAll("\\{cntrctNo\\}", navigation.getCntrctNo()).replaceAll("\\{folderKind\\}", smComCode.getAttrbtCd3()).replaceAll("\\{naviDiv\\}", navigation.getNaviDiv()));
+            if(smComCode != null) {
+                navigation.setNaviId(smComCode.getAttrbtCd2().replaceAll("\\{cntrctNo\\}", navigation.getCntrctNo()).replaceAll("\\{folderKind\\}", smComCode.getAttrbtCd3()).replaceAll("\\{naviDiv\\}", navigation.getNaviDiv()));
+            }
         }
 
         //3. navi_path 설정

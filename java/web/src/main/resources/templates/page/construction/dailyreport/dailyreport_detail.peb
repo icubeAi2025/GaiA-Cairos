@@ -514,11 +514,8 @@
                         });
                         data = summary.summaryDetail;
 
-                        if (data.dailyReportDate == "" && sType == "d") {
-                            $("#dailyReportDate").hide();
-                        } else {
-                            $("#dailyReportDate").val(data.dailyReportDate);
-                        }
+                        $("#dailyReportDate").val(data.dailyReportDate);
+
 
 
                         $("#reportNo").val(gaiaCommon.decodeSafeText(data.reportNo));
@@ -671,9 +668,7 @@
                                         , cnstty_pht_sno: row.cnstty_pht_sno
                                     });
                     let hid = "style='display:none;'"
-                    if (sType == "e") {
-                        hid = "";
-                    }
+
                     $(".process_photo_list").slick('slickAdd',
                         `<div class="custom-slide" data-seq="${seq}">` +
                         `<input id="slick_` + row.cnstty_pht_sno + `" file_no="` + row.file_no + `" cnstty_pht_sno="` + row.sno + `" shot_date="` + row.shot_date + `" hidden>` +

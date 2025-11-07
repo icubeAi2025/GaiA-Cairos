@@ -13,6 +13,7 @@ import kr.co.ideait.platform.gaiacairos.core.persistence.entity.*;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.*;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.DailyreportMybatisParam;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.DailyreportMybatisParam.DailyreportFormTypeSelectInput;
+import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.dailyreport.DailyReportDto;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.construction.dailyreport.DailyreportForm;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.document.DocumentForm;
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.security.UserAuth;
@@ -380,18 +381,6 @@ public class DailyreportService extends AbstractGaiaCairosService {
                 cwDailyReportActivity);
     }
 
-//    public Map<String, Object> selectCompletedTmActivity(CwDailyReportActivity cwDailyReportActivity) {
-//
-//        Map tmMap = new HashMap();
-//        tmMap.put("cntrctNo", cwDailyReportActivity.getCntrctNo());
-//        tmMap.put("dailyReportId", cwDailyReportActivity.getDailyReportId());
-//        tmMap.put("activityId",cwDailyReportActivity.getActivityId());
-//
-//        return mybatisSession.selectOne(
-//                "kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectCompletedTmActivity"
-//                , tmMap);
-//    }
-
     // 금일 액티비티 완료 처리한 경우 명일 액티비티도 완료 처리
     // type - TDTM: 액티비티 업데이트, TM: TD에 맞춰 TM 업데이트
     public void updateActivityData(CwDailyReportActivity activity, String type) {
@@ -408,6 +397,12 @@ public class DailyreportService extends AbstractGaiaCairosService {
         map.put("actualReqreDaynum", activity.getActualReqreDaynum() == null || activity.getActualReqreDaynum().toString().isBlank()
                 ? "0"
                 : activity.getActualReqreDaynum());
+        map.put("todayExeRate", activity.getTodayExeRate() == null || activity.getTodayExeRate().toString().isBlank()
+                ? BigDecimal.ZERO
+                : new BigDecimal(activity.getTodayExeRate()));
+        map.put("todayPlanRate", activity.getTodayExeRate() == null || activity.getTodayExeRate().toString().isBlank()
+                ? BigDecimal.ZERO
+                : new BigDecimal(activity.getTodayPlanRate()));
         map.put("pstats", activity.getPstats());
         map.put("chgId", UserAuth.get(true).getUsrId());
         map.put("dltYn", activity.getDltYn());
@@ -1711,16 +1706,18 @@ public class DailyreportService extends AbstractGaiaCairosService {
     }
 
     // 금일 액티비티 조회
-    public List selectTodayActivityList(String cntrctNo, Long dailyReportId, String workDtType) {
-        DailyreportFormTypeSelectInput dailyreportFormTypeSelectInput = new DailyreportFormTypeSelectInput();
+    // findTmActivity: 이전 게시물의 명일 액티비티 조회 여부
+    public List selectTodayActivityList(String cntrctNo, Long dailyReportId, String workDtType, Boolean findTmActivity) {
+        Map map = new HashMap();
+        map.put("cntrctNo", cntrctNo);
+        map.put("dailyReportId", dailyReportId);
+        map.put("workDtType", workDtType);
+        map.put("findTmActivity", findTmActivity);
 
-        dailyreportFormTypeSelectInput.setCntrctNo(cntrctNo);
-        dailyreportFormTypeSelectInput.setDailyReportId(dailyReportId);
-        dailyreportFormTypeSelectInput.setWorkDtType(workDtType);
 
         return mybatisSession.selectList(
                 "kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectTodayActivityList",
-                dailyreportFormTypeSelectInput);
+                map);
     }
 
     // 현재 게시물 이전 게시물이 직전일자인지 확인
@@ -1731,7 +1728,7 @@ public class DailyreportService extends AbstractGaiaCairosService {
         return mybatisSession.selectOne("kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectPrevDailyReportExist", map);
     }
 
-    // 금일 액티비티에 넣을 pr_activity 조회
+    // 현재 게시물 액티비티에 넣을 pr_activity 조회
     public List selectTodayActivityFromPrActivity(String cntrctNo, Long dailyReportId) {
         DailyreportFormTypeSelectInput dailyreportFormTypeSelectInput = new DailyreportFormTypeSelectInput();
 
@@ -1783,6 +1780,65 @@ public class DailyreportService extends AbstractGaiaCairosService {
 
         mybatisSession.update("kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.addTodayResource",
                 map);
+    }
+    public CwDailyReportResource getDailyReportResource(String cntrctNo, Long dailyReportId,Integer rsceSno, String dltYn) {
+        return cwDailyReportResourceRepository
+                .findByCntrctNoAndDailyReportIdAndRsceSnoAndDltYn(cntrctNo, dailyReportId, rsceSno, dltYn)
+                .orElse(null);
+    }
+    @Transactional
+    public void updateResource(CwDailyReportResource resource) {
+        if(resource != null){
+            cwDailyReportResourceRepository.updateQtyByCntrctNoAndDailyReportIdAndRsceSnoAndDltYn(resource.getActualQty(),
+                    resource.getRemndrQty(), resource.getCntrctNo(), resource.getDailyReportId(), resource.getRsceSno(), resource.getDltYn());
+        }
+    }
 
+    public void insertDailyReportQdbList(Map<String, Object> insertList) {
+        mybatisSession.update("kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.insertDailyReportQdbList", insertList);
+    }
+
+    public void deleteDailyReportQdbList(DailyReportDto.CwDailyReportQdbGroup cdrq) {
+        mybatisSession.delete("kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.deleteDailyReportQdbList", cdrq);
+    }
+
+    public List selectTodayCompletedActivityIds(String cntrctNo, Long dailyReportId){
+        Map map = new HashMap();
+        map.put("cntrctNo", cntrctNo);
+        map.put("dailyReportId", dailyReportId);
+
+        return mybatisSession.selectList(
+                "kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectTodayCompletedActivityIds",
+                map);
+    }
+
+
+    public Boolean checkActivityExists(String cntrctNo, Long dailyReportId) {
+        log.info("checkActivityExists: 작업일지 액티비티 존재 여부 확인");
+        DailyReportDto.CwDailyReportActivityGroup cdra = new DailyReportDto.CwDailyReportActivityGroup();
+        cdra.setCntrctNo(cntrctNo);
+        cdra.setDailyReportId(dailyReportId);
+        return mybatisSession.selectOne("kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectActivityExists", cdra);
+    }
+
+    public List selectPrevUnapprovedReport(String cntrctNo, String dailyReportDate) {
+        DailyReportDto.CwDailyReportGroup cdr = new DailyReportDto.CwDailyReportGroup();
+        cdr.setCntrctNo(cntrctNo);
+        cdr.setDailyReportDate(dailyReportDate);
+        return mybatisSession.selectList(
+                "kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectPrevUnapprovedReport",
+                cdr);
+    }
+
+    public void updateDeleteActivityList(String cntrctNo, Long dailyReportId, String workDtType) {
+        DailyReportDto.CwDailyReportActivityGroup cdra = new DailyReportDto.CwDailyReportActivityGroup();
+        cdra.setCntrctNo(cntrctNo);
+        cdra.setDailyReportId(dailyReportId);
+        cdra.setWorkDtType(workDtType);
+        cdra.setDltId(UserAuth.get(true).getUsrId());
+        cdra.setChgId(UserAuth.get(true).getUsrId());
+        mybatisSession.update(
+                "kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.updateDeleteActivityList",
+                cdra);
     }
 }

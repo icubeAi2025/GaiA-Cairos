@@ -38,7 +38,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = { "SAF_D_01", "SAF_U_01", "SAF_C_03", "SAF_AP_RES", "SAF_RES_C_01", "SAF_INSL_C_01",
                 "SAF_AP_REQ" };
@@ -78,7 +77,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 상세 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type)) {
             model.addAttribute("header", true);
@@ -111,7 +109,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 추가, 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type)) {
             model.addAttribute("header", true);
@@ -133,7 +130,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("점검항목 추가 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_cu_inspection_modal";
     }
@@ -148,7 +144,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("점검결과 추가,수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_result_cu";
     }
@@ -164,7 +159,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("사진 추가 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_photo_modal";
     }
@@ -186,7 +180,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("점검리스트 관리 화면");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_list_mgmt";
     }
@@ -202,7 +195,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("하위 공종 추가,수정 모달");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_list_work_modal";
     }
@@ -218,7 +210,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("리스트 추가,수정 모달");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_list_safety_modal";
     }
@@ -237,7 +228,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = { "SAD_D_01", "SAD_U_02", "SAD_C_03", "SAD_C_02", "SAD_AP_REQ" };
 
@@ -278,7 +268,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 추가 화면");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/sadtag/sadtag_c";
     }
@@ -302,7 +291,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 수정 화면");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/sadtag/sadtag_u";
     }
@@ -317,7 +305,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 상세 조회 화면");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/sadtag/sadtag_r";
     }
@@ -333,7 +320,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 조치결과 등록/수정 화면");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = { "SAD_C_04" };
 
@@ -369,7 +355,6 @@ public class SafetymgmtPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 점검요청 모달");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/check/safetycheck_request_modal";
     }

@@ -9,7 +9,15 @@ import java.io.InputStreamReader;
 import java.util.regex.Pattern;
 
 public class StringHelper extends StringUtils {
-    private final static String[][] RPL_CMD_INJECT_STR = new String[][]{{"&", "&amp;"}, {"`", "&#96;"}, {"|", "&#124;"}, {";", "&#59;"}, {"/", "&#47;"}, {"<", "&lt;"}, {">", "&gt;"}};
+    private final static String[][] RPL_CMD_INJECT_STR = new String[][]{
+//            {"&", "&amp;"}
+//            , {"`", "&#96;"}
+//            , {"|", "&#124;"}
+//            , {";", "&#59;"}
+//            , {"/", "&#47;"}
+//            , {"<", "&lt;"}
+//            , {">", "&gt;"}
+    };
 
     private final static Pattern[] PATTERNS = new Pattern[] {
             Pattern.compile("<script>(.*?)</script>", 2),

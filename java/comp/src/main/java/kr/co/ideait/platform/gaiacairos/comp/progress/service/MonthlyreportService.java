@@ -1,9 +1,10 @@
 package kr.co.ideait.platform.gaiacairos.comp.progress.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import kr.co.ideait.iframework.BizException;
 import kr.co.ideait.platform.gaiacairos.core.base.AbstractGaiaCairosService;
 import kr.co.ideait.platform.gaiacairos.core.constant.CommonCodeConstants;
+import kr.co.ideait.platform.gaiacairos.core.exception.ErrorType;
+import kr.co.ideait.platform.gaiacairos.core.exception.GaiaBizException;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.*;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.PrMonthlyReportActivityRepository;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.PrMonthlyReportProgressRepository;
@@ -14,7 +15,6 @@ import kr.co.ideait.platform.gaiacairos.core.persistence.vo.progress.monthlyrepo
 import kr.co.ideait.platform.gaiacairos.core.persistence.vo.security.UserAuth;
 import kr.co.ideait.platform.gaiacairos.core.type.FileUploadType;
 import kr.co.ideait.platform.gaiacairos.core.util.FileService;
-import kr.co.ideait.platform.gaiacairos.core.util.restclient.RestClientUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +33,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MonthlyreportService extends AbstractGaiaCairosService {
 	
-	private final RestClientUtil restClientUtil;
-
 	@Autowired
 	FileService fileService;
 	
@@ -372,15 +370,15 @@ public class MonthlyreportService extends AbstractGaiaCairosService {
 	 */
 	@Transactional
 	public strictfp PrMonthlyReport updateMonthlyreport(String cntrctNo,
-											   PrMonthlyReport prMonthlyReport,
-											   List<PrMonthlyReportProgress> progressList,
-											   List<MonthlyreportStatus> statusList,
-											   List<PrMonthlyReportPhoto> delPhotoList,
-											   List<MonthlyreportForm.MonthlyPhoto> monthlyPhoto) throws JsonProcessingException {
+													   PrMonthlyReport prMonthlyReport,
+													   List<PrMonthlyReportProgress> progressList,
+													   List<MonthlyreportStatus> statusList,
+													   List<PrMonthlyReportPhoto> delPhotoList,
+													   List<MonthlyreportForm.MonthlyPhoto> monthlyPhoto) throws JsonProcessingException {
 		PrMonthlyReport findReport = prMonthlyReportRepository.findByCntrctChgIdAndMonthlyReportId(prMonthlyReport.getCntrctChgId(), prMonthlyReport.getMonthlyReportId()).orElse(null);
 
 		if(findReport == null) {
-			throw new BizException("수정할 보고서가 없습니다 : ");
+			throw new GaiaBizException(ErrorType.NOT_FOUND, "수정할 보고서가 없습니다");
 		}
 
 		// PrMonthlyReport에 저장할 보할 합계
@@ -559,7 +557,7 @@ public class MonthlyreportService extends AbstractGaiaCairosService {
 		PrMonthlyReport prMonthlyReport = prMonthlyReportRepository.findByApDocId(apDocId).orElse(null);
 
 		if(prMonthlyReport == null) {
-			throw new BizException("ApDocId와 일치하는 보고서가 없습니다 : " + apDocId);
+			throw new GaiaBizException(ErrorType.NOT_FOUND, String.format("ApDocId와 일치하는 보고서가 없습니다 : %s", apDocId));
 		}
 
 		String apStats = "C".equals(apDocStats) ? "A" : "R";
@@ -661,10 +659,10 @@ public class MonthlyreportService extends AbstractGaiaCairosService {
 					if(parent != null) {
 						// 디렉토리가 없으면 생성
 						Files.createDirectories(parent);
-
-						// 파일 저장
-						Files.write(savedFilePath, fileContent);
 					}
+
+					// 파일 저장
+					Files.write(savedFilePath, fileContent);
 
 					PrAttachments prAttachments = new PrAttachments();
 					prAttachments.setFileNo((Integer) fileInfo.get("fileNo"));

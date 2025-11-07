@@ -32,7 +32,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 목록 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 // 하도급 excel x
                 String[] btnId = { "SUBCNTRCT_D_01", "SUBCNTRCT_U_02", "SUBCNTRCT_C_02" };
@@ -70,7 +69,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/project/subcontract/subcontract_c";
         }
@@ -83,7 +81,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/project/subcontract/subcontract_u";
         }
@@ -95,7 +92,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급 상세조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "SUBCNTRCT_U_02" };
                 String[] btnClass = { "btn" };
@@ -118,7 +114,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급계약변경 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/project/subcontract/subcontractChange_c";
         }
@@ -131,7 +126,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급계약변경 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/project/subcontract/subcontractChange_u";
         }
@@ -143,7 +137,6 @@ public class SubcontractPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("하도급관리 하도급계약변경 상세 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
 
                 String[] btnId = { "SUBCNTRCT_CHG_U_02" };

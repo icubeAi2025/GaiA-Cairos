@@ -34,7 +34,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재문서 상세 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		String pjtNo = commonReqVo.getPjtNo();
 		String sendDept = null;
@@ -68,7 +67,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재대기 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/eapproval/approval/approval_W";
 	}
@@ -81,7 +79,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재진행 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/eapproval/approval/approval_P";
 	}
@@ -94,7 +91,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재완료 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/eapproval/approval/approval_01";
 	}
@@ -107,7 +103,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재반려 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/eapproval/approval/approval_02";
 	}
@@ -120,7 +115,6 @@ public class ApprovalPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("참조/공유 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/eapproval/approval/approval_03";
 	}

@@ -1,7 +1,9 @@
 package kr.co.ideait.platform.gaiacairos.comp;
 
+import com.jcraft.jsch.*;
 import kr.co.ideait.iframework.BizException;
 import kr.co.ideait.platform.gaiacairos.core.exception.GaiaBizException;
+import kr.co.ideait.platform.gaiacairos.core.persistence.model.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;

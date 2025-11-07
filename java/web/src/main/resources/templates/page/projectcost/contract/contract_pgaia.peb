@@ -5,15 +5,13 @@
 <section class="contents_wrap">
 	<article class="conts">
 		<div class="group">
-			<div class="conts_form">
-				<h3 class="conts_tit" id="conts_tit" hidden>{{ message("item.com.018") }}</h3>
-				<span class="selectbox" id="cntrct_no_select" hidden>
-					<select id="cntrctNo" style="line-height:1.1"></select>
-				</span>
-				<h3 class="conts_tit">{{ message("item.sub.040") }}</h3>
-				<span class="selectbox">
-					<select id="cntrctId" style="line-height:1.1"></select>
-			    </span>
+			<div class="conts_form" id="contract_container">
+                <h3 class='conts_tit' >{{ message('item.sub.040') }}</h3>
+                <div class="search_wrap" >
+                <span class='selectbox'>
+                    <select name='cntrctChgId' id='cntrctChgNo' style="width: 100%"></select>
+                </span>
+                </div>
 				<div class="btn_area s_default _outline">
 					<label class="form_check">
 						<input class="check_mark" type="checkbox" id="chgComp">
@@ -147,10 +145,7 @@
 	const newModalRenderer = window.NewModalRenderer;
 	let SearchArr = new Array();
 	var urlParams = new URLSearchParams(location.search);
-	var spCntrct = urlParams.get('id') ? urlParams.get('id').split(".") : null;
-	var cntrctNo = spCntrct ? spCntrct[0]+"."+spCntrct[1] : null;
-	var cntrctId = urlParams.get('id');
-	var urlCntrctNo = spCntrct ? spCntrct[0]+"."+spCntrct[1] : null;
+	var cntrctId = urlParams.get('cntrctNo');
 	var urlCntrctId = urlParams.get('id');
 
     /* EVENT BINDING */
@@ -184,17 +179,6 @@
     });
 
 	var init = function(){
-		$("#cntrctNo").change(function(e){
-			$("#cntrctId").empty();
-			cntrctNo = e.target.value;
-			cntrctId = null;
-			setTimeout(() => page.init(), 100);
-			contract.contractGrid.resetData([]);
-			$('#jstree').jstree(true).destroy();
-			sessionStorage.setItem('cCntrctNo', e.target.value);
-			//contract.init();
-		});
-
 		$("#depth_txt").text("{{ message('item.projectcost.016') }}");
 
 
@@ -216,64 +200,30 @@
 			pjtNo: pjtNo
 		};
 
-		$.ajax({
-			url: BASEPATH + 'contract/contract-list',
-			method: 'POST',
-			dataType: 'json',
-			contentType: 'application/json; charset-utf-8',
-			data: JSON.stringify(param),
-			async: false,
-			success: function(data, status, xhr){
-				var list = data.details.contractList;
-				
-				if(list.length > 0) {
-					for(var i = 0; i < list.length; i++) {
-						var option = $("<option value="+list[i].cntrct_no+">["+list[i].cmn_cd_nm_krn+"] "+list[i].cntrct_nm+"</option>");
-                        // [srchoi] 20241119 C3R business 를 위해 추가
-                        option.data('major-cnstty-cd', list[i].major_cnstty_cd);
-                        $('#cntrctNo').append(option);
-					}
-				}
-				if(urlCntrctNo) {
-					$('#cntrctNo').val(urlCntrctNo).prop("selected", true);
-                    cntrctNo = urlCntrctNo;
-				} else if(cntrctNo){
-					$('#cntrctNo').val(cntrctNo).prop("selected", true);
-					
-					if($('#cntrctNo').val() == null){
-						$('#cntrctNo').eq(0).prop("selected", true);
-					}
-				}else{
-					cntrctNo = $('#cntrctNo').val();
-					sessionStorage.setItem('cCntrctNo', $('#cntrctNo').val());
-				}
-				page.init();
-			}
-		});
+        gaiaCommon.makeCntrctAndChgIdSelectBox(
+                "#contract_container",
+                "#cntrctChgNo",
+                () => {
+                    calc.init('chg')
+                },
+                (cntrctChgId) => {
+                    cntrctNo = $('#cntrctNo').val();
+                    cntrctId = cntrctChgId;
+                    contract.getTreeList()
+                    calc.init('chg')
+                },
+                (cntrctChgId) => {
+                    cntrctNo = $('#cntrctNo').val();
+                    cntrctId = cntrctChgId;
+                    contract.getTreeList()
+                    calc.init('chg')
+                }
+        );
 		
 	};
 
 	let page = {
 		init: function () {
-			//차수 변경 이벤트
-			$("#cntrctId").change(function(e){
-				sessionStorage.setItem('cCntrctId', e.target.value);
-				let string = $("#cntrctId option:selected").text();
-				let chg_no = string.match(/\[.*\]/gi).toString();
-				chg_no = chg_no.replace(/[^0-9]/g, "");
-				$("#chg_no").val(chg_no);
-				cntrctId = null;
-				setChangeData();
-				if($(".tab_item").eq(0).hasClass('active')){	
-					$('[data-column-name="chkDetail"]').children()[0].innerHTML = "{{ message('item.projectcost.011') }}(" + "{{ message('item.projectcost.023') }}".replace('{0}', $("#chg_no").val())+")";
-					
-					$('#jstree').jstree(true).destroy();
-					setTimeout(() => contract.getTreeList(), 50);
-				}else{
-					
-					setTimeout(() => calc.init('chg'), 50);				
-				}
-			});
 			
 			var param = {
 				cntrctNo: cntrctNo

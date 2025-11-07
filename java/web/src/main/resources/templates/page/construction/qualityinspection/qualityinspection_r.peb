@@ -334,6 +334,10 @@
             page.getQuality();
         },
         updateQuality: function () {
+            if(apprvlStats === 'A') {
+                gaiaCommon.customAlert('승인된 항목은 수정할 수 없습니다.');
+				return;
+            }
             // 수정 페이지로 이동  
             if (type === 'p') { // 창화면인 상태
                 window.location.href = `/construction/qualityinspection/addQuality?type=p&mode=update&cntrctNo=${cntrctNo}&qltyIspId=${qltyIspId}&workType=${workType}&pjtNo=${pjtInfo.pjtNo}`;
@@ -356,6 +360,8 @@
                 rsltDocNo = qualityData.rsltDocNo;
 
                 $('#ispDocNo').text(gaiaCommon.decodeSafeText(qualityData.ispDocNo));  // 문서번호 
+
+                apprvlStatsNm = qualityData.apprvlStatsNm;
 
                 if (qualityData.ispReqDt) { // 검측 요청 일자
                     const date = qualityData.ispReqDt.split(' ')[0];

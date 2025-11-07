@@ -46,7 +46,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 데이터 전체 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("sadtagList",
                 safetyService.getSadTagList(input.getCntrctNo(), input.getSearchValue(), input.getSelectedStatus()));
@@ -63,7 +62,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("sadtag", safetyService.getSadtag(cntrctNo, sadtagNo));
     }
@@ -78,7 +76,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         CwSadtag cwSadtag = sadtagForm.toEntity(sadtag);
         cwSadtag.setDltYn("N");
@@ -97,7 +94,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조치결과 등록");
-        systemLogComponent.addUserLog(userLog);
 
         CwSadtag oldSadtag = safetyService.getSadTagData(sadtag.getCntrctNo(), sadtag.getSadtagNo());
         sadtagForm.updateSadtag(sadtag, oldSadtag);
@@ -115,7 +111,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwSadtag oldSadtag = safetyService.getSadTagData(sadtag.getCntrctNo(), sadtag.getSadtagNo());
         sadtagForm.updateSadtag(sadtag, oldSadtag);
@@ -133,7 +128,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전지적서 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         for (int i = 0; i < sadtagList.getSadtagList().size(); i++) {
             CwSadtag delete = safetyService.getSadTagData(sadtagList.getSadtagList().get(i).getCntrctNo(),
@@ -153,7 +147,6 @@ public class SadtagApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("승인요청");
-        systemLogComponent.addUserLog(userLog);
 
         sadtagComponent.requestApprovalSadtag(sadtag, commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
         return Result.ok();

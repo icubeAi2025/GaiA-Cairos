@@ -49,7 +49,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("reportList", chiefInspectionReportComponent.getReportList(input));
         }
@@ -64,7 +63,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("감리일지 년도 데이터 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("yearList", chiefInspectionReportComponent.getReportYears(input.getCntrctNo()));
         }
@@ -79,7 +77,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업 일보 데이터 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 Map<String, Object> result = chiefInspectionReportComponent.getDailyReport(input.getCntrctNo(), input.getDailyReportDate());
 
@@ -99,7 +96,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 상세 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 Map<String, Object> result = chiefInspectionReportComponent.getReport(cntrctNo, dailyReportId);
                 
@@ -127,7 +123,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 Result result = null;
                 try {
@@ -150,7 +145,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 수정");
-                systemLogComponent.addUserLog(userLog);
 
 
                 Result result = null;
@@ -174,7 +168,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 삭제");
-                systemLogComponent.addUserLog(userLog);
 
                 chiefInspectionReportComponent.deleteReport(input);
                 return Result.ok();
@@ -192,7 +185,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 복사전 검증 확인");
-                systemLogComponent.addUserLog(userLog);
                 log.info("checkDailyReportExists: 책임감리일지 게시물 존재 여부 확인. params = {}", paramMap);
 
                 return Result.ok().put("reportExists", chiefInspectionReportComponent.checkChiefInspectionReportExists(paramMap));
@@ -208,7 +200,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 복사");
-                systemLogComponent.addUserLog(userLog);
                 log.info("copyReport: 책임감리일지 복사. params = {}", paramMap);
 
 
@@ -239,7 +230,6 @@ public class ChiefInspectionReportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("책임감리일지 pdf");
-                systemLogComponent.addUserLog(userLog);
 
                 chiefInspectionReportComponent.makeReportPdf(input,commonReqVo.getUserId());
 

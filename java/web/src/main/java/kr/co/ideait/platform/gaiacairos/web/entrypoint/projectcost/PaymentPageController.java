@@ -123,7 +123,6 @@ public class PaymentPageController extends AbstractController {
                         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                         userLog.setLogType(LogType.VIEW.name());
                         userLog.setExecType("기성 관리 화면 접속");
-                        systemLogComponent.addUserLog(userLog);
                 }
 
                 if ("cairos".equals(platform) || "gaia".equals(platform)) {
@@ -199,7 +198,6 @@ public class PaymentPageController extends AbstractController {
 
                 userLog.setExecType("기성 관리 추가, 수정 화면 접속");
 
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/projectcost/payment/payment_u";
         }
@@ -216,7 +214,6 @@ public class PaymentPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("기성 내역서 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 if ("cairos".equals(platform) || "gaia".equals(platform)) {
                         return "page/projectcost/payment/payment_history";

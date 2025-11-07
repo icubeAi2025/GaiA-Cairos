@@ -27,7 +27,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결함추적 대시보드 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/tool/dashboard";
     }
@@ -41,7 +40,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 관리 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 삭제, 수정, 추가 버튼
         String[] rescId = { "DT_DFCCY_D", "DT_DFCCY_U", "DT_DFCCY_C" };
@@ -67,7 +65,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결함추적 추가, 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/tool/defecttracking/defecttracking_cu_popup";
     }
@@ -79,7 +76,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결함추적 관리 상세 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/tool/defecttracking/defecttracking_detail_popup";
     }
@@ -91,7 +87,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 답변관리 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] rescId = { "DT_RESPONSE_D", "DT_RESPONSE_C_M" };
         String[] btnClass = { "btn", "btn _fill" };
@@ -115,7 +110,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 답변관리 입력, 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] rescId = { "DT_RESPONSE_D", "DT_RESPONSE_C_02" };
         String[] btnClass = { "btn", "btn _fill" };
@@ -137,7 +131,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 확인 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 의견삭제, QA종료, 관리관 종료 버튼
         String[] rescId = { "DT_CONFIRM_D_02", "DT_CONFIRM_C_QA", "DT_CONFIRM_C_SPVS" };
@@ -169,7 +162,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 확인 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 의견 저장 버튼
         String[] rescId = { "DT_CONFIRM_C" };
@@ -212,7 +204,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 종결관리 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 삭제 버튼
         String[] rescId = { "DT_TERM_D", "DT_TERM_ALL_FIN" };
@@ -236,7 +227,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 종결관리 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 의견 저장 버튼
         String[] rescId = { "DT_TERM_C" };
@@ -257,7 +247,6 @@ public class DefectTrackingPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결함추적 단계 설정 관리 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
         // 삭제, 수정, 추가 버튼
         String[] rescId = { "DT_SETTING_D", "DT_SETTING_U_01", "DT_SETTING_C_01" };
@@ -283,7 +272,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 단계 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("p".equals(page)) {
             model.addAttribute("header", false);
@@ -302,7 +290,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 단계 상세 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         model.addAttribute("header", false);
 
@@ -327,7 +314,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 단계 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("p".equals(page)) {
             model.addAttribute("header", false);
@@ -345,7 +331,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 Activity 팝업 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/tool/common_activity";
     }
@@ -359,7 +344,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적관리 Activity 팝업 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/tool/defecttracking/defecttracking_select_activity_pop_up";
     }
@@ -371,7 +355,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함추적 보고서 결함요약 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/report/summary/summary";
     }
@@ -384,7 +367,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함보고서 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/report/defectreport/defectreport";
     }
@@ -397,7 +379,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함보고서 상세 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/report/defectreport/defectreport_detail";
     }
@@ -410,7 +391,6 @@ public class DefectTrackingPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결함보고서 상세 조회 새창 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/defecttracking/report/defectreport/defectreport_detail_popup";
     }

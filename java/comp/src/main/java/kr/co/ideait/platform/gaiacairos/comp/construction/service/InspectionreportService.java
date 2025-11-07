@@ -419,6 +419,9 @@ public class InspectionreportService extends AbstractGaiaCairosService {
         // 속성 코드 조회(감리일지 cmnCd:2)
         SmComCode smComCode = commonCodeService
                 .getCommonCodeByGrpCdAndCmnCd(CommonCodeConstants.DOCUMENT_NAVI_FOLDER_TYPE_GROUP_CODE, "2");
+        if(smComCode == null){
+            throw new GaiaBizException(ErrorType.NO_DATA,"속성 코드가 존재하지 않습니다.");
+        }
 
         // 01: 통합문서관리 - navi_id 생성
         final String navId = String.format("nav_%s_%s_01", MapUtils.getString(resultMap, "cntrct_no"),

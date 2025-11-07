@@ -69,7 +69,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         log.debug("==============================================");
         log.debug("getProjectuBillingList : " + info.getMenuCd() + " // " + info.getCntrctNo() + " // " + info.getSystemType() + " // " + info.getSearchText());
@@ -104,7 +103,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         log.debug("==============================================");
 	    log.debug("getMenuAuthList : " + info.getMenuCd() + " // " + info.getCntrctNo() + " // " + info.getSystemType() + " // " + info.getSearchText());
@@ -149,7 +147,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한그룹 추가");
-        systemLogComponent.addUserLog(userLog);
 
         List<SmMenuAuthorityGroup> SmMenuAuthorityGroupList = menuAuthorityGroupForm
             .toSmMenuAuthorityGroupList(menuAuthorityGroupList.getMenuAuthorityGroupList());
@@ -171,7 +168,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴권한 그룹권한 수정");
-        systemLogComponent.addUserLog(userLog);
         
         return Result.ok().put("updateCnt", menuAuthorityGroupComponent.updateMenuAuthority(menuAuthorityGroupRghtKindUpdate));
     }
@@ -191,7 +187,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         menuAuthorityGroupComponent.deleteMenuAuthority(menuRghtNoList);
         return Result.ok();
@@ -211,7 +206,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         String userId = commonReqVo.getUserId();
         
@@ -236,7 +230,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("메뉴 권한 그룹 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         // lang 처리
@@ -277,7 +270,6 @@ public class MenuAuthorityGroupApiController extends AbstractController {
          Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
          userLog.setLogType(LogType.FUNCTION.name());
          userLog.setExecType("메뉴별 권한 목록조회");
-         systemLogComponent.addUserLog(userLog);
 
          return Result.ok().put("authorityList", menuAuthorityGroupService.getMenuAuthorityList(param.getMenuCd()));
 

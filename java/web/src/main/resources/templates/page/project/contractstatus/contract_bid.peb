@@ -73,7 +73,6 @@
 			$("#menuDepth").append(`<li class=\"breadcrumb_item\" id=\"depth_txt\">${title}</li>`);
 
 			if (isCAIROS()) {
-				const cntrctNo = pjtInfo.cntrctNo;
                 loadEurecaView(initialCntrctNo);
 			}
 
@@ -85,7 +84,8 @@
                         changeGrid.init(null, null);
                     },
                     (cntrctNo) => {
-                        loadEurecaView(cntrctNo);
+                        $("#cntrctNo").val(initialCntrctNo);
+                        loadEurecaView(initialCntrctNo);
                     },
                     (cntrctNo) => {
                         loadEurecaView(cntrctNo);

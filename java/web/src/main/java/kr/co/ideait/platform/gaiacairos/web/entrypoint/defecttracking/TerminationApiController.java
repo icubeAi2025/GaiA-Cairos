@@ -61,7 +61,6 @@ public class TerminationApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("종결관리 > 결함 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         Page<DefectTrackingListOutput> pageData = terminationComponent.getDfccyListToGrid(defectTrackingForm.toDfccySearchInput(defectTrackingListGet), langInfo);
         Long totalCount = pageData.getTotalElements();
@@ -85,7 +84,6 @@ public class TerminationApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("종결 입력 기간 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         // 입력 값 null 체크
         if (terminationGet == null || terminationGet.getCntrctNo() == null || terminationGet.getCntrctNo().trim().isEmpty() || 
@@ -122,7 +120,6 @@ public class TerminationApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("종결 처리(추가, 수정)");
 
-        systemLogComponent.addUserLog(userLog);
 
         // 입력값 검증 (필수값 확인)
         if (createUpdateForm == null || user == null) {
@@ -154,7 +151,6 @@ public class TerminationApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("종결 처리(일괄 추가)");
 
-        systemLogComponent.addUserLog(userLog);
 
         // 입력값 검증 (필수값 확인)
         if (terminationAll == null || user == null) {
@@ -183,7 +179,6 @@ public class TerminationApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("해당 결함 사항에 대해 종결 처리 삭제");
 
-        systemLogComponent.addUserLog(userLog);
 
         // 입력값 검증 (필수값 확인)
         if (deleteTermination == null || user == null) {

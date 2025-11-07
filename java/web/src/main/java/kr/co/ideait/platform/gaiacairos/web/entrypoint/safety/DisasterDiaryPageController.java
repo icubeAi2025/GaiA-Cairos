@@ -36,7 +36,6 @@ public class DisasterDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 목록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 버튼 권한 설정
         // 상단 기본버튼 삭제, 수정, 추가
@@ -71,7 +70,6 @@ public class DisasterDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 상세 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 버튼권한 처리
         // 메뉴 관리에서 등록한 버튼 아이디
@@ -99,7 +97,6 @@ public class DisasterDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/disasterdiary/disasterdiary_c";
     }
@@ -111,7 +108,6 @@ public class DisasterDiaryPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("재해일지 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/safety/disasterdiary/disasterdiary_u";
     }

@@ -47,7 +47,6 @@ public class ResourceApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("자원투입현황 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         // 비즈니스 로직 시작
         String cntrctNo = resourceMain.getCntrctNo();
@@ -75,7 +74,6 @@ public class ResourceApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("자원투입현황 상세(월별) 조회");
-        systemLogComponent.addUserLog(userLog);
 
         // 비즈니스 로직 시작
         String cntrctNo = resourceMain.getCntrctNo();
@@ -102,7 +100,6 @@ public class ResourceApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("자원투입현황 상세(일별) 조회");
-        systemLogComponent.addUserLog(userLog);
 
         // 비즈니스 로직 시작
         String cntrctNo = resourceMain.getCntrctNo();

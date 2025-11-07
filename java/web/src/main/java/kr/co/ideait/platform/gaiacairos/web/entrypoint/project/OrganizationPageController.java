@@ -37,7 +37,6 @@ public class OrganizationPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조직도 조직 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 조직 추가 수정 삭제
         String[] btnId = {"ORG_D_01", "ORG_U_02", "ORG_C_02"};
@@ -79,7 +78,6 @@ public class OrganizationPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조직도 조직 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/project/organization/organization_c";
     }
@@ -95,7 +93,6 @@ public class OrganizationPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조직도 조직 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/project/organization/organization_u";
     }
@@ -111,7 +108,6 @@ public class OrganizationPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조직도 조직 상세조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = {"ORG_U_02"};
         String[] btnClass = {"btn"};

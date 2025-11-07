@@ -53,7 +53,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("TODO");
-        systemLogComponent.addUserLog(userLog);
 
         // 시스템 타입 설정
         String newPjtType = "";
@@ -82,7 +81,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         String[] param = commonReqVo.getUserParam();
@@ -101,7 +99,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 아이디 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("exist",
                 userService.existLoginId(loginId));
@@ -118,7 +115,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 추가");
-        systemLogComponent.addUserLog(userLog);
 
         SmUserInfo smUserInfo = userForm.toSmUserInfo(user);
         return Result.ok().put("user",
@@ -135,7 +131,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 수정");
-        systemLogComponent.addUserLog(userLog);
 
         if(user.getUsrId() == null){
             throw new GaiaBizException(ErrorType.BAD_REQUEST, "사용자 정보가 존재하지 않습니다.");
@@ -160,7 +155,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 상세조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("user", userComponent.getUserDetail(usrId));
@@ -176,7 +170,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         Map response = userComponent.deleteUserInfo(userIdList.getUserList(), commonReqVo.getApiYn());
         String resultCd = response.get("resultCode").toString();
@@ -200,7 +193,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("TODO");
-        systemLogComponent.addUserLog(userLog);
 
 
         log.debug("사용자 정보 동기화 하러 오라클 조회!!");
@@ -263,7 +255,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("PLATFORM 사용자 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         UserMybatisParam.SyncUserListInput syncUserListInput = userForm.toSyncUserListInput(syncUserListSearch);
@@ -283,7 +274,6 @@ public class UserApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("PLATFORM 사용자 등록");
-        systemLogComponent.addUserLog(userLog);
 
         String result = userComponent.createUserInfo(syncUserIds, commonReqVo.getApiYn());
 

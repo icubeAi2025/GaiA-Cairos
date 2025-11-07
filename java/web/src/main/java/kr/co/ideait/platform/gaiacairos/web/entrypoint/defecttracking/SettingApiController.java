@@ -50,7 +50,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함단계 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of().add("cntrctNo", cntrctNo);
 
@@ -71,7 +70,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 상세조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MybatisInput input = MybatisInput.of()
 				.add("cntrctNo", deficientyPhaseDetail.getCntrctNo())
@@ -95,7 +93,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함단계 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		settingComponent.insertDeficiencyPhase(deficientyPhaseInsert.getDtDeficiencyPhase(), deficientyPhaseInsert.getScheduleArr(), defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -116,7 +113,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함단계 수정");
 
-		systemLogComponent.addUserLog(userLog);
 
 		settingComponent.updateDeficiencyPhase(deficientyPhaseInsert.getDtDeficiencyPhase(), deficientyPhaseInsert.getScheduleArr(), defectTrackingHelper.createReqVoMap(commonReqVo));
 		
@@ -138,7 +134,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함단계 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		settingComponent.deleteDeficiencyPhase(
 				deficientyPhaseDeleteList.getDelPhaseList(),
@@ -167,7 +162,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 결함단계 순서 변경");
 
-		systemLogComponent.addUserLog(userLog);
 
 		settingComponent.updateDisplayOrder(settingForm.toDisplayOrderMoveInput(displayOrderMove),
 				UserAuth.get(true).getUsrId(),
@@ -193,7 +187,6 @@ public class SettingApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("결함추적 대시보드 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		dashboardList.setUsrId(UserAuth.get(true).getUsrId());
 

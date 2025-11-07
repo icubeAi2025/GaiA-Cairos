@@ -167,37 +167,32 @@
         loadData: function (usrId) {
             const url = "/api/system/user/" + usrId;
 
-            $.ajax({
-                url: url,
-                method: "GET",
-                dataType: "json",
-                success: function (result) {
-                    let data = result.details.user;
+            gaiaCommon.get(url, {},
+                    function (result) {
+                        let data = result.details.user;
 
-                    // 폼 데이터 채우기
-                    $("#loginId").text(gaiaCommon.decodeSafeText(data.loginId));
-                    $("#usrNm").text(gaiaCommon.decodeSafeText(data.usrNm));
-                    $("#ratngCd").text(gaiaCommon.decodeSafeText(data.ratngNm));
-                    $("#pstnCd").text(gaiaCommon.decodeSafeText(data.pstnNm));
-                    $("#phoneNo").text(data.phoneNo);
-                    $("#telNo").text(data.telNo);
-                    $("#emailAdrs").text(gaiaCommon.decodeSafeText(data.emailAdrs));
-                    $("#mngDiv").text(gaiaCommon.decodeSafeText(data.mngDivNm));
+                        // 폼 데이터 채우기
+                        $("#loginId").text(gaiaCommon.decodeSafeText(data.loginId));
+                        $("#usrNm").text(gaiaCommon.decodeSafeText(data.usrNm));
+                        $("#ratngCd").text(gaiaCommon.decodeSafeText(data.ratngNm));
+                        $("#pstnCd").text(gaiaCommon.decodeSafeText(data.pstnNm));
+                        $("#phoneNo").text(data.phoneNo);
+                        $("#telNo").text(data.telNo);
+                        $("#emailAdrs").text(gaiaCommon.decodeSafeText(data.emailAdrs));
+                        $("#mngDiv").text(gaiaCommon.decodeSafeText(data.mngDivNm));
 
-                    if (data.useYn === "Y") {
-                        $("#useYn").text('{{ message("item.com.015") }}');
-                    } else {
-                        $("#useYn").text('{{ message("item.com.016") }}');
+                        if (data.useYn === "Y") {
+                            $("#useYn").text('{{ message("item.com.015") }}');
+                        } else {
+                            $("#useYn").text('{{ message("item.com.016") }}');
+                        }
+
+                        page.setStampImg(data.fileDiskPath, data.fileDiskNm);
+                    },
+                    function (error){
+                        console.error("Error:", error);
                     }
-
-                    page.setStampImg(data.fileDiskPath, data.fileDiskNm);
-
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error:", error);
-                }
-            });
-
+            );
         },
     };
 

@@ -56,7 +56,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 관리 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("cntrctChgInfo", paymentService.getCntrctChgInfo(paymentMain.getCntrctNo()))    // 20250217 차수정보 추가
@@ -77,7 +76,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 관리 상세 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentDetail", paymentService.getPayment(paymentMain.getCntrctNo(), paymentMain.getPayprceSno()));
@@ -97,7 +95,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 회차 시퀀스 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentTmnum", paymentService.selectPayprceTmnum(paymentMain.getCntrctNo()));
@@ -128,7 +125,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 추가");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("eurecaSendYn", eurecaSendYn);
     }
@@ -158,7 +154,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 수정");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok();
 
@@ -177,7 +172,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok();
     }
@@ -197,7 +191,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 승인 요청");
-        systemLogComponent.addUserLog(userLog);
 
 
         return Result.ok();
@@ -237,7 +230,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 내역서 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentHistoryList", result);
@@ -257,7 +249,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("원가 승인 요청");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentcostCalculatorList", paymentService.selectPaymentCostCalculatorList(payment.getCntrctNo(), payment.getPayprceSno(), payment.getCntrctChgId()));
@@ -277,7 +268,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 내역서 재집계 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentHistoryRecountList", paymentService.selectPaymentHistoryRecountList(payment.getCntrctNo(), payment.getPayprceSno(), payment.getCntrctChgId(), payment.getSearchText()));
@@ -297,7 +287,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 내역수량 업데이트");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok();
     }
@@ -315,7 +304,6 @@ public class PaymentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("기성 내역수량 재집계 내역 가져오기 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("paymentHistoryNewList", paymentService.selectPaymentHistoryNewList(payment.getCntrctNo(), payment.getPayprceSno(), payment.getCntrctChgId(), payment.getDailyReportDate(), payment.getPayprceYm()));

@@ -102,6 +102,7 @@ public interface DailyreportForm {
         String workDtType;
         String planStart;
         String planFinish;
+        String dailyReportDate;
 
         String year;
         String month;
@@ -211,6 +212,7 @@ public interface DailyreportForm {
         String rsceNm;  
         String specNm;
         String unit;
+        Long dsply_order;
     }
 
     @Data

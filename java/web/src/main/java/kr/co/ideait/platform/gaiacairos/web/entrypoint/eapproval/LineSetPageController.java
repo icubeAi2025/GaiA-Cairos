@@ -34,7 +34,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 나의 결재선 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		model.addAttribute("USER_ID", UserAuth.get(true).getUsrId());
 
@@ -53,7 +52,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 나의 결재선 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/eapproval/lineset/my/my_lineset_C";
 	}
@@ -73,7 +71,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 나의 결재선 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		model.addAttribute("apLineNo", apLineNo);
 
@@ -94,7 +91,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 관리자 결재선 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		String[] rescId = { "AP_LINESET_ADM_D", "AP_LINESET_ADM_U_01", "AP_LINESET_ADM_C_01" };
 		String[] btnClass = { "btn", "btn", "btn _fill" };
@@ -124,7 +120,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 관리자 결재선 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/eapproval/lineset/admin/admin_lineset_C";
 	}
@@ -146,7 +141,6 @@ public class LineSetPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 관리자 결재선 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		model.addAttribute("apLineNo", apLineNo);
 

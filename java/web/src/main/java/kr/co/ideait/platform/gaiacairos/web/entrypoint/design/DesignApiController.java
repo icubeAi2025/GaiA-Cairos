@@ -70,7 +70,6 @@ public class DesignApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토단계 대시보드 목록 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("dsgnList", pageData.getContent())
 				.put("totalCount", totalCount);
@@ -86,7 +85,6 @@ public class DesignApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 단계 리스트 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("dsgnPhaseList",result.get("dsgnPhaseList"));
 	}
@@ -123,7 +121,6 @@ public class DesignApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 목록 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return GridResult.ok(designComponent.getDsgnListDataToGrid(designReviewListGet,langInfo, user.getUsrId()));
 	}
@@ -142,7 +139,6 @@ public class DesignApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 상세 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("dsgnDetail", dsgn);
 	}
@@ -160,7 +156,6 @@ public class DesignApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 평가, 백체크 데이터 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("apprer", result.get("apprer"))
 				.put("backchk", result.get("backchk"));
@@ -203,7 +198,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 수정");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok(result);
 	}
@@ -223,7 +217,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -248,7 +241,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("검토 의견 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.nok(ErrorType.DATABSE_ERROR);
 	}
@@ -274,7 +266,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 답변 상세조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok()
 				.put("phase", result.get("phase"))
@@ -300,7 +291,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 답변 추가/수정");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok()
 				.put("response", result.get("response"))
@@ -318,7 +308,6 @@ log.info("params: {}", params);
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계 검토 답변 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}

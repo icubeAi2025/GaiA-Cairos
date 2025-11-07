@@ -99,8 +99,9 @@
 	var isDelAuth = "{{ isDelAuth }}";
     var isAddAuth = "{{ isAddAuth }}";
 	let dailyReportId = '';
+    let globalList = [];
 
-	var init = function () {
+    var init = function () {
 		gaiaCommon.LoadingOverlay('body', true);
 		gaiaCommon.makeCntrctSelectBox(
             "#cntrct_no_select",
@@ -280,7 +281,7 @@
 										isHover:true,
 										align:"right",
 										success:(rowData)=>{
-											goLink("detail", rowData.daily_report_id);
+											goLink("detail", rowData.daily_report_id, rowData.daily_report_date);
 										}
 									}
 								]
@@ -381,7 +382,7 @@
 				success: function (response, status, xhr) {
 					data = response.details.dailyreportList;
 					if (data.length > 0) {
-
+                        globalList = data;
 					} else {
 						_this.dailyreportGrid.resetData([]);
 					}
@@ -399,8 +400,23 @@
 
 	}
 
-	function goLink(type, rid) {
+	function goLink(type, rid, dailyReportDate) {
 		const checkedRows = dailyreport.dailyreportGrid.getCheckedRows();
+
+        let checkedRow = '';
+        let apprvl_stats = '';
+        let dailyReportId = rid;
+        let drDt = dailyReportDate;
+        if(checkedRows.length > 0) {
+            checkedRow = checkedRows[0];
+            apprvl_stats = checkedRow.apprvl_stats;
+            dailyReportId = checkedRow.daily_report_id;
+            drDt = checkedRow.daily_report_date;
+        }
+
+        // 금일 액티비티 페이지 '오늘 하루 보지 않기' 체킹 여부
+        const savedTime = localStorage.getItem("hideActivityPage");
+
 		if (type == "del") {
 			if (checkedRows.length < 1) {
 				gaiaCommon.customAlert("{{ message('msg.035') }}".replace('{0}', "{{ message('btn.002') }}"));
@@ -421,22 +437,33 @@
 
 			let options = "toolbar=no,scrollbars=no,resizable=yes,status=no,menubar=no,width=1200, height=800, top=0,left=0";
 
-			const checkedRow = checkedRows[0];
-			const apprvl_stats = checkedRow.apprvl_stats;
 			if (apprvl_stats == "A" || apprvl_stats == "E") {
-				// 승인요청, 승인 상태 수정 불가
-				gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', checkedRow.apprvl_stats_txt).replace('{1}', "{{ message('btn.003') }}"));
-				return false;
+                // 승인요청, 승인 상태 수정 불가
+
+                // 대전테크노때문에 주석 처리함 반드시 원복해야 함
+                // gaiaCommon.customAlert("{{ message('msg.construction.001') }}".replace('{0}', checkedRow.apprvl_stats_txt).replace('{1}', "{{ message('btn.003') }}"));
+				// return false;
+                window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + dailyReportId +`&pjtNo=${pjtInfo.pjtNo}`;    // 원복 시 제거
 			} else {
-				window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + checkedRow.daily_report_id+`&pjtNo=${pjtInfo.pjtNo}`;
-			}
+                if (savedTime && Date.now() < savedTime) {
+                    window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + dailyReportId +`&pjtNo=${pjtInfo.pjtNo}`;
+                } else {
+                    window.location.href = "/construction/dailyreport-today-update?cntrctNo=" + cntrctNo + "&rId=" + dailyReportId +`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+                }
+
+
+            }
 		}
 
 		if (type == "add") {
 			window.location.href = "/construction/dailyreport/create?cntrctNo=" + cntrctNo +`&pjtNo=${pjtInfo.pjtNo}`;
 		}
 		if (type == "detail") {
-			window.location.href = "/construction/dailyreport/detail?cntrctNo=" + cntrctNo + "&rId=" + rid+`&pjtNo=${pjtInfo.pjtNo}`;
+            if (savedTime && Date.now() < savedTime) {
+                window.location.href = "/construction/dailyreport/detail?cntrctNo=" + cntrctNo + "&rId=" + dailyReportId+`&pjtNo=${pjtInfo.pjtNo}`;
+            } else {
+                window.location.href = "/construction/dailyreport-today-detail?cntrctNo=" + cntrctNo + "&rId=" + dailyReportId+`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+            }
 		}
 	}
 
@@ -506,6 +533,7 @@
 
 	// 작업일보 상태 업데이트 ( 승인요청, 승인, 반려 )
 	function setStatus(stats_type, txt) {
+        gaiaCommon.LoadingOverlay('body', true);
 		let formData = []; // 체크된 행의 id 정보 가져오기
 		let chk = 0;
 		const checkedRows = dailyreport.dailyreportGrid.getCheckedRows();
@@ -525,6 +553,8 @@
 					gaiaCommon.customAlert("{{ message('msg.projectcost.003') }} ".replace('{0}', temp_txt));
 					// 이미 {0} 상태입니다.
 					chk += 1;
+
+                    gaiaCommon.LoadingOverlay('body', false);
 					return false;
 				}
 			} else if(stats_type == "C") {
@@ -532,6 +562,8 @@
 			    if (apprvl_stats != "A") {
 			        gaiaCommon.customAlert("승인취소는 승인 상태여야 합니다.");
 					chk += 1;
+
+                    gaiaCommon.LoadingOverlay('body', false);
 					return false;
 			    }
 
@@ -543,6 +575,8 @@
 					gaiaCommon.customAlert("{{ message('msg.projectcost.004') }} ".replace('{0}', txt));
 					//  승인요청 상태에만 {0}할 수 있습니다.
 					chk += 1;
+
+                    gaiaCommon.LoadingOverlay('body', false);
 					return false;
 				}
 			}
@@ -582,9 +616,12 @@
 					} else if (result.code === 1000) {
 						gaiaCommon.customAlert("{{ message('msg.monthlyreport.010') }}"); // 지정된 결재선이 없습니다. 결재선을 설정해주세요.
 					}
+
+                    gaiaCommon.LoadingOverlay('body', false);
 				},
 				error(result) {
 					gaiaCommon.customAlert("{{ message('msg.monthlyreport.004') }}"); // 다시 시도해주세요.
+                    gaiaCommon.LoadingOverlay('body', false);
 				}
 			});
 		}
@@ -605,6 +642,7 @@
 	// l: 목록의 버튼 클릭, b: 상단 복사 버튼 클릭
 	function copy(clickType, clickDailyReportId) {
 		const checkedRows = dailyreport.dailyreportGrid.getCheckedRows();
+        dailyReportId = clickDailyReportId;
 	    if(clickType == 'b') {
             // 체크박스 유효성 확인
             if (checkedRows.length < 1) {
@@ -617,7 +655,14 @@
                 return false;
             }
         }
-        dailyReportId = clickDailyReportId;
+
+        // clickDailyReportId가 없는 경우 → 체크된 행에서 daily_report_id 가져오기
+        if (!dailyReportId) {
+            if (checkedRows && checkedRows.length > 0) {
+                dailyReportId = checkedRows[0].daily_report_id;
+                console.log('*** dailyReportId = ',dailyReportId);
+            }
+        }
 
 	    // 날짜 선택 alert 생성
         $('#dateModal').show();
@@ -629,6 +674,7 @@
         gaiaCommon.LoadingOverlay('body', true);
 
         // 금일 이후 날짜 선택한 경우 return
+        let drDt = $('#copyDate').val();
         let selectedDate = new Date($('#copyDate').val());
         let today = new Date();
         let currentRId;
@@ -643,49 +689,56 @@
             return false;
         }
 
-
-	    // 게시물 존재 여부 확인, true: 존재, false: 미존재
+        // 게시물 존재 여부 확인, true: 존재, false: 미존재
         let reportExists = checkDailyReportExists();
 
         if(reportExists == false) {
-			const checkedRows = dailyreport.dailyreportGrid.getCheckedRows();
-            // 체크한 체크 박스 rid 추출
-            const rId = dailyReportId || checkedRows[0].daily_report_id ;
+            // 직전 게시물 승인 여부 확인
+            let isProgress = await checkApprvlStats();
+            if(isProgress) {
+                const checkedRows = dailyreport.dailyreportGrid.getCheckedRows();
+                // 체크한 체크 박스 rid 추출
+                const rId = dailyReportId || checkedRows[0].daily_report_id ;
+
+                // 복사 대상 게시물 조회
+                const detailResp = await getDailyReportDetail(rId);
+                const details = detailResp.details || {};
+                const summary = details.summaryDetail || {};
+                // const siteLaborData = details.lData || [];
+
+                // 기상청 데이터 조회
+                const kmaResp = await getKma();
+                const kma = kmaResp.details.kma;
+                const amWthr        = String(kma?.am_wf ?? '');
+                const pmWthr        = String(kma?.pm_wf ?? '');
+                const dlowstTmprtVal= String(kma?.ta_min ?? '');
+                const dtopTmprtVal  = String(kma?.ta_max ?? '');
+                const prcptRate     = String(kma?.rn_day ?? '');
+                const snowRate      = String(kma?.sd_max ?? '');
 
 
-            // 복사 대상 게시물 조회
-            const detailResp = await getDailyReportDetail(rId);
-            const details = detailResp.details || {};
-            const summary = details.summaryDetail || {};
-            // const siteLaborData = details.lData || [];
-
-            // 기상청 데이터 조회
-            const kmaResp = await getKma();
-            const kma = kmaResp.details.kma;
-            const amWthr        = String(kma?.am_wf ?? '');
-            const pmWthr        = String(kma?.pm_wf ?? '');
-            const dlowstTmprtVal= String(kma?.ta_min ?? '');
-            const dtopTmprtVal  = String(kma?.ta_max ?? '');
-            const prcptRate     = String(kma?.rn_day ?? '');
-            const snowRate      = String(kma?.sd_max ?? '');
-
-
-            // 복사한 데이터로 게시물 저장
-            const addParam = {
-              cntrctNo: cntrctNo,
-              dailyReportDate: $('#copyDate').val(),
-              createType: 'copy',
-              reportNo: summary.reportNo, // detail에서 가져온 reportNo 사용
-              title: summary.title,
-              majorMatter: summary.majorMatter,
-              sftyWorkItem: summary.sftyWorkItem,
-              todayActivityContents: summary.todayActivityContents,
-              tomorrowActivityContents: summary.tomorrowActivityContents,
-              amWthr, pmWthr, dlowstTmprtVal, dtopTmprtVal, prcptRate, snowRate
-            };
-            const addResp = await addDailyReport(addParam);
-            currentRId = addResp.details.dailyreportId;
-            window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}`;
+                // 복사한 데이터로 게시물 저장
+                const addParam = {
+                  cntrctNo: cntrctNo,
+                  dailyReportDate: $('#copyDate').val(),
+                  createType: 'copy',
+                  reportNo: summary.reportNo, // detail에서 가져온 reportNo 사용
+                  title: summary.title,
+                  majorMatter: summary.majorMatter,
+                  sftyWorkItem: summary.sftyWorkItem,
+                  todayActivityContents: summary.todayActivityContents,
+                  tomorrowActivityContents: summary.tomorrowActivityContents,
+                  amWthr, pmWthr, dlowstTmprtVal, dtopTmprtVal, prcptRate, snowRate
+                };
+                const savedTime = localStorage.getItem("hideActivityPage");
+                const addResp = await addDailyReport(addParam);
+                currentRId = addResp.details.dailyreportId;
+                if (savedTime && Date.now() < savedTime) {
+                    window.location.href = "/construction/dailyreport/update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}`;
+                } else {
+                    window.location.href = "/construction/dailyreport-today-update?cntrctNo=" + cntrctNo + "&rId=" + currentRId +`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
+                }
+            }
         } else {
             gaiaCommon.customAlert("해당 날짜의 보고서는 이미 등록되어 있습니다.");
             gaiaCommon.LoadingOverlay('body', false);
@@ -693,8 +746,86 @@
         }
 
         // 초기화
-        dailyReportId = '';
+        isProgress = false;
 	}
+    // 현재 게시물 이전 제일 최신 게시물 승인 여부 확인
+    async function checkApprvlStats() {
+        gaiaCommon.LoadingOverlay('body', false);
+        // globalList 유효성 체크
+        let selectedDate = $('#copyDate').val()
+        if (!Array.isArray(globalList) || globalList.length === 0) {
+            console.warn('globalList is empty');
+            return true; // 없으면 그냥 진행
+        }
+        // 날짜 오름차순 정렬
+        const sortedList = globalList
+            .slice()
+            .sort((a, b) => new Date(a.daily_report_date) - new Date(b.daily_report_date));
+
+        const selectedDt = new Date(selectedDate);
+
+        // 직전 게시물 찾기
+        const prevReport = [...sortedList].reverse()
+            .find(item => new Date(item.daily_report_date) < selectedDt);
+        if (!prevReport) {
+            console.log("직전 일지 없음 (최초 게시물)");
+            return true
+        }
+
+        const prevStatus = prevReport.apprvl_stats;
+        console.log("현재 생성하려는 일진 날짜:", selectedDate);
+        console.log("직전 일지:", prevReport.daily_report_date, "승인상태:", prevStatus);
+
+        // 승인 안 됐을 경우 confirm
+        if (prevStatus !== 'A') {
+            console.log("직전 일지는 미승인");
+            const activityExists = await checkActivity(prevReport.daily_report_id);
+
+            if (activityExists) {
+                $("#dateModal").hide();
+                const confirmed = await gaiaCommon.progressConfirm(
+                    '작업일지 복사 여부 확인',
+                    '작업일지 복사 여부 확인',
+                    `[${prevReport.daily_report_date}]에 작성한 작업일지 중 시작(종료)된 작업 Activity가 있습니다.\n결재가 완료되지 않을 경우 [${selectedDate}] 날짜로 시작(종료)일이 변경됩니다.\n진행하시겠습니까?`
+                );
+                return confirmed;
+            } else {
+                return true;
+            }
+        } else {
+            // 승인 완료면 바로 진행
+            return true;
+        }
+    }
+
+    // 현재 게시물 이전 제일 최신 게시물 승인 여부 확인 API 통신
+    async function checkActivity(prevDailyReportId) {
+        var param = {
+            cntrctNo: cntrctNo
+            , dailyReportId: prevDailyReportId
+        };
+
+        const response = await $.ajax({
+            url: BASEPATH + 'dailyreport/activity-exists',
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json; charset-utf-8',
+            data: JSON.stringify(param),
+            async: false,
+            success: function (response, status, xhr) {
+                console.log('*** response = ', response, ' response.details?.activityExists = ',response.details?.activityExists)
+
+            },
+            error: function (xhr, status, error) {
+                console.error(status, error);
+                gaiaCommon.customAlert("{{ message('msg.060') }}");
+                gaiaCommon.LoadingOverlay('body', false);
+                return false;
+            }
+        });
+        return response.details?.activityExists;
+    }
+
 	async function getDailyReportDetail(rId) {
 	    var param = {
             cntrctNo: cntrctNo
@@ -714,7 +845,7 @@
             error: function (xhr, status, error) {
                 console.error(status, error);
                 gaiaCommon.customAlert("{{ message('msg.060') }}");
-
+                gaiaCommon.LoadingOverlay('body', false);
             }
         });
         return response;

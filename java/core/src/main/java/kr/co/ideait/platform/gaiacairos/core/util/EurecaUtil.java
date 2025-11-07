@@ -24,7 +24,8 @@ public class EurecaUtil {
         dto.setCbsSno(vo.getDtlsSn());                             // CBS 순번
         dto.setCntrctCnstType(vo.getUnitCnstwkDivCd());            // 계약세부공종코드(공사구분)
         dto.setCntrctUnitCnstwkSno(vo.getBidUnitCnstwkSn());       // 계약단위공사순번
-        dto.setCntrctDcnsttySno(vo.getBidDtlsSn());                // 계약세부공종순번
+        dto.setCntrctDcnsttySno(vo.getDtlsSn());                   // 계약세부공종순번
+        dto.setUpCntrctDcnsttySno(vo.getUpDtlsSn());               // 계약상위세부공종순번
         dto.setCnsttyDtlsDivCd(vo.getDtlsCnsttyDivCd());           // 공종 내역구분코드
         dto.setPrdnm(vo.getDtlsNm());                              // 품명
         dto.setSpec(vo.getSpec());                                 // 규격
@@ -65,8 +66,8 @@ public class EurecaUtil {
         dto.setMtrlAm(vo.getMtrlAmt());                             // 재료
         dto.setLbrAm(vo.getLbrAmt());
         dto.setGnrlexpnsAm(vo.getGnrlexpnsAmt());
-        dto.setCnsttyCd(vo.getCnsttyCd());
-        dto.setUpCnsttyCd(vo.getUpCnsttyCd());
+        dto.setCnsttyCd(vo.getDtlsSn() != null ? vo.getDtlsSn().toString() : "");
+        dto.setUpCnsttyCd(vo.getUpDtlsSn() != null ? vo.getUpDtlsSn().toString() : "");
         dto.setCnsttyNm(vo.getDtlsNm());
         dto.setCnsttyLvlNum(vo.getLvlNum());                        // 20251021 - 공종레벨 추가
         dto.setRgstrId(EURECA);

@@ -42,7 +42,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 목록 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "INSPECTION_D_01", "INSPECTION_U_01", "INSPECTION_C_01", "INSPECTION_C_01",
                                 "INS_AP_REQ" };
@@ -79,7 +78,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/inspectionreport/inspectionreport_c";
         }
@@ -94,7 +92,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 수정 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/inspectionreport/inspectionreport_u";
         }
@@ -109,7 +106,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 상세 조회 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 String[] btnId = { "INSPECTION_U_01" };
                 String[] btnClass = { "btn _outline" };
@@ -132,7 +128,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 세부공정변경 모달창 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/inspectionreport/inspectionreport_activity_modal";
         }
@@ -147,7 +142,6 @@ public class InspectionreportPageController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.VIEW.name());
                 userLog.setExecType("감리일지 사진 모달 추가 화면 접속");
-                systemLogComponent.addUserLog(userLog);
 
                 return "page/construction/inspectionreport/inspectionreport_pic_modal";
         }

@@ -15,6 +15,7 @@ public interface ApiLogMybatisParam {
         String target;
         String apiType;
         String apiId;
+        Integer resultCode;
         String startDt;
         String endDt;
         String lang;

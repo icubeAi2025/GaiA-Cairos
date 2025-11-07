@@ -47,7 +47,6 @@ public class UserLogApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 로그 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         UserLogListInput input = userLogForm.toUserLogListInput(userLogListGet);
         if(langInfo != null && "ko-KR".equals(langInfo)){
@@ -71,7 +70,6 @@ public class UserLogApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 로그 상세 화면");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("userLog", systemLogComponent.getUserLog(logNo));

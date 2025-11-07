@@ -294,75 +294,61 @@
         loadData: function (usrId) {
             const url = "/api/system/user/" + usrId;
 
-            $.ajax({
-                url: url,
-                method: "GET",
-                dataType: "json",
-                success: function (result) {
-                    let data = result.details.user;
+            gaiaCommon.get(url, {},
+                    function (result) {
+                        let data = result.details.user;
 
-                    // 폼 데이터 채우기
-                    $("#loginId").text(gaiaCommon.decodeSafeText(data.loginId));
-                    $("#usrNm").val(gaiaCommon.decodeSafeText(data.usrNm));
-                    $("#ratngCd").val(data.ratngCd);
-                    $("#pstnCd").val(data.pstnCd);
-                    $("#phoneNo").val(data.phoneNo);
-                    $("#telNo").val(data.telNo);
-                    $("#emailAdrs").val(gaiaCommon.decodeSafeText(data.emailAdrs));
+                        // 폼 데이터 채우기
+                        $("#loginId").text(gaiaCommon.decodeSafeText(data.loginId));
+                        $("#usrNm").val(gaiaCommon.decodeSafeText(data.usrNm));
+                        $("#ratngCd").val(data.ratngCd);
+                        $("#pstnCd").val(data.pstnCd);
+                        $("#phoneNo").val(data.phoneNo);
+                        $("#telNo").val(data.telNo);
+                        $("#emailAdrs").val(gaiaCommon.decodeSafeText(data.emailAdrs));
 
-                    if (data.useYn === "Y") {
-                        $("#useY").prop("checked", true);
-                    } else {
-                        $("#useN").prop("checked", true);
+                        if (data.useYn === "Y") {
+                            $("#useY").prop("checked", true);
+                        } else {
+                            $("#useN").prop("checked", true);
+                        }
+
+                        console.log(data.mngDiv);
+
+                        if (data.mngDiv === "A") {
+                            $("#mngDivA").prop("checked", true);
+                        } else if (data.mngDiv === "C") {
+                            $("#mngDivC").prop("checked", true);
+                        } else if (data.mngDiv === "M") {
+                            $("#mngDivM").prop("checked", true);
+                        } else {
+                            $("#mngDivN").prop("checked", true);
+                        }
+
+                        page.setStampImg(data.fileDiskPath, data.fileDiskNm);
+                    },
+                    function (error){
+                        console.error("Error:", error);
                     }
-
-                    console.log(data.mngDiv);
-
-                    if (data.mngDiv === "A") {
-                        $("#mngDivA").prop("checked", true);
-                    } else if (data.mngDiv === "C") {
-                        $("#mngDivC").prop("checked", true);
-                    } else if (data.mngDiv === "M") {
-                        $("#mngDivM").prop("checked", true);
-                    } else {
-                        $("#mngDivN").prop("checked", true);
-                    }
-
-                    page.setStampImg(data.fileDiskPath, data.fileDiskNm);
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error loading user data:", error);
-                }
-            });
-
+            );
         },
 
         makeSelectBox: function (comCodeSelectBoxGets) {
-            $.ajax({
-                url: "/api/util/make-selectBox",
-                method: "POST",
-                dataType: "json",
-                xhrFields: { withCredentials: true },
-                contentType: "application/json; charset=UTF-8",
-                traditional: true,
-                data: JSON.stringify(comCodeSelectBoxGets), // 요청 데이터로 comCodeSelectBoxGets 배열을 전송
-                success: function (data) {
-                    let returnMap = data.details.returnMap;
-                    comCodeSelectBoxGets.forEach(function (item, index) {
-                        let addAppLineContent = document.getElementById(
+            gaiaCommon.post("/api/util/make-selectBox", comCodeSelectBoxGets, function (data) {
+                let returnMap = data.details.returnMap;
+                comCodeSelectBoxGets.forEach(function (item, index) {
+                    let addAppLineContent = document.getElementById(
                             item.selectBoxId
-                        );
-                        let categorySelect = `${returnMap[item.selectBoxId]}`;
-                        if (addAppLineContent) {
-                            addAppLineContent.innerHTML =
+                    );
+                    let categorySelect = `${returnMap[item.selectBoxId]}`;
+                    if (addAppLineContent) {
+                        addAppLineContent.innerHTML =
                                 returnMap[item.selectBoxId];
-                        }
-                        $(`#selectBox${index + 1}`).append(categorySelect);
-                    });
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error making select box:", status, error);
-                },
+                    }
+                    $(`#selectBox${index + 1}`).append(categorySelect);
+                });
+            }, function (error) {
+                console.error("Error making select box:", error);
             });
         },
 

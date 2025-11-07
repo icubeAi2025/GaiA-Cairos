@@ -112,13 +112,11 @@ public class DocumentManageApiController extends AbstractController {
         
         ConstructionBeginsDocDto createdNode = dmService.createNavigationNode(loginId,params);
         if(createdNode != null) {
-        	systemLogComponent.addUserLog(userLog);
         	return Result.ok().put("createdNode", createdNode);
         }
         else {
         	userLog.setResult("FAIL");
         	userLog.setErrorReason("실패/데이터베이스 에러");
-        	systemLogComponent.addUserLog(userLog);
         	return Result.nok(ErrorType.DATABSE_ERROR);
         }
 	}
@@ -141,12 +139,10 @@ public class DocumentManageApiController extends AbstractController {
 		ConstructionBeginsDocDto updatedNode = dmService.updateNavigationNode(loginId,params);
 		if(updatedNode != null) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok().put("result", "성공");
 		}
 		else {
 			userLog.setResult("실패/데이터베이스 에러");
-			systemLogComponent.addUserLog(userLog);
 			return Result.nok(ErrorType.DATABSE_ERROR);
 		}
 	}
@@ -169,12 +165,10 @@ public class DocumentManageApiController extends AbstractController {
 		ConstructionBeginsDocDto removedNode = dmService.removeNavigationNode(params);
 		if(removedNode != null) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok().put("result", "성공");
 		}
 		else {
 			userLog.setResult("실패/데이터베이스 에러");
-			systemLogComponent.addUserLog(userLog);
 			return Result.nok(ErrorType.DATABSE_ERROR);
 		}
 	}
@@ -193,7 +187,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("네비게이션 순서 변경");
-		systemLogComponent.addUserLog(userLog);
 
 		if(dmService.updateOrder(datas)) {
 			return Result.ok();
@@ -231,14 +224,12 @@ public class DocumentManageApiController extends AbstractController {
 		if(result != null) {
 			if("허용되지 않은 확장자".equals((String)result.get("result"))) {
 				userLog.setResult("실패/허용되지 않은 확장자");
-				systemLogComponent.addUserLog(userLog);
 				return Result.nok(ErrorType.INVAILD_INPUT_DATA);
 			}
 			else{
 				Object saved = result.get("createdNode");
 				if(saved!= null) {
 					userLog.setResult("성공");
-					systemLogComponent.addUserLog(userLog);
 					return Result.ok().put("createdNode", saved);
 				}
 			}
@@ -253,7 +244,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("착공계 문서 양식 프리뷰");
-		systemLogComponent.addUserLog(userLog);
 
 		log.debug("getPreview: cbgnNo = {}", cbgnNo);
 		Resource resource;
@@ -293,11 +283,9 @@ public class DocumentManageApiController extends AbstractController {
 		List<ConstructionBeginsDocDto> documentList = dmService.getDocumentList(cntrctNo);
 		if(documentList != null) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok().put("documentList", documentList);
 		}
 		userLog.setResult("실패");
-		systemLogComponent.addUserLog(userLog);
 		return Result.nok(ErrorType.DATABSE_ERROR);
 	}
 	
@@ -310,7 +298,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("문서 네비게이션 속성 추가 데이터 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		String userId = commonReqVo.getUserId();
 
@@ -340,7 +327,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("네비에 등록된 속성 목록 조회");
-		systemLogComponent.addUserLog(userLog);
 
 		List<CbgnPropertyDto> propertyList = dmService.getPropertyList(cbgnNo);
 		return Result.ok().put("propertyList", propertyList);
@@ -356,11 +342,9 @@ public class DocumentManageApiController extends AbstractController {
 		boolean result = dmService.checkDuplicated(attrbtCd,cbgnNo);
 		if(result) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok();
 		} else {
 			userLog.setResult("실패/중복된 코드 존재");
-			systemLogComponent.addUserLog(userLog);
 			return Result.nok(ErrorType.DUPLICATION_DATA);
 		}
 	}
@@ -380,12 +364,10 @@ public class DocumentManageApiController extends AbstractController {
 		if(result != null) {
 			if(result.getAttrbtNo() != 0) {
 				userLog.setResult("성공");
-				systemLogComponent.addUserLog(userLog);
 				return Result.ok().put("property", result);
 			}
 		}
 		userLog.setResult("실패/데이터베이스 에러");
-		systemLogComponent.addUserLog(userLog);
 		return Result.nok(ErrorType.DATABSE_ERROR);
 	}
 	
@@ -401,11 +383,9 @@ public class DocumentManageApiController extends AbstractController {
 		List<Long> attrbtNoList = params.get("attrbtNoList");
 		if(dmService.removeProperty(attrbtNoList,usrId)) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok();
 		}
 		userLog.setResult("실패/데이터베이스 에러");
-		systemLogComponent.addUserLog(userLog);
 		return Result.nok(ErrorType.DATABSE_ERROR);
 	}
 	
@@ -417,7 +397,6 @@ public class DocumentManageApiController extends AbstractController {
         userLog.setExecType("속성 정보 조회");
 		
         userLog.setResult("성공");
-        systemLogComponent.addUserLog(userLog);
 		return Result.ok().put("property",dmService.getPropertyOfattrbtNo(attrbtNo));
 	}
 	
@@ -432,12 +411,10 @@ public class DocumentManageApiController extends AbstractController {
 		dto.setChgId(usrId);
 		if(dmService.modifyProperty(dto)) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok();
 		}
 		else {
 			userLog.setResult("실패/데이터베이스 에러");
-			systemLogComponent.addUserLog(userLog);
 			return Result.nok(ErrorType.DATABSE_ERROR);
 		}
 	}
@@ -449,7 +426,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("TODO");
-		systemLogComponent.addUserLog(userLog);
 
 		String userid = commonReqVo.getUserId();
 		List<CbgnHtmlFormDto> htmlFormList = dmService.getHtmlPropertyFormList(userid);
@@ -466,7 +442,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("TODO");
-		systemLogComponent.addUserLog(userLog);
 
 		String userid = commonReqVo.getUserId();
 		CbgnHtmlFormDto result = dmService.createHtmlPropertyForm(htmlFormDto,userid);
@@ -490,11 +465,9 @@ public class DocumentManageApiController extends AbstractController {
 		List<Long> formNoList = params.get("formNoList");
 		if(dmService.removeHtmlPropertyForm(formNoList,usrId)) {
 			userLog.setResult("성공");
-			systemLogComponent.addUserLog(userLog);
 			return Result.ok();
 		}
 		userLog.setResult("실패/데이터베이스 에러");
-		systemLogComponent.addUserLog(userLog);
 		return Result.nok(ErrorType.DATABSE_ERROR);
 	}
 
@@ -505,7 +478,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("html form 조회");
-		systemLogComponent.addUserLog(userLog);
 
 
 		String usrId = commonReqVo.getUserId();
@@ -542,7 +514,6 @@ public class DocumentManageApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("TODO");
-		systemLogComponent.addUserLog(userLog);
 
 
 		HashMap<String,Object> result = dmService.getPdfFileResource(cbgnNo);

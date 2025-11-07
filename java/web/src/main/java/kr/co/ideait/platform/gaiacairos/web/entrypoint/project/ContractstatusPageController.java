@@ -76,7 +76,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약현황 목록 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 
 		model.addAttribute("ctBtnHtml", ctBtnHtml);
@@ -120,7 +119,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약현황 상세조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contractstatus_r";
 	}
@@ -137,7 +135,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contractstatus_c";
 	}
@@ -154,7 +151,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contractstatus_u";
 	}
@@ -186,7 +182,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약도급 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_company_r";
 	}
@@ -203,7 +198,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약도급 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_company_c";
 	}
@@ -220,7 +214,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약도급 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_company_u";
 	}
@@ -252,7 +245,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약변경 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_change_r";
 	}
@@ -269,7 +261,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약변경 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_change_c";
 	}
@@ -286,7 +277,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약변경 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_change_u";
 	}
@@ -308,7 +298,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약내역서 등록 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/project/contractstatus/contract_bid_c";
 	}
@@ -324,7 +313,6 @@ public class ContractstatusPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("계약내역서 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		if ("pgaia".equals(platform)) {
 			return "page/project/contractstatus/contract_bid_pgaia";

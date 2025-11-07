@@ -41,7 +41,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 관리 목록조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("dsgnList", result.get("dsgnList"))
 							.put("totalCount", result.get("totalCount"));
@@ -59,7 +58,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 목록조회");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("evaList", designEvaluationComponent.getDetailEvaluationData(evaluationDetail));
 	}
@@ -81,7 +79,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 의견 추가");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -103,7 +100,6 @@ public class EvaluationApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 의견 수정");
 		userLog.setResult("성공");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -122,7 +118,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 의견 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -141,7 +136,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가 의견 일괄 삭제");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}
@@ -160,7 +154,6 @@ public class EvaluationApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("설계검토 평가자 결과 등록");
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok();
 	}

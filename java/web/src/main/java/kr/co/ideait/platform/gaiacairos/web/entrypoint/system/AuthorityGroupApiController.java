@@ -59,7 +59,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         MybatisInput mybatisInput = authorityGroupSearch.toMybatisInput();
 
@@ -87,7 +86,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 코드 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("exist", authorityGroupService.existAuthorityGroup(cntrctNo,
@@ -105,7 +103,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 조회");
-        systemLogComponent.addUserLog(userLog);
         
         String systemType = platform.toUpperCase().equals("GAIA") ? "G" : "C";
 
@@ -130,7 +127,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 등록");
-        systemLogComponent.addUserLog(userLog);
         
         authorityGroupComponent.createAuthorityGroup(authorityGroup);
 
@@ -154,7 +150,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 수정");
-        systemLogComponent.addUserLog(userLog);
         
         authorityGroupComponent.updateAuthorityGroup(authorityGroupUpdate);
         
@@ -173,7 +168,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         if(authorityGroupNoList.getAuthorityGroupNoList().size() <= 0){
                 throw new GaiaBizException(ErrorType.NO_DATA, "Not Found Authority Group No List");
@@ -196,7 +190,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 사용자 조회");
-        systemLogComponent.addUserLog(userLog);
 
         AuthorityGroupUserInput input = authorityGroupForm.toAuthorityGroupUserInput(authorityGroupUserGet);
 
@@ -221,7 +214,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 사용자 조회");
-        systemLogComponent.addUserLog(userLog);
 
         AuthorityGroupUserInput input = authorityGroupForm.toAuthorityGroupUserInput(authorityGroupUserGet);
         
@@ -245,7 +237,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 사용자 등록");
-        systemLogComponent.addUserLog(userLog);
 
         if(authorityGroupUserList.getAuthorityGroupUserList().size() <= 0){
 			return Result.nok(ErrorType.NO_DATA);
@@ -269,7 +260,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("권한그룹 사용자 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         authorityGroupService.deleteAuthorityGroupUsers(
                 authorityGroupUserNoList.getAuthorityGroupUserNoList());
@@ -289,7 +279,6 @@ public class AuthorityGroupApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("전메뉴권한설정 조회");
-        systemLogComponent.addUserLog(userLog);
         
         String systemType = platform.toUpperCase().equals("GAIA") ? "G" : "C";
 

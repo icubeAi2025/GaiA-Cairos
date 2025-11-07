@@ -36,7 +36,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("친환경 자재 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         EcoMaterialListInput input = ecoMaterialForm.toEcoMaterialListInput(ecoMaterialListGet);
@@ -56,7 +55,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("자재 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         EcoMaterialListInput input = ecoMaterialForm.toEcoMaterialListInput(ecoMaterialListGet);
@@ -76,7 +74,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("친환경 자재 추가");
-        systemLogComponent.addUserLog(userLog);
 
 
         ecoMaterialComponent.ecoMaterialCreate(ecoMaterial, commonReqVo);
@@ -94,7 +91,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("친환경 자재 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("ecoMaterial", ecoMaterialComponent.getEcoMaterial(ecoId));
     }
@@ -109,7 +105,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("친환경 자재 수정");
-        systemLogComponent.addUserLog(userLog);
 
 
         ecoMaterialComponent.ecoMaterialUpdate(ecoMaterial, commonReqVo);
@@ -128,7 +123,6 @@ public class EcoMaterialApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("친환경 자재 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         ecoMaterialComponent.ecoMaterialDelete(ecoMaterialList.getEcoMaterialList(), commonReqVo);
         return Result.ok();

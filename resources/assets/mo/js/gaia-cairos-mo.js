@@ -6,6 +6,7 @@ String.prototype.replaceAll = function (org, dest) {
 param = tware.utils.parseQuery();
 const path = location.hash;
 
+let pjtNo, cntrctNo;
 
 const gaia = {
     loaded: false,
@@ -50,8 +51,8 @@ const gaia = {
         $('#main').load(`/assets/mo/views/${view}.html`, async (res) => {
             console.log('view loaded completed.');
 
-            const pjtNo = sessionStorage.getItem('pjtNo');
-            const cntrctNo = sessionStorage.getItem('cntrctNo');
+            pjtNo = sessionStorage.getItem('pjtNo');
+            cntrctNo = sessionStorage.getItem('cntrctNo');
 
             if (view !== 'home' && view.indexOf('sample') == -1) {
                 $('.main_nav').html(tware.utils.handlebarCompile($('#mobile-layout-sub-menu-template').html(), {
@@ -145,6 +146,9 @@ gaia.init = async function (args, createdFn) {
         viewId = path.match(regexp)[1];
         args.viewId = viewId;
     }
+
+    gaiaCommon.me.info = await JSON.parse(decrypt(me));
+    const info = gaiaCommon.me.info;
 
     $('#preloader').load('/assets/templates/handlebars-templates.html', async (res) => {
         console.log('template loaded completed.');

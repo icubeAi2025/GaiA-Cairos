@@ -148,12 +148,9 @@
         updateLoadData: function () {
             var codeData = $("#popup").data("employee-info");
             var cmnCdNo = this.code ? this.code.cmnCdNo : codeData.cmnCdNo;
-            $.ajax({
-                url: `/api/system/common-code/code/${cmnCdNo}`,
-                method: "Get",
-                contentType: "application/json",
-                dataType: "json",
-                success: function (data) {
+
+            gaiaCommon.get(`/api/system/common-code/code/${cmnCdNo}`, {},
+                function (data) {
                     popup.code = data.details.code
                     console.log(popup.code)
                     $("#CodeForm #cmnGrpCdNmKrn").text(gaiaCommon.decodeSafeText(page.groupCode.data.details.cmnCdNmKrn));
@@ -173,10 +170,10 @@
                         $("#CodeForm #useYn").text('{{ message("item.com.016") }}');
                     }
                 },
-                error: function (error) {
+                function (error){
                     console.error(error);
-                },
-            });
+                }
+            );
 
         },
 

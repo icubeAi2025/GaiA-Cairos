@@ -171,38 +171,33 @@
         updateLoadData: function () {
             var codeData = $("#popup").data("employee-info");
             var cmnCdNo = this.code ? this.code.cmnCdNo : codeData.cmnCdNo;
-            $.ajax({
-                url: `/api/system/common-code/code/${cmnCdNo}`,
-                method: "GET",
-                contentType: "application/json",
-                dataType: "json",
-                success: function (data) {
-                    popup.code = data.details.code
-                    console.log(popup.code)
-                    $("#CodeForm #cmnGrpCdNmKrn").text(gaiaCommon.decodeSafeText(page.groupCode.data.details.cmnCdNmKrn));
-                    $("#CodeForm #cmnCd").text(gaiaCommon.decodeSafeText(popup.code.cmnCd));
-                    $("#CodeForm #cmnCdNmKrn").val(gaiaCommon.decodeSafeText(popup.code.cmnCdNmKrn));
-                    $("#CodeForm #cmnCdNmEng").val(gaiaCommon.decodeSafeText(popup.code.cmnCdNmEng));
-                    $("#CodeForm #cmnCdDscrpt").val(gaiaCommon.decodeSafeText(popup.code.cmnCdDscrpt));
-                    $("#CodeForm #cmnCdDscrptRead").text(gaiaCommon.decodeSafeText(popup.code.cmnCdDscrpt));
-                    $("#CodeForm #attrbtCd1").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd1));
-                    $("#CodeForm #attrbtCd2").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd2));
-                    $("#CodeForm #attrbtCd3").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd3));
-                    $("#CodeForm #attrbtCd4").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd4));
-                    $("#CodeForm #attrbtCd5").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd5));
-                    $("#CodeForm #cmnCdDsplyOrder").val(popup.code.cmnCdDsplyOrder);
-                    if (popup.code.useYn === "Y") {
-                        $("#CodeForm #useY").prop("checked", true);
-                    } else {
-                        $("#CodeForm #useN").prop("checked", true);
+
+            gaiaCommon.get(`/api/system/common-code/code/${cmnCdNo}`, {},
+                    function (data) {
+                        popup.code = data.details.code
+                        console.log(popup.code)
+                        $("#CodeForm #cmnGrpCdNmKrn").text(gaiaCommon.decodeSafeText(page.groupCode.data.details.cmnCdNmKrn));
+                        $("#CodeForm #cmnCd").text(gaiaCommon.decodeSafeText(popup.code.cmnCd));
+                        $("#CodeForm #cmnCdNmKrn").val(gaiaCommon.decodeSafeText(popup.code.cmnCdNmKrn));
+                        $("#CodeForm #cmnCdNmEng").val(gaiaCommon.decodeSafeText(popup.code.cmnCdNmEng));
+                        $("#CodeForm #cmnCdDscrpt").val(gaiaCommon.decodeSafeText(popup.code.cmnCdDscrpt));
+                        $("#CodeForm #cmnCdDscrptRead").text(gaiaCommon.decodeSafeText(popup.code.cmnCdDscrpt));
+                        $("#CodeForm #attrbtCd1").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd1));
+                        $("#CodeForm #attrbtCd2").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd2));
+                        $("#CodeForm #attrbtCd3").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd3));
+                        $("#CodeForm #attrbtCd4").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd4));
+                        $("#CodeForm #attrbtCd5").val(gaiaCommon.decodeSafeText(popup.code.attrbtCd5));
+                        $("#CodeForm #cmnCdDsplyOrder").val(popup.code.cmnCdDsplyOrder);
+                        if (popup.code.useYn === "Y") {
+                            $("#CodeForm #useY").prop("checked", true);
+                        } else {
+                            $("#CodeForm #useN").prop("checked", true);
+                        }
+                    },
+                    function (error){
+                        console.error(error);
                     }
-
-                },
-                error: function (error) {
-                    console.error(error);
-                },
-            });
-
+            );
         },
 
         update: function () {

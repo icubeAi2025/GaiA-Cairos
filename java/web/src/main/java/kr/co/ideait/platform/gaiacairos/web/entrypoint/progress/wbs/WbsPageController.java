@@ -31,7 +31,6 @@ public class WbsPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("WBS 관리 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/wbs/wbs/wbs";
 	}

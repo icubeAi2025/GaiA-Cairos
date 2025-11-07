@@ -407,12 +407,12 @@
                         {name: "rgstrNm", 		        header: "{{ message('item.construction.003') }}", 	align: 'center'},
                         {name: "apprvlNm", 			    header: "{{ message('item.construction.004') }}", 	align: 'center'},
                         {name: "apprvlStatsKrn",		header: "{{ message('item.projectcost.047') }}",    align: 'center'},
-                        {name: "lsmthPlanBohalRate", 	header: "{{ message('item.construction.204') }}", 	align: 'center',
+                        {name: "lsmthPlanBohalRate", 	header: "전주누계", 	align: 'center',
                             formatter: function(e){
                                 return e.value ? e.value.toFixed(2)+'%' : '0%';
                             }
                         },
-                        {name: "thismthPlanBohalRate", 	header: "{{ message('item.com.047') }}",            align: 'center',
+                        {name: "thismthPlanBohalRate", 	header: "금주",            align: 'center',
                             formatter: function(e){
                                 return e.value ? e.value.toFixed(2)+'%' : '0%';
                             }
@@ -422,12 +422,12 @@
                                 return e.value ? e.value.toFixed(2)+'%' : '0%';
                             }
                         },
-                        {name: "lsmthArsltBohalRate", 	header: "{{ message('item.construction.204') }}", 	align: 'center',
+                        {name: "lsmthArsltBohalRate", 	header: "전주누계", 	align: 'center',
                             formatter: function(e){
                                 return e.value ? e.value.toFixed(2)+'%' : '0%';
                             }
                         },
-                        {name: "thismthArsltBohalRate", header: "{{ message('item.com.047') }}",            align: 'center',
+                        {name: "thismthArsltBohalRate", header: "금주",            align: 'center',
                             formatter: function(e){
                                 return e.value ? e.value.toFixed(2)+'%' : '0%';
                             }

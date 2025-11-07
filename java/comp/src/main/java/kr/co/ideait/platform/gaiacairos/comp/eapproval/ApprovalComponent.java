@@ -609,11 +609,11 @@ public class ApprovalComponent extends AbstractComponent {
 			case EapprovalHelper.MONTHLY_DOC:
 				return monthlyreportService.selectMonthlyReportByApDocId(apDocId);
 			// 품질검측 검측요청
-			case EapprovalHelper.QUALITY_ISP_DOC:
-				return qualityinspectionService.selectQualityInspectionByApDocId(apDocId, "ISP");
+			// case EapprovalHelper.QUALITY_ISP_DOC:
+			// 	return qualityinspectionService.selectQualityInspectionByApDocId(apDocId, "ISP");
 			// 품질검측 결재요청
 			case EapprovalHelper.QUALITY_APP_DOC:
-				return qualityinspectionService.selectQualityInspectionByApDocId(apDocId, "APP");
+				return qualityinspectionService.selectQualityInspectionByApDocId(apDocId);
 			// 안전점검 결과작성 요청
 			case EapprovalHelper.SAFETY_REP_DOC:
 				return safetymgmtService.selectSafetyByApDocId(apDocId, "REP");
@@ -875,47 +875,47 @@ public class ApprovalComponent extends AbstractComponent {
 						);
 						break;
 					// 품질검측 검측요청
-					case EapprovalHelper.QUALITY_ISP_DOC:
-						qualityinspectionService.insertResourcesToApi(
-								objectMapper.convertValue(params.get("report"), CwQualityInspection.class),
-								objectMapper.convertValue(params.get("activity"), new TypeReference<List<CwQualityActivity>>() {}),
-								objectMapper.convertValue(params.get("checkList"), new TypeReference<List<CwQualityCheckList>>() {}),
-								objectMapper.convertValue(params.get("photo"), new TypeReference<List<CwQualityPhoto>>() {}),
-								objectMapper.convertValue(params.get("cntqltyLists"), new TypeReference<List<CwCntqltyCheckList>>() {}),
-								objectMapper.convertValue(params.get("qualityFileInfo"), new TypeReference<List<Map<String, Object>>>() {}),
-								objectMapper.convertValue(params.get("photoFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
-						);
-						break;
+					// case EapprovalHelper.QUALITY_ISP_DOC:
+					// 	qualityinspectionService.insertResourcesToApi(
+					// 			objectMapper.convertValue(params.get("report"), CwQualityInspection.class),
+					// 			objectMapper.convertValue(params.get("activity"), new TypeReference<List<CwQualityActivity>>() {}),
+					// 			objectMapper.convertValue(params.get("checkList"), new TypeReference<List<CwQualityCheckList>>() {}),
+					// 			objectMapper.convertValue(params.get("photo"), new TypeReference<List<CwQualityPhoto>>() {}),
+					// 			objectMapper.convertValue(params.get("cntqltyLists"), new TypeReference<List<CwCntqltyCheckList>>() {}),
+					// 			objectMapper.convertValue(params.get("qualityFileInfo"), new TypeReference<List<Map<String, Object>>>() {}),
+					// 			objectMapper.convertValue(params.get("photoFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
+					// 	);
+					// 	break;
 					// 품질검측 결재요청
 					case EapprovalHelper.QUALITY_APP_DOC:
 						qualityinspectionService.insertResourcesToApi(
 								objectMapper.convertValue(params.get("report"), CwQualityInspection.class),
-								objectMapper.convertValue(params.get("activity"), new TypeReference<List<CwQualityActivity>>() {}),
-								objectMapper.convertValue(params.get("checkList"), new TypeReference<List<CwQualityCheckList>>() {}),
-								objectMapper.convertValue(params.get("photo"), new TypeReference<List<CwQualityPhoto>>() {}),
-								objectMapper.convertValue(params.get("cntqltyLists"), new TypeReference<List<CwCntqltyCheckList>>() {}),
-								objectMapper.convertValue(params.get("qualityFileInfo"), new TypeReference<List<Map<String, Object>>>() {}),
-								objectMapper.convertValue(params.get("photoFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
+								objectMapper.convertValue(resources.get("activity"), new TypeReference<List<CwQualityActivity>>() {}),
+								objectMapper.convertValue(resources.get("checkList"), new TypeReference<List<CwQualityCheckList>>() {}),
+								objectMapper.convertValue(resources.get("photo"), new TypeReference<List<CwQualityPhoto>>() {}),
+								objectMapper.convertValue(resources.get("cntqltyLists"), new TypeReference<List<CwCntqltyCheckList>>() {}),
+								objectMapper.convertValue(resources.get("qualityFileInfo"), new TypeReference<List<Map<String, Object>>>() {}),
+								objectMapper.convertValue(resources.get("requestItem"), new TypeReference<CwRequestItem>() {})	
 						);
 						break;
 					// 안전점검 승인요청
 					case EapprovalHelper.SAFETY_DOC:
 						safetymgmtService.insertSafetyResourcesToApi(
 								objectMapper.convertValue(params.get("report"), CwSafetyInspection.class),
-								objectMapper.convertValue(params.get("photo"), new TypeReference<List<CwSafetyInspectionPhoto>>() {}),
-								objectMapper.convertValue(params.get("inspectionlist"), new TypeReference<List<CwSafetyInspectionList>>() {}),
-								objectMapper.convertValue(params.get("standardLists"), new TypeReference<List<CwStandardInspectionList>>() {}),
-								objectMapper.convertValue(params.get("safetyFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
+								objectMapper.convertValue(resources.get("photo"), new TypeReference<List<CwSafetyInspectionPhoto>>() {}),
+								objectMapper.convertValue(resources.get("inspectionlist"), new TypeReference<List<CwSafetyInspectionList>>() {}),
+								objectMapper.convertValue(resources.get("standardLists"), new TypeReference<List<CwStandardInspectionList>>() {}),
+								objectMapper.convertValue(resources.get("safetyFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
 						);
 						break;
 					// 안전점검 점검요청
 					case EapprovalHelper.SAFETY_REP_DOC:
 						safetymgmtService.insertSafetyResourcesToApi(
 								objectMapper.convertValue(params.get("report"), CwSafetyInspection.class),
-								objectMapper.convertValue(params.get("photo"), new TypeReference<List<CwSafetyInspectionPhoto>>() {}),
-								objectMapper.convertValue(params.get("inspectionlist"), new TypeReference<List<CwSafetyInspectionList>>() {}),
-								objectMapper.convertValue(params.get("standardLists"), new TypeReference<List<CwStandardInspectionList>>() {}),
-								objectMapper.convertValue(params.get("safetyFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
+								objectMapper.convertValue(resources.get("photo"), new TypeReference<List<CwSafetyInspectionPhoto>>() {}),
+								objectMapper.convertValue(resources.get("inspectionlist"), new TypeReference<List<CwSafetyInspectionList>>() {}),
+								objectMapper.convertValue(resources.get("standardLists"), new TypeReference<List<CwStandardInspectionList>>() {}),
+								objectMapper.convertValue(resources.get("safetyFileInfo"), new TypeReference<List<Map<String, Object>>>() {})
 						);
 						break;
 					// 안전지적서 승인요청

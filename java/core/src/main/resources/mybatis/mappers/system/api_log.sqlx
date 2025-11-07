@@ -10,6 +10,7 @@
 		target_system_code,
 		service_type,
 		service_uuid,
+		invoke_tran_id,
 		req_method,
 		result_code,
 		req_header,
@@ -24,10 +25,7 @@
 		rgst_dt
     </sql>
 
-    <select id="selectList" parameterType="apiLogListInput" resultType="apiLogOutput">
-        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectList][mjjo]  */
-        SELECT api_log_no, source_system_code, target_system_code, api_type, service_type, api_id, result_code, rgst_dt
-        FROM sm_api_log
+    <sql id="whereCondition">
         <where>
         	<if test="apiSource != null and apiSource != ''">
         		AND source_system_code = #{apiSource}
@@ -41,11 +39,21 @@
 		    <if test="apiId != null and apiId != ''">
         		AND api_id LIKE CONCAT ('%', #{apiId}, '%')
 		    </if>
+        	<if test="resultCode != null">
+        		AND result_code = #{resultCode}
+		    </if>
 		    <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
                 AND rgst_dt BETWEEN CONCAT(#{startDt}, ' 00:00:00')::timestamp
                 AND CONCAT(#{endDt}, ' 23:59:59')::timestamp
 		    </if>
 		</where>
+    </sql>
+
+    <select id="selectList" parameterType="apiLogListInput" resultType="apiLogOutput">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectList][mjjo]  */
+        SELECT api_log_no, source_system_code, target_system_code, api_type, service_type, api_id, result_code, rgst_dt
+        FROM sm_api_log
+        <include refid="whereCondition" />
 		<if test="pageable.sort.isEmpty()">
         	ORDER BY rgst_dt DESC
         </if>
@@ -56,24 +64,7 @@
         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.system.api_log.selectCount][mjjo]  */
         SELECT COUNT(1)
         FROM sm_api_log
-        <where>
-        	<if test="apiSource != null and apiSource != ''">
-        		AND source_system_code = #{apiSource}
-		    </if>
-		    <if test="target != null and target != ''">
-        		AND target_system_code = #{target}
-		    </if>
-		    <if test="apiType != null and apiType != ''">
-        		AND api_type = #{apiType}
-		    </if>
-		    <if test="apiId != null and apiId != ''">
-        		AND api_id LIKE CONCAT ('%', #{apiId}, '%')
-		    </if>
-		    <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
-                AND rgst_dt BETWEEN CONCAT(#{startDt}, ' 00:00:00')::timestamp
-                AND CONCAT(#{endDt}, ' 23:59:59')::timestamp
-		    </if>
-		</where>
+        <include refid="whereCondition" />
     </select>
 
     <select id="selectOne" parameterType="long" resultType="smApiLogDto">
@@ -95,6 +86,7 @@
             service_type,
             service_uuid,
             req_method,
+            invoke_tran_id,
             result_code,
             req_header,
             req_data,
@@ -114,6 +106,7 @@
             , #{serviceType}
             , #{serviceUuid}
             , #{reqMethod}
+            , #{invokeTranId}
             , #{resultCode}
             , #{reqHeader}
             , #{reqData}

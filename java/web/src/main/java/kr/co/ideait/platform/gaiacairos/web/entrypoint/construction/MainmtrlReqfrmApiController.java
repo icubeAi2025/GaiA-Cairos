@@ -54,7 +54,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수 요청 상세 조회");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Object> resultMap = mainmtrlReqfrmComponent.getMainmtrlReqfrm(cntrctNo, reqfrmNo);
 
@@ -76,7 +75,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수요청서 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.createMainmtrlReqfrm(input, files, photos, commonReqVo.getUserId());
         return Result.ok();
@@ -97,7 +95,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수요청서 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.updateMainmtrlReqfrm(input, newFiles, removedFileNos, removedSnos, photos, commonReqVo.getUserId());
         return Result.ok();
@@ -114,7 +111,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수요청서 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.deleteMainmtrlReqfrm(input, commonReqVo);
         return Result.ok();
@@ -133,7 +129,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 첨부파일 다운로드");
 
-        systemLogComponent.addUserLog(userLog);
 
         return mainmtrlReqfrmComponent.fileDownload(fileNo, sno);
     }
@@ -148,7 +143,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("mtrlLists",mainmtrlReqfrmComponent.getMainmtrlList(input));
     }
@@ -163,7 +157,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("감리 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String pjtNo = commonReqVo.getPjtNo();
         String cntrctNo = commonReqVo.getCntrctNo();
@@ -183,7 +176,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("검수요청");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.inspectionRequestList(paramList, request, commonReqVo);
         return Result.ok();
@@ -199,7 +191,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수결과 등록/수정");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.addMtrlReqfrmResult(input, commonReqVo.getUserId());
         return Result.ok();
@@ -215,7 +206,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 검수결과 일부불합격 목록");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("partialFailList", mainmtrlReqfrmComponent.getAddMainmtrlList(cntrctNo,reqfrmNo));
     }
@@ -231,7 +221,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 결재요청");
-        systemLogComponent.addUserLog(userLog);
 
         mainmtrlReqfrmComponent.paymentRequest(paramList, commonReqVo);
         return Result.ok();
@@ -247,7 +236,6 @@ public class MainmtrlReqfrmApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("주요자재 결재취소");
-        systemLogComponent.addUserLog(userLog);
 
         Result result = null;
         try {

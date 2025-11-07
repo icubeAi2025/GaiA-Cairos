@@ -34,7 +34,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 툴 대시보드 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/tool/dashboard";
     }
@@ -74,7 +73,6 @@ public class DesignPageController extends AbstractController {
 //            model.addAttribute("cuBtnHtml", cuBtnHtml);
 
 
-        systemLogComponent.addUserLog(userLog);
         return "page/design/tool/designreview/designreview_main";
     }
 
@@ -86,7 +84,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 추가, 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
 //        String[] cuBtnId = {"DM_DSGN_CU_01"};
 //        String[] cuBtnClass = {"btn _fill"};
@@ -112,7 +109,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 추가, 수정 화면 중 검토 도서 사진 등록 모달창 접속");
-        systemLogComponent.addUserLog(userLog);
 
         model.addAttribute("mode", mode);
         return "page/design/tool/designreview/designreview_dwg_photo_modal";
@@ -125,7 +121,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 상세 보기 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/tool/designreview/designreview_detail_popup";
     }
@@ -139,7 +134,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 답변 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = {"DM_RESPONSE_D"};
         String[] btnClass = {"btn"};
@@ -163,7 +157,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 답변 관리 추가, 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = {"DM_RESPONSE_D", "DM_RESPONSE_CU_02"};
         String[] btnClass = {"btn", "btn _fill"};
@@ -185,7 +178,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 평가 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = {"DM_EVAL_D_02"};
         String[] btnClass = {"btn"};
@@ -208,7 +200,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 평가 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         //평가 의견 저장 버튼
         String[] btnId = {"DM_EVAL_C_01"};
@@ -266,7 +257,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 백체크 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 삭제 버튼
         String[] btnId = {"DM_BHK_D_02"};
@@ -292,7 +282,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 백체크 입력 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         //백체크 의견 저장 버튼
         String[] btnId = {"DM_BHK_C_01"};
@@ -350,7 +339,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 단계 설정 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         // 상단 기본버튼
         String[] btnId = {"DM_SETTING_D", "DM_SETTING_U_01", "DM_SETTING_C_01"};
@@ -378,7 +366,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 단계 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("p".equals(page)) {
             model.addAttribute("header", false);
@@ -408,7 +395,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("검토 단계 상세 조회 화면");
-        systemLogComponent.addUserLog(userLog);
 
         model.addAttribute("header", false);
 
@@ -434,7 +420,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계검토 단계 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("p".equals(page)) {
             model.addAttribute("header", false);
@@ -464,7 +449,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 검토 요약 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/report/reviewsummary/reviewsummary";
     }
@@ -476,7 +460,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 검토 의견 보고서 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/report/reviewcommentreport/reviewcommentreport";
     }
@@ -488,7 +471,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 검토 의견 보고서 상세조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/report/reviewcommentreport/reviewcommentreport_detail";
     }
@@ -500,7 +482,6 @@ public class DesignPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("설계 검토 관리의 검토 의견 보고서 상세조회 새 창으로 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/design/report/reviewcommentreport/reviewcommentreport_detail_popup";
     }

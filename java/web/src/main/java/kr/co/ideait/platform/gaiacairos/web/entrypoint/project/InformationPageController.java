@@ -38,7 +38,6 @@ public class InformationPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 
 		// 메뉴 관리에서 등록한 버튼 아이디
@@ -70,7 +69,6 @@ public class InformationPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		if ("d".equals(type)) {
 			model.addAttribute("header", true);
@@ -91,7 +89,6 @@ public class InformationPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		if ("d".equals(type)) {
 			model.addAttribute("header", true);
@@ -115,7 +112,6 @@ public class InformationPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("사업정보 상세 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		if ("d".equals(type)) {
 			model.addAttribute("header", true);

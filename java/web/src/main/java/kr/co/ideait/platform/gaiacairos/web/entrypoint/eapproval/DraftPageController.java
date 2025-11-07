@@ -36,7 +36,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("전자결재 대시보드 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
         return "page/eapproval/draft/app_00_X";
     }
@@ -52,7 +51,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("기안문 선택 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
         return "page/eapproval/draft/draft_01_S";
     }
@@ -71,7 +69,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("기안문 작성 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
     	model.addAttribute("url", url);
     	model.addAttribute("frm_no", frm_no);
@@ -98,7 +95,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("임시저장 기안문 작성 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
     	model.addAttribute("url", url);
     	model.addAttribute("frm_no", frm_no);
@@ -122,7 +118,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("결재요청 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
     	return "page/eapproval/draft/draft_02";
     }
@@ -139,7 +134,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("임시저장 문서 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
     	return "page/eapproval/draft/draft_03";
     }
@@ -162,7 +156,6 @@ public class DraftPageController extends AbstractController {
     	Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("문서관리 연동 -> 기안문 작성 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		Map<String, Object> params = objectMapper.readValue(requestParams, new TypeReference<Map<String, Object>>() {});
 		List<DcStorageMain> sharedDcStorageMainList = objectMapper.convertValue(params.get("sharedDcStorageMainList"), new TypeReference<List<DcStorageMain>>() {});
@@ -198,7 +191,6 @@ public class DraftPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("기안문 작성 시 문서함 조회 팝업");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/eapproval/draft/draft_docBox_popup";
 	}

@@ -35,7 +35,6 @@ public class MonthlyreportAdminPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고관리관 목록 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제, 추가, 수정, 승인요청 버튼
 		String[] btnId = {"MNTH_ADMIN_D_01", "MNTH_ADMIN_U_01", "MNTH_ADMIN_C_01"};
@@ -61,7 +60,6 @@ public class MonthlyreportAdminPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고관리관 상세조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제, 추가, 수정, 승인요청 버튼
 		String[] btnId = { "MNTH_ADMIN_U_01" };
@@ -83,7 +81,6 @@ public class MonthlyreportAdminPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고관리관 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/monthlyreportadmin/monthlyreportadmin_c";
 	}
@@ -95,7 +92,6 @@ public class MonthlyreportAdminPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("월간공정보고관리관 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/monthlyreportadmin/monthlyreportadmin_u";
 	}

@@ -66,7 +66,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                         .put("dailyreportList",
@@ -89,7 +88,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 dailyreportInsert.setDltYn("N");
 
@@ -130,7 +128,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 상세 조회");
-                systemLogComponent.addUserLog(userLog);
 
                
                 CwDailyReport dailyReport = dailyreportComponent.getSummary(dailyreportMain.getCntrctNo(),
@@ -181,11 +178,6 @@ public class DailyreportApiController extends AbstractController {
 
                 Result response = Result.ok();
                 try {
-                        // 보고서 번호 중복 체크 (복사로 게시물 추가한 경우)
-//                        if (("copy").equals(dailyreportInsert.getCreateType()) &&
-//                                dailyreportComponent.chkReportNo(dailyreportInsert.getCntrctNo(), dailyreportInsert.getReportNo()) == false)
-                                //throw new GaiaBizException(ErrorType.DUPLICATION_DATA, "DuplicateReportNo");
-
                         CwDailyReport dailyReportData = dailyreportComponent.getSummary(dailyreportInsert.getCntrctNo(),
                                 dailyreportInsert.getDailyReportId());
                         if (dailyReportData != null) {
@@ -193,32 +185,22 @@ public class DailyreportApiController extends AbstractController {
                                 dailyreportInsert.setDltYn("N");
                                 dailyreportForm.toUpdateCwDailyReport(dailyreportInsert, dailyReportData);
 
-                                /* CwDailyReport dt 가 필요 없음. by soulers. */
-                                /*CwDailyReport dt = dailyreportComponent.updateDailyReport(
-                                        dailyreportInsert.getDailyReportActivity(),
-                                        dailyreportInsert.getDailyReportResource(),
-                                        dailyReportData); */
-
                                 dailyreportComponent.updateDailyReport(
                                         dailyreportInsert.getDailyReportActivity(),
                                         dailyreportInsert.getDailyReportResource(),
                                         dailyReportData);
 
                                 log.info("updateDailyReport: 작업일지 수정 성공");
-                                /* updateDailyReport 에서 공정현황 업데이트 해주는 데 중복 작업 하고 있음 by soulers.*/
-                                //dailyreportComponent.updateRate(dt);
                         }
 
                         log.info("updateDailyReport: 작업일지 수정 대상 미존재");
 
                         userLog.setResult("SUCCESS");
-                        systemLogComponent.addUserLog(userLog);
-                } catch (GaiaBizException e) {
+                        } catch (GaiaBizException e) {
                         log.info("updateDailyReport: 작업일지 수정 중 오류 발생, 오류 메세지 = " + e.getMessage());
                         userLog.setResult("FAIL");
                         userLog.setErrorReason(e.getMessage());
-                        systemLogComponent.addUserLog(userLog);
-                        response = response.put("resultMsg", e.getMessage());
+                                response = response.put("resultMsg", e.getMessage());
                 }
 
                 return response;
@@ -234,7 +216,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 공정사진 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 log.warn("uploadData : "+uploadData);
                 log.warn("deleteData : "+deleteData);
@@ -326,7 +307,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 실적변경 데이터 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 Result response = Result.ok();
                 if (dailyreportMain.getWorkDtType().toString().equals("TD")) {
@@ -343,7 +323,7 @@ public class DailyreportApiController extends AbstractController {
                                         dailyreportComponent.selectTodayActivityList(
                                                 dailyreportMain.getCntrctNo(),
                                                 dailyreportMain.getDailyReportId(),
-                                                "TM"));
+                                                dailyreportMain.getDailyReportDate()));
                 } else {
                         response = response
                                 .put("prActivityList",
@@ -357,7 +337,8 @@ public class DailyreportApiController extends AbstractController {
                                 .put("tomorrowDailyReportActivityList",
                                         dailyreportComponent.selectTomorrowActivityList(
                                                 dailyreportMain.getCntrctNo(),
-                                                dailyreportMain.getDailyReportId()));
+                                                dailyreportMain.getDailyReportId(),
+                                                dailyreportMain.getDailyReportDate()));
                 }
                 return response;
         }
@@ -376,7 +357,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 - 금일 및 명일 실적 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 dailyreportComponent.updateDailyReportChage(dailyreportInsert.getDailyReportActivity(),
                         dailyreportInsert.getDailyReportResource(), dailyreportInsert.getPrActivity(),
@@ -399,7 +379,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 승인상태 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 dailyreportComponent.updateDailyReportList(dailyreport.getDailyReportList(), commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
                 return Result.ok();
@@ -418,7 +397,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 삭제");
-                systemLogComponent.addUserLog(userLog);
 
                 dailyreportComponent.delDailyReport(dailyreport.getDailyReportList());
                 return Result.ok();
@@ -522,7 +500,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 인력 정보 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 String cntrctNo = paramMap.get("cntrctNo");
                 String dailyReportId = paramMap.get("dailyReportId");
@@ -540,7 +517,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 게시물 존재 여부 확인");
-                systemLogComponent.addUserLog(userLog);
 
                 String dailyReportDate = paramMap.get("dailyReportDate");
                 String cntrctNo = paramMap.get("cntrctNo");
@@ -560,7 +536,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 자원 수동 추가");
-                systemLogComponent.addUserLog(userLog);
                 List<DailyreportForm.ManualDailyReportResource> list = saveResourceRequest.getResourceList();
 
                 log.info("checkDailyReportExists: 작업일지 현장 작업자 인력 저장. params = {}", list);
@@ -576,7 +551,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 공종 자원 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 String cntrctNo = paramMap.get("cntrctNo");
                 String rsceTpCd = paramMap.get("rsceTpCd");
@@ -629,7 +603,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 QDB 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 String cntrctNo = paramMap.get("cntrctNo");
                 String activityId = paramMap.get("activityId");
@@ -657,7 +630,6 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 금일 액티비티 자원 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                         .put("todayResourceList",
@@ -678,39 +650,106 @@ public class DailyreportApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("작업일지 추가 및 복사");
-                systemLogComponent.addUserLog(userLog);
 
                 dailyreportInsert.setDltYn("N");
 
                 Long reportId = null;
 
-                if(!("copy").equals(dailyreportInsert.getCreateType())) {
-                        // 게시물작성날짜 확인
-                        if (dailyreportComponent.chkDailyReportDate(dailyreportInsert.getCntrctNo(),
-                                dailyreportInsert.getDailyReportDate())) {
+            if (!"copy".equals(dailyreportInsert.getCreateType())) {
+                // 추가인 경우 게시물작성날짜 확인
+                boolean isNewDateValid = dailyreportComponent.chkDailyReportDate(
+                        dailyreportInsert.getCntrctNo(),
+                        dailyreportInsert.getDailyReportDate()
+                );
 
-                                CwDailyReport cwDailyReport = dailyreportComponent
-                                        .addTodayDailyReport(dailyreportForm.DailyReportInsert(dailyreportInsert));
-
-                                if(cwDailyReport != null) {
-                                        reportId = cwDailyReport.getDailyReportId();
-                                } else {
-                                        throw new GaiaBizException(ErrorType.INTERNAL_SERVER_ERROR, "failCreate");
-                                }
-                        } else {
-                                throw new GaiaBizException(ErrorType.DUPLICATION_DATA, "DuplicateReport");
-                        }
-                } else {
-                        // 복사인 경우 게시물번호, 게시물작성날짜 확인 안함, 수정 페이지에서 진행
-                        CwDailyReport cwDailyReport = dailyreportComponent
-                                .addTodayDailyReport(dailyreportForm.DailyReportInsert(dailyreportInsert));
-
-                        if(cwDailyReport != null) {
-                                reportId = cwDailyReport.getDailyReportId();
-                        } else {
-                                throw new GaiaBizException(ErrorType.INTERNAL_SERVER_ERROR, "failCreate");
-                        }
+                if (!isNewDateValid) {
+                    throw new GaiaBizException(ErrorType.DUPLICATION_DATA, "DuplicateReport");
                 }
+            }
+
+            // 추가 또는 복사 모두 동일하게 실행
+            CwDailyReport cwDailyReport = dailyreportComponent
+                    .addTodayDailyReport(dailyreportForm.DailyReportInsert(dailyreportInsert));
+
+            if (cwDailyReport == null) {
+                throw new GaiaBizException(ErrorType.INTERNAL_SERVER_ERROR, "failCreate");
+            }
+                reportId = cwDailyReport.getDailyReportId();
                 return Result.ok().put("dailyreportId", reportId);
         }
+        /**
+         * 작업일지 금일 액티비티/자원 추가 및 수정
+         *
+         * @param dailyreportInsert
+         * @return
+         */
+        @PostMapping("/dailyreport/add-update-act-res")
+        @Description(name = "작업일지 액티비티 및 자원 추가 혹은 수정", description = "작업일지 액티비티 및 자원 추가 혹은 수정", type = Description.TYPE.MEHTOD)
+        public Result addOrUpdateActAndRes(CommonReqVo commonReqVo, @RequestBody @Valid DailyreportForm.DailyReportInsert dailyreportInsert) {
+                log.info("addOrUpdateActAndRes: 작업일지 수정 진행 dailyreportInsert = {}",dailyreportInsert );
+
+                Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
+                userLog.setLogType(LogType.FUNCTION.name());
+                userLog.setExecType("작업일지 액티비티 및 자원 추가 혹은 수정");
+
+                Result response = Result.ok();
+                try {
+
+                        CwDailyReport dailyReportData = dailyreportComponent.getSummary(dailyreportInsert.getCntrctNo(), dailyreportInsert.getDailyReportId());
+                        if (dailyReportData != null) {
+                                dailyreportComponent.addOrUpdateActAndRes(
+                                        dailyreportInsert.getDailyReportActivity(),
+                                        dailyreportInsert.getDailyReportResource(), dailyReportData);
+
+                        }
+
+                        log.info("addOrUpdateActAndRes: 작업일지 수정 성공");
+                        userLog.setResult("SUCCESS");
+                                response = response.put("resultMsg", "SUCCESS");
+                } catch (GaiaBizException e) {
+                        log.info("addOrUpdateActAndRes: 작업일지 수정 중 오류 발생, 오류 메세지 = " + e.getMessage());
+                        userLog.setResult("FAIL");
+                        userLog.setErrorReason(e.getMessage());
+                                response = response.put("resultMsg", "FAIL");
+                }
+
+                return response;
+
+        }
+
+    // 작업일지 특정 dailyRepotId 의 액티비티 존재 여부 확인
+    @PostMapping("/dailyreport/activity-exists")
+    @Description(name = "작업일지 액티비티 존재 여부 확인", description = "작업일지 액티비티 존재 여부 확인", type = Description.TYPE.MEHTOD)
+    public Result checkActivityExists(CommonReqVo commonReqVo,
+                                         @RequestBody Map<String, String> paramMap) throws IOException {
+
+        Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
+        userLog.setLogType(LogType.FUNCTION.name());
+        userLog.setExecType("작업일지 액티비티 존재 여부 확인");
+
+        Long dailyReportId = paramMap.get("dailyReportId") == null
+                ? null
+                : Long.parseLong(paramMap.get("dailyReportId").toString());
+        String cntrctNo = paramMap.get("cntrctNo");
+        log.info("checkActivityExists: 작업일지 액티비티 존재 여부 확인. params = {}", paramMap);
+        return Result.ok()
+                .put("activityExists", dailyreportComponent.checkActivityExists(cntrctNo, dailyReportId));
+    }
+
+    // 작업일지 현재 게시물 이전 제일 최신의 게시물이 승인 되지 않은 경우 데이터 전달
+    @PostMapping("/dailyreport/prev-unapproved-report")
+    @Description(name = "작업일지 현재 게시물 이전 승인되지 않은 최신 게시물 조회", description = "작업일지 현재 게시물 이전 승인되지 않은 최신 게시물 조회", type = Description.TYPE.MEHTOD)
+    public Result getPrevtUnapprovedReport(CommonReqVo commonReqVo,
+                            @RequestBody Map<String, String> paramMap) throws IOException {
+
+        Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
+        userLog.setLogType(LogType.FUNCTION.name());
+        userLog.setExecType("작업일지 승인되지 않은 최신 게시물 조회");
+
+        String cntrctNo = paramMap.get("cntrctNo");
+        String dailyReportDate = paramMap.get("dailyReportDate");
+        log.info("getPrevtUnapprovedReport: 작업일지 현재 게시물 이전 승인되지 않은 최신 게시물 조회 조회. params = {}", paramMap);
+
+        return Result.ok().put("prevUnapprovedReport", dailyreportComponent.selectPrevUnapprovedReport(cntrctNo, dailyReportDate));
+    }
 }

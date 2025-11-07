@@ -40,7 +40,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("품질검측관리 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = { "QUA_D_01", "QUA_U_01", "QUA_C_05", "QRQ_AP_REQ", "QUA_C_12",
                 "QUA_C_13", "QRP_AP_REQ", "QUA_CHKL_C_01", "QRQ_AP_REQ_D" };
@@ -77,7 +76,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("품질검측 상세 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type.toString())) {
             model.addAttribute("header", true);
@@ -114,7 +112,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("품질검측 추가,수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_cu";
     }
@@ -129,7 +126,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("품질검측 Activity 선택 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_select_activity_pop_up";
     }
@@ -151,7 +147,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("검측결과 등록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_result_cu";
     }
@@ -166,7 +161,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조치사항 등록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_action_cu";
     }
@@ -181,7 +175,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("조치사항 등록 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_action_modal";
     }
@@ -196,7 +189,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("체크리스트 가져오기 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_select_checklist_pop_up";
     }
@@ -211,7 +203,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("결재결과 등록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_payment_r";
     }
@@ -233,7 +224,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("체크리스트 관리 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_checklist_cu";
     }
@@ -249,7 +239,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("하위 공종 추가 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_work_modal";
     }
@@ -265,7 +254,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("검측 체크 리스트 추가,수정 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_checklist_modal";
     }
@@ -281,7 +269,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("사진 추가, 수정 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinspection_photo_modal";
     }
@@ -294,7 +281,6 @@ public class QualityInspectionPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("품질검측 검측요청 모달");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/qualityinspection/qualityinsepction_request_modal";
     }

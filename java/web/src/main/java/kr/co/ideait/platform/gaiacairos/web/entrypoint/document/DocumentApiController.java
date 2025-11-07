@@ -148,7 +148,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("네비게이션 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         HashMap<String,Object> result = documentComponent.getDocumentMainData(inputParam,commonReqVo);
 
@@ -168,7 +167,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("네비게이션 경로명 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("addNaviExist", documentService.addNaviExist(inputParam.getNaviDiv(),
                 inputParam.getUpNaviId(), inputParam.getNaviNm()));
@@ -183,7 +181,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("폴더종류 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
 //        return Result.ok().put("result", documentService.checkHasFolderType(inputParam));
         return Result.ok().put("result", documentComponent.checkHasNavigationType(inputParam));
@@ -201,7 +198,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("폴더명 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("checkFolderExist",
                 documentComponent.checkFolderExist(inputParam.getNaviId(), inputParam.getUpDocId(), inputParam.getDocNm()));
@@ -222,7 +218,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("네비게이션 경로 생성");
-        systemLogComponent.addUserLog(userLog);
 
         navigation.setNaviId(java.util.UUID.randomUUID().toString());
         navigation.setRgstrId(commonReqVo.getUserId());
@@ -243,7 +238,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 이름 변경");
-        systemLogComponent.addUserLog(userLog);
 
         DcNavigation dcNavigation = documentService.getNavigation(navigation.getNaviNo());
         if (dcNavigation != null) {
@@ -266,7 +260,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서폴더 생성");
-        systemLogComponent.addUserLog(userLog);
 
         DcStorageMain dcStorageMain = documentForm.toDcStorageMain(doc);
         dcStorageMain.setDocType(DocumentType.FOLDER.toString());
@@ -293,7 +286,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 권한그룹 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String[] param = commonReqVo.getUserParam();
         String cmnGrpCd = CommonCodeConstants.AKIND_CODE_GROUP_CODE;
@@ -327,7 +319,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 권한설정");
-        systemLogComponent.addUserLog(userLog);
 
         String authType = "navi";
 
@@ -345,7 +336,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 권한설정 권한사용자 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String userInfo = cookieService.getCookie(request, cookieVO.getPortalCookieName());
 
@@ -367,7 +357,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         List<Object> propertyList = documentService.getDocumentNavigationPropertyList(navigationId).stream()
                 .map("copy".equals(type) ? documentDto::toSimpleCopyProperty : documentDto::toSimpleProperty)
@@ -386,7 +375,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 추가 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         List<String> cmnGrpCdList = new ArrayList<>();
         cmnGrpCdList.add(CommonCodeConstants.ATTBTKIND_CODE_GROUP_CODE);
@@ -414,7 +402,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 코드 중복체크");
-        systemLogComponent.addUserLog(userLog);
 
         DcProperty existProperty = documentService.attrbtCdExist(inputParam.getAttrbtCd(), inputParam.getNaviId());
 
@@ -438,7 +425,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 추가");
-        systemLogComponent.addUserLog(userLog);
 
         DcProperty dcProperty = documentForm.toDcProperty(property);
         dcProperty.setRgstrId(commonReqVo.getUserId());
@@ -455,7 +441,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 수정");
-        systemLogComponent.addUserLog(userLog);
 
         DcProperty dcProperty = documentService.getProperty(property.getAttrbtNo());
         if (dcProperty != null) {
@@ -475,7 +460,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         documentService.deleteProperty(property.getAttrbtNoList());
         return Result.ok();
@@ -491,7 +475,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("속성 정보 수정 html 요소 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         // actionTy 값 검증
         if (data.getActionTy() != null && !"update".equals(data.getActionTy())) {
@@ -525,7 +508,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 아이템 추가");
-        systemLogComponent.addUserLog(userLog);
 
 
         // 입력 값 검증
@@ -560,7 +542,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 권한 복사");
-        systemLogComponent.addUserLog(userLog);
 
         List<DcAuthority> result = documentService.getAuthority(copyParam.getTargetId(), copyParam.getTargetNo());
 
@@ -578,7 +559,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 권한 붙이기");
-        systemLogComponent.addUserLog(userLog);
 
         MybatisInput copyAuthorityInput = MybatisInput.of().add("targetId", authorityPaste.getTargetId())
                 .add("targetNo", authorityPaste.getTargetNo())
@@ -600,7 +580,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 복사");
-        systemLogComponent.addUserLog(userLog);
 
         List<DcProperty> result = documentService.getNavigationProperty(copyParam.getTargetId(),
                 copyParam.getTargetNo());
@@ -618,7 +597,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 속성 붙이기");
-        systemLogComponent.addUserLog(userLog);
 
         MybatisInput copyPropertyInput = MybatisInput.of().add("targetId", propertyPaste.getTargetId())
                 .add("targetNo", propertyPaste.getTargetNo())
@@ -643,7 +621,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         if (docListGet.getUpDocId() == null) {
             docListGet.setUpDocId("#");
@@ -677,7 +654,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 속성 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("propertyList", documentService.getPropertyList(naviId, langInfo));
     }
@@ -692,7 +668,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서명 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("docNmExist",
                 documentService.updateDocExist(inputParam.getNaviId(), inputParam.getUpDocId(), inputParam.getDocNm()));
@@ -707,7 +682,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 이름 변경");
-        systemLogComponent.addUserLog(userLog);
 
         DcStorageMain dcStorageMain = documentService.getDcStorageMain(doc.getDocId());
 
@@ -745,7 +719,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 속성 정보 수정");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Object> result = documentComponent.updatePropertyData(propData, newFiles, newSubFiles, subFileAttrbtCds, removedFileNos,
                 removedSubFileNos, user);
@@ -771,7 +744,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 권한그룹 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String cmnGrpCd = CommonCodeConstants.AKIND_CODE_GROUP_CODE;
 
@@ -801,7 +773,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 권한설정");
-        systemLogComponent.addUserLog(userLog);
 
 
         //컴포넌트 호출로 변경.
@@ -820,7 +791,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 업로드");
-        systemLogComponent.addUserLog(userLog);
 
 
         log.debug("============request data=============");
@@ -864,7 +834,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 다운로드");
-        systemLogComponent.addUserLog(userLog);
 
         if (dcStorageMain != null) {
             String docNm = dcStorageMain.getDocNm();
@@ -900,7 +869,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 다운로드(압축)");
-        systemLogComponent.addUserLog(userLog);
 
         // TODO: 문서의 다운로드 권한이 있는지 확인 필요 (UserAuth 활용)
         List<String> docIdList = docDownload.getDocIdList();
@@ -942,7 +910,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 다운로드(아이템형)");
-        systemLogComponent.addUserLog(userLog);
 
         // TODO: 문서의 다운로드 권한이 있는지 확인 필요 (UserAuth 활용)
         // List<File> fileResources = new ArrayList<>();
@@ -985,7 +952,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("PDF 미리보기");
-        systemLogComponent.addUserLog(userLog);
 
         DcStorageMain dcStorageMain = documentService.getDcStorageMain(docId);
         if (dcStorageMain != null) {
@@ -1028,7 +994,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("PDF 다운로드");
-        systemLogComponent.addUserLog(userLog);
 
         DcStorageMain dcStorageMain = documentService.getDcStorageMain(docId);
         if (dcStorageMain != null) {
@@ -1071,7 +1036,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("파일, 폴더 개수 조회");
-        systemLogComponent.addUserLog(userLog);
 
         Map<String, Long> result = documentService.getFileFolderCounts(docDelete.getDocId());
 
@@ -1087,7 +1051,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         documentService.deleteDocument(docDeleteList.getDocIdList(), user);
         return Result.ok();
@@ -1102,7 +1065,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서경로, 문서 full tree 조회");
-        systemLogComponent.addUserLog(userLog);
 
         List<Map<String, ?>> fullTree = documentService.getNaviDocTreeList(fullTreeList.getTopNaviId(),
                 fullTreeList.getDocFolderIdList(), user);
@@ -1118,7 +1080,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 이동");
-        systemLogComponent.addUserLog(userLog);
 
         List<Map<String, ?>> moveDocResult = documentService.moveDocument(doc.getSourceItemId(), doc.getSourceItemNo(),
                 doc.getSourceItemKind(), doc.getSourceItemPath(), doc.getTargetDocIdList(), user);
@@ -1135,7 +1096,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 복사");
-        systemLogComponent.addUserLog(userLog);
 
         List<Map<String, ?>> copyDocResult = documentService.copyDocument(doc.getSourceItemId(), doc.getSourceItemNo(),
                 doc.getSourceItemKind(), doc.getSourceItemPath(), doc.getTargetDocIdList(), user);
@@ -1153,7 +1113,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         DcNavigation dcNavigation = documentService.getNavigation(navigationNo);
         if (dcNavigation != null) {
@@ -1174,7 +1133,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("문서 네비게이션 삭제(하위 문서 존재 O)");
-        systemLogComponent.addUserLog(userLog);
 
         if (naviId != null) {
             documentService.deleteNavigationAndSubDocumentList(naviId, user.getUsrId());
@@ -1435,7 +1393,6 @@ public class DocumentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("착공계 관리에서 착공계 문서 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         documentComponent.deleteConstructDocument(docDeleteList.getDocIdList(), user);
 

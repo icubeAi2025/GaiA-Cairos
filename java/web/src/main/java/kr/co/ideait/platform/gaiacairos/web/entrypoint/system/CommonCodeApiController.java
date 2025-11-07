@@ -50,7 +50,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("groupCodeList",
@@ -67,7 +66,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 상세조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("groupCode",commonCodeComponent.getCommonCodeGroup(cmnGrpNo));
@@ -83,7 +81,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 코드 중복 체크");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("exist", commonCodeComponent.existCommonCodeGroup(upCmnGrpNo, cmnCd));
@@ -99,7 +96,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 SmComCodeGroup smComCodeGroup = commonCodeForm.toSmComCodeGroup(CommonCodeGroup);
                 return Result.ok()
@@ -119,7 +115,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 if (smComCodeGroup != null) {
                         return Result.ok()
@@ -139,7 +134,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 삭제");
-                systemLogComponent.addUserLog(userLog);
 
                 commonCodeComponent.deleteCommonCodeGroup(commonCodeGroupNoList.getCmnGrpCdList(), commonReqVo);
                 return Result.ok();
@@ -155,7 +149,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 위로 이동");
-                systemLogComponent.addUserLog(userLog);
 
                 boolean result = commonCodeComponent.upGroup(smComCodeGroup, commonReqVo);
                 if (result) {
@@ -175,7 +168,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드그룹 아래로 이동");
-                systemLogComponent.addUserLog(userLog);
 
                 boolean result = commonCodeComponent.downGroup(smComCodeGroup, commonReqVo);
                 if (result) {
@@ -197,7 +189,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("Grid용 공통코드 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 CommonCodeListInput commonCodeListInput = commonCodeForm.toCommonCodeListInput(commonCodeSearch);
                 return GridResult.ok(
@@ -215,7 +206,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 목록 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 CommonCodeListInput commonCodeListInput = commonCodeForm.toCommonCodeListInput(commonCodeSearch);
                 return Result.ok()
@@ -234,7 +224,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 상세조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("code", commonCodeComponent.getCommonCodeLoadData(cmnCdNo));
         }
@@ -250,7 +239,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 리스트 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("codeCombo", commonCodeComponent.getCommonCodeListByGroupCode(cmnGrpCd).stream()
@@ -274,7 +262,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 리스트 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 Map<String, Stream<CommonCodeDto.CommonCodeCombo>> comboMap = new HashMap<>();
                 commonCodeNoList.getCmnCdList().forEach(code -> {
@@ -294,7 +281,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 중복 체크");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("exist", commonCodeComponent.existCommonCode(groupCodeCd, code));
@@ -310,7 +296,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 추가");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok().put("code", commonCodeComponent.createCommonCode(smComCode, commonReqVo));
         }
@@ -325,7 +310,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 if (smComCode != null) { // 데이터가 있는지 확인
                         return Result.ok()
@@ -346,7 +330,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 순서 수정");
-                systemLogComponent.addUserLog(userLog);
 
                 commonCodeComponent.updateCommonCodeOrder(commomCodeNoList.getCmnCdList(), commonReqVo);
                 return Result.ok();
@@ -363,7 +346,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 삭제");
-                systemLogComponent.addUserLog(userLog);
 
                 commonCodeComponent.deleteCommonCode(cmnCdList.getCmnCdList(), commonReqVo);
                 return Result.ok();
@@ -380,7 +362,6 @@ public class CommonCodeApiController extends AbstractController {
                 Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
                 userLog.setLogType(LogType.FUNCTION.name());
                 userLog.setExecType("공통코드 리스트 다중 조회");
-                systemLogComponent.addUserLog(userLog);
 
                 return Result.ok()
                                 .put("codeComboMap",

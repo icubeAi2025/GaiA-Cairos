@@ -267,7 +267,6 @@
                             }
                         }
                         e.target.value = "";
-                        console.log("버튼으로 업로드 : ", component.state.uploadedFiles);
                         component.render();
                     }
                     fileInput.addEventListener("change", component.eventListeners.changeFileInput);
@@ -328,9 +327,7 @@
                             } else {
                                 const dt = e.dataTransfer;
                                 const items = dt.items;
-                                console.log("ITEMS:", items);
                                 const files = await this.dragAndDropHandler(items);
-                                console.log("드랍!", files);
                                 for (const file of files) {
                                     const fileDto = {
                                         fileNm: file.name,
@@ -360,9 +357,7 @@
                         while (component.state.uploadedFiles.length > 0) {
                             const deleteFile = component.state.uploadedFiles.pop();
                             if (deleteFile.realFile) {
-                                console.log("업로드 했던 파일 삭제!", deleteFile);
                             } else {
-                                console.log("기존 파일 삭제!", deleteFile);
                                 component.state.deletedFiles.push(deleteFile)
                             }
                         }
@@ -381,13 +376,10 @@
                         const deleteFile = component.state.uploadedFiles.splice(idx,1)[0];
 
                         if(deleteFile.realFile){
-                            console.log("업로드 했던 파일 삭제!",deleteFile);
                         }
                         else{
-                            console.log("기존 파일 삭제!",deleteFile);
                             component.state.deletedFiles.push(deleteFile)
                         }
-                        console.log("UPLOADEDFILES : ",component.state.uploadedFiles);
                         component.render();
                     }
                 }

@@ -22,7 +22,6 @@ public class ActivityPageController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("Activity 관리 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/wbs/activity/activity";
 	}

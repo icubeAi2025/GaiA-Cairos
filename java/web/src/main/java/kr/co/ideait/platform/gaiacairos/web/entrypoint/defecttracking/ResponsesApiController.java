@@ -58,7 +58,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 목록 조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         Page<DefectTrackingListOutput> pageData = defectTrackingComponent.getDfccyListToGrid(defectTrackingForm.toDfccySearchInput(defectTrackingListGet), langInfo);
         Long totalCount = pageData.getTotalElements();
@@ -82,7 +81,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 답변 상세조회");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("returnMap", responsesComponent.getResponses(responsesGet));
     }
@@ -105,7 +103,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 답변 추가");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("response", responsesComponent.saveResponses(responsesForm.toDtDeficiencyReply(response), files, commonReqVo));
     }
@@ -128,7 +125,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 답변 수정");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("response", responsesComponent.updateResponses(responsesForm.toDtDeficiencyReply(response), response.getDelFileList(), files, commonReqVo));
     }
@@ -147,7 +143,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 답변 삭제");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("rplyY", responsesComponent.deleteResponses(responsesList.getResponsesList()));
     }
@@ -167,7 +162,6 @@ public class ResponsesApiController extends AbstractController {
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("답변관리 > 결함 답변 확인 처리");
 
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("rplyY", responsesComponent.confirmResponses(responsesList.getResponsesList(), user.getUsrId(), commonReqVo));
     }

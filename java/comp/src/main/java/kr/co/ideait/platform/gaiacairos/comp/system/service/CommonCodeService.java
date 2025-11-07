@@ -6,6 +6,8 @@ import com.google.common.collect.Maps;
 import kr.co.ideait.platform.gaiacairos.comp.mail.MailComponent;
 import kr.co.ideait.platform.gaiacairos.core.base.AbstractGaiaCairosService;
 import kr.co.ideait.platform.gaiacairos.core.constant.CommonCodeConstants;
+import kr.co.ideait.platform.gaiacairos.core.exception.ErrorType;
+import kr.co.ideait.platform.gaiacairos.core.exception.GaiaBizException;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmComCode;
 import kr.co.ideait.platform.gaiacairos.core.persistence.entity.SmComCodeGroup;
 import kr.co.ideait.platform.gaiacairos.core.persistence.jpa.repositories.SmComCodeGroupRepository;
@@ -78,6 +80,10 @@ public class CommonCodeService extends AbstractGaiaCairosService {
             maxDisplayOrder++;
         }
         CommonCodeDto.SmComCodeGroup mybatisParam = toggleSmComCodeGroup(smComCodeGroup);
+        if(mybatisParam == null){
+            log.error("정상적이지 않은 요청 데이터 : {}",smComCodeGroup);
+            return null;
+        }
         String cmnGrpCd = mybatisParam.getCmnGrpCd();
         if(cmnGrpCd == null || cmnGrpCd.isEmpty()){
             cmnGrpCd = UUID.randomUUID().toString();
@@ -306,7 +312,10 @@ public class CommonCodeService extends AbstractGaiaCairosService {
         List<DocumentForm.PropertyCreate> propertyList = new ArrayList<>();
 
         SmComCode smComCode = this.getCommonCodeByGrpCdAndCmnCd(cmnGrpCd, cmnCd);
-
+        if(smComCode == null){
+            String errorMsg = String.format("잘못된 요청입니다. cmnGrpCd : %s / cmnCd : %s", cmnGrpCd, cmnCd);
+            throw new GaiaBizException(ErrorType.INVAILD_INPUT_DATA,errorMsg);
+        }
         // 폴더 종류 정보 조회
 
         // property_data 처리

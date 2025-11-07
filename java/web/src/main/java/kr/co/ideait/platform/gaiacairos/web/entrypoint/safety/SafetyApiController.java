@@ -50,7 +50,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("safetyList",
                 safetyService.getSafetyList(param.getCntrctNo(), param.getSelectedStatus(), param.getSearchValue(), param.getSelectedValue()));
@@ -66,7 +65,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 승인요청");
-        systemLogComponent.addUserLog(userLog);
 
         safetyComponent.requestApprovalSafety(input, commonReqVo);
 
@@ -84,7 +82,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 점결결과 작성 요청");
-        systemLogComponent.addUserLog(userLog);
 
         // if ("G".equals(commonReqVo.getPjtDiv()) &&
         // PlatformType.from(commonReqVo.getPlatform()).equals(PlatformType.CAIROS)) {
@@ -107,7 +104,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         SafetyOutput safety = safetyService.getSafetyWithQuery(cntrctNo, inspectionNo); // 안전점검 데이터
         List<SafetyListOutPut> safetyList = safetyService.getSafetyListByQuery(cntrctNo, inspectionNo); // 점검항목 데이터
@@ -130,7 +126,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 추가/수정 화면 대공종 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("cnsttyList", safetyService.getCnsttyLvl1(work.getCntrctNo(), work.getUpCnsttyCd()));
     }
@@ -146,7 +141,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 추가/수정 화면 공종 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("cnsttyList", safetyService.getCnsttyLvl2(cntrctNo, upCnsttyCd));
     }
@@ -161,7 +155,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 추가/수정 화면 안전점검 항목 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("inspectionList",
                 safetyService.getInspectionList(cnsttyCd.getCntrctNo(), cnsttyCd.getCnsttyCd()));
@@ -179,7 +172,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검, 안전점검 항목 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         safetyComponent.createSafety(safety, commonReqVo.getUserId());
 
@@ -197,7 +189,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검, 안전점검 항목 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         safetyComponent.updateSafety(safety, commonReqVo);
 
@@ -214,7 +205,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         for (int i = 0; i < safetyList.getSafetyList().size(); i++) {
             safetyComponent.deleteSafetyYn(safetyList.getSafetyList().get(i).getCntrctNo(),
@@ -238,7 +228,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 점검결과 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         safetyComponent.addResult(safety, photos, commonReqVo.getUserId());
 
@@ -257,7 +246,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 점검결과 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         safetyComponent.updateResult(safety, photos, commonReqVo.getUserId());
 
@@ -276,7 +264,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 리스트 관리 화면 공통인 경우 공종 목록 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String check = "common";
         return Result.ok().put("treeList", safetyService.getTreeList(cntrctNo, check));
@@ -292,7 +279,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 리스트 관리 화면 계약인 경우 공종 목록 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String check = "contract";
         return Result.ok().put("treeList", safetyService.getTreeList(cntrctNo, check));
@@ -308,7 +294,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 리스트 관리 화면 안전점검 리스트 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("gridList", safetyService.getGridList(grid.getCntrctNo(), grid.getCnsttyCd(),
                 grid.getSearchValue(), grid.getUseType()));
@@ -325,7 +310,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 리스트 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("list", safetyService.getList(list.getIspLstId()));
     }
@@ -340,7 +324,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 공종코드 중복체크");
-        systemLogComponent.addUserLog(userLog);
 
         boolean duplicated = safetyService.checkCode(checkCode.getCnsttyCd());
         return Result.ok().put("result", duplicated);
@@ -356,7 +339,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 하위 공종 추가");
-        systemLogComponent.addUserLog(userLog);
 
         CwStandardInspectionList cwWork = checkForm.toStandardEntity(createWork);
         cwWork.setIspLstId(UUID.randomUUID().toString());
@@ -377,7 +359,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 하위 공종 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwStandardInspectionList oldWork = safetyService.getWorkByCnsttyCd(updateWork.getCntrctNo(),
                 updateWork.getCnsttyCd());
@@ -396,7 +377,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 하위 공종 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         safetyService.deleteWork(deleteWork.getCntrctNo(), deleteWork.getIspLstId());
         return Result.ok();
@@ -412,7 +392,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 관리 화면 안전점검 리스트 데이터 추가");
-        systemLogComponent.addUserLog(userLog);
 
         CwStandardInspectionList cwList = checkForm.toStandardEntity(createList);
         cwList.setIspLstId(UUID.randomUUID().toString());
@@ -432,7 +411,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 관리 화면 안전점검 리스트 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         CwStandardInspectionList oldList = safetyService.getList(updateList.getIspLstId());
         oldList.setIspLstDscrpt(updateList.getIspLstDscrpt());
@@ -451,7 +429,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 관리 화면 안전점검 리스트 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         for (int i = 0; i < ispLstIds.getIspLstIds().size(); i++) {
             CwStandardInspectionList delete = safetyService.getList(ispLstIds.getIspLstIds().get(i));
@@ -472,7 +449,6 @@ public class SafetyApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("안전점검 관리 화면 안점점검 리스트 추가 시 해당 점검 리스트의 점검리스트ID 부여");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("maxIspLstId", UUID.randomUUID().toString());
     }

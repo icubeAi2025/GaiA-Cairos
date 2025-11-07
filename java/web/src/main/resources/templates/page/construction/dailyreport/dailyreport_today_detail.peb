@@ -24,7 +24,7 @@
                         <!-- searchbox -->
                         <div class="searchbox_wrap">
                             <input type="text" id="searchText" placeholder="검색어를 입력하세요">
-                            <button type="submit" class="icon_btn search">
+                            <button type="submit" id="searchBtn" class="icon_btn search">
                                 <i class="ic ic-search"></i>
                                 <span class="blind">검색</span>
                             </button>
@@ -40,14 +40,14 @@
                 <div class="s_conts">
                     <span class="tree_route">{{ message("item.construction.056") }}</span>
                     <div class="conts_grid">
-                        <h4 class="conts_s-tit">금일 실적</h4>
+                        <h4 class="conts_s-tit">금일 Activity</h4>
                         <!-- 금일 액티비티 -->
                         <div class="grid" id="todayGrid"></div>
                     </div>
 
                     <!-- 인력 -->
                     <div class="conts_grid" style="padding-top: 10px">
-                        <span class="conts_s-tit" >* 인력</span>
+                        <h4 class="conts_s-tit" >* 인력</h4>
                         <div class="tagbar" id="laborTags"></div>
                         <div class="searchbox_wrap" style="width: 300px;">
                             <input type="text" id="laborSearchText" placeholder="검색어를 입력하세요">
@@ -68,7 +68,7 @@
 
                     <!-- 자재 -->
                     <div class="conts_grid" style="padding-top: 5px">
-                        <span class="conts_s-tit">* 자재</span>
+                        <h4 class="conts_s-tit">* 자재</h4>
                         <div class="tagbar" id="materialTags"></div>
                         <div class="search_wrap">
                             <span class="selectbox">
@@ -98,7 +98,7 @@
 
                     <!-- 장비 -->
                     <div class="conts_grid" style="padding-top: 5px">
-                        <span class="conts_s-tit">* 장비</span>
+                        <h4 class="conts_s-tit">* 장비</h4>
                         <div class="tagbar" id="expensesTags"></div>
                         <div class="searchbox_wrap" style="width: 300px;">
                             <input type="text" id="expensesSearchText" placeholder="검색어를 입력하세요">
@@ -121,12 +121,12 @@
 
         </article>
     </section>
-    {% include "page/construction/dailyreport/dailyreport_qdb" %}
-            {% include 'sub/grid' %}
+{% include "page/construction/dailyreport/dailyreport_qdb" %}
+{% include 'sub/grid' %}
     <link rel="stylesheet" href="/assets/css/all.min.css">
     <link rel="stylesheet" href="/assets/css/content.css" />
 {% endblock content %}
-    {% block footer_script %}
+{% block footer_script %}
     <script src="/assets/js/construction/construction.js"></script>
     <style>
         #activityGrid .tui-grid-cell[data-column-name="actions_add"]{
@@ -162,6 +162,10 @@
         var cntrctNo = urlParams.get('cntrctNo');
         var rId = urlParams.get('rId');
         var drDt = urlParams.get('drDt');
+        let oriFilterAct = [];          // 검색 필터링 전 원본 데이터
+        let oriFilterL = [];            // 검색 필터링 전 원본 데이터
+        let oriFilterM = [];            // 검색 필터링 전 원본 데이터
+        let oriFilterE = [];            // 검색 필터링 전 원본 데이터
 
         // 순수 number 리턴
         function N(v){ if(v==null||v==='') return 0; const n=Number(String(v).replace(/,/g,'')); return isFinite(n)?n:0; }
@@ -194,7 +198,13 @@
                 { header: '계획 종료일', name: 'plan_finish', width: 180, align:'center' },
                 { header: 'actual_bgn_date', name: 'actual_bgn_date', hidden: true },
                 { header: 'actual_end_date', name: 'actual_end_date', hidden: true },
-                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true }
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
+                { header: 'daily_activity_id', name: 'daily_activity_id', hidden: true },
+                { header: 'wbs_cd', name: 'wbs_cd', hidden: true },
+                { header: 'cntrct_chg_id', name: 'cntrct_chg_id', hidden: true },
+                { header: 'actual_start', name: 'actual_start', hidden: true },
+                { header: 'actual_finish', name: 'actual_finish', hidden: true },
             ],
             data: []
         });
@@ -253,9 +263,9 @@
                     }
                 },
                 { header:'Activity 명', name:'activity_nm', width:200 },
-                { header:'시작일', name:'plan_start',align:'center', width: 100, },
-                { header:'종료일', name:'plan_finish',align:'center', width: 100, },
-                { header:'소요일수', name:'plan_reqre_daynum',align:'center', },
+                { header:'시작일', name:'plan_start',align:'center', width: 100 },
+                { header:'종료일', name:'plan_finish',align:'center', width: 100 },
+                { header:'소요일수', name:'plan_reqre_daynum',align:'center' },
                 {
                     header: '시작일',
                     name: 'actual_bgn_date',
@@ -264,13 +274,21 @@
                     formatter: ({ row }) => {
                         // bgn 또는 ing, end 중 하나라도 true면 날짜 표시
                         if (row.bgn || row.ing || row.end) {
-                          return row.actual_bgn_date || drDt;
+                            return row.actual_start || drDt;
                         }
                         // 모든 상태 false면 빈값
                         return '';
-                      }
+                    }
                 },
-                { header:'종료일', name:'actual_end_date',align:'center', width: 100,},
+                {
+                    header: '종료일',
+                    name: 'actual_end_date',
+                    align: 'center',
+                    width: 100,
+                    formatter: ({ row }) => {
+                        return row.actual_finish || row.actual_end_date;
+                    }
+                },
                 { header:'소요일수', name:'actual_reqre_daynum',align:'center',  },
                 { header:'시작', name:'bgn', align:'center', renderer:{ type: StatusStarRenderer } },
                 { header:'진행', name:'ing', align:'center', renderer:{ type: StatusStarRenderer } },
@@ -293,91 +311,18 @@
                     }
                 },
                 { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
-                { header: 'expt_cost', name: 'expt_cost', hidden: true }
+                { header: 'expt_cost', name: 'expt_cost', hidden: true },
+                { header: 'ori_total_progress', name: 'ori_total_progress', hidden: true },
+                { header: 'expt_cost', name: 'expt_cost', hidden: true },
+                { header: 'daily_activity_id', name: 'daily_activity_id', hidden: true },
+                { header: 'wbs_cd', name: 'wbs_cd', hidden: true },
+                { header: 'cntrct_chg_id', name: 'cntrct_chg_id', hidden: true },
+                { header: 'actual_start', name: 'actual_start', hidden: true },
+                { header: 'actual_finish', name: 'actual_finish', hidden: true }
             ],
             data: []
         });
 
-        // 삭제 버튼
-        $('#deleteActivity').on('click', function () {
-            const checkedRows = todayGrid.getCheckedRows();
-
-            if (checkedRows.length === 0) {
-                gaiaCommon.customAlert('삭제할 항목을 선택하세요.');
-                return;
-            }
-
-            checkedRows.forEach(row => {
-                const exists = activityGrid.getData().some(r => r.activity_id === row.activity_id);
-                if (!exists) {
-                    activityGrid.appendRow({
-                    path_nm: row.path_nm,
-                    activity_id: row.activity_id,
-                    activity_nm: row.activity_nm,
-                    expt_cost: row.expt_cost || 0,
-                    plan_start: row.plan_start,
-                    plan_finish: row.plan_finish,
-                    plan_reqre_daynum: row.plan_reqre_daynum,
-                    actual_bgn_date: row.actual_bgn_date,
-                    actual_end_date: row.actual_end_date,
-                    ori_total_progress: row.ori_total_progress || 0});
-                }
-
-                // todayGrid에서 삭제
-                todayGrid.removeRow(row.rowKey);
-            });
-
-            // 최신 todayGrid 기준 자원 재조회
-            const todayData = todayGrid.getData();
-            if (todayData && todayData.length > 0) {
-                initResourceData(todayData);
-            } else {
-                resetResourceList();
-            }
-
-            gaiaCommon.customAlert('선택된 항목이 삭제되었습니다.');
-        });
-
-        // 적용 버튼
-        $('#applyActivity').on('click', function () {
-            const applyType = $('#applyType').val(); // start or end
-            const checkedRows = todayGrid.getCheckedRows();
-
-            if (checkedRows.length === 0) {
-                gaiaCommon.customAlert('적용할 항목을 선택하세요.');
-                return;
-            }
-
-            checkedRows.forEach(row => {
-                const rowKey = row.rowKey;
-                const data = todayGrid.getRow(rowKey);
-                if (!data) return;
-
-                // 기본 상태 초기화
-                todayGrid.setValue(rowKey, 'bgn', false, false);
-                todayGrid.setValue(rowKey, 'ing', false, false);
-                todayGrid.setValue(rowKey, 'end', false, false);
-
-                if (applyType === 'start') {
-                    // 금일 시작 처리
-                    todayGrid.setValue(rowKey, 'actual_bgn_date', drDt, false);
-                    todayGrid.setValue(rowKey, 'bgn', true, false);
-                    todayGrid.setValue(rowKey, 'actual_end_date', '', false);
-                } else if (applyType === 'end') {
-                    // 금일 종료 처리
-                    todayGrid.setValue(rowKey, 'actual_end_date', drDt, false);
-                    todayGrid.setValue(rowKey, 'end', true, false);
-
-                    // 시작일 없으면 자동으로 오늘로 세팅
-                    const hasBgn = !!data.actual_bgn_date;
-                    if (!hasBgn) {
-                        todayGrid.setValue(rowKey, 'actual_bgn_date', drDt, false);
-                    }
-                    todayGrid.setValue(rowKey, 'bgn', false, false);
-                }
-            });
-            todayGrid.refreshLayout();
-        });
 
         // 초기 데이터 세팅 로직 예시
         // 시작: 계획시작(plan) 존재, 금일시작(actual) 미존재
@@ -386,29 +331,38 @@
         function setStatusStars(data) {
             return data.map(row => {
                 const hasPlanStart = !!row.plan_start;
-                const hasActualBgn = !!row.actual_bgn_date;
-                const hasActualEnd = !!row.actual_end_date;
+                const hasActualBgn = !!row.actual_start;
+                const hasActualEnd = !!row.actual_finish;
 
                 let bgn = false, ing = false, end = false;
 
-                // 계획만 있고, 아직 시작 안했을 때
-                if (hasPlanStart && !hasActualBgn) {
+                // 종료: actual_end_date 가 있으면 무조건 종료
+                if (hasActualEnd) {
+                    end = true;
+                }
+                // 진행: 시작일 있고 종료일 없을 때
+                else if (hasActualBgn && !hasActualEnd) {
+                    ing = true;
+                }
+                // 계획만 있고 아직 시작 안했을 때
+                else if (hasPlanStart && !hasActualBgn) {
+                    bgn = true;
+                }
+
+                // 보고일자(drDt)와 actual_bgn_date가 같으면 bgn 강제 true
+                if (row.actual_bgn_date && row.actual_bgn_date === drDt) {
                     bgn = true;
                     ing = false;
                     end = false;
                 }
-                // 진행: 시작일 있고, 종료일 없을 때
-                else if (hasActualBgn && !hasActualEnd) {
-                    bgn = false;
-                    ing = true;
-                    end = false;
-                }
-                // 종료: actual_end_date 가 있으면 무조건 종료
-                else if (hasActualEnd) {
+
+                // 보고일자(drDt)와 actual_end_date가 같으면 end 강제 true
+                if (row.actual_end_date && row.actual_end_date === drDt) {
                     bgn = false;
                     ing = false;
                     end = true;
                 }
+
                 return { ...row, bgn, ing, end };
             });
         }
@@ -432,59 +386,6 @@
                 todayBohal: todayBohal,
                 searchText: ''
             });
-        }
-        // 보할 입력 팝업창 오픈
-        function openBohalModal(rowKey, pillEl) {
-            const currentVal = todayGrid.getValue(rowKey, 'bohalRate') ?? 0;
-
-            gaiaCommon.customBohalEditConfirm(
-                '보할률 수정',
-                '보할(%)',
-                function (val, isAll) {
-                    if (isAll) {
-                        const data = todayGrid.getData();
-                        data.forEach(row => todayGrid.setValue(row.rowKey, 'bohalRate', val));
-                    } else {
-                        todayGrid.setValue(rowKey, 'today_bohal', val);
-                    }
-                    if (pillEl) pillEl.textContent = val;
-
-                    // 변경 후 누적 진행률 다시 계산
-                    if (typeof callback === 'function') callback();
-                },
-                function () {
-                    console.log('보할률 입력 취소');
-                }
-            );
-            $('#bohalInput').val(currentVal);
-        }
-
-        // 보할 수정할 경우 진행률 갱신
-        function updateTotalProgress() {
-            const data = todayGrid.getData();
-
-            // 전체 누적 보할률 계산
-            let total = 0;
-            data.forEach(row => {
-                const val = parseFloat(row.today_bohal || 0);
-                total += isNaN(val) ? 0 : val;
-            });
-
-            // 전체 합계를 각 행의 total_progress에 표시
-            data.forEach(row => {
-                todayGrid.setValue(row.rowKey, 'total_progress', total.toFixed(2));
-            });
-        }
-
-        function resetResourceList() {
-            leftLaborGrid.resetData([]);
-            leftMaterialGrid.resetData([]);
-            leftExpensesGrid.resetData([]);
-
-            // 레이아웃 갱신
-            if (leftLaborGrid.refreshLayout) leftLaborGrid.refreshLayout();
-            if (leftMaterialGrid.refreshLayout) leftMaterialGrid.refreshLayout();
-            if (leftExpensesGrid.refreshLayout) leftExpensesGrid.refreshLayout();
         }
 
         // ===== Labor Grid =====
@@ -642,31 +543,29 @@
             columnOptions: { resizable: true },
         });
         bindQuantityChangeHandler(rightExpensesGrid);
-
-
         /**
          * editable 컬럼을 복제해 반환
          * @param {Array} columns - 원본 컬럼 배열
          * @param {string} editableName - 편집 가능한 컬럼명 (예: 'actual_qty')
          */
         function makeEditableColumns(columns, editableName = 'actual_qty') {
-          return columns.map(col => {
-            if (col.name === editableName) {
-              return {
-                ...col,
-                editor: {
-                  type: 'text',
-                  options: { inputType: 'number' }
-                },
-                validation: {
-                  dataType: 'number',
-                  required: true,
-                  validatorFn: (value) => !isNaN(value)
+            return columns.map(col => {
+                if (col.name === editableName) {
+                    return {
+                        ...col,
+                        editor: {
+                            type: 'text',
+                            options: { inputType: 'number' }
+                        },
+                        validation: {
+                            dataType: 'number',
+                            required: true,
+                            validatorFn: (value) => !isNaN(value)
+                        }
+                    };
                 }
-              };
-            }
-            return { ...col, editable: false };
-          });
+                return { ...col, editable: false };
+            });
         }
 
         /**
@@ -674,31 +573,125 @@
          * @param {tui.Grid} grid - 대상 그리드 객체
          */
         function bindQuantityChangeHandler(grid) {
-          grid.on('afterChange', (ev) => {
-            ev.changes.forEach(change => {
-              const { rowKey, columnName, value } = change;
-              if (columnName === 'actual_qty') {
-                const row = grid.getRow(rowKey);
-                const oriQty = Number(row.ori_qty || 0);
-                const totalQty = Number(row.total_qty || 0);
-                const actualQty = Number(value || 0);
+            grid.on('afterChange', (ev) => {
+                ev.changes.forEach(change => {
+                    const { rowKey, columnName, value } = change;
+                    if (columnName === 'actual_qty') {
+                        const row = grid.getRow(rowKey);
+                        const oriQty = Number(row.ori_qty || 0);
+                        const totalQty = Number(row.total_qty || 0);
+                        const actualQty = Number(value || 0);
 
-                // 잔여(remndr_qty) = total_qty - (ori_qty + actual_qty)
-                const remndrQty = totalQty - (oriQty + actualQty);
+                        // 잔여(remndr_qty) = total_qty - (ori_qty + actual_qty)
+                        const remndrQty = totalQty - (oriQty + actualQty);
 
-                grid.setValue(rowKey, 'remndr_qty', remndrQty.toFixed(2), false);
-              }
+                        grid.setValue(rowKey, 'remndr_qty', remndrQty.toFixed(2), false);
+                    }
+                });
             });
-          });
         }
 
+        // 액티비티 키워드 검색 필터링
+        function filterActivity() {
+            const sDate = $('#sDate').val();
+            const eDate = $('#eDate').val();
+            const keyword = $('#searchText').val().trim().toLowerCase();
 
+            // 원본 데이터를 기반으로 필터링
+            const filtered = oriFilterAct.filter(row => {
+                // 날짜 조건
+                let dateMatch = true;
+                if (sDate) dateMatch = new Date(row.plan_start) >= new Date(sDate);
+                if (dateMatch && eDate) dateMatch = new Date(row.plan_finish) <= new Date(eDate);
+                // 키워드 조건
+                let keywordMatch = true;
+                if (keyword) {
+                    const pathNm = (row.path_nm || '').toLowerCase();
+                    const actNm = (row.activity_nm || '').toLowerCase();
+                    keywordMatch = pathNm.includes(keyword) || actNm.includes(keyword);
+                }
+
+                return dateMatch && keywordMatch;
+            });
+
+            activityGrid.resetData(filtered);
+        }
+
+        // 인력 키워드 검색 필터링
+        function filterLabor() {
+            const keyword = $('#laborSearchText').val().trim().toLowerCase();
+
+            // 원본 데이터를 기반으로 필터링
+            const filtered = oriFilterL.filter(row => {
+                // 키워드 조건
+                let keywordMatch = true;
+                if (keyword) {
+                    const rsceNm = (row.rsce_nm || '').toLowerCase();
+                    const specNm = (row.spec_nm || '').toLowerCase();
+                    keywordMatch = rsceNm.includes(keyword) || specNm.includes(keyword);
+                }
+
+                return keywordMatch;
+            });
+
+            leftLaborGrid.resetData(filtered);
+        }
+
+        // 자재 키워드 검색 필터링
+        function filterMaterial() {
+            const keyword = $('#materialSearchText').val().trim().toLowerCase();
+            const supplyType = $('#matSupply').val(); // 전체 / 관급 / 사급
+
+            // 원본 데이터를 기반으로 필터링
+            const filtered = oriFilterM.filter(row => {
+                // 키워드 필터
+                let keywordMatch = true;
+                if (keyword) {
+                    const rsceNm = (row.rsce_nm || '').toLowerCase();
+                    const specNm = (row.spec_nm || '').toLowerCase();
+                    keywordMatch = rsceNm.includes(keyword) || specNm.includes(keyword);
+                }
+
+                // 공급유형 필터
+                let supplyMatch = true;
+                if (supplyType === '관급') {
+                    supplyMatch = row.govsply_mtrl_yn === 'Y';
+                } else if (supplyType === '사급') {
+                    supplyMatch = row.govsply_mtrl_yn === 'N';
+                }
+
+                return keywordMatch && supplyMatch;
+            });
+
+            leftMaterialGrid.resetData(filtered);
+        }
+
+        // 장비 키워드 검색 필터링
+        function filterExpenses() {
+            const keyword = $('#expensesSearchText').val().trim().toLowerCase();
+
+            // 원본 데이터를 기반으로 필터링
+            const filtered = oriFilterE.filter(row => {
+                // 키워드 조건
+                let keywordMatch = true;
+                if (keyword) {
+                    const rsceNm = (row.rsce_nm || '').toLowerCase();
+                    const specNm = (row.spec_nm || '').toLowerCase();
+                    keywordMatch = rsceNm.includes(keyword) || specNm.includes(keyword);
+                }
+
+                return keywordMatch;
+            });
+
+            leftExpensesGrid.resetData(filtered);
+        }
 
         function initData() {
             const param = {
                 cntrctNo: cntrctNo,
                 dailyReportId: rId,
                 workDtType: 'TD',
+                dailyReportDate: drDt,
                 planStart: $("#sDate").val(),
                 planFinish: $("#eDate").val(),
                 searchText: $("#searchText").val()
@@ -720,6 +713,7 @@
                     // 액티비티 목록
                     activityGrid.resetData(filteredActivityData);
                     refreshGrid(activityGrid);
+                    oriFilterAct = [...filteredActivityData]   // 검색 필터에 사용
 
                     // 금일 액티비티 목록
                     // ★ 상태별 별 세팅
@@ -773,6 +767,16 @@
                         else if (type === 'E') todayExpensesList.push(item);
                     });
 
+                    // L 계열 정렬: LS 먼저
+                    todayLaborList.sort((a, b) => {
+                        const aCd = a.rsce_tp_cd || '';
+                        const bCd = b.rsce_tp_cd || '';
+
+                        if (aCd.startsWith('LS') && !bCd.startsWith('LS')) return -1; // a=LS → 위로
+                        if (!aCd.startsWith('LS') && bCd.startsWith('LS')) return 1;  // b=LS → 위로
+                        return aCd.localeCompare(bCd); // 나머지는 알파벳순
+                    });
+
                     // 오른쪽 그리드 기준으로 중복 필터링용 Set 생성
                     const todayLaborKeySet = new Set(todayLaborList.map(i => `${i.rsce_cd}_${i.govsply_mtrl_yn}`));
                     const todayMaterialKeySet = new Set(todayMaterialList.map(i => `${i.rsce_cd}_${i.govsply_mtrl_yn}`));
@@ -798,6 +802,7 @@
                     if (rightLaborGrid.refreshLayout) rightLaborGrid.refreshLayout();
                     reportRefreshGrid(leftLaborGrid,);
                     reportRefreshGrid(rightLaborGrid);
+                    oriFilterL = [...laborList];
 
                     // 자재
                     leftMaterialGrid.resetData(materialList);
@@ -806,6 +811,7 @@
                     if (rightMaterialGrid.refreshLayout) rightMaterialGrid.refreshLayout();
                     reportRefreshGrid(leftMaterialGrid,);
                     reportRefreshGrid(rightMaterialGrid);
+                    oriFilterM = [...materialList];
 
                     // 장비
                     leftExpensesGrid.resetData(expensesList);
@@ -814,6 +820,7 @@
                     if (rightExpensesGrid.refreshLayout) rightExpensesGrid.refreshLayout();
                     reportRefreshGrid(leftExpensesGrid);
                     reportRefreshGrid(rightExpensesGrid);
+                    oriFilterE = [...expensesList];
                 },
                 function (error) {
                     gaiaCommon.customAlert("{{ message('msg.060') }}");
@@ -832,6 +839,7 @@
             window.location.href = "/construction/dailyreport-today-update?cntrctNo=" + cntrctNo + "&rId=" + rId+`&pjtNo=${pjtInfo.pjtNo}` + "&drDt=" + drDt;
             sessionStorage.setItem('cntrctNo', cntrctNo);
         });
+
         $(document).ready(()=>{
             gaia.create({
                 $init: function ($params) {
@@ -839,6 +847,48 @@
                     $("#menuDepth").append('<li class=\"breadcrumb_item\" name=\"new_item\">{{ message("item.construction.901") }}  금일 액티비티 {{ message("btn.003") }}</li>');
                 }
             });
+
+            // 액티비티 검색
+            $('#searchText').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    filterActivity();
+                }
+            });
+            $('#searchBtn').on('click', function () {
+                filterActivity();
+            });
+
+            // 인력 검색
+            $('#laborSearchText').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    filterLabor();
+                }
+            });
+            $('#laborSearchBtn').on('click', function () {
+                filterLabor();
+            });
+
+            // 자재 검색
+            $('#materialSearchText').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    filterMaterial();
+                }
+            });
+            $('#materialSearchBtn').on('click', function () {
+                filterMaterial();
+            });
+            $('#matSupply').on('change', filterMaterial);
+
+            // 장비 검색
+            $('#expensesSearchText').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    filterExpenses();
+                }
+            });
+            $('#expensesSearchBtn').on('click', function () {
+                filterExpenses();
+            });
+
             initData();
         });
 

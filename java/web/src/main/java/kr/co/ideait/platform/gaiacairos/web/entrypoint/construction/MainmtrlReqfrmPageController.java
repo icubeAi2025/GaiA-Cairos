@@ -35,7 +35,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 검수요청서 목록 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         String[] btnId = { "MREQ_D_01", "MREQ_U_01", "MREQ_C_02", "MREQ_AP_REQ", "MREQ_R_09", "MREQ_AP_PREQ", "MREQ_AP_REQ_D" };
         String[] btnClass = { "btn _outline", "btn _outline", "btn _fill", "btn _outline", "btn _outline", "btn _outline", "btn _outline" };
@@ -68,7 +67,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("검측요청 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/mainmtrlreqfrm/mainmtrlreqfrm_request_modal";
     }
@@ -84,7 +82,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 검수요청서 조회 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type.toString())) {
             model.addAttribute("header", true);
@@ -115,7 +112,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 검수요청서 추가 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type.toString())) {
             model.addAttribute("header", true);
@@ -138,7 +134,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 검수요청서 수정 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type.toString())) {
             model.addAttribute("header", true);
@@ -157,7 +152,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("사진 추가, 수정 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/mainmtrlreqfrm/mainmtrlreqfrm_photo_modal";
     }
@@ -174,7 +168,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 검수결과 등록 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         if ("d".equals(type.toString())) {
             model.addAttribute("header", true);
@@ -195,7 +188,6 @@ public class MainmtrlReqfrmPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("주요자재 모달 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/construction/mainmtrlreqfrm/mainmtrlreqfrm_list_modal";
     }

@@ -61,7 +61,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 상세 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         HashMap<String,Object> result = component.getDepartmentDetailData(deptNo, langInfo);
 
@@ -81,7 +80,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서의 소속 직원 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("employeeList",component.getDepartmentEmploeeListByDeptNo(deptNo, langInfo, pjtData));
@@ -98,7 +96,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서코드 중복 체크");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("exist", component.isExistDepartment(deptCode));
@@ -115,7 +112,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 등록");
-        systemLogComponent.addUserLog(userLog);
 
         String result = component.createDepartment(department,commonReqVo.getPjtDiv(),commonReqVo.getApiYn());
         if("success".equals(result)) {
@@ -135,7 +131,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok()
                 .put("department", component.modifyDepartment(department,commonReqVo.getPjtDiv(), commonReqVo.getApiYn()));
@@ -152,7 +147,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         if(component.removeDepartment(department,commonReqVo.getPjtDiv(), commonReqVo.getApiYn())){
             return Result.ok();
@@ -175,7 +169,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("사용자 데이터 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String [] userParam = commonReqVo.getUserParam();
         HashMap<String,Object> result = component.getDepartmentUserListData(langInfo,pjtData,userParam[1]);
@@ -195,7 +188,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 소속 직원 등록");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("departmentUserCreateList",
                 component.registUserOfDepartment(departmentUserCreateList, commonReqVo));
@@ -212,7 +204,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 소속 직원 데이터 수정");
-        systemLogComponent.addUserLog(userLog);
 
         String result = component.modifyUserOfDepartment(departmentUserUpdate,commonReqVo);
         if("success".equals(result)){
@@ -232,7 +223,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 소속 직원 데이터 삭제");
-        systemLogComponent.addUserLog(userLog);
 
         if(component.removeUserOfDepartment(departmentDeleteList,commonReqVo)){
             return Result.ok();
@@ -251,7 +241,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("프로젝트, 계약 트리 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("treeList", component.getAdminFirstTreeData());
     }
@@ -267,7 +256,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("프로젝트 트리 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String [] param = commonReqVo.getUserParam();
 
@@ -285,7 +273,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("계약 트리 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String [] param = commonReqVo.getUserParam();
         return Result.ok().put("treeList", component.getCairosTreeData(param[0], pjtData.getPjtNo(), pjtData.getCntrctNo()));
@@ -306,7 +293,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 트리 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String [] userParam = commonReqVo.getUserParam();
 
@@ -326,7 +312,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("부서 소속 직원 상세 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         String [] userParam = commonReqVo.getUserParam();
 
@@ -348,7 +333,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("그룹 사용자 추가 - 부서 트리 데이터 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("departmentList", component.getDepartmentListData(pjtData));
     }
@@ -366,7 +350,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("그룹 사용자 추가 - 소속 직원 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("organizationList", 
                                 component.getAuthGrpUsersOrganizationList(deptId));
@@ -385,7 +368,6 @@ public class DepartmentApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("그룹 사용자 추가 - 하위부서 소속 직원 리스트 조회");
-        systemLogComponent.addUserLog(userLog);
 
         return Result.ok().put("organizationList",
                                 component.getAuthGrpUsersDownOrganizationList(deptId));

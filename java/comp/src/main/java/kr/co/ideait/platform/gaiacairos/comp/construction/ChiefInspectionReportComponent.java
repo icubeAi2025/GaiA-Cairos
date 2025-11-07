@@ -437,6 +437,9 @@ public class ChiefInspectionReportComponent extends AbstractComponent {
 
         // 속성 코드 조회
         SmComCode smComCode = commonCodeService.getCommonCodeByGrpCdAndCmnCd(CommonCodeConstants.DOCUMENT_NAVI_FOLDER_TYPE_GROUP_CODE, "5");
+        if(smComCode == null){
+            throw new GaiaBizException(ErrorType.NO_DATA,"속성 코드가 존재하지 않습니다.");
+        }
         final String navId = String.format("nav_%s_%s_01", cntrctNo, smComCode.getAttrbtCd3());
 
 

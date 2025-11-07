@@ -42,7 +42,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 목록 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return GridResult.ok(monthlyreportService.selectMonthlyreportList(monthlyreportForm.toMonthlyreportListInput(monthlyreportList)));
 	}
@@ -61,7 +60,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 상세 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("monthlyReport", monthlyreportService.selectMonthlyreport(monthlyreportForm.toMonthlyreportActivityDetailInput(monthlyreportActivityDetail)))
 				.put("progress", monthlyreportService.selectProgressStatusList(monthlyreportForm.toMonthlyreportActivityDetailInput(monthlyreportActivityDetail)))
@@ -87,7 +85,6 @@ public class MonthlyreportApiController extends AbstractController {
 //		userLog.setLogType(LogType.FUNCTION.name());
 //		userLog.setExecType("월간보고 Activity 상세조회");
 //
-//		systemLogComponent.addUserLog(userLog);
 //
 //		return Result.ok().put("progressStatusList", monthlyreportService.selectProgressStatusList(monthlyreportForm.toMonthlyreportActivityDetailInput(monthlyreportActivityDetail)))
 //							.put("majorActivityList", monthlyreportService.selectMajorActivityList(monthlyreportForm.toMonthlyreportActivityDetailInput(monthlyreportActivityDetail)))
@@ -111,7 +108,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("금월 주요 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MonthlyreportForm.SearchAddActivity searchAddActivity = new MonthlyreportForm.SearchAddActivity();
 		searchAddActivity.setCntrctNo(monthlyreportActivityDetail.getCntrctNo());
@@ -138,7 +134,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("금월 지연 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MonthlyreportForm.SearchAddActivity searchAddActivity = new MonthlyreportForm.SearchAddActivity();
 		searchAddActivity.setCntrctNo(monthlyreportActivityDetail.getCntrctNo());
@@ -164,7 +159,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("익월 주요 실적 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		MonthlyreportForm.SearchAddActivity searchAddActivity = new MonthlyreportForm.SearchAddActivity();
 		searchAddActivity.setCntrctNo(monthlyreportActivityDetail.getCntrctNo());
@@ -190,7 +184,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("금월 추가할 Activity 리스트 조회");
 
-		systemLogComponent.addUserLog(userLog);
 
 		String modalType = searchAddActivity.getModalType();
 
@@ -219,7 +212,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 추가");
 
-		systemLogComponent.addUserLog(userLog);
 
 		int count = monthlyreportService.checkMonthlyReport(monthlyreportInsert.getCntrctNo(), monthlyreportInsert.getPrMonthlyReport().getReportYm());
 
@@ -243,7 +235,6 @@ public class MonthlyreportApiController extends AbstractController {
 //		userLog.setLogType(LogType.FUNCTION.name());
 //		userLog.setExecType("월간보고 추가");
 //
-//		systemLogComponent.addUserLog(userLog);
 //
 //		int count = monthlyreportService.checkMonthlyReport(monthlyreportInsert.getCntrctNo(), monthlyreportInsert.getPrMonthlyReport().getReportYm());
 //
@@ -272,7 +263,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("report", monthlyreportService.updateMonthlyreport(
 				monthlyreportUpdate.getCntrctNo(),
@@ -298,7 +288,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 삭제");
 
-		systemLogComponent.addUserLog(userLog);
 
 		monthlyreportComponent.deleteMonthlyreport(monthlyreportForm.toUpdateMonthlyreportInput(monthlyreportUpdateList.getUpdateReportList()));
 
@@ -319,7 +308,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 Activity 업데이트");
 
-		systemLogComponent.addUserLog(userLog);
 
 		monthlyreportService.updateActivity(monthlyreportForm.toUpdateActivityListInput(updateActivity));
 
@@ -341,7 +329,6 @@ public class MonthlyreportApiController extends AbstractController {
 		userLog.setLogType(LogType.FUNCTION.name());
 		userLog.setExecType("월간보고 전자결재 승인요청");
 
-		systemLogComponent.addUserLog(userLog);
 
 		monthlyreportComponent.requestApprovalMonthlyreport(monthlyreportForm.toUpdateMonthlyreportInput(monthlyreportUpdateList.getUpdateReportList()), monthlyreportUpdateList.getCntrctNo(), commonReqVo.getApiYn(), commonReqVo.getPjtDiv());
 
@@ -361,7 +348,6 @@ public class MonthlyreportApiController extends AbstractController {
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("월간보고 공사종류 조회");
-        systemLogComponent.addUserLog(userLog);
 
 		return Result.ok().put("unitCnstType", monthlyreportService.getUnitCnstType(cntrctNo));
 	}

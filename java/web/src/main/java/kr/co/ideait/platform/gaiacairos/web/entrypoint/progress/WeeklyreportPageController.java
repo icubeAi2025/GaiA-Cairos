@@ -31,7 +31,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		// 삭제, 추가, 수정, 승인요청 버튼
 		String[] btnId = {"WKLYRPT_D_01", "WKLYRPT_U_04", "WKLYRPT_C_02", "WKLYRPT_U_03"};
@@ -56,7 +55,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 상세 조회 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 
 		// 수정 페이지 이동 버튼
@@ -79,7 +77,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 추가 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/weeklyreport/weeklyreport_c"; 
 	}
@@ -91,7 +88,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 수정 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 
 		return "page/progress/weeklyreport/weeklyreport_u"; 
 	}
@@ -104,7 +100,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 금주 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/weeklyreport/weeklyreport_modal_major"; 
 	}
@@ -117,7 +112,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 금주 지연 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/weeklyreport/weeklyreport_modal_delay"; 
 	}
@@ -130,7 +124,6 @@ public class WeeklyreportPageController extends AbstractController{
 		Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
 		userLog.setLogType(LogType.VIEW.name());
 		userLog.setExecType("주간공정보고 차주 예정 지연 액티비티 모달 화면 접속");
-		systemLogComponent.addUserLog(userLog);
 		
 		return "page/progress/weeklyreport/weeklyreport_modal_next"; 
 	}

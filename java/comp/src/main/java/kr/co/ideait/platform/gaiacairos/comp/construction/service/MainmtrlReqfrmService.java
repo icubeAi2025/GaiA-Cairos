@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -238,7 +239,9 @@ public class MainmtrlReqfrmService extends AbstractGaiaCairosService {
                 cwAttachments.setSno(sno); // 각 파일에 대해 순차적인 sno 설정
                 sno++; // 다음 파일의 sno 값 증가
             } else { // 파일 수정
-                cwAttachments.setSno(cwAttachmentsRepository.findMaxSnoByFileNo(cwAttachments.getFileNo()) + 1);
+                if(cwAttachments.getSno() == null) {
+                    cwAttachments.setSno(cwAttachmentsRepository.findMaxSnoByFileNo(cwAttachments.getFileNo()) + 1);
+                }
             }
             cwAttachmentsRepository.save(cwAttachments); // 파일 저장
         }
@@ -635,7 +638,6 @@ public class MainmtrlReqfrmService extends AbstractGaiaCairosService {
                 mainmtrlReqfrm.getCntrctNo(), mainmtrlReqfrm.getReqfrmNo(), "N");
 
         if (cwMainmtrlReqfrm == null) {
-            log.error("cwMainmtrlReqfrm not found for: {}", cwMainmtrlReqfrm.getReqfrmNo());
             return;
         }
 
@@ -798,8 +800,11 @@ public class MainmtrlReqfrmService extends AbstractGaiaCairosService {
                         continue;
                     }
 
-                    log.info("##### Base64 content length for {} file {}: {}", fileName,
+                    base64Content = StringEscapeUtils.unescapeHtml4(base64Content);
+                    log.info("##### Base64 content length for {} file after unescape: {}", fileName,
                             base64Content.length());
+                    log.info("##### Sample after unescape: [{}]",
+                            base64Content.substring(0, Math.min(100, base64Content.length())));
 
                     byte[] fileContent = Base64.getDecoder().decode(base64Content);
                     log.info("##### Decoded {} file content: {} bytes", fileContent.length);

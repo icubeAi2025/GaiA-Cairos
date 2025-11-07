@@ -52,7 +52,6 @@ public class BoardApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("FAQ 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         String[] userParam = commonReqVo.getUserParam();
@@ -77,7 +76,6 @@ public class BoardApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("게시판 목록 조회");
-        systemLogComponent.addUserLog(userLog);
 
 
         String[] userParam = commonReqVo.getUserParam();
@@ -99,7 +97,6 @@ public class BoardApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("게시글 상세조회");
-        systemLogComponent.addUserLog(userLog);
 
         BoardOutput smboard = boardService.getUpdateData(boardNo);
         BoardWithFilesDTO dto = new BoardWithFilesDTO();
@@ -127,7 +124,6 @@ public class BoardApiController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.FUNCTION.name());
         userLog.setExecType("게시글 조회수 증가");
-        systemLogComponent.addUserLog(userLog);
 
         BoardViewInput input = boardForm.toBoardViewInput(boardView);
         boardService.updateView(input);

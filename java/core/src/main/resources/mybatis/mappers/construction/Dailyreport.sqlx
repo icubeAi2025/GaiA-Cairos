@@ -438,7 +438,23 @@
 			     , CASE WHEN pa.plan_start = '' THEN pa.plan_finish ELSE pa.plan_start END AS plan_start
 			     , CASE WHEN pa.plan_finish = '' THEN pa.plan_start ELSE pa.plan_finish END AS plan_finish
 			     , (select count(*) from cw_daily_report_activity where activity_id = pa.activity_id and cntrct_no = #{cntrctNo} AND daily_report_id = #{dailyReportId} AND work_dt_type = #{workDtType} AND dlt_yn = 'N') as chk
-			     , * 
+			     <![CDATA[
+			     , TRUNC(
+                       100.0 / (
+                           (TO_DATE(pa.plan_finish, 'YYYY-MM-DD') -
+                            TO_DATE(
+                                CASE
+                                    WHEN COALESCE(pa.actual_start, '') <> '' THEN pa.actual_start
+                                    ELSE pa.plan_start
+                                END,
+                                'YYYY-MM-DD'
+                            )
+                           ) + 1
+                       ),
+                       2
+                   ) AS today_plan_rate
+                 ]]>
+			     , *
 			  FROM pr_activity pa 
 		 LEFT JOIN WBS wbs ON wbs.cntrct_chg_id = pa.cntrct_chg_id AND wbs.wbs_cd = pa.wbs_cd AND wbs.revision_id = pa.revision_id
 		     WHERE 1 = 1
@@ -612,104 +628,34 @@
     /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.addDailyReportActivity]  */
 		INSERT INTO gaia_cmis.cw_daily_report_activity
 			(cntrct_no, daily_report_id, wbs_cd, activity_id, activity_nm, work_dt_type, plan_bgn_date, plan_end_date, plan_reqre_daynum,
-			actual_bgn_date, actual_end_date, actual_reqre_daynum, cntrct_chg_id, revision_id, pstats, dlt_yn, rgst_dt, rgstr_id, chg_dt, chg_id)
-			<choose>
-                    <!-- workDtType == TD 인 경우 TD, TM 두 건 INSERT -->
-                    <when test="workDtType == 'TD'">
-                        SELECT #{cntrctNo}
-                             , #{dailyReportId}
-                             , pa.wbs_cd
-                             , pa.activity_id
-                             , pa.activity_nm
-                             , 'TD'
-                             , CASE WHEN pa.plan_start = '' THEN pa.plan_finish ELSE pa.plan_start END
-                             , CASE WHEN pa.plan_finish = '' THEN pa.plan_start ELSE pa.plan_finish END
-                             , pa.intl_duration
-                             , #{actualBgnDate}
-                             , #{actualEndDate}
-                             , CAST(#{actualReqreDaynum} AS numeric)
-                             , pa.cntrct_chg_id
-                             , pa.revision_id
-                             , #{pstats}
-                             , 'N'
-                             , NOW()
-                             , #{rgstrId}
-                             , NOW()
-                             , #{chgId}
-                          FROM pr_activity pa
-                         WHERE pa.cntrct_chg_id = (<include refid="sql_getCntrctChgId" />)
-                           AND pa.revision_id   = (<include refid="sql_geRevisionId" />)
-                           AND pa.activity_id   = #{activityId}
-                           AND pa.dlt_yn = 'N'
-
-                        UNION ALL
-
-                        SELECT #{cntrctNo}
-                             , #{dailyReportId}
-                             , pa.wbs_cd
-                             , pa.activity_id
-                             , pa.activity_nm
-                             , 'TM'
-                             , CASE WHEN pa.plan_start = '' THEN pa.plan_finish ELSE pa.plan_start END
-                             , CASE WHEN pa.plan_finish = '' THEN pa.plan_start ELSE pa.plan_finish END
-                             , pa.intl_duration
-                             , #{actualBgnDate}
-                             , #{actualEndDate}
-                             , CAST(#{actualReqreDaynum} AS numeric)
-                             , pa.cntrct_chg_id
-                             , pa.revision_id
-                             , #{pstats}
-                             , 'N'
-                             , NOW()
-                             , #{rgstrId}
-                             , NOW()
-                             , #{chgId}
-                          FROM pr_activity pa
-                         WHERE pa.cntrct_chg_id = (<include refid="sql_getCntrctChgId" />)
-                           AND pa.revision_id   = (<include refid="sql_geRevisionId" />)
-                           AND pa.activity_id   = #{activityId}
-                           AND pa.dlt_yn = 'N'
-                           AND NOT EXISTS (
-                               SELECT 1
-                                 FROM gaia_cmis.cw_daily_report_activity a
-                                WHERE a.cntrct_no      = #{cntrctNo}
-                                  AND a.daily_report_id= #{dailyReportId}
-                                  AND a.cntrct_chg_id  = pa.cntrct_chg_id
-                                  AND a.revision_id    = pa.revision_id
-                                  AND a.activity_id    = pa.activity_id
-                                  AND a.dlt_yn         = 'N'
-                           )
-                    </when>
-
-                    <!-- TD 가 아닐 경우 단일 insert -->
-                    <otherwise>
-                        SELECT #{cntrctNo}
-                             , #{dailyReportId}
-                             , pa.wbs_cd
-                             , pa.activity_id
-                             , pa.activity_nm
-                             , #{workDtType}
-                             , CASE WHEN pa.plan_start = '' THEN pa.plan_finish ELSE pa.plan_start END
-                             , CASE WHEN pa.plan_finish = '' THEN pa.plan_start ELSE pa.plan_finish END
-                             , pa.intl_duration
-                             , #{actualBgnDate}
-                             , #{actualEndDate}
-                             , CAST(#{actualReqreDaynum} AS numeric)
-                             , pa.cntrct_chg_id
-                             , pa.revision_id
-                             , #{pstats}
-                             , 'N'
-                             , NOW()
-                             , #{rgstrId}
-                             , NOW()
-                             , #{chgId}
-                          FROM pr_activity pa
-                         WHERE pa.cntrct_chg_id = (<include refid="sql_getCntrctChgId" />)
-                           AND pa.revision_id   = (<include refid="sql_geRevisionId" />)
-                           AND pa.activity_id   = #{activityId}
-                           AND pa.dlt_yn = 'N'
-                    </otherwise>
-                </choose>
+			actual_bgn_date, actual_end_date, actual_reqre_daynum, cntrct_chg_id, revision_id, pstats, today_exe_rate,today_plan_rate, dlt_yn, rgst_dt, rgstr_id, chg_dt, chg_id)
+        SELECT #{cntrctNo}
+             , #{dailyReportId}
+             , pa.wbs_cd
+             , pa.activity_id
+             , pa.activity_nm
+             , #{workDtType}
+             , CASE WHEN pa.plan_start = '' THEN pa.plan_finish ELSE pa.plan_start END
+             , CASE WHEN pa.plan_finish = '' THEN pa.plan_start ELSE pa.plan_finish END
+             , pa.intl_duration
+             , #{actualBgnDate}
+             , #{actualEndDate}
+             , CAST(#{actualReqreDaynum} AS numeric)
+             , pa.cntrct_chg_id
+             , pa.revision_id
+             , #{pstats}
+             , CAST(#{todayExeRate} AS numeric)
+             , CAST(#{todayPlanRate} AS numeric)
+             , 'N'
+             , NOW()
+             , #{rgstrId}
+             , NOW()
+             , #{chgId}
+          FROM pr_activity pa
+         WHERE pa.cntrct_chg_id = (<include refid="sql_getCntrctChgId" />)
+           AND pa.revision_id   = (<include refid="sql_geRevisionId" />)
+           AND pa.activity_id   = #{activityId}
+           AND pa.dlt_yn = 'N'
     </insert>
     
     <select id="selectDailyreportRate" parameterType="dailyreportformTypeSelectInput" resultType="map">
@@ -1466,6 +1412,8 @@
                SET actual_bgn_date 	    = #{actualBgnDate},
                    actual_end_date 	    = #{actualEndDate},
                    actual_reqre_daynum 	= CAST(#{actualReqreDaynum} AS numeric),
+                   today_exe_rate 	    = CAST(#{todayExeRate} AS numeric),
+                   today_plan_rate 	    = CAST(#{todayPlanRate} AS numeric),
                             pstats 	    = #{pstats},
                             chg_id 		= #{chgId},
                             chg_dt 		= NOW(),
@@ -1823,7 +1771,7 @@
         </foreach>
     </insert>
 
-     <select id="selectTodayActivityList" parameterType="dailyreportformTypeSelectInput" resultType="map">
+     <select id="selectTodayActivityList" parameterType="map" resultType="map">
         /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectTodayActivityList] */
              WITH WBS AS (
                 WITH RECURSIVE CODE_LIST (
@@ -1892,23 +1840,68 @@
                    COALESCE(pa.activity_kind, '')                   AS activity_kind,
                    COALESCE(pa.expt_cost, 0)                        AS expt_cost,
                    cdra.pstats,
+                   cdra.daily_activity_id,
+                   cdra.wbs_cd,
+                   cdra.cntrct_chg_id,
+                   pa.actual_start,
+                   pa.actual_finish,
+
 
                    -- 금일 보할률
                    <![CDATA[
-                   TRUNC(
-                      100.0 / (
-                          (TO_DATE(cdra.plan_end_date, 'YYYY-MM-DD') -
-                           TO_DATE(
-                               CASE
-                                   WHEN COALESCE(cdra.actual_bgn_date, '') <> '' THEN cdra.actual_bgn_date
-                                   ELSE cdra.plan_bgn_date
-                               END,
-                               'YYYY-MM-DD'
-                           )
-                          ) + 1
-                      ),
-                      2
+                   COALESCE(
+                       today_exe_rate,
+                       TRUNC(
+                           100.0 / (
+                               (TO_DATE(pa.plan_finish, 'YYYY-MM-DD') -
+                                TO_DATE(
+                                    CASE
+                                        WHEN COALESCE(pa.actual_start, '') <> '' THEN pa.actual_start
+                                        ELSE pa.plan_start
+                                    END,
+                                    'YYYY-MM-DD'
+                                )
+                               ) + 1
+                           ),
+                           2
+                       )
                    ) AS today_bohal,
+                   COALESCE(
+                       today_exe_rate,
+                       TRUNC(
+                           100.0 / (
+                               (TO_DATE(pa.plan_finish, 'YYYY-MM-DD') -
+                                TO_DATE(
+                                    CASE
+                                        WHEN COALESCE(pa.actual_start, '') <> '' THEN pa.actual_start
+                                        ELSE pa.plan_start
+                                    END,
+                                    'YYYY-MM-DD'
+                                )
+                               ) + 1
+                           ),
+                           2
+                       )
+                   ) AS ori_today_bohal,
+                   COALESCE(
+                       today_plan_rate,
+                       TRUNC(
+                           100.0 / (
+                               (TO_DATE(pa.plan_finish, 'YYYY-MM-DD') -
+                                TO_DATE(
+                                    CASE
+                                        WHEN COALESCE(pa.actual_start, '') <> '' THEN pa.actual_start
+                                        ELSE pa.plan_start
+                                    END,
+                                    'YYYY-MM-DD'
+                                )
+                               ) + 1
+                           ),
+                           2
+                       )
+                   ) AS today_plan_rate,
+
+                  ]]>
 
                    -- 전일 누적 진행률
                   (
@@ -1920,7 +1913,15 @@
                        AND cdra_sub.activity_id = cdra.activity_id
                        AND cdra_sub.dlt_yn = 'N'
                        AND cdr_sub.dlt_yn = 'N'
-                       AND cdr_sub.daily_report_date <= cdr.daily_report_date
+                       AND cdra_sub.work_dt_type = 'TD'
+                       <choose>
+                           <when test="findTmActivity">
+                               AND cdr_sub.daily_report_date &lt;= cdr.daily_report_date
+                           </when>
+                           <otherwise>
+                               AND cdr_sub.daily_report_date &lt; cdr.daily_report_date
+                           </otherwise>
+                       </choose>
                   ) AS total_progress,
 
                    -- 전일 누적 진행률 원본
@@ -1933,9 +1934,16 @@
                        AND cdra_sub.activity_id = cdra.activity_id
                        AND cdra_sub.dlt_yn = 'N'
                        AND cdr_sub.dlt_yn = 'N'
-                       AND cdr_sub.daily_report_date <= cdr.daily_report_date
+                       AND cdra_sub.work_dt_type = 'TD'
+                       <choose>
+                           <when test="findTmActivity">
+                               AND cdr_sub.daily_report_date &lt;= cdr.daily_report_date
+                           </when>
+                           <otherwise>
+                               AND cdr_sub.daily_report_date &lt; cdr.daily_report_date
+                           </otherwise>
+                       </choose>
                   ) AS ori_total_progress
-                  ]]>
               FROM cw_daily_report_activity cdra
               JOIN cw_daily_report cdr
                 ON cdra.daily_report_id = cdr.daily_report_id
@@ -1950,22 +1958,29 @@
                AND pa.dlt_yn        = 'N'
              WHERE cdra.dlt_yn = 'N'
                AND cdr.cntrct_no = #{cntrctNo}
-               <![CDATA[
-               AND cdr.daily_report_date = (
-                   SELECT MAX(daily_report_date)
-                     FROM cw_daily_report
-                    WHERE cntrct_no = #{cntrctNo}
-                      AND daily_report_date < (
-                           SELECT daily_report_date
-                             FROM cw_daily_report
-                            WHERE daily_report_id = CAST(#{dailyReportId} AS numeric)
-                              AND cntrct_no = #{cntrctNo}
-                      )
-                      AND dlt_yn = 'N'
-               )
-               ]]>
+               <choose>
+                   <when test="findTmActivity == true">
+                       AND cdr.daily_report_date = (
+                           SELECT MAX(daily_report_date)
+                           FROM cw_daily_report
+                           WHERE cntrct_no = #{cntrctNo}
+                             <![CDATA[
+                             AND daily_report_date < (
+                             ]]>
+                                  SELECT daily_report_date
+                                  FROM cw_daily_report
+                                  WHERE daily_report_id = CAST(#{dailyReportId} AS numeric)
+                                    AND cntrct_no = #{cntrctNo}
+                             )
+                             AND dlt_yn = 'N'
+                       )
+                   </when>
+
+                   <otherwise>
+                       AND cdr.daily_report_id = CAST(#{dailyReportId} AS numeric)
+                   </otherwise>
+               </choose>
                AND cdra.activity_id IS NOT NULL
-               AND (cdra.pstats IS NULL OR cdra.pstats != '0101')
                AND cdra.work_dt_type = #{workDtType}
              ORDER BY cdra.activity_id, cdr.daily_report_date DESC;
         </select>
@@ -2044,6 +2059,10 @@
                         COALESCE(pa.actual_start::text, '')  AS actual_bgn_date,
                         COALESCE(pa.actual_finish::text, '') AS actual_end_date,
                         COALESCE(pa.expt_cost, 0)            AS expt_cost,
+                        pa.wbs_cd,
+                        pa.cntrct_chg_id,
+                        pa.actual_start,
+                        pa.actual_finish,
 
                         <![CDATA[
                         COALESCE(
@@ -2065,7 +2084,31 @@
                             ) + 1
                           ), 2
                         ) AS today_bohal,
-                        -- 전일 누적 진행률 (현재 보고일자 <, 동일 activity_id, 동일 계약, 삭제건 제외)
+                        TRUNC(
+                          100.0 / (
+                            (TO_DATE(pa.plan_finish,'YYYY-MM-DD') -
+                             TO_DATE(
+                               CASE WHEN COALESCE(pa.actual_start,'') <> '' THEN pa.actual_start ELSE pa.plan_start END,
+                               'YYYY-MM-DD'
+                             )
+                            ) + 1
+                          ), 2
+                        ) AS ori_today_bohal,
+                        TRUNC(
+                           100.0 / (
+                               (TO_DATE(pa.plan_finish, 'YYYY-MM-DD') -
+                                TO_DATE(
+                                    CASE
+                                        WHEN COALESCE(pa.actual_start, '') <> '' THEN pa.actual_start
+                                        ELSE pa.plan_start
+                                    END,
+                                    'YYYY-MM-DD'
+                                )
+                               ) + 1
+                           ),
+                           2
+                       ) AS today_plan_rate,
+                        -- 전일 누적 진행률
                         (
                           SELECT COALESCE(SUM(CAST(cdra_sub.today_exe_rate AS NUMERIC)), 0)
                           FROM cw_daily_report_activity cdra_sub
@@ -2077,7 +2120,19 @@
                             AND cdra_sub.dlt_yn      = 'N'
                             AND cdr_sub.dlt_yn       = 'N'
                             AND TO_DATE(cdr_sub.daily_report_date,'YYYY-MM-DD') < curr.rpt_dt
-                        ) AS total_progress
+                        ) AS total_progress,
+                        (
+                          SELECT COALESCE(SUM(CAST(cdra_sub.today_exe_rate AS NUMERIC)), 0)
+                          FROM cw_daily_report_activity cdra_sub
+                          JOIN cw_daily_report cdr_sub
+                            ON cdra_sub.daily_report_id = cdr_sub.daily_report_id
+                          JOIN curr
+                            ON curr.cntrct_no = cdr_sub.cntrct_no
+                          WHERE cdra_sub.activity_id = pa.activity_id
+                            AND cdra_sub.dlt_yn      = 'N'
+                            AND cdr_sub.dlt_yn       = 'N'
+                            AND TO_DATE(cdr_sub.daily_report_date,'YYYY-MM-DD') < curr.rpt_dt
+                        ) AS ori_total_progress
                         ]]>
 
                  FROM pr_activity pa
@@ -2222,7 +2277,7 @@
               FROM (
                 VALUES
                 <foreach collection="activityIdAndTodayBohal" item="p" separator=",">
-                  (#{p.activityId,jdbcType=VARCHAR}, #{p.todayBohal,jdbcType=VARCHAR})
+                  (#{p.activityId,jdbcType=VARCHAR}, CAST(#{p.todayBohal,jdbcType=VARCHAR} AS NUMERIC))
                 </foreach>
               ) AS v(activity_id, today_bohal)
             ),
@@ -2392,32 +2447,59 @@
                     ELSE NULL
                 END
             ) AS spec_nm,
-            COALESCE(ROUND(cdrr.plan_qty, 2), 0) AS plan_qty,
-            COALESCE(ROUND(cdrr.acmtl_qty, 2), 0) AS acmtl_qty,
             COALESCE(
-            CASE
-                WHEN cdrr.actual_qty = 0 THEN NULL
-                ELSE ROUND(cdrr.actual_qty, 2)
-            END, 0) AS actual_qty,
-            COALESCE(ROUND(cdrr.remndr_qty, 2), 0) AS remndr_qty,
-            COALESCE(ROUND(cdrr.total_qty , 2), 0) AS total_qty,
+                CASE
+                    WHEN cdrr.rsce_tp_cd LIKE 'M%' THEN ROUND(cdrr.plan_qty, 3)
+                    ELSE ROUND(cdrr.plan_qty, 2)
+                END, 0
+            ) AS plan_qty,
+
+            COALESCE(
+                CASE
+                    WHEN cdrr.rsce_tp_cd LIKE 'M%' THEN ROUND(cdrr.acmtl_qty, 3)
+                    ELSE ROUND(cdrr.acmtl_qty, 2)
+                END, 0
+            ) AS acmtl_qty,
+
+            COALESCE(
+                CASE
+                    WHEN cdrr.actual_qty = 0 THEN NULL
+                    WHEN cdrr.rsce_tp_cd LIKE 'M%' THEN ROUND(cdrr.actual_qty, 3)
+                    ELSE ROUND(cdrr.actual_qty, 2)
+                END, 0
+            ) AS actual_qty,
+
+            COALESCE(
+                CASE
+                    WHEN cdrr.rsce_tp_cd LIKE 'M%' THEN ROUND(cdrr.remndr_qty, 3)
+                    ELSE ROUND(cdrr.remndr_qty, 2)
+                END, 0
+            ) AS remndr_qty,
+
+            COALESCE(
+                CASE
+                    WHEN cdrr.rsce_tp_cd LIKE 'M%' THEN ROUND(cdrr.total_qty, 3)
+                    ELSE ROUND(cdrr.total_qty, 2)
+                END, 0
+            ) AS total_qty,
             cdrr.govsply_mtrl_yn,
             cdrr.manual_yn,
             cdrr.cntrct_chg_id,
             cdrr.rsce_sno,
-            COALESCE(ROUND(cdrr.acmtl_qty, 2), 0) AS ori_qty
+            COALESCE(ROUND(cdrr.acmtl_qty, 2), 0) AS ori_qty,
+            cdrr.dsply_order
         FROM cw_daily_report_resource cdrr
         WHERE cdrr.daily_report_id = CAST(#{dailyReportId} AS numeric)
           AND cdrr.cntrct_no = #{cntrctNo}
           AND cdrr.dlt_yn = 'N'
           AND cdrr.rsce_tp_cd LIKE ANY (ARRAY['L%', 'M%', 'E%'])
-        ORDER BY cdrr.rsce_tp_cd, cdrr.rsce_cd;
+        ORDER BY cdrr.dsply_order, cdrr.rsce_tp_cd, cdrr.rsce_cd;
 	</select>
 
 
     <insert id="addTodayResource" parameterType="hashMap">
     /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.addTodayResource] */
-		 INSERT INTO gaia_cmis.cw_daily_report_resource (
+		 INSERT INTO cw_daily_report_resource (
                  cntrct_no,
                  daily_report_id,
                  rsce_tp_cd,
@@ -2451,8 +2533,8 @@
                  -- acmtl_qty = 이전 보고서 전체 actual_qty 누계
                  COALESCE((
                      SELECT SUM(prev.actual_qty)
-                     FROM gaia_cmis.cw_daily_report_resource prev
-                     JOIN gaia_cmis.cw_daily_report dr_prev
+                     FROM cw_daily_report_resource prev
+                     JOIN cw_daily_report dr_prev
                        ON dr_prev.daily_report_id = prev.daily_report_id
                      WHERE prev.cntrct_no = #{cntrctNo}
                        AND prev.rsce_cd = src.rsce_cd
@@ -2466,8 +2548,8 @@
                      (
                          COALESCE((
                              SELECT SUM(prev2.actual_qty)
-                             FROM gaia_cmis.cw_daily_report_resource prev2
-                             JOIN gaia_cmis.cw_daily_report dr_prev2
+                             FROM cw_daily_report_resource prev2
+                             JOIN cw_daily_report dr_prev2
                                ON dr_prev2.daily_report_id = prev2.daily_report_id
                              WHERE prev2.cntrct_no = #{cntrctNo}
                                AND prev2.rsce_cd = src.rsce_cd
@@ -2486,13 +2568,13 @@
                  #{usrId},
                  NOW(),
                  #{usrId}
-             FROM gaia_cmis.cw_daily_report_resource src
-             JOIN gaia_cmis.cw_daily_report dr
+             FROM cw_daily_report_resource src
+             JOIN cw_daily_report dr
                ON dr.daily_report_id = src.daily_report_id
              WHERE dr.cntrct_no = #{cntrctNo}
                AND dr.daily_report_date = (
                    SELECT MAX(dr2.daily_report_date)
-                   FROM gaia_cmis.cw_daily_report dr2
+                   FROM cw_daily_report dr2
                    WHERE dr2.cntrct_no = #{cntrctNo}
                      AND dr2.daily_report_date < #{dailyReportDate}
                      AND dr2.dlt_yn = 'N'
@@ -2500,6 +2582,171 @@
                AND src.dlt_yn = 'N';
              ]]>
     </insert>
+
+    <insert id="insertDailyReportQdbList" parameterType="map">
+        INSERT INTO cw_daily_report_qdb
+            (
+                cntrct_no, daily_report_id, cntrct_chg_id, revision_id,
+                activity_id, cnstty_cd, dtl_cnstty_sn, rsce_tp_cd, rsce_cd,
+                work_qty, orgnl_rsce_cd, rmrk, dlt_yn, rgst_dt, rgstr_id, chg_dt, chg_id
+            )
+            WITH qdb_list AS (
+                SELECT q.cntrct_chg_id,
+                       q.revision_id,
+                       q.activity_id,
+                       q.cnstty_cd,
+                       q.dtl_cnstty_sn,
+                       q.rsce_tp_cd,
+                       q.rsce_cd,
+                       q.rsce_qty,
+                       q.orgnl_rsce_cd,
+                       q.rmrk
+                  FROM pr_qdb q
+                 WHERE q.cntrct_chg_id  = (<include refid="sql_getCntrctChgId" />)
+                   AND q.revision_id    = (<include refid="sql_geRevisionId" />)
+                   AND q.dlt_yn = 'N'
+                   AND q.activity_id = #{activityId}
+            ),
+            curr_report AS (
+                SELECT daily_report_date
+                  FROM cw_daily_report
+                 WHERE daily_report_id = CAST(#{dailyReportId} AS numeric)
+                   AND cntrct_no = #{cntrctNo}
+            ),
+            <![CDATA[
+            prev_reports AS (
+                SELECT dr.daily_report_id
+                  FROM cw_daily_report dr, curr_report cr
+                 WHERE dr.cntrct_no = #{cntrctNo}
+                   AND dr.dlt_yn = 'N'
+                   AND dr.daily_report_date < cr.daily_report_date
+            ),
+            ]]>
+            accum_work AS (
+                SELECT qdb.activity_id,
+                       SUM(qdb.work_qty) AS prev_work_qty
+                  FROM cw_daily_report_qdb qdb
+                 WHERE qdb.activity_id = #{activityId}
+                   AND qdb.dlt_yn = 'N'
+                   AND qdb.daily_report_id IN (SELECT daily_report_id FROM prev_reports)
+                 GROUP BY qdb.activity_id
+            )
+            SELECT
+                #{cntrctNo},
+                #{dailyReportId},
+                ql.cntrct_chg_id,
+                ql.revision_id,
+                ql.activity_id,
+                ql.cnstty_cd,
+                ql.dtl_cnstty_sn,
+                ql.rsce_tp_cd,
+                ql.rsce_cd,
+                ROUND((ql.rsce_qty * (#{todayExeRate} / 100.0))::numeric, 2),
+                ql.orgnl_rsce_cd,
+                ql.rmrk,
+                'N',
+                NOW(),
+                #{usrId},
+                NOW(),
+                #{usrId}
+            FROM qdb_list ql
+            LEFT JOIN accum_work aw ON aw.activity_id = ql.activity_id
+    </insert>
+
+    <delete id="deleteDailyReportQdbList" parameterType="CwDailyReportActivityGroup">
+        /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.deleteDailyReportQdbList][mjjo]  */
+        DELETE
+          FROM cw_daily_report_qdb
+         WHERE cntrct_no = #{cntrctNo}
+           AND daily_report_id = CAST(#{dailyReportId} AS numeric)
+           AND cntrct_chg_id  = (<include refid="sql_getCntrctChgId" />)
+           AND revision_id    = (<include refid="sql_geRevisionId" />)
+    </delete>
+
+
+	<select id="selectTodayCompletedActivityIds" parameterType="map" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectTodayCompletedActivityIds] */
+        SELECT activity_id
+          FROM cw_daily_report_activity cdra
+         WHERE cdra.work_dt_type = 'TD'
+           AND cdra.pstats = '0101'
+           AND cdra.daily_report_id = #{dailyReportId}
+           AND cdra.cntrct_no = #{cntrctNo}
+           AND cdra.dlt_yn = 'N'
+	</select>
+
+    <select id="selectActivityExists" parameterType="CwDailyReportActivityGroup" resultType="boolean">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectActivityExists] [mjjo] */
+        SELECT EXISTS (
+            SELECT *
+            FROM pr_activity pa
+            WHERE pa.activity_id IN (
+                SELECT cra.activity_id
+                FROM cw_daily_report_activity cra
+                WHERE cra.cntrct_no = #{cntrctNo}
+
+                  AND cra.daily_report_id = CAST(#{dailyReportId} AS numeric)
+                  AND cra.dlt_yn = 'N'
+                  AND cra.work_dt_type = 'TD'
+                  AND cra.cntrct_chg_id  = (<include refid="sql_getCntrctChgId" />)
+                  AND cra.revision_id    = (<include refid="sql_geRevisionId" />)
+                  AND (
+                        (cra.actual_bgn_date IS NOT NULL)
+                     OR (cra.actual_end_date IS NOT NULL)
+                  )
+            )
+              AND (
+                    (pa.actual_start IS NULL OR TRIM(pa.actual_start) = '')
+              OR (pa.actual_finish IS NULL OR TRIM(pa.actual_finish) = '')
+              )
+              AND pa.cntrct_chg_id  = (<include refid="sql_getCntrctChgId" />)
+              AND pa.revision_id    = (<include refid="sql_geRevisionId" />)
+            LIMIT 1
+        );
+    </select>
+
+    <select id="selectPrevUnapprovedReport" parameterType="CwDailyReportActivityGroup" resultType="map">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.selectPrevUnapprovedReport] [mjjo] */
+        SELECT
+                cdr.daily_report_id,
+                cdr.daily_report_date,
+                cdr.apprvl_stats,
+                cdr.rgstr_id
+            FROM cw_daily_report cdr
+            WHERE cdr.cntrct_no = #{cntrctNo}
+              AND cdr.dlt_yn = 'N'
+              <![CDATA[
+              AND (cdr.apprvl_stats IS NULL OR cdr.apprvl_stats <> 'A')
+              AND cdr.daily_report_date = (
+                  SELECT MAX(cdr2.daily_report_date)
+                  FROM cw_daily_report cdr2
+                  WHERE cdr2.cntrct_no = cdr.cntrct_no
+                    AND cdr2.dlt_yn = 'N'
+                    AND cdr2.daily_report_date < #{dailyReportDate}
+              )
+              ]]>
+            ORDER BY cdr.daily_report_date DESC
+            LIMIT 1
+    </select>
+
+    <update id="updateDeleteActivityList" parameterType="CwDailyReportActivityGroup">
+    /* [kr.co.ideait.platform.gaiacairos.mybatis.mappers.construction.dailyreport.updateDeleteActivityList][mjjo]  */
+        UPDATE cw_daily_report_activity
+        SET
+            dlt_yn              = 'Y',
+            dlt_id              = #{dltId},
+            dlt_dt              = NOW(),
+            chg_id              = #{chgId},
+            chg_dt              = NOW()
+        WHERE cntrct_no       = #{cntrctNo}
+          AND daily_report_id = #{dailyReportId}
+          AND work_dt_type    = #{workDtType}
+          AND cntrct_chg_id   = (<include refid="sql_getCntrctChgId" />)
+          AND revision_id     = (<include refid="sql_geRevisionId" />)
+    </update>
+
+
+
 
 
 </mapper>

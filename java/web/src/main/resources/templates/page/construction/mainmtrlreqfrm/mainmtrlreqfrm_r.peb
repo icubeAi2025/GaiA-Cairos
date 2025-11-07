@@ -329,6 +329,7 @@
 
 	var cntrctNo = urlParams.get('cntrctNo')
 	var qltyIspId = urlParams.get('qltyIspId');
+	var apprvlStatsNm = '';
 
 	$(function () {
 		gaia.create({
@@ -374,6 +375,11 @@
 			page.getMainMtrlReqFrm();
 		},
 		updateMtrlReqfrm: function () {
+			if(apprvlStatsNm === "승인") {
+				gaiaCommon.customAlert('승인된 항목은 수정할 수 없습니다.');
+				return;
+			}
+
 			// 수정 페이지로 이동  
 			if (type === 'p') { // 창화면인 상태
 				window.location.href = `/construction/mainmtrlreqfrm/updateMtrlReqfrm?type=p&cntrctNo=${cntrctNo}&pjtNo=${pjtNo}&reqfrmNo=${reqfrmNo}`;
@@ -389,6 +395,9 @@
 				let attachments = result.details.attachments
 				let photoAttachments = result.details.photoAttachments;
 				let mainmtrlData = result.details.mainmtrls;
+
+				apprvlStatsNm = mtrlreqfrmData.apprvlStatsNm;
+				console.log("apprvlStatsNm:", apprvlStatsNm);
 
 				$('#docNo').text(gaiaCommon.decodeSafeText(mtrlreqfrmData.docNo));  // 문서번호 
 				$('#reqDt').text(gaiaCommon.decodeSafeText(mtrlreqfrmData.reqDt));  // 검수요청일자 

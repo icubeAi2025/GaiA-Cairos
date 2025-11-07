@@ -139,3 +139,24 @@
         </div>
     </div>
 </div>
+<div class="progressModal fade" style="z-index:16;">
+    <div class="pop_box alert on" id="progressModal" data-name="Alert" style="display:none;">
+        <div class="pop_header">
+            <h5 class="pop_progress_tit">작업일지 복사 여부 확인</h5>
+            <button type="button" class="icon_btn pop_close">
+                <i class="ic ic-close"></i>
+                <span class="blind">창닫기</span>
+            </button>
+        </div>
+        <div class="pop_body">
+            <strong class="msg_progress_tit">작업일지 복사 여부 확인</strong>
+            <p class="msg_tit_dlt">작업일지 복사 여부 확인</p>
+        </div>
+        <div class="pop_footer">
+            <div class="btn_area jc_e">
+                <button type="button" class="btn _outline" id="pop_box_progress_cancle">취소</button>
+                <button type="button" class="btn _fill" id="pop_box_progress">진행</button>
+            </div>
+        </div>
+    </div>
+</div>

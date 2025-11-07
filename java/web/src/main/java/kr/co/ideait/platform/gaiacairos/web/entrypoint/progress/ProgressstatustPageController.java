@@ -23,7 +23,6 @@ public class ProgressstatustPageController extends AbstractController {
         Log.SmUserLogDto userLog = commonReqVo.toSmUserLogDto();
         userLog.setLogType(LogType.VIEW.name());
         userLog.setExecType("공정현황 화면 접속");
-        systemLogComponent.addUserLog(userLog);
 
         return "page/progress/progressstatus/progressstatus";
     }

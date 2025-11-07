@@ -5,7 +5,7 @@
 
         <!-- 메인대시보드쿼리 -->
         <!-- today -->
-       <select id="getToday" parameterType="mainInput" resultType="todayOutput">
+        <select id="getToday" parameterType="mainInput" resultType="todayOutput">
         /* [kr.co.ideait.platform.gaiacairos.mappers.dashboard.getToday][jhkim] */
                 SELECT DISTINCT 
                 <choose>
@@ -118,7 +118,7 @@
         <select id="getActivityList" parameterType="mainInput" resultType="mainActivityOutput">
         /*[kr.co.ideait.platform.gaiacairos.mappers.dashboard.getActivityList][jhkim] */
         <![CDATA[
-         WITH RECURSIVE PR_WBS_LIST as (
+        WITH RECURSIVE PR_WBS_LIST as (
  					SELECT
                                                 PA.CNTRCT_CHG_ID,
                                                 PA.REVISION_ID,
@@ -166,23 +166,24 @@
                                         AND 	PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
                                         AND 	PA.DLT_YN = 'N'
                                         AND NOT CYCLE),
+        ]]>
                 SELECT_REVISION_ID AS (	
                                         SELECT 	PR.REVISION_ID,
-                                        PR.CNTRCT_CHG_ID
+                                                PR.CNTRCT_CHG_ID
                                         FROM 	PR_REVISION PR
-                                        JOIN CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
+                                                JOIN CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y' AND CSC.DLT_YN ='N'
+                                                JOIN CN_CONTRACT CC ON CSC.CNTRCT_NO = CC.CNTRCT_NO AND CC.DLT_YN ='N'
+                                                <choose>
+                                                    <when test="systemType == 'CAIROS' and loginType != 'ADMIN'">
+                                                        AND     CC.CNTRCT_NO ILIKE CONCAT(#{cntrctNo},'%')
+                                                    </when>
+                                                    <otherwise>
+                                                        AND     CC.CNTRCT_NO ILIKE CONCAT(#{pjtNo},'%')
+                                                    </otherwise>
+                                                </choose>
                                         WHERE	PR.LAST_REVISION_YN = 'Y'
-                ]]>
-                                        <choose>
-                                                <when test="systemType == 'CAIROS' and loginType != 'ADMIN'">
-                                                        AND 	PR.CNTRCT_CHG_ID ilike CONCAT(#{cntrctNo},'%') 
-                                                </when>
-                                                <otherwise> 
-                                                        AND 	PR.CNTRCT_CHG_ID ilike CONCAT(#{pjtNo},'%')
-                                                </otherwise>
-                                        </choose>
-                <![CDATA[
                                         AND 	PR.DLT_YN = 'N'	),
+        <![CDATA[
                 WBS_HIERARCHY AS (
                                         select
                                         PWL.REVISION_ID,
@@ -212,11 +213,15 @@
                                         A.ACTUAL_FINISH AS ACTUAL_FINISH,
                                         EXTRACT(DAY FROM ((COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL)::TIMESTAMP - COALESCE(NULLIF(A.ACTUAL_START, ''), NULL)::TIMESTAMP))) AS DAYS,
                                         CASE
-                                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NULL 
-                                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL THEN '미완료'
-                                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NOT NULL 
-                                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL THEN '진행중' 
-                                                ELSE '완료' 
+                                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NULL
+                                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL THEN '착수지연'
+                                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NOT NULL
+                                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL
+                                                AND  COALESCE(NULLIF(A.PLAN_FINISH, ''), NULL)::TIMESTAMP < CURRENT_DATE THEN '완료지연'
+                                                WHEN COALESCE(NULLIF(A.ACTUAL_START, ''), NULL) IS NOT NULL
+                                                AND COALESCE(NULLIF(A.ACTUAL_FINISH, ''), NULL) IS NULL
+                                                AND  COALESCE(NULLIF(A.PLAN_FINISH, ''), NULL)::TIMESTAMP >= CURRENT_DATE THEN '진행중'
+                                                ELSE '완료'
                                         END AS STATE,
                                         H.DEPTH,
                                         H.PATH,
@@ -237,8 +242,7 @@
                                                         PA.CNTRCT_CHG_ID
                                         FROM 	PR_ACTIVITY PA,
                                                         SELECT_REVISION_ID SRI
-                                        WHERE COALESCE(NULLIF(PA.PLAN_START, ''), NULL)::TIMESTAMP <= CURRENT_DATE 
-                                        AND COALESCE(NULLIF(PA.PLAN_FINISH, ''), NULL)::TIMESTAMP >= CURRENT_DATE
+                                        WHERE (COALESCE(NULLIF(PA.ACTUAL_FINISH, ''), NULL) IS NULL OR COALESCE(NULLIF(PA.ACTUAL_FINISH, ''), NULL)::TIMESTAMP = CURRENT_DATE)
                                         AND PA.REVISION_ID = SRI.REVISION_ID
                                         AND PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
                                         AND PA.DLT_YN = 'N'
@@ -252,19 +256,22 @@
         <!-- 작업현황 -->
         <select id="getWork" parameterType="mainInput" resultType="workOutput">
         /*[kr.co.ideait.platform.gaiacairos.mappers.dashboard.getWork][jhkim] */
-                <![CDATA[
                 WITH SELECT_REVISION_ID AS (
-                        SELECT 
-                                PR.REVISION_ID,
+                        SELECT 	PR.REVISION_ID,
                                 PR.CNTRCT_CHG_ID
-                        FROM 
-                                PR_REVISION PR
-                        JOIN CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y'
-                        WHERE 
-                                PR.LAST_REVISION_YN = 'Y'
-                                AND PR.CNTRCT_CHG_ID ILIKE CONCAT(#{pjtNo},'%')
-                                AND PR.DLT_YN = 'N'
-                        ),
+                        FROM 	PR_REVISION PR
+                                JOIN CN_CONTRACT_CHANGE CSC ON CSC.CNTRCT_CHG_ID = PR.CNTRCT_CHG_ID AND CSC.LAST_CHG_YN = 'Y' AND CSC.DLT_YN ='N'
+                                JOIN CN_CONTRACT CC ON CSC.CNTRCT_NO = CC.CNTRCT_NO AND CC.DLT_YN ='N'
+                                <choose>
+                                   <when test="systemType == 'CAIROS' and loginType != 'ADMIN'">
+                                        AND     CC.CNTRCT_NO ILIKE CONCAT(#{cntrctNo},'%')
+                                   </when>
+                                   <otherwise>
+                                        AND     CC.CNTRCT_NO ILIKE CONCAT(#{pjtNo},'%')
+                                   </otherwise>
+                                </choose>
+                        WHERE	PR.LAST_REVISION_YN = 'Y'
+                        AND 	PR.DLT_YN = 'N'	),
                 BASE AS (
                         SELECT DISTINCT
                                 PA.*,
@@ -280,10 +287,9 @@
                         INNER JOIN 
                                 CN_PROJECT CP ON CP.PJT_NO = CC.PJT_NO AND CP.DLT_YN='N'
                         INNER JOIN 
-                                SELECT_REVISION_ID SRI ON PA.REVISION_ID = SRI.REVISION_ID
+                                SELECT_REVISION_ID SRI ON PA.REVISION_ID = SRI.REVISION_ID AND PA.CNTRCT_CHG_ID = SRI.CNTRCT_CHG_ID
                         WHERE 
                                 CP.PJT_NO = #{pjtNo}
-                ]]>
                 <if test="systemType == 'CAIROS' and loginType != 'ADMIN'"> 
                         AND CC.CNTRCT_NO = #{cntrctNo} 
                 </if>
@@ -291,28 +297,24 @@
                 )
                 SELECT
                         COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NOT NULL THEN 1 END) AS COMPLETE,
-                        COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NOT NULL AND COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL THEN 1 END) AS PROGRESS,
-                        COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NULL AND COALESCE(NULLIF(B.PLAN_START, ''), NULL)::TIMESTAMP <= CURRENT_DATE THEN 1 END) AS START_DELAY,
-                        COUNT(CASE 
-                                WHEN COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL AND COALESCE(NULLIF(B.PLAN_FINISH, ''), NULL)::TIMESTAMP <= CURRENT_DATE 
-                                AND NOT EXISTS (
-                                SELECT 1
-                                FROM BASE PA2
-                                WHERE COALESCE(NULLIF(PA2.ACTUAL_START, ''), NULL) IS NULL 
-                                AND COALESCE(NULLIF(PA2.PLAN_START, ''), NULL)::TIMESTAMP <= CURRENT_DATE 
-                                AND PA2.ACTIVITY_ID = B.ACTIVITY_ID
-                                ) THEN 1 
+                        COUNT(CASE WHEN
+                                        COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NOT NULL AND COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL
+                                        AND  COALESCE(NULLIF(B.PLAN_FINISH, ''), NULL)::TIMESTAMP >= CURRENT_DATE
+		                            THEN 1
+		                END) AS PROGRESS,
+                        COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NULL THEN 1 END) AS START_DELAY,
+                        COUNT(CASE WHEN
+                                        COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NOT NULL AND COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL
+                                        AND  COALESCE(NULLIF(B.PLAN_FINISH, ''), NULL)::TIMESTAMP < CURRENT_DATE
+                                    THEN 1
                         END) AS END_DELAY,
-                        COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NULL AND COALESCE(NULLIF(B.PLAN_START, ''), NULL)::TIMESTAMP <= CURRENT_DATE THEN 1 END) +
+                        COUNT(CASE WHEN COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NULL THEN 1 END) +
                         COUNT(CASE 
-                                WHEN COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL AND COALESCE(NULLIF(B.PLAN_FINISH, ''), NULL)::TIMESTAMP <= CURRENT_DATE 
-                                AND NOT EXISTS (
-                                SELECT 1
-                                FROM BASE PA2
-                                WHERE COALESCE(NULLIF(PA2.ACTUAL_START, ''), NULL) IS NULL 
-                                AND COALESCE(NULLIF(PA2.PLAN_START, ''), NULL)::TIMESTAMP < CURRENT_DATE 
-                                AND PA2.ACTIVITY_ID = B.ACTIVITY_ID
-                                ) THEN 1 
+                                WHEN
+                                    COALESCE(NULLIF(B.ACTUAL_START, ''), NULL) IS NOT NULL
+                                    AND COALESCE(NULLIF(B.ACTUAL_FINISH, ''), NULL) IS NULL
+		                       	    AND COALESCE(NULLIF(B.PLAN_FINISH, ''), NULL)::TIMESTAMP < CURRENT_DATE
+                                THEN 1
                         END) AS DELAY
                 FROM BASE B;
                 ]]>
@@ -540,12 +542,12 @@
          /*[kr.co.ideait.platform.gaiacairos.mappers.dashboard.getProcess][jhkim] */
         <![CDATA[ 
                 SELECT
-                        COALESCE(CEIL(SUM(PL.PLAN_SCH) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100) || '%', '0%') AS PLAN_PER,
-                        COALESCE(CEIL(SUM(AT.ACTUAL_SCH) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100) || '%', '0%') AS ACTUAL_PER,
-                        COALESCE(CEIL(SUM(AT.ACTUAL_SCH) / NULLIF(SUM(PL.PLAN_SCH), 0) * 100) || '%', '0%') AS PROCESS,
-                        COALESCE(CEIL(SUM(PL_CST.PLAN_CST) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100) || '%', '0%') AS PLAN_CST_PER,
-                        COALESCE(CEIL(SUM(AT_CST.ACTUAL_CST) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100) || '%', '0%') AS ACTUAL_CST_PER,
-                        COALESCE(CEIL(SUM(AT_CST.ACTUAL_CST) / NULLIF(SUM(PL_CST.PLAN_CST), 0) * 100) || '%', '0%') AS CST_PROCESS
+                        COALESCE(ROUND(SUM(PL.PLAN_SCH) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100, 2) , '0') AS PLAN_PER,
+                        COALESCE(ROUND(SUM(AT.ACTUAL_SCH) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100, 2), '0') AS ACTUAL_PER,
+                        COALESCE(ROUND(SUM(AT.ACTUAL_SCH) / NULLIF(SUM(PL.PLAN_SCH), 0) * 100, 2), '0') AS PROCESS,
+                        COALESCE(ROUND(SUM(PL_CST.PLAN_CST) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100, 2) , '0') AS PLAN_CST_PER,
+                        COALESCE(ROUND(SUM(AT_CST.ACTUAL_CST) / NULLIF(SUM(TT.TOTAL_CST), 0) * 100, 2) , '0') AS ACTUAL_CST_PER,
+                        COALESCE(ROUND(SUM(AT_CST.ACTUAL_CST) / NULLIF(SUM(PL_CST.PLAN_CST), 0) * 100, 2) , '0') AS CST_PROCESS
                 FROM (
                         SELECT 
                                 SUBSTRING(CCC.CNTRCT_CHG_ID, 1, 10) AS CNTRCTNO,

@@ -330,7 +330,7 @@ class IconRenderer {
         valueSpan.title = displayText;
         valueSpan.classList.add((props?.className || props?.name || props?.columnInfo?.name)+"_"+props.rowKey);
         valueSpan.classList.add('value-span');
-        valueSpan.style = `overflow-x: hidden; overflow-y:visible; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; line-height:1.1;`
+        valueSpan.style = `overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; line-height:1.1;`
         valueSpan.textContent = gaiaCommon.decodeSafeText(displayText);
 
 
